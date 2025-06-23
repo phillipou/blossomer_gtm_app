@@ -1,10 +1,23 @@
+import os
 import urllib.parse
 import socket
 import requests
 import logging
 from urllib import robotparser
+from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+try:
+    from firecrawl import FirecrawlApp, ScrapeOptions
+except ImportError:
+    FirecrawlApp = None  # type: ignore
+    ScrapeOptions = None  # type: ignore
+
+FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 
 
 def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
@@ -83,3 +96,141 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
 
     result["is_valid"] = True
     return result
+
+
+def firecrawl_scrape_url(
+    url: str, formats: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """
+    Scrape a single web page using Firecrawl and return LLM-ready data as a dict.
+    """
+    if FirecrawlApp is None:
+        raise ImportError(
+            "firecrawl-py SDK is not installed. Run 'poetry add firecrawl-py'."
+        )
+    api_key = os.getenv("FIRECRAWL_API_KEY")
+    if not api_key:
+        logger.error("FIRECRAWL_API_KEY is not set in the environment.")
+        raise ValueError("FIRECRAWL_API_KEY is required.")
+    app = FirecrawlApp(api_key=api_key)
+    if formats is None:
+        formats = ["markdown", "html"]
+    try:
+        scrape_result = app.scrape_url(url, formats=formats)
+        return scrape_result.dict()
+    except Exception as e:
+        logger.error(f"Firecrawl scrape_url failed: {e}")
+        raise ValueError(f"Firecrawl scrape_url failed: {e}")
+
+
+def firecrawl_crawl_site(
+    url: str,
+    limit: int = 5,
+    formats: Optional[List[str]] = None,
+    only_main_content: bool = True,
+    wait_for: int = 1000,
+) -> Dict[str, Any]:
+    """
+    Crawl a website and all accessible subpages using Firecrawl. Returns a dict.
+    Args:
+        url (str): The root URL to crawl.
+        limit (int): Max number of pages to crawl.
+        formats (Optional[List[str]]): Output formats, e.g., ['markdown', 'html'].
+        only_main_content (bool): If True, extract only the main content of each page.
+        wait_for (int): Milliseconds to wait for dynamic content to load.
+    Returns:
+        Dict[str, Any]: Firecrawl crawl result as a dict.
+    """
+    if FirecrawlApp is None or ScrapeOptions is None:
+        raise ImportError(
+            "firecrawl-py SDK is not installed. Run 'poetry add firecrawl-py'."
+        )
+    api_key = os.getenv("FIRECRAWL_API_KEY")
+    if not api_key:
+        logger.error("FIRECRAWL_API_KEY is not set in the environment.")
+        raise ValueError("FIRECRAWL_API_KEY is required.")
+    app = FirecrawlApp(api_key=api_key)
+    if formats is None:
+        formats = ["markdown", "html"]
+    try:
+        scrape_options = ScrapeOptions(
+            formats=formats,
+            onlyMainContent=only_main_content,
+            waitFor=wait_for,
+        )
+        crawl_result = app.crawl_url(url, limit=limit, scrape_options=scrape_options)
+        return crawl_result.dict()
+    except Exception as e:
+        logger.error(f"Firecrawl crawl_url failed: {e}")
+        raise ValueError(f"Firecrawl crawl_url failed: {e}")
+
+
+def extract_website_content(
+    url: str,
+    crawl: bool = False,
+    crawl_limit: int = 5,
+    formats: Optional[List[str]] = None,
+    only_main_content: bool = True,
+    wait_for: int = 1000,
+) -> Dict[str, Any]:
+    """
+    Validate the URL and extract (but do not store) website content using Firecrawl. Returns a dict.
+    Args:
+        url (str): The URL to process.
+        crawl (bool): If True, crawl all accessible subpages. If False, scrape only the main page.
+        crawl_limit (int): Max number of pages to crawl (if crawl=True).
+        formats (Optional[List[str]]): Output formats, e.g., ['markdown', 'html'].
+        only_main_content (bool): If True, extract only the main content of each page (crawl mode).
+        wait_for (int): Milliseconds to wait for dynamic content to load (crawl mode).
+    Returns:
+        Dict[str, Any]: Structured result with validation, content, and metadata.
+    """
+    validation = validate_url(url)
+    if not validation["is_valid"] or not validation["reachable"]:
+        logger.warning(f"URL validation failed: {validation}")
+        raise ValueError(f"URL validation failed: {validation}")
+
+    if crawl:
+        crawl_result = firecrawl_crawl_site(
+            url,
+            limit=crawl_limit,
+            formats=formats,
+            only_main_content=only_main_content,
+            wait_for=wait_for,
+        )
+        content = crawl_result.get("data", [])
+        metadata = crawl_result.get("metadata", {})
+    else:
+        scrape_result = firecrawl_scrape_url(url, formats=formats)
+        content = scrape_result.get("markdown", "")
+        metadata = scrape_result.get("metadata", {})
+
+    result = {
+        "url": url,
+        "validation": validation,
+        "content": content,
+        "metadata": metadata,
+        "crawl": crawl,
+    }
+    return result
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+
+    # Example 1: Single page scrape
+    url = "https://plandex.ai/"
+    try:
+        print("=== Single Page Scrape ===")
+        result = extract_website_content(url, crawl=False)
+        pprint(result)
+    except Exception as e:
+        print(f"Single page scrape failed: {e}")
+
+    # Example 2: Multi-page crawl (up to 5 pages)
+    try:
+        print("\n=== Multi-Page Crawl ===")
+        crawl_result = extract_website_content(url, crawl=True, crawl_limit=2)
+        pprint(crawl_result)
+    except Exception as e:
+        print(f"Multi-page crawl failed: {e}")
