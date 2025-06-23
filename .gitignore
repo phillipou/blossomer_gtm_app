@@ -1,4 +1,3 @@
-
 # Logs
 logs
 *.log
@@ -24,3 +23,20 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Database
+DATABASE_URL=
+
+# Redis
+REDIS_URL=
+
+# External APIs
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+BING_SEARCH_API_KEY=
+CLEARBIT_API_KEY=
+APOLLO_API_KEY=
+
+# Security
+API_KEY_SALT=
+JWT_SECRET_KEY= 

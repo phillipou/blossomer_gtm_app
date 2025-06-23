@@ -1,0 +1,36 @@
+[project]
+name = "blossomer-gtm-api"
+version = "0.1.0"
+description = "AI-powered go-to-market campaign generator API for B2B founders"
+authors = [
+    {name = "Your Name"}
+]
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+    "fastapi (>=0.115.13,<0.116.0)",
+    "uvicorn (>=0.34.3,<0.35.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "blossomer-gtm-api"
+version = "0.1.0"
+description = "AI-powered go-to-market campaign generator API for B2B founders"
+authors = ["Your Name"]
+
+packages = [
+    { include = "blossomer_gtm_api", from = "src" }
+]
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.2.0"
+black = "^25.1.0"
+flake8 = "^7.3.0"
+pytest = "^8.4.1"
+httpx = "^0.28.1"
+

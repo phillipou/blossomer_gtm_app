@@ -552,6 +552,10 @@ Redis:
 
 ### Local Development Environment
 
+**Dependency and Environment Management**
+
+- Poetry 2.1.3 is the standard tool for managing Python dependencies and virtual environments in this project. All contributors should use Poetry for installing, adding, or updating dependencies, and for managing the project's virtual environment. See the README for installation and usage instructions.
+
 #### Docker Compose Setup
 
 ```yaml

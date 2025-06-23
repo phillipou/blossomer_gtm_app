@@ -391,6 +391,10 @@ As a platform administrator, I want LLM service failures to be handled gracefull
 
 ### Development and testing
 
+**Environment and dependency management**
+
+- Poetry 2.1.3 is used for all Python dependency and environment management. All contributors should install Poetry (https://python-poetry.org/docs/#installation) and use it for adding/removing dependencies and managing virtual environments. See the README for setup instructions.
+
 **Code quality and testing**
 
 - Pytest for comprehensive unit and integration testing
@@ -512,15 +516,16 @@ src/
 
 ### 3. First Implementation Steps
 
-1. Set up FastAPI app skeleton (`main.py`, routers, and basic health check endpoint)
-2. Implement API key authentication (middleware or dependency)
-3. Define Pydantic models for input/output schemas and DB models
-4. Stub out campaign endpoints with placeholder logic and response schemas
-5. Set up database models and session management (SQLAlchemy + Alembic)
-6. Integrate website scraping and ICP processing (BeautifulSoup, Requests)
-7. Prepare for LLM and ChromaDB integration (stub service classes)
-8. Implement error handling and rate limiting
-9. Write initial tests and documentation
+1. Set up Poetry (v2.1.3) for dependency and environment management (`poetry init`, `poetry install`).
+2. Set up FastAPI app skeleton (`main.py`, routers, and basic health check endpoint)
+3. Implement API key authentication (middleware or dependency)
+4. Define Pydantic models for input/output schemas and DB models
+5. Stub out campaign endpoints with placeholder logic and response schemas
+6. Set up database models and session management (SQLAlchemy + Alembic)
+7. Integrate website scraping and ICP processing (BeautifulSoup, Requests)
+8. Prepare for LLM and ChromaDB integration (stub service classes)
+9. Implement error handling and rate limiting
+10. Write initial tests and documentation
 
 ---
 
