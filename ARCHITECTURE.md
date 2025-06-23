@@ -9,6 +9,7 @@
 For the Blossomer GTM API, I recommend starting with a **modular monolith** architecture that can evolve into microservices as the product scales.
 
 **Justification:**
+
 - **Early-stage appropriate**: Your pre-Series A target market aligns with a simpler deployment model
 - **Team size consideration**: Small teams (1-5 people) benefit from unified codebases
 - **Development velocity**: Faster iteration cycles during product-market fit discovery
@@ -16,6 +17,7 @@ For the Blossomer GTM API, I recommend starting with a **modular monolith** arch
 - **Data consistency**: Campaign generation requires strong consistency across AI workflows
 
 **Architecture Pattern: Domain-Driven Design (DDD)**
+
 - **Campaign Generation Domain**: Core business logic for AI-powered asset creation
 - **Content Processing Domain**: Website analysis and ICP inference
 - **User Management Domain**: Authentication, billing, and API key management
@@ -33,6 +35,7 @@ For the Blossomer GTM API, I recommend starting with a **modular monolith** arch
 | **Data Consistency** | ✅ ACID transactions | ❌ Eventual consistency complexity |
 
 **Evolution Path:**
+
 1. **Phase 1**: Modular monolith with clear domain boundaries
 2. **Phase 2**: Extract compute-intensive AI processing to separate services
 3. **Phase 3**: Microservices architecture for mature, high-scale operations
@@ -83,32 +86,42 @@ For the Blossomer GTM API, I recommend starting with a **modular monolith** arch
 ### Service Boundaries and Responsibilities
 
 #### 1. Campaign Service
+
 **Responsibility**: Orchestrate campaign asset generation
+
 - **Endpoints**: `/campaigns/positioning`, `/campaigns/email`, `/campaigns/enrichment`, `/campaigns/complete`
 - **Business Logic**: Campaign workflow coordination, asset composition
 - **Dependencies**: Content Service, AI Agent Orchestrator, User Service
 
 #### 2. Content Service
+
 **Responsibility**: Website analysis and content processing
+
 - **Functions**: URL scraping, content extraction, vectorization (using Firecrawl.dev API for dynamic content, JS, and media)
 - **Storage**: ChromaDB integration for semantic search
 - **Caching**: Intelligent content caching with TTL policies
 - **Rationale**: Firecrawl.dev chosen for reliability, dynamic content support, and fast integration; architecture supports future migration to in-house scraping if needed.
 
 #### 3. User Service
+
 **Responsibility**: Authentication, authorization, and usage tracking
+
 - **Functions**: API key management, rate limiting, billing integration
 - **Security**: JWT token validation, role-based access control
 - **Analytics**: Usage metrics and API call tracking
 
 #### 4. AI Agent Orchestrator
+
 **Responsibility**: LLM integration and agent workflow management
+
 - **Providers**: OpenAI GPT-4, Anthropic Claude with failover
 - **Workflow**: LangGraph-based agent coordination
 - **Quality**: Response validation and quality scoring
 
 #### 5. ICP Engine
+
 **Responsibility**: Ideal Customer Profile inference and processing
+
 - **Analysis**: Website-based ICP generation
 - **Validation**: User-provided ICP parsing and structuring
 - **Enrichment**: Market data integration for ICP enhancement
@@ -146,7 +159,9 @@ PostgreSQL Storage ──► JSON Response
 ### Storage Solutions Strategy
 
 #### Primary Database: PostgreSQL
+
 **Rationale**: ACID compliance, JSON support, mature ecosystem
+
 ```sql
 -- Core tables structure
 CREATE TABLE users (
@@ -191,13 +206,17 @@ CREATE TABLE api_usage (
 ```
 
 #### Vector Database: ChromaDB
+
 **Purpose**: Semantic search and RAG operations
+
 - **Website content embeddings** for contextual retrieval
 - **Campaign template storage** for similar company matching
 - **ICP classification** support with semantic similarity
 
 #### Caching Layer: Redis
+
 **Use Cases**:
+
 - **Session management**: User authentication state
 - **Rate limiting**: API call counting with TTL
 - **Content caching**: Processed website content
@@ -206,6 +225,7 @@ CREATE TABLE api_usage (
 ### Data Access Patterns
 
 #### Repository Pattern Implementation
+
 ```python
 class CampaignRepository:
     async def create_campaign(self, campaign_data: CampaignCreate) -> Campaign
@@ -220,6 +240,7 @@ class ContentRepository:
 ```
 
 #### Query Optimization Strategy
+
 - **Indexes**: User ID, campaign creation date, URL hash
 - **Partitioning**: API usage by date for historical data management
 - **Connection pooling**: SQLAlchemy async pool for concurrent requests
@@ -227,11 +248,13 @@ class ContentRepository:
 ### Data Evolution Strategy
 
 #### Schema Migration Management
+
 - **Alembic** for version-controlled database migrations
 - **Backward compatibility** maintenance for API responses
 - **Blue-green deployment** support for zero-downtime updates
 
 #### Data Retention Policies
+
 - **Campaign data**: 2-year retention with configurable policies
 - **Website content cache**: 30-day TTL with refresh logic
 - **API usage logs**: 1-year retention for billing and analytics
@@ -241,6 +264,7 @@ class ContentRepository:
 ### Authentication and Authorization
 
 #### API Key Authentication
+
 ```python
 class APIKeyAuth:
     def __init__(self, api_key_header: str = "X-API-Key"):
@@ -259,6 +283,7 @@ class APIKeyAuth:
 ```
 
 #### Rate Limiting Strategy
+
 - **Tier-based limits**: Free (100/day), Pro (1000/day), Enterprise (unlimited)
 - **Endpoint-specific limits**: Resource-intensive operations have lower limits
 - **Redis-based tracking**: Sliding window rate limiting implementation
@@ -266,16 +291,19 @@ class APIKeyAuth:
 ### Data Protection Strategies
 
 #### Encryption at Rest
+
 - **Database encryption**: PostgreSQL TDE for sensitive data
 - **API key hashing**: bcrypt with salt for stored credentials
 - **Content encryption**: Sensitive website content encrypted in ChromaDB
 
 #### Encryption in Transit
+
 - **TLS 1.3**: All API endpoints require HTTPS
 - **Certificate management**: Let's Encrypt with auto-renewal
 - **Internal communication**: mTLS for service-to-service communication (future microservices)
 
 #### Data Privacy Compliance
+
 - **GDPR compliance**: User data deletion and export capabilities
 - **Data minimization**: Only collect necessary information
 - **Anonymization**: Remove PII from analytics and logging
@@ -283,6 +311,7 @@ class APIKeyAuth:
 ### Security Monitoring
 
 #### Threat Detection
+
 ```python
 class SecurityMonitor:
     async def log_suspicious_activity(self, event: SecurityEvent):
@@ -297,6 +326,7 @@ class SecurityMonitor:
 ```
 
 #### Audit Logging
+
 - **API access logs**: All requests with user identification
 - **Data access tracking**: Campaign generation and retrieval
 - **Administrative actions**: User management and configuration changes
@@ -306,17 +336,21 @@ class SecurityMonitor:
 ### Scaling Strategy
 
 #### Horizontal Scaling Approach
+
 **Phase 1: Vertical Scaling**
+
 - **Database**: Increase PostgreSQL instance size
 - **Application**: Multi-core CPU optimization with async processing
 - **Memory**: Redis cache expansion for better hit rates
 
 **Phase 2: Horizontal Scaling**
+
 - **Load balancer**: Multiple FastAPI instances behind nginx
 - **Database scaling**: Read replicas for query distribution
 - **Cache distribution**: Redis cluster for session management
 
 **Phase 3: Service Extraction**
+
 - **AI processing service**: Separate compute-intensive operations
 - **Content processing service**: Independent website analysis
 - **API gateway**: Centralized routing and rate limiting
@@ -324,6 +358,7 @@ class SecurityMonitor:
 ### Performance Optimization
 
 #### Application-Level Optimizations
+
 ```python
 # Async processing for I/O operations
 async def generate_campaign_async(website_url: str, icp_data: Optional[str]):
@@ -340,11 +375,13 @@ async def generate_campaign_async(website_url: str, icp_data: Optional[str]):
 ```
 
 #### Database Performance
+
 - **Query optimization**: Proper indexing and query planning
 - **Connection pooling**: Async SQLAlchemy pool management
 - **Prepared statements**: Parameterized queries for security and performance
 
 #### Caching Strategy
+
 ```python
 class CacheStrategy:
     # L1: In-memory cache for frequently accessed data
@@ -371,11 +408,13 @@ class CacheStrategy:
 ### Resource Estimation
 
 #### Traffic Projections
+
 - **Current target**: 1000 API calls/day across all users
 - **6-month projection**: 10,000 API calls/day
 - **12-month projection**: 100,000 API calls/day
 
 #### Infrastructure Requirements
+
 ```yaml
 # Initial deployment (Render/Railway)
 CPU: 2 vCPU
@@ -403,6 +442,7 @@ Cache: Redis cluster (4 GB total)
 ### Failure Modes and Recovery
 
 #### LLM Service Failures
+
 ```python
 class LLMClient:
     def __init__(self):
@@ -424,11 +464,13 @@ class LLMClient:
 ```
 
 #### Database Resilience
+
 - **Connection retry logic**: Exponential backoff for transient failures
 - **Read replica failover**: Automatic switching for read operations
 - **Transaction rollback**: Proper error handling with cleanup
 
 #### External API Resilience
+
 ```python
 class ExternalAPIClient:
     def __init__(self):
@@ -448,6 +490,7 @@ class ExternalAPIClient:
 ### Monitoring and Alerting
 
 #### Health Check Endpoints
+
 ```python
 @app.get("/health")
 async def health_check():
@@ -463,12 +506,14 @@ async def health_check():
 ```
 
 #### Observability Stack
+
 - **Metrics**: Prometheus for performance metrics
 - **Logging**: Structured JSON logs with correlation IDs
 - **Tracing**: OpenTelemetry for request tracing
 - **Alerting**: PagerDuty integration for critical failures
 
 #### SLA Targets
+
 - **Availability**: 99.5% uptime (3.6 hours downtime/month)
 - **Response time**: 95th percentile under 30 seconds
 - **Error rate**: Less than 1% of requests fail
@@ -477,6 +522,7 @@ async def health_check():
 ### Disaster Recovery
 
 #### Backup Strategy
+
 ```yaml
 Database Backups:
   - Full backup: Daily at 2 AM UTC
@@ -496,6 +542,7 @@ Redis:
 ```
 
 #### Recovery Procedures
+
 - **RTO (Recovery Time Objective)**: 4 hours for full service restoration
 - **RPO (Recovery Point Objective)**: 1 hour maximum data loss
 - **Automated failover**: Database and cache layer switching
@@ -506,6 +553,7 @@ Redis:
 ### Local Development Environment
 
 #### Docker Compose Setup
+
 ```yaml
 version: '3.8'
 services:
@@ -544,6 +592,7 @@ services:
 ```
 
 #### Development Workflow
+
 ```bash
 # Setup local environment
 make setup-dev
@@ -566,6 +615,7 @@ alembic revision --autogenerate -m "description"
 ### CI/CD Pipeline
 
 #### GitHub Actions Workflow
+
 ```yaml
 name: CI/CD Pipeline
 
@@ -622,6 +672,7 @@ jobs:
 ### Environment Strategy
 
 #### Configuration Management
+
 ```python
 class Settings(BaseSettings):
     # Environment-specific configuration
@@ -668,6 +719,7 @@ environments = {
 ### Feature Flagging
 
 #### Progressive Rollout Strategy
+
 ```python
 class FeatureFlags:
     def __init__(self):
@@ -700,6 +752,7 @@ class FeatureFlags:
 ### Observability and Debugging
 
 #### Logging Strategy
+
 ```python
 import structlog
 
@@ -739,6 +792,7 @@ class LoggingMiddleware:
 ```
 
 #### Debugging Tools
+
 - **FastAPI Debug Mode**: Automatic reload and detailed error pages
 - **Database Query Logging**: SQLAlchemy query profiling
 - **Performance Profiling**: py-spy for production profiling
@@ -749,18 +803,21 @@ class LoggingMiddleware:
 ## Architecture Decision Records
 
 ### ADR-001: Modular Monolith vs Microservices
+
 **Decision**: Start with modular monolith
 **Rationale**: Team size, development velocity, cost optimization
 **Consequences**: Easier initial development, planned evolution to microservices
 
 ### ADR-002: PostgreSQL vs MongoDB
+
 **Decision**: PostgreSQL with JSONB
 **Rationale**: ACID compliance, mature ecosystem, JSON flexibility
 **Consequences**: Strong consistency, familiar tooling, SQL optimization
 
 ### ADR-003: FastAPI vs Flask/Django
+
 **Decision**: FastAPI
 **Rationale**: Async support, automatic documentation, type safety
 **Consequences**: Modern Python features, excellent performance, smaller ecosystem
 
-This architecture provides a solid foundation for the Blossomer GTM API while maintaining flexibility for future growth and evolution into a microservices architecture as the product and team scale. 
+This architecture provides a solid foundation for the Blossomer GTM API while maintaining flexibility for future growth and evolution into a microservices architecture as the product and team scale.
