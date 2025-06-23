@@ -1,6 +1,7 @@
 ## Technical Implementation Plan (Reference)
 
 ### 1. Initial Scope (MVP)
+
 - API key authentication and rate limiting
 - Website URL and optional ICP input processing
 - Modular endpoints for:
@@ -45,6 +46,7 @@ src/
 ```
 
 ### 3. First Implementation Steps
+
 1. Set up FastAPI app skeleton (`main.py`, routers, and basic health check endpoint)
 2. Implement API key authentication (middleware or dependency)
 3. Define Pydantic models for input/output schemas and DB models
