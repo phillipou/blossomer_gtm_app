@@ -425,6 +425,10 @@ As a platform administrator, I want LLM service failures to be handled gracefull
 - Queue-based processing for long-running operations
 - Load balancing for high-availability deployment
 
+### Stateless API for Early Development
+
+To enable rapid prototyping and flexibility, the initial implementation of the API will be stateless. Database models and persistence will be deferred until requirements are better understood. Endpoints will use mock or in-memory data, and persistence will be added as the product matures.
+
 ## 8. Design and user interface
 
 ### API design principles

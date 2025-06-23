@@ -34,3 +34,6 @@ flake8 = "^7.3.0"
 pytest = "^8.4.1"
 httpx = "^0.28.1"
 
+[tool.flake8]
+max-line-length = 100
+

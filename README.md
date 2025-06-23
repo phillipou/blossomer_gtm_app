@@ -87,6 +87,54 @@ uvicorn src.main:app --reload
 
 ---
 
-## Contributing
+## Development Approach: Stateless First
 
-Contributions are welcome! Please open issues or pull requests.
+For early development and prototyping, the Blossomer GTM API is intentionally designed to be stateless. Database models and persistent storage will be added later, once requirements are clearer. Endpoints currently use mock or in-memory data, allowing rapid iteration and easy refactoring. This approach enables fast progress on API design and business logic without being blocked by database setup or migrations.
+
+---
+
+## API Endpoints
+
+### POST /campaigns/positioning
+
+**Purpose:**
+Generate a Unique Insight (core reframe) and Unique Selling Points (USPs) for a B2B startup, based on company description, website, and (optionally) ICP. This endpoint follows API design best practices and the unique insight/USP methodology described in the project documentation.
+
+**Request Body:**
+```json
+{
+  "website_url": "https://example.com",
+  "description": "AI-powered marketing automation for SMBs",
+  "icp": "B2B SaaS startups" // optional
+}
+```
+
+**Response:**
+```json
+{
+  "unique_insight": "Most B2B marketing tools focus on automation, but the real bottleneck is understanding what actually resonates with buyers. Blossomer reframes the problem: it's not about sending more messages, but about crafting the right message for the right ICP at the right time.",
+  "unique_selling_points": [
+    {
+      "theme": "Buyer-Centric Messaging",
+      "description": "Delivers messaging tailored to the emotional and practical needs of your ICP.",
+      "evidence": [
+        "Analyzes ICP pain points and language",
+        "Adapts messaging based on real buyer feedback"
+      ]
+    },
+    {
+      "theme": "Rapid Time to Value",
+      "description": "Get actionable campaign assets in minutes, not weeks.",
+      "evidence": [
+        "Automated campaign generation",
+        "No manual copywriting required"
+      ]
+    }
+  ]
+}
+```
+
+**Notes:**
+- Input is validated using Pydantic models.
+- The endpoint is stateless and currently returns a mock response for prototyping.
+- The response structure is designed for clarity, specificity, and future LLM integration.

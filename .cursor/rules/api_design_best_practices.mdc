@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# API Design Best Practices for AI Integration
+
+Reference: https://medium.com/nerd-for-tech/api-design-best-practices-for-ai-integration-889f9c08dde0
+
+## Principles
+- Clear endpoint purpose and use case
+- RESTful, intuitive endpoint naming and versioning
+- Strict input validation and descriptive error messages
+- Optimized for performance and scalability
+- Support for batch processing (where relevant)
+- Stateless design for easy scaling
+- Security: HTTPS, authentication, rate limiting
+- Comprehensive logging and monitoring
+- OpenAPI/Swagger documentation
+- Ethical and privacy considerations
+- Model retrainability and future extensibility
+- Cross-platform integration readiness
+
+## Endpoint Design Checklist
+- [ ] Clear, documented purpose
+- [ ] RESTful path and method
+- [ ] Input validation (Pydantic models)
+- [ ] Descriptive error handling
+- [ ] Fast, stateless response
+- [ ] Security considerations
+- [ ] Logging/monitoring hooks
+- [ ] Documented in OpenAPI/Swagger
+- [ ] Privacy/ethics reviewed
+
+**All new endpoints should be reviewed against this rule.**
