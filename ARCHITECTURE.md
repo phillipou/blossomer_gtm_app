@@ -122,6 +122,18 @@ For the initial development phase, the API will remain stateless. No database mo
 - **Workflow**: LangGraph-based agent coordination
 - **Quality**: Response validation and quality scoring
 
+#### 4.1 LLM Provider Abstraction Layer
+
+- The AI Agent Orchestrator includes an adapter-based abstraction layer for LLM provider integration.
+- `BaseLLMProvider` interface defines async methods, provider metadata, and a unified generate method.
+- Concrete adapters (e.g., OpenAIProvider, AnthropicProvider) implement this interface.
+- The orchestrator (`LLMClient`) manages provider selection, failover, and exposes a unified API to the rest of the system.
+- All input/output uses Pydantic models for validation and serialization.
+- Extensibility: New providers are added by subclassing and registering with the orchestrator.
+- All logic is async and stateless; configuration is via environment or dependency injection.
+- Unified error handling and failover logic ensure reliability.
+- TDD/unit tests are required for this layer.
+
 #### 5. ICP Engine
 
 **Responsibility**: Ideal Customer Profile inference and processing
@@ -859,3 +871,42 @@ These principles are referenced throughout the codebase and documentation to ens
 **Consequences**: Modern Python features, excellent performance, smaller ecosystem
 
 This architecture provides a solid foundation for the Blossomer GTM API while maintaining flexibility for future growth and evolution into a microservices architecture as the product and team scale.
+
+## Prompt Templating System Architecture
+
+The prompt templating system centralizes and manages all prompt templates for LLM providers, ensuring consistency, extensibility, and provider-agnostic design. It is implemented as a dedicated module with the following goals:
+
+- Centralize all prompt templates (for campaign assets, LLM tasks, etc.)
+- Handle variable substitution and validation using Pydantic models
+- Decouple prompt construction from LLM provider logic
+- Support easy extension and robust testing
+
+**Key Components:**
+- Jinja2 template files for each campaign asset/use case
+- Pydantic models for type-safe variable validation
+- Template engine for rendering and error handling
+- Registry for mapping use cases to templates and models
+
+**Extensibility:**
+- Add new templates by creating a new .jinja2 file, a Pydantic model, and registering in the registry
+- Provider-agnostic: output is a plain string, ready for any LLM
+
+**See [PROMPT_TEMPLATES.md](PROMPT_TEMPLATES.md) for full details, examples, and usage patterns.**
+
+```mermaid
+flowchart TD
+    A[API/Service Layer] --> B[Prompt Registry]
+    B --> C[Template Engine]
+    C --> D[Templates (.jinja2)]
+    B --> E[Pydantic Models]
+    C --> F[Rendered Prompt String]
+    F --> G[LLM Provider]
+```
+
+| Component         | Responsibility                                  |
+|-------------------|-------------------------------------------------|
+| templates/        | Store Jinja2 template files                     |
+| base.py           | Core rendering and validation logic             |
+| models.py         | Pydantic models for template variables          |
+| registry.py       | Maps use cases to templates and models          |
+| Unit tests        | Ensure correctness and safety                   |
