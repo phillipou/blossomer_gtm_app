@@ -31,6 +31,30 @@ src/blossomer_gtm_api/
 - **Pydantic Models:** Define expected variables for each template
 - **Template Registry:** Maps use cases to templates and models
 
+## Integration with LLM Abstraction Layer
+
+The prompt templating system is a foundational component of the Blossomer LLM provider abstraction architecture. It is designed to be fully provider-agnostic and decoupled from any specific LLM implementation. The system outputs validated prompt strings, which are then consumed by the LLM abstraction layer (see `llm_service.py`).
+
+### Architectural Rationale
+- **Separation of Concerns:** Prompt construction, variable validation, and template management are handled entirely within the prompt system. LLM provider adapters are only responsible for sending plain prompt strings and receiving outputs.
+- **Provider Agnosticism:** The prompt system does not contain any provider-specific logic. This allows new LLM providers to be added or swapped in the abstraction layer without changing prompt construction logic.
+- **Type Safety and Validation:** All variables for prompt templates are validated using Pydantic models before rendering. This ensures that only well-formed, type-safe prompts are sent to LLMs, reducing runtime errors and improving reliability.
+- **Testability:** Prompt rendering and validation can be unit tested independently of LLM provider integrations.
+
+### Extension Workflow
+- **Adding a New Campaign Asset or Use Case:**
+  1. Create a new Jinja2 template file in `prompts/templates/`.
+  2. Define a new Pydantic model for the template variables in `prompts/models.py`.
+  3. Register the template and model in `prompts/registry.py`.
+  4. The LLM abstraction layer will consume the rendered prompt string as input, regardless of provider.
+- **Adding a New LLM Provider:**
+  1. Implement a new provider adapter in the LLM abstraction layer (see `llm_service.py`), following the `BaseLLMProvider` interface.
+  2. No changes are needed to the prompt system; it continues to output provider-agnostic prompt strings.
+
+### Usage in the LLM Abstraction Layer
+- The LLM abstraction layer (see `llm_service.py`) expects all prompts to be rendered and validated by the prompt system before being sent to any provider.
+- This ensures that all LLM requests are consistent, type-safe, and maintainable across the entire system.
+
 ## Extensibility
 
 - Add new templates by creating a new .jinja2 file, a Pydantic model, and registering in the registry

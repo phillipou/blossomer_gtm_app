@@ -2,7 +2,7 @@
 llm_service.py - LLM Provider Abstraction Layer
 
 This module provides a unified, extensible interface for integrating multiple Large Language Model
-(LLM) providers (e.g., OpenAI, Anthropic/Claude) into the Blossomer GTM API.
+(LLM) providers (e.g., OpenAI, Anthropic/Claude, Gemini) into the Blossomer GTM API.
 
 Purpose:
 - Abstracts away provider-specific APIs, request/response formats, and error handling.
@@ -13,7 +13,7 @@ Purpose:
 Key Components:
 - LLMRequest, LLMResponse: Pydantic models for standardized input/output.
 - BaseLLMProvider: Abstract base class for all LLM provider adapters.
-- OpenAIProvider, AnthropicProvider: Example provider stubs.
+- OpenAIProvider, AnthropicProvider, GeminiProvider: Provider adapters.
 - LLMClient: Orchestrator that manages provider selection, failover, and exposes a unified API.
 
 See PRD.md and ARCHITECTURE.md for requirements and design rationale.
@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 import os
 import logging
-from google import generativeai as genai
 import openai
 
 
@@ -37,7 +36,7 @@ class LLMRequest(BaseModel):
     """
     Standardized input model for LLM requests.
 
-    Attributes:
+    Args:
         prompt (str): The prompt to send to the LLM.
         parameters (Optional[Dict[str, Any]]): Optional provider-specific parameters
             (e.g., temperature, max_tokens).
@@ -51,7 +50,7 @@ class LLMResponse(BaseModel):
     """
     Standardized output model for LLM responses.
 
-    Attributes:
+    Args:
         text (str): The generated text from the LLM.
         model (Optional[str]): The model name used.
         usage (Optional[Dict[str, Any]]): Usage statistics or metadata.
@@ -74,8 +73,6 @@ class BaseLLMProvider(ABC):
     """
     Abstract base class for all LLM provider adapters.
 
-    All providers must implement this interface to be used with LLMClient.
-
     Attributes:
         name (str): Provider name identifier.
         priority (int): Priority for failover ordering (lower = higher priority).
@@ -94,9 +91,6 @@ class BaseLLMProvider(ABC):
 
         Returns:
             LLMResponse: The standardized response object.
-
-        Raises:
-            NotImplementedError: If not implemented by subclass.
         """
         pass
 
@@ -112,7 +106,7 @@ class BaseLLMProvider(ABC):
 
 
 # -----------------------------
-# Example Provider Stubs
+# Provider Adapters
 # -----------------------------
 
 
@@ -125,13 +119,13 @@ class OpenAIProvider(BaseLLMProvider):
     name = "openai"
     priority = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             logging.error("OPENAI_API_KEY is not set in the environment.")
             raise ValueError("OPENAI_API_KEY is required.")
         self.client = openai.OpenAI(api_key=api_key)
-        self.model = "gpt-4o"  # You can change to gpt-3.5-turbo if needed
+        self.model = "gpt-4o"  # Default model; can be changed
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
@@ -183,6 +177,7 @@ class AnthropicProvider(BaseLLMProvider):
     """
     Adapter for the Anthropic (Claude) LLM provider.
     Implements the BaseLLMProvider interface.
+    TODO: Implement actual Anthropic API integration.
     """
 
     name = "anthropic"
@@ -193,7 +188,7 @@ class AnthropicProvider(BaseLLMProvider):
         Stub for Anthropic LLM generation.
         Replace with actual Anthropic API integration.
         """
-        raise NotImplementedError
+        raise NotImplementedError("AnthropicProvider integration not implemented yet.")
 
     async def health_check(self) -> bool:
         """
@@ -207,30 +202,50 @@ class GeminiProvider(BaseLLMProvider):
     """
     Adapter for the Gemini (Google) LLM provider.
     Implements the BaseLLMProvider interface.
+    Optional: Only enable if the package is installed and the API key is set.
+    TODO: Implement actual Gemini API integration if generativeai is available.
     """
 
     name = "gemini"
     priority = 3
 
-    def __init__(self):
+    def __init__(self) -> None:
+        self.client: Optional[Any] = None
+        self.model: Optional[str] = None
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            logging.error("GEMINI_API_KEY is not set in the environment.")
-            raise ValueError("GEMINI_API_KEY is required.")
-        self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.5-flash"
+            # GeminiProvider is disabled if no API key is set
+            logging.warning(
+                "GEMINI_API_KEY is not set. GeminiProvider will be disabled."
+            )
+            return
+        try:
+            # Import generativeai only if available; linter may not recognize this dynamic import
+            from google import generativeai as genai  # type: ignore[import]
+
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash"
+        except ImportError:
+            # GeminiProvider is disabled if generativeai is not installed
+            logging.warning(
+                "google-generativeai package not installed. GeminiProvider will be disabled."
+            )
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
-        Generate text using Gemini API.
+        Generate text using Gemini API (if available).
         """
+        if not self.client or not self.model:
+            raise RuntimeError(
+                "GeminiProvider is not enabled or not properly configured."
+            )
         try:
             import asyncio
 
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.models.generate_content(
+                lambda: self.client.models.generate_content(  # type: ignore[attr-defined]
                     model=self.model, contents=request.prompt
                 ),
             )
@@ -238,7 +253,7 @@ class GeminiProvider(BaseLLMProvider):
                 text=getattr(response, "text", ""),
                 model=self.model,
                 provider=self.name,
-                usage=None,  # Gemini API may not return usage info
+                usage=None,
             )
         except Exception as e:
             logging.error(f"GeminiProvider error: {e}")
@@ -248,13 +263,15 @@ class GeminiProvider(BaseLLMProvider):
         """
         Check if Gemini API is available by making a lightweight call.
         """
+        if not self.client or not self.model:
+            return False
         try:
             import asyncio
 
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.models.generate_content(
+                lambda: self.client.models.generate_content(  # type: ignore[attr-defined]
                     model=self.model, contents="ping"
                 ),
             )
@@ -281,16 +298,17 @@ class LLMClient:
         providers (List[BaseLLMProvider]): List of registered providers, sorted by priority.
     """
 
-    def __init__(self, providers: Optional[List[BaseLLMProvider]] = None):
+    def __init__(self, providers: Optional[List[BaseLLMProvider]] = None) -> None:
         """
         Initialize the LLMClient with a list of providers.
 
         Args:
             providers (Optional[List[BaseLLMProvider]]): Providers to register (default: empty list)
         """
-        self.providers = providers or []
+        self.providers: List[BaseLLMProvider] = providers or []
+        self.providers.sort(key=lambda p: p.priority)
 
-    def register_provider(self, provider: BaseLLMProvider):
+    def register_provider(self, provider: BaseLLMProvider) -> None:
         """
         Register a new LLM provider and sort by priority.
 
@@ -317,7 +335,7 @@ class LLMClient:
             try:
                 if await provider.health_check():
                     return await provider.generate(request)
-            except Exception:
-                # Log the error and try the next provider
+            except Exception as e:
+                logging.warning(f"Provider {provider.name} failed: {e}")
                 continue
         raise RuntimeError("All LLM providers failed or are unavailable.")

@@ -1,0 +1,31 @@
+You are an expert B2B go-to-market strategist. Your task is to generate a detailed Ideal Customer Profile (ICP) for a B2B SaaS product.
+
+{% if user_inputted_context %}
+User-provided context:
+{{ user_inputted_context }}
+{% elif llm_inferred_context %}
+LLM-inferred context:
+{{ llm_inferred_context }}
+{% endif %}
+
+{% if website_content %}
+Additional company information from the website:
+{{ website_content }}
+{% endif %}
+
+Please analyze the above information and output the ICP in the following structured format:
+
+1. **Target Company Hypothesis:** (1-2 sentences)
+2. **Target Company Attributes:** (e.g., Employees: 11-200, Industry: B2B SaaS, Funding: Seed-Series A)
+3. **Target Company Buying Signals:** (e.g., headcount growth > 10%, recent hiring for DevOps roles, AWS/Kubernetes tech stack)
+4. **Target Company Rationale:** (1-3 sentences explaining the rationale behind the recommendation)
+5. **Primary Persona Hypothesis:** (1-2 sentences)
+6. **Primary Persona Attributes:** (e.g., Title: Founding Engineer, Seniority: Executive)
+7. **Primary Persona Buying Signals:** (e.g., recent LinkedIn post about AI, tenure in role 6-12 months)
+8. **Primary Persona Rationale:** (1-3 sentences explaining the rationale behind the recommendation)
+
+**Guidelines:**
+- Prioritize actionable, measurable criteria.
+- Use evidence from the context and website.
+- Be concise but specific.
+- Output in markdown with clear section headers.

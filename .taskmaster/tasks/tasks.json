@@ -469,114 +469,134 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Parsing Natural Language Input",
-            "description": "Develop a module to parse and preprocess user input, handling tokenization, normalization, and ambiguity detection.",
+            "title": "Design Input Schema for ICP Processing",
+            "description": "Define the schema for accepting user-provided ICPs and context information, ensuring it's flexible enough to handle various input formats.",
             "dependencies": [],
-            "details": "This subtask involves breaking down raw user queries into structured components, identifying key entities, and preparing the data for downstream NLP processing.",
+            "details": "Create JSON schema definitions for ICP inputs, including required and optional fields. Support both structured (JSON) and unstructured (text) inputs. Define validation rules and error messages. Consider versioning strategy for schema evolution.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Schema Design and Metadata Definition",
-            "description": "Design a normalized, intuitive database schema with descriptive column names and rich metadata to facilitate accurate mapping from natural language to structured queries.",
-            "dependencies": [],
-            "details": "Ensure the schema supports clear relationships and includes metadata annotations (e.g., units, descriptions) to aid NLP mapping and inference.",
+            "title": "Implement Natural Language Parsing Module",
+            "description": "Develop a module to extract potential ICPs from unstructured text using NLP techniques.",
+            "dependencies": [
+              1
+            ],
+            "details": "Integrate with LangChain for text processing. Implement tokenization, entity recognition, and semantic analysis to identify potential ICPs in natural language. Create a clean API for the parsing functionality with appropriate error handling.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "NLP Model Integration",
-            "description": "Integrate NLP models or APIs capable of interpreting parsed input and mapping it to schema elements, supporting synonym mapping and context awareness.",
+            "title": "Design and Implement ICP Storage Layer",
+            "description": "Create a data storage solution for persisting ICPs, their metadata, and inference results.",
             "dependencies": [
-              1,
-              2
+              1
             ],
-            "details": "Leverage modular integration strategies and middleware to connect NLP components with the core system, enabling both legacy and NLP-driven command execution.",
+            "details": "Design database schema for ICP storage. Implement CRUD operations for ICPs. Add indexing for efficient querying. Include versioning support for ICP evolution. Implement caching mechanism for frequently accessed ICPs.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Inference Logic Implementation",
-            "description": "Develop logic to infer user intent, resolve ambiguities, and generate structured queries or actions based on NLP outputs and schema metadata.",
+            "title": "Develop NLP Model Integration Framework",
+            "description": "Create a framework for integrating and managing different NLP models for ICP inference.",
             "dependencies": [
-              3
+              2
             ],
-            "details": "Implement clarification prompts for ambiguous input and context tracking for multi-turn interactions.",
+            "details": "Design adapter interfaces for different NLP models. Implement model loading and initialization. Create a model registry for managing multiple models. Add configuration options for model selection and parameters. Include monitoring for model performance.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Confidence Scoring Mechanism",
-            "description": "Design and implement a confidence scoring system to quantify the reliability of NLP interpretations and inferences.",
+            "title": "Implement Core Inference Logic",
+            "description": "Develop the central inference engine that processes inputs and generates ICP inferences.",
             "dependencies": [
+              2,
               4
             ],
-            "details": "Use model outputs, ambiguity detection, and metadata alignment to assign confidence scores, triggering clarification when scores fall below thresholds.",
+            "details": "Implement the main inference algorithm. Create processing pipeline for handling different input types. Add support for batched processing. Implement fallback mechanisms for handling edge cases. Ensure thread safety for concurrent processing.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Data Storage and Retrieval",
-            "description": "Set up robust storage solutions for both structured data (schema, metadata) and unstructured data (user queries, logs, NLP outputs).",
+            "title": "Create Confidence Scoring System",
+            "description": "Develop a system to calculate and assign confidence scores to inferred ICPs.",
             "dependencies": [
-              2
+              5
             ],
-            "details": "Ensure efficient retrieval and update mechanisms, supporting both transactional and analytical workloads.",
+            "details": "Design confidence scoring algorithm based on model outputs and heuristics. Implement normalization of scores across different models. Add thresholding capabilities for filtering low-confidence results. Create visualization tools for confidence analysis.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
-            "title": "Metadata Management",
-            "description": "Develop processes for maintaining, updating, and exposing metadata about schema elements, relationships, and NLP mappings.",
+            "title": "Implement Metadata Management",
+            "description": "Create a system for tracking and managing metadata associated with ICPs and inference processes.",
             "dependencies": [
-              2,
-              6
+              3,
+              5
             ],
-            "details": "Metadata should be accessible to both inference logic and NLP modules to improve mapping accuracy and explainability.",
+            "details": "Define metadata schema including provenance, timestamps, model versions, and confidence scores. Implement metadata capture during inference. Create APIs for metadata querying and filtering. Add audit logging for tracking changes to metadata.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
-            "title": "Validation and Quality Assurance",
-            "description": "Implement validation routines to check the correctness of parsed input, NLP mappings, inference results, and stored data.",
+            "title": "Develop Validation and Quality Assurance Framework",
+            "description": "Create a framework for validating inferred ICPs and assessing their quality.",
             "dependencies": [
-              4,
-              6
+              6,
+              7
             ],
-            "details": "Include automated tests, schema validation, and user feedback loops to ensure system reliability and continuous improvement.",
+            "details": "Implement validation rules for ICPs. Create quality metrics for assessing inference results. Add support for human-in-the-loop validation. Implement feedback mechanisms for improving inference quality. Design reporting tools for quality assessment.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
-            "title": "Comparison and Evaluation Framework",
-            "description": "Build tools to compare inferred outputs against ground truth or alternative interpretations, supporting A/B testing and performance benchmarking.",
+            "title": "Implement ICP Comparison Framework",
+            "description": "Develop functionality to compare and merge ICPs from different sources or inference runs.",
             "dependencies": [
-              5,
-              8
+              3,
+              6
             ],
-            "details": "Enable systematic evaluation of NLP, inference, and confidence scoring modules to guide iterative development.",
+            "details": "Create algorithms for semantic comparison of ICPs. Implement conflict resolution strategies. Add support for merging complementary ICPs. Design visualization tools for ICP comparison. Implement versioning for tracking ICP evolution.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 10,
-            "title": "Error Handling and Recovery",
-            "description": "Design comprehensive error handling strategies, including fallback mechanisms, user notifications, and logging for debugging and auditability.",
+            "title": "Develop Comprehensive Error Handling",
+            "description": "Implement robust error handling throughout the ICP processing and inference service.",
             "dependencies": [
-              1,
-              3,
-              4,
+              5,
               8
             ],
-            "details": "Ensure that errors in parsing, NLP, inference, or storage do not compromise system integrity or user experience.",
+            "details": "Design error classification system. Implement graceful degradation for partial failures. Create detailed error reporting. Add retry mechanisms for transient failures. Implement circuit breakers for external dependencies.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Create API Documentation and Examples",
+            "description": "Develop comprehensive documentation and usage examples for the ICP Processing and Inference Service.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ],
+            "details": "Create API reference documentation. Develop usage tutorials with code examples. Create sample applications demonstrating different use cases. Document best practices and common pitfalls. Implement interactive API explorer for testing.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -596,124 +616,137 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Design Abstraction Layer Architecture",
-            "description": "Define and document the architecture for an abstraction layer that standardizes interactions with multiple LLM providers.",
+            "title": "Design LLM Abstraction Layer Architecture",
+            "description": "Create a comprehensive architecture design for the LLM abstraction layer that will support multiple providers and define the core interfaces.",
             "dependencies": [],
-            "details": "Specify interfaces, data contracts, and extensibility points to ensure provider-agnostic integration.\n<info added on 2025-06-23T22:37:41.944Z>\n# Implementation Plan for LLM Provider Abstraction Layer\n\n## Goal\nDesign and document the architecture for an abstraction layer that standardizes interactions with multiple LLM providers (e.g., OpenAI, Anthropic/Claude).\n\n## Plan\n1. **File/Module Structure**\n   - Create src/blossomer_gtm_api/services/llm_service.py\n   - This module will contain:\n     - The main abstraction interface (BaseLLMProvider)\n     - Concrete provider adapters (OpenAIProvider, AnthropicProvider)\n     - The orchestrator/client (LLMClient) that manages provider selection, failover, and unified API\n\n2. **Interfaces & Data Contracts**\n   - BaseLLMProvider: Abstract base class or protocol defining:\n     - async def generate(self, prompt: str, **kwargs) -> LLMResponse\n     - Provider metadata (name, priority, health check, etc.)\n   - LLMResponse: Pydantic model for standardized output (text, usage, model, etc.)\n   - LLMRequest: (Optional) Pydantic model for input, if more structure is needed than just a prompt.\n\n3. **Extensibility Points**\n   - Each provider implements the BaseLLMProvider interface.\n   - New providers can be added by subclassing and registering with the orchestrator.\n   - The orchestrator (LLMClient) manages:\n     - Provider selection (priority, health, etc.)\n     - Failover logic (try next provider on error)\n     - Unified API for campaign generation services\n\n4. **Fallback & Error Handling**\n   - On provider failure, log and try the next provider.\n   - Raise a unified exception if all providers fail.\n   - All errors should be wrapped in a consistent error model for the API layer.\n\n5. **Async & Stateless**\n   - All methods are async.\n   - No persistent state; all configuration is via environment or dependency injection.\n\n6. **Pydantic for Validation**\n   - All input/output to LLMs and between services uses Pydantic models for validation and serialization.\n\n7. **Quality & Testing**\n   - Include a stub for LLM-assisted scoring/validation (to be implemented in a later task).\n   - Unit tests should be written for the abstraction layer (per TDD preference).\n\n## Next Steps\n- Begin implementation in llm_service.py with interface, base class, and stubs for providers and orchestrator.\n- Write initial unit tests for the abstraction layer.\n</info added on 2025-06-23T22:37:41.944Z>",
+            "details": "Define the core interfaces and classes for the abstraction layer. Include UML diagrams showing the relationship between components. Design should support easy addition of new LLM providers and specify how the system will handle different request/response formats. Document the architecture decisions and patterns used.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
             "title": "Implement Provider Integrations",
-            "description": "Develop integration modules for each targeted LLM provider, adhering to the abstraction layer’s interface.",
+            "description": "Develop integration modules for each supported LLM provider (OpenAI, Anthropic, etc.) implementing the abstraction interfaces.",
             "dependencies": [
               1
             ],
-            "details": "Utilize official SDKs or custom HTTP clients as needed for providers like OpenAI, Anthropic, and Cohere.\n<info added on 2025-06-23T23:19:58.142Z>\nImplementation complete for OpenAI and Gemini providers in the LLM abstraction layer:\n\n- Both providers implemented with async-compatible logic\n- API keys loaded securely from environment variables\n- OpenAIProvider uses official openai SDK with gpt-4o support\n- GeminiProvider uses generativeai SDK (correct import)\n- Comprehensive async unit tests with pytest-asyncio and AsyncMock\n- All tests use mocking to avoid consuming API credits\n- Claude (Anthropic) integration postponed for future implementation\n\nCode and tests committed and passing CI. Ready for code review or expansion to additional providers.\n</info added on 2025-06-23T23:19:58.142Z>",
+            "details": "Create provider-specific adapters that implement the common interface defined in the abstraction layer. Start with OpenAI and Anthropic integrations. Each adapter should handle authentication, request formatting, and response parsing specific to that provider's API. Include comprehensive error handling for provider-specific errors.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Develop Fallback Logic",
-            "description": "Create logic to automatically switch between providers in case of failures or degraded performance.",
+            "description": "Implement a robust fallback mechanism that can route requests to alternative providers when the primary provider fails.",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Implement provider prioritization, error handling, and retry mechanisms to ensure high availability.",
+            "details": "Create a fallback orchestrator that can detect failures (timeouts, errors, etc.) and automatically route requests to backup providers. Implement configurable fallback chains and priorities. Include circuit breaker patterns to prevent cascading failures. Add logging for fallback events.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
             "title": "Build Prompt Templating System",
-            "description": "Design and implement a flexible prompt templating system to standardize and customize prompts for different use cases and providers.",
+            "description": "Create a flexible prompt templating system that supports variable substitution, conditional sections, and reusable components.",
             "dependencies": [
               1
             ],
-            "details": "Support variable interpolation, conditional logic, and provider-specific formatting.",
-            "status": "in-progress",
+            "details": "Develop a templating engine that allows for dynamic prompt construction with variable substitution. Support conditional sections based on input parameters. Create a library of reusable prompt components. Include validation for prompt templates and parameter substitution.",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Implement Output Parsing Module",
-            "description": "Develop a module to parse and structure LLM outputs into standardized formats for downstream consumption.",
+            "title": "Implement Output Parsing",
+            "description": "Develop parsers to extract structured data from LLM responses in various formats (JSON, XML, markdown, etc.).",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Handle JSON, text, and other structured outputs, including error and edge case handling.",
+            "details": "Create a set of output parsers that can extract structured data from LLM text responses. Support JSON, XML, markdown tables, and other common formats. Implement validation for parsed outputs. Handle parsing errors gracefully with appropriate fallbacks.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Integrate Retry Mechanisms",
-            "description": "Add robust retry logic for transient errors at both provider and network levels.",
+            "description": "Implement intelligent retry logic for handling transient errors from LLM providers.",
             "dependencies": [
+              2,
               3
             ],
-            "details": "Configure exponential backoff, maximum retry limits, and logging for retry attempts.",
+            "details": "Develop a retry system with exponential backoff for handling transient errors. Make retry policies configurable per provider. Implement timeout handling and maximum retry limits. Add detailed logging of retry attempts and outcomes.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
             "title": "Implement Caching Layer",
-            "description": "Develop a caching mechanism to store and retrieve LLM responses for identical prompts to reduce cost and latency.",
+            "description": "Design and implement a caching system for LLM responses to improve performance and reduce costs.",
             "dependencies": [
-              5
+              1,
+              2
             ],
-            "details": "Support configurable cache expiration and cache invalidation strategies.",
+            "details": "Create a caching layer that stores responses based on prompt similarity or exact matches. Implement configurable TTL for cached responses. Support different cache backends (in-memory, Redis, etc.). Add cache invalidation mechanisms and cache hit/miss metrics.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
             "title": "Integrate Cost Tracking",
-            "description": "Build a system to track and report usage and costs per provider, prompt, and user.",
+            "description": "Implement a system to track and report on usage costs across different LLM providers.",
             "dependencies": [
-              2,
-              7
+              2
             ],
-            "details": "Aggregate API usage data and calculate costs based on provider pricing models.",
+            "details": "Create a cost tracking module that calculates estimated costs based on token usage. Support different pricing models for various providers. Implement budget limits and alerts. Develop reporting interfaces for cost analysis by provider, model, and time period.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
-            "title": "Set Up Monitoring and Logging",
-            "description": "Implement comprehensive monitoring and logging for all abstraction layer operations, including provider health, errors, and performance.",
+            "title": "Set Up Monitoring and Observability",
+            "description": "Implement comprehensive monitoring, logging, and alerting for the LLM service.",
             "dependencies": [
+              2,
+              3,
               6,
-              8
+              7
             ],
-            "details": "Integrate with observability tools and set up alerts for anomalies or failures.",
+            "details": "Set up detailed logging for all LLM interactions. Implement metrics collection for response times, token usage, error rates, etc. Create dashboards for monitoring system performance. Set up alerting for critical failures and performance degradation. Add tracing for request flows through the system.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 10,
             "title": "Enable Streaming Support",
-            "description": "Add support for streaming LLM responses where available, ensuring compatibility with the abstraction layer and provider modules.",
+            "description": "Implement support for streaming responses from LLM providers that offer this capability.",
             "dependencies": [
-              2,
-              4
+              1,
+              2
             ],
-            "details": "Handle partial outputs, stream termination, and client-side consumption of streamed data.",
+            "details": "Add streaming support to the abstraction layer interfaces. Implement provider-specific streaming adapters for supported providers. Create a common interface for consuming streamed responses. Handle streaming errors and reconnection logic. Ensure the fallback system works with streaming responses.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 11,
-            "title": "Conduct Complexity Analysis and Optimization",
-            "description": "Analyze architectural and operational complexity introduced by integrations, fallback, monitoring, and streaming; optimize for maintainability and scalability.",
+            "title": "Conduct Complexity Analysis and Performance Testing",
+            "description": "Analyze the system's performance characteristics and conduct load testing to identify bottlenecks.",
             "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
               9,
               10
             ],
-            "details": "Document bottlenecks, propose improvements, and ensure the system meets reliability and performance goals.",
+            "details": "Perform complexity analysis of the entire system. Conduct load testing to identify performance bottlenecks. Measure response times under various load conditions. Test fallback scenarios under load. Document performance characteristics and optimization recommendations. Create benchmarks for future comparison.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -850,101 +883,137 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "LangGraph Environment Setup",
-            "description": "Install LangGraph and its dependencies, configure the project structure, and set up environment variables.",
+            "title": "Environment Setup for LangGraph",
+            "description": "Set up the development environment with all necessary dependencies for LangGraph implementation.",
             "dependencies": [],
-            "details": "Follow official installation guides to set up LangGraph using pip or requirements.txt. Organize the project directory as recommended, including configuration files and environment variables.[1][4][5]",
+            "details": "Install Python 3.9+, LangGraph, LangChain, and required dependencies. Configure virtual environment. Set up API keys for any LLM services (OpenAI, Anthropic, etc.). Create project structure with appropriate directories for agents, workflows, and utilities.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Agent Role Definition",
-            "description": "Define the roles, responsibilities, and capabilities of each agent within the system.",
+            "title": "Define Agent Roles and Capabilities",
+            "description": "Design and implement the different agent types needed for the orchestration system.",
             "dependencies": [
               1
             ],
-            "details": "Specify agent types (e.g., single, multi-agent, hierarchical), their tasks, and the tools or models they will use. Document agent behaviors and interaction protocols.[2][3]",
+            "details": "Define agent interfaces and base classes. Implement specialized agents with specific roles (e.g., researcher, writer, critic, coordinator). Configure each agent with appropriate tools, knowledge bases, and action spaces. Document agent capabilities and limitations.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Workflow Design",
-            "description": "Design the control flow and orchestration logic for agent interactions and task execution.",
+            "title": "Design Workflow Graph Structure",
+            "description": "Create the LangGraph workflow structure that defines how agents interact and how information flows.",
             "dependencies": [
               2
             ],
-            "details": "Map out the sequence of agent actions, decision points, and possible branches. Use LangGraph primitives to implement customizable workflows, including human-in-the-loop steps if needed.[3]",
+            "details": "Define nodes representing agent actions and decision points. Create edges representing transitions between states. Implement conditional logic for branching workflows. Design the overall graph topology for the multi-agent system.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Memory Persistence Implementation",
-            "description": "Implement persistent memory mechanisms to store and retrieve agent state and context across sessions.",
+            "title": "Implement State Management",
+            "description": "Develop the state management system to maintain context across the workflow.",
             "dependencies": [
               3
             ],
-            "details": "Integrate state management and checkpointing features to ensure agents retain relevant information and can recover from failures.[3]",
+            "details": "Define state schema with appropriate typing. Implement state initialization and update mechanisms. Create state validation logic. Ensure proper state persistence between workflow steps.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Context Management",
-            "description": "Develop strategies for managing and updating context information shared among agents.",
+            "title": "Develop Memory Persistence Layer",
+            "description": "Create a system for storing and retrieving agent memories and conversation history.",
             "dependencies": [
               4
             ],
-            "details": "Define how context is passed, updated, and synchronized between agents to maintain coherence and relevance throughout workflows.[3]",
+            "details": "Implement memory storage interfaces (in-memory, database, vector store). Create memory retrieval mechanisms with appropriate filtering. Develop memory summarization for context management. Implement memory pruning to prevent context overflow.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Error Handling and Recovery",
-            "description": "Design and implement robust error handling, fault tolerance, and recovery mechanisms.",
+            "title": "Implement Inter-Agent Communication Protocols",
+            "description": "Design and implement how agents communicate with each other within the workflow.",
             "dependencies": [
-              5
+              3,
+              4
             ],
-            "details": "Set up error detection, logging, and fallback strategies. Enable rollback and retry capabilities to maintain workflow integrity.[3]",
+            "details": "Define message formats and schemas. Implement synchronous and asynchronous communication patterns. Create message routing logic. Develop message validation and error handling for communications.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
-            "title": "Monitoring and Logging",
-            "description": "Establish monitoring, logging, and alerting systems to track agent performance and system health.",
-            "dependencies": [],
-            "details": "Integrate monitoring tools to observe agent actions, workflow progress, and system metrics. Set up logs for debugging and compliance.[3]",
+            "title": "Build Error Handling and Recovery Mechanisms",
+            "description": "Implement robust error handling throughout the agent orchestration system.",
+            "dependencies": [
+              3,
+              4,
+              6
+            ],
+            "details": "Create error detection for API failures, token limits, and invalid outputs. Implement retry mechanisms with exponential backoff. Design fallback strategies for critical failures. Develop error logging and notification systems.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
-            "title": "Quality Evaluation and Moderation",
-            "description": "Implement quality control loops and moderation checks to ensure agent outputs meet standards.",
-            "dependencies": [],
-            "details": "Add human-in-the-loop review steps, automated validation, and moderation filters to prevent agents from veering off course.[3]",
+            "title": "Develop Monitoring and Logging System",
+            "description": "Create comprehensive monitoring and logging for the agent orchestration system.",
+            "dependencies": [
+              3,
+              7
+            ],
+            "details": "Implement detailed logging for all agent actions and decisions. Create performance metrics collection. Develop visualization for workflow execution. Implement alerting for critical issues or anomalies.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
-            "title": "Communication Protocols Definition",
-            "description": "Define and implement protocols for agent-to-agent and agent-to-human communication.",
-            "dependencies": [],
-            "details": "Specify message formats, APIs, and interaction patterns to ensure reliable and clear communication between all parties.[3]",
+            "title": "Implement Quality Evaluation Framework",
+            "description": "Develop mechanisms to evaluate the quality and effectiveness of agent outputs and interactions.",
+            "dependencies": [
+              2,
+              3,
+              8
+            ],
+            "details": "Create evaluation metrics for agent performance. Implement automated testing for agent outputs. Develop feedback loops for continuous improvement. Build comparison tools for different agent configurations.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 10,
-            "title": "System Optimization",
-            "description": "Optimize the overall system for scalability, performance, and resource efficiency.",
-            "dependencies": [],
-            "details": "Profile workflows, tune agent configurations, and refine orchestration logic to achieve fault-tolerant scalability and efficient operation.[3]",
+            "title": "Optimize System Performance",
+            "description": "Analyze and improve the performance of the agent orchestration system.",
+            "dependencies": [
+              5,
+              6,
+              8
+            ],
+            "details": "Profile system to identify bottlenecks. Implement caching strategies for expensive operations. Optimize prompt engineering for efficiency. Develop parallel execution where appropriate. Reduce token usage through context optimization.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Create Documentation and Usage Examples",
+            "description": "Develop comprehensive documentation and examples for the agent orchestration system.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ],
+            "details": "Write technical documentation for all components. Create step-by-step tutorials for common use cases. Develop API reference documentation. Build example applications demonstrating the system's capabilities. Create troubleshooting guides and best practices.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -953,10 +1022,8 @@
       {
         "id": 29,
         "title": "Implement Positioning Canvas Generation Endpoint",
-        "description": "Create the /campaigns/positioning endpoint to generate positioning canvas with market timing and value propositions.",
-        "details": "1. Create FastAPI endpoint for /campaigns/positioning\n2. Implement request validation using Pydantic\n3. Create positioning canvas generation workflow:\n   - Extract company positioning from website\n   - Generate \"why us / why now\" summary\n   - Create three unique value propositions\n   - Tailor to ICP characteristics\n4. Structure JSON response format\n5. Add metadata for ICP source and confidence\n6. Implement error handling for insufficient information\n7. Add quality scoring for generated content\n8. Create caching mechanism for repeated requests\n9. Implement response streaming for long-running operations",
-        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Benchmark endpoint performance\n5. Verify error handling for edge cases\n6. Test streaming response functionality",
-        "priority": "medium",
+        "description": "Create the /campaigns/positioning endpoint to generate positioning canvas with market timing and value propositions. This is a modular, composable endpoint that requires website_url and accepts optional user_inputted_context and llm_inferred_context.",
+        "status": "pending",
         "dependencies": [
           23,
           24,
@@ -964,103 +1031,128 @@
           26,
           28
         ],
-        "status": "pending",
+        "priority": "medium",
+        "details": "1. Create FastAPI endpoint for /campaigns/positioning\n2. Implement request validation using Pydantic for required website_url and optional user_inputted_context and llm_inferred_context\n3. Create positioning canvas generation workflow:\n   - Extract company positioning from website\n   - Generate \"why us / why now\" summary\n   - Create three unique value propositions\n   - Tailor to ICP characteristics\n4. Structure JSON response format\n5. Add metadata for ICP source and confidence\n6. Implement error handling for insufficient information\n7. Add quality scoring for generated content\n8. Create caching mechanism for repeated requests\n9. Implement response streaming for long-running operations\n10. Support chaining with other endpoints by accepting and passing context",
+        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Test with various combinations of optional context parameters\n5. Verify endpoint can be chained with other endpoints\n6. Benchmark endpoint performance\n7. Verify error handling for edge cases\n8. Test streaming response functionality",
         "subtasks": [
           {
             "id": 1,
             "title": "API Endpoint Creation",
             "description": "Design and implement RESTful API endpoints following best practices, including versioning, naming conventions, and HTTP method usage.",
+            "status": "pending",
             "dependencies": [],
             "details": "Endpoints should use descriptive resource names, plural nouns for collections, and include versioning in the URL or headers.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
             "title": "Request Validation Implementation",
             "description": "Develop logic to validate incoming API requests for required parameters, data types, and schema compliance.",
+            "status": "pending",
             "dependencies": [
               1
             ],
-            "details": "Ensure all requests are checked for completeness and correctness before processing, returning appropriate error responses for invalid input.",
-            "status": "pending",
+            "details": "Ensure all requests are checked for completeness and correctness before processing, returning appropriate error responses for invalid input. Validate required website_url parameter and optional user_inputted_context and llm_inferred_context parameters.",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Workflow Orchestration",
             "description": "Implement the core workflow logic that coordinates the sequence of operations and integrates with upstream services.",
+            "status": "pending",
             "dependencies": [
               2
             ],
-            "details": "Define the workflow steps, manage state transitions, and handle communication with external systems as needed.",
-            "status": "pending",
+            "details": "Define the workflow steps, manage state transitions, and handle communication with external systems as needed. Ensure the workflow can utilize both user-provided context and LLM-inferred context when available.",
             "testStrategy": ""
           },
           {
             "id": 4,
             "title": "Response Formatting",
             "description": "Format API responses in a consistent JSON structure, including data payloads and metadata.",
+            "status": "pending",
             "dependencies": [
               3
             ],
-            "details": "Ensure responses follow a standard schema, use camelCase or snake_case consistently, and include pagination metadata where applicable.",
-            "status": "pending",
+            "details": "Ensure responses follow a standard schema, use camelCase or snake_case consistently, and include pagination metadata where applicable. Structure response to be easily consumable by other endpoints in a chain.",
             "testStrategy": ""
           },
           {
             "id": 5,
             "title": "Metadata Inclusion",
             "description": "Add relevant metadata to API responses, such as pagination info, request IDs, and processing timestamps.",
+            "status": "pending",
             "dependencies": [
               4
             ],
             "details": "Metadata should help clients interpret responses and debug issues, following best practices for clarity and completeness.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Error Handling and Reporting",
             "description": "Implement robust error handling with meaningful HTTP status codes and detailed error messages in a consistent format.",
+            "status": "pending",
             "dependencies": [
               4
             ],
             "details": "Return error codes, messages, and context in the response body, ensuring consistency across all endpoints.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
             "title": "Quality Scoring Logic",
             "description": "Develop and integrate a quality scoring mechanism to evaluate and score workflow outputs.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Define scoring criteria, implement scoring algorithms, and include scores in the response payload.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
             "title": "Caching Strategy Implementation",
             "description": "Design and implement caching for API responses or workflow results to improve performance and reduce load on upstream services.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Determine cache keys, expiration policies, and invalidation strategies appropriate for the data and workflow.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
             "title": "Streaming Support",
             "description": "Enable streaming of large or long-running responses to clients, ensuring efficient data delivery and resource management.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Implement chunked transfer encoding or server-sent events as appropriate for the use case.",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Context Handling Implementation",
+            "description": "Implement logic to process and utilize optional user_inputted_context and llm_inferred_context parameters.",
             "status": "pending",
+            "dependencies": [
+              2
+            ],
+            "details": "Create handlers for both types of context inputs, ensuring they are properly validated and integrated into the positioning canvas generation workflow.",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Endpoint Chaining Support",
+            "description": "Implement functionality to support chaining with other endpoints by accepting context from previous endpoints and providing context to subsequent endpoints.",
+            "status": "pending",
+            "dependencies": [
+              3,
+              10
+            ],
+            "details": "Design the input and output structures to facilitate seamless integration in endpoint chains, ensuring context is properly preserved and enhanced throughout the chain.",
             "testStrategy": ""
           }
         ]
@@ -1068,10 +1160,8 @@
       {
         "id": 30,
         "title": "Implement Email Campaign Pack Generation Endpoint",
-        "description": "Create the /campaigns/email endpoint to generate email campaign assets including subject lines and email sequences.",
-        "details": "1. Create FastAPI endpoint for /campaigns/email\n2. Implement request validation using Pydantic\n3. Create email campaign generation workflow:\n   - Generate three optimized subject line variations\n   - Create initial outreach email with value-focused messaging\n   - Create strategic follow-up email\n   - Calibrate tone for B2B decision-makers\n   - Add personalization placeholders\n4. Structure JSON response format\n5. Add A/B testing recommendations\n6. Implement error handling for insufficient information\n7. Add quality scoring for generated content\n8. Create caching mechanism for repeated requests\n9. Implement response streaming for long-running operations",
-        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Benchmark endpoint performance\n5. Verify error handling for edge cases\n6. Test streaming response functionality\n7. Validate email content quality and personalization",
-        "priority": "medium",
+        "description": "Create the /campaigns/email endpoint to generate email campaign assets including subject lines and email sequences. This endpoint should be modular and composable, requiring website_url and accepting optional user_inputted_context and llm_inferred_context.",
+        "status": "pending",
         "dependencies": [
           23,
           24,
@@ -1079,114 +1169,137 @@
           26,
           28
         ],
-        "status": "pending",
+        "priority": "medium",
+        "details": "1. Create FastAPI endpoint for /campaigns/email\n2. Implement request validation using Pydantic for required website_url and optional context fields\n3. Create email campaign generation workflow:\n   - Generate three optimized subject line variations\n   - Create initial outreach email with value-focused messaging\n   - Create strategic follow-up email\n   - Calibrate tone for B2B decision-makers\n   - Add personalization placeholders\n4. Structure JSON response format\n5. Add A/B testing recommendations\n6. Implement error handling for insufficient information\n7. Add quality scoring for generated content\n8. Create caching mechanism for repeated requests\n9. Implement response streaming for long-running operations\n10. Support chaining with other endpoints (ICP, Positioning, Value Props)",
+        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Benchmark endpoint performance\n5. Verify error handling for edge cases\n6. Test streaming response functionality\n7. Validate email content quality and personalization\n8. Test endpoint chaining with outputs from ICP, Positioning, and Value Props endpoints",
         "subtasks": [
           {
             "id": 1,
             "title": "Design API Endpoints",
             "description": "Define RESTful endpoints for email content workflow, ensuring proper naming conventions, resource structure, and versioning.",
-            "dependencies": [],
-            "details": "Endpoints should use nouns, be consistent, and follow RESTful principles. Include versioning in the URL or headers.",
             "status": "pending",
+            "dependencies": [],
+            "details": "Endpoints should use nouns, be consistent, and follow RESTful principles. Include versioning in the URL or headers. Design the /campaigns/email endpoint to be modular and composable.",
             "testStrategy": ""
           },
           {
             "id": 2,
             "title": "Implement Input Validation",
             "description": "Develop validation logic for incoming requests to ensure all required fields and formats are correct for email content and A/B testing.",
+            "status": "pending",
             "dependencies": [
               1
             ],
-            "details": "Check for required fields, data types, and constraints specific to email content and A/B test parameters.",
-            "status": "pending",
+            "details": "Check for required fields (website_url), data types, and constraints. Implement validation for optional fields (user_inputted_context and llm_inferred_context). Ensure proper validation for email content and A/B test parameters.",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Develop Workflow Logic",
             "description": "Implement the core workflow for processing email content, including logic for A/B testing recommendations.",
+            "status": "pending",
             "dependencies": [
               2
             ],
-            "details": "Handle business logic for generating, storing, and managing email content and A/B test variants.",
-            "status": "pending",
+            "details": "Handle business logic for generating, storing, and managing email content and A/B test variants. Incorporate both user-provided and LLM-inferred context into the generation process.",
             "testStrategy": ""
           },
           {
             "id": 4,
             "title": "Format API Responses",
             "description": "Standardize and implement consistent response formatting for all endpoints, including success and error responses.",
+            "status": "pending",
             "dependencies": [
               3
             ],
-            "details": "Ensure responses include appropriate HTTP status codes, metadata, and follow a consistent schema.",
-            "status": "pending",
+            "details": "Ensure responses include appropriate HTTP status codes, metadata, and follow a consistent schema. Structure responses to be easily consumable by other endpoints in the system.",
             "testStrategy": ""
           },
           {
             "id": 5,
             "title": "Integrate A/B Testing Functionality",
             "description": "Add logic to support A/B testing, including variant assignment, tracking, and recommendation generation.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Enable endpoints to create, retrieve, and manage A/B test groups and their results.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Implement Error Handling",
             "description": "Develop robust error handling mechanisms for all endpoints, ensuring meaningful and consistent error responses.",
+            "status": "pending",
             "dependencies": [
               4
             ],
             "details": "Use appropriate HTTP status codes and provide detailed error messages in a standardized format.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
             "title": "Add Quality Scoring Logic",
             "description": "Implement logic to score email content quality and include scores in relevant API responses.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Define scoring criteria and ensure scores are calculated and returned as part of the workflow.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
             "title": "Implement Caching Mechanisms",
             "description": "Add caching to optimize performance for frequently accessed endpoints and data.",
+            "status": "pending",
             "dependencies": [
               4
             ],
             "details": "Determine which responses or data should be cached and implement appropriate cache invalidation strategies.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
             "title": "Enable Streaming Support",
             "description": "Implement streaming capabilities for endpoints that require real-time or large data delivery.",
+            "status": "pending",
             "dependencies": [
               4
             ],
             "details": "Support chunked or event-based responses for workflows that benefit from streaming, such as live A/B test updates.",
-            "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Implement Endpoint Chaining Support",
+            "description": "Develop functionality to allow the email campaign endpoint to consume and utilize outputs from other endpoints.",
+            "status": "pending",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Create mechanisms to accept and process outputs from ICP, Positioning, and Value Props endpoints. Ensure the email content generation leverages this information appropriately.",
+            "testStrategy": "Test with various combinations of chained endpoint outputs to verify proper integration and enhanced content quality."
+          },
+          {
+            "id": 11,
+            "title": "Document Endpoint Composability",
+            "description": "Create comprehensive documentation on how to use the email campaign endpoint in conjunction with other endpoints.",
+            "status": "pending",
+            "dependencies": [
+              10
+            ],
+            "details": "Include examples of request/response formats when chaining endpoints, best practices, and expected behavior. Document the impact of different context sources on the generated content.",
+            "testStrategy": "Verify documentation clarity through peer review and example validation."
           }
         ]
       },
       {
         "id": 31,
         "title": "Implement Enrichment Blueprint Generation Endpoint",
-        "description": "Create the /campaigns/enrichment endpoint to generate data enrichment guidance for lead qualification.",
-        "details": "1. Create FastAPI endpoint for /campaigns/enrichment\n2. Implement request validation using Pydantic\n3. Create enrichment blueprint generation workflow:\n   - Generate firmographic data points for qualification\n   - Create technographic data points for targeting\n   - Add personalization data points for outreach\n   - Include source recommendations\n   - Add collection methods\n4. Structure JSON response format\n5. Implement integration with Clearbit/Apollo APIs\n6. Add error handling for insufficient information\n7. Create caching mechanism for repeated requests\n8. Implement response streaming for long-running operations",
-        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Benchmark endpoint performance\n5. Verify error handling for edge cases\n6. Test streaming response functionality\n7. Validate enrichment recommendations quality",
-        "priority": "medium",
+        "description": "Create the /campaigns/enrichment endpoint to generate data enrichment guidance for lead qualification, designed as a modular, composable endpoint.",
+        "status": "pending",
         "dependencies": [
           23,
           24,
@@ -1194,98 +1307,122 @@
           26,
           28
         ],
-        "status": "pending",
+        "priority": "medium",
+        "details": "1. Create FastAPI endpoint for /campaigns/enrichment\n2. Implement request validation using Pydantic for required website_url and optional user_inputted_context and llm_inferred_context\n3. Create enrichment blueprint generation workflow:\n   - Generate firmographic data points for qualification\n   - Create technographic data points for targeting\n   - Add personalization data points for outreach\n   - Include source recommendations\n   - Add collection methods\n4. Structure JSON response format\n5. Implement integration with Clearbit/Apollo APIs\n6. Add error handling for insufficient information\n7. Create caching mechanism for repeated requests\n8. Implement response streaming for long-running operations\n9. Design for composability to enable chaining with other endpoints",
+        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Test with various combinations of optional parameters (user_inputted_context and llm_inferred_context)\n5. Benchmark endpoint performance\n6. Verify error handling for edge cases\n7. Test streaming response functionality\n8. Validate enrichment recommendations quality\n9. Test endpoint chaining with other API endpoints",
         "subtasks": [
           {
             "id": 1,
             "title": "Define API Endpoint Structure",
             "description": "Design RESTful endpoint paths using nouns, consistent naming conventions, and versioning strategies.",
-            "dependencies": [],
-            "details": "Follow RESTful principles and best practices for endpoint naming, resource representation, and versioning as recommended in industry guidelines.",
             "status": "pending",
+            "dependencies": [],
+            "details": "Follow RESTful principles and best practices for endpoint naming, resource representation, and versioning as recommended in industry guidelines. Ensure the endpoint is designed for modularity and composability.",
             "testStrategy": ""
           },
           {
             "id": 2,
             "title": "Implement Input Validation",
             "description": "Develop validation logic for incoming requests to ensure data integrity and prevent malformed or malicious input.",
+            "status": "pending",
             "dependencies": [
               1
             ],
-            "details": "Validate request parameters, body, and headers according to the API specification. Return appropriate error responses for invalid input.",
-            "status": "pending",
+            "details": "Validate request parameters, body, and headers according to the API specification. Ensure website_url is required and properly validated. Add validation for optional user_inputted_context and llm_inferred_context fields. Return appropriate error responses for invalid input.",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Design Workflow Logic",
             "description": "Define and implement the core workflow for processing requests, including business logic and orchestration steps.",
+            "status": "pending",
             "dependencies": [
               2
             ],
-            "details": "Map out the sequence of operations, including enrichment recommendation generation and integration points.",
-            "status": "pending",
+            "details": "Map out the sequence of operations, including enrichment recommendation generation and integration points. Design the workflow to utilize optional context parameters when available to enhance enrichment quality.",
             "testStrategy": ""
           },
           {
             "id": 4,
             "title": "Integrate External APIs",
             "description": "Connect and interact with required external APIs to fetch or enrich data as part of the workflow.",
+            "status": "pending",
             "dependencies": [
               3
             ],
             "details": "Implement robust integration logic, handle authentication, and manage API rate limits and failures.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
             "title": "Format API Responses",
             "description": "Standardize the structure of API responses, including success and error payloads, using consistent schemas.",
+            "status": "pending",
             "dependencies": [
               4
             ],
-            "details": "Ensure responses include necessary metadata, pagination (if applicable), and follow a uniform format for both data and errors.",
-            "status": "pending",
+            "details": "Ensure responses include necessary metadata, pagination (if applicable), and follow a uniform format for both data and errors. Structure response to facilitate easy consumption by other endpoints in a chain.",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Implement Error Handling",
             "description": "Develop a consistent error handling mechanism that uses appropriate HTTP status codes and detailed error messages.",
+            "status": "pending",
             "dependencies": [
               5
             ],
             "details": "Return structured error responses with error codes, messages, and context. Ensure all failure scenarios are covered.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
             "title": "Add Caching Mechanisms",
             "description": "Introduce caching strategies to optimize performance and reduce redundant external API calls.",
-            "dependencies": [],
-            "details": "Implement caching at appropriate layers (e.g., in-memory, distributed) and define cache invalidation policies.",
             "status": "pending",
+            "dependencies": [],
+            "details": "Implement caching at appropriate layers (e.g., in-memory, distributed) and define cache invalidation policies. Consider caching based on the combination of website_url and optional context parameters.",
             "testStrategy": ""
           },
           {
             "id": 8,
             "title": "Enable Streaming Support",
             "description": "Implement streaming capabilities for endpoints that require real-time or incremental data delivery.",
+            "status": "pending",
             "dependencies": [],
             "details": "Use appropriate protocols (e.g., HTTP streaming, WebSockets) and ensure compatibility with response formatting and error handling.",
-            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
             "title": "Conduct Complexity and Integration Testing",
             "description": "Test the complete workflow, including API integrations, enrichment logic, and streaming, to ensure correctness and performance.",
+            "status": "pending",
             "dependencies": [],
             "details": "Perform end-to-end tests covering all scenarios, including error cases, caching effectiveness, and streaming reliability.",
-            "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Implement Endpoint Composability",
+            "description": "Design the endpoint to work effectively when chained with other endpoints in the API.",
+            "status": "pending",
+            "dependencies": [
+              5
+            ],
+            "details": "Ensure the endpoint can both consume outputs from previous endpoints in a chain and produce outputs that can be used by subsequent endpoints. Standardize input/output formats to facilitate this chaining.",
+            "testStrategy": "Test the endpoint in various chaining scenarios to verify seamless data flow between endpoints."
+          },
+          {
+            "id": 11,
+            "title": "Document Optional Parameters",
+            "description": "Create comprehensive documentation for the optional user_inputted_context and llm_inferred_context parameters.",
+            "status": "pending",
+            "dependencies": [
+              2
+            ],
+            "details": "Document the expected format, schema, and usage examples for the optional parameters. Include information on how these parameters influence the enrichment process and recommendations.",
+            "testStrategy": "Verify documentation clarity through peer review and example validation."
           }
         ]
       },
@@ -1293,112 +1430,150 @@
         "id": 32,
         "title": "Implement Complete Campaign Package Endpoint",
         "description": "Create the /campaigns/complete endpoint to generate all campaign assets in a single request.",
-        "details": "1. Create FastAPI endpoint for /campaigns/complete\n2. Implement request validation using Pydantic\n3. Orchestrate calls to individual campaign generation services:\n   - Positioning canvas generation\n   - Email campaign pack generation\n   - Enrichment blueprint generation\n4. Optimize processing for parallel execution where possible\n5. Structure combined JSON response format\n6. Maintain individual asset structure within response\n7. Add error handling for partial failures\n8. Create caching mechanism for repeated requests\n9. Implement response streaming for long-running operations",
-        "testStrategy": "1. Test endpoint with various website inputs\n2. Verify response structure matches schema\n3. Test with both user-provided and inferred ICPs\n4. Benchmark endpoint performance against individual requests\n5. Verify error handling for partial failures\n6. Test streaming response functionality\n7. Validate overall response quality and consistency",
-        "priority": "medium",
+        "status": "pending",
         "dependencies": [
           29,
           30,
           31
         ],
-        "status": "pending",
+        "priority": "medium",
+        "details": "1. Create FastAPI endpoint for /campaigns/complete\n2. Implement request validation using Pydantic\n3. Orchestrate calls to individual modular campaign generation services:\n   - ICP generation\n   - Positioning canvas generation\n   - Value Propositions generation\n   - Email campaign pack generation\n   - Enrichment blueprint generation\n   - Use Case Fit generation\n4. Each modular endpoint requires website_url and accepts optional user_inputted_context and llm_inferred_context\n5. Optimize processing for parallel execution where possible\n6. Implement chaining and composability between services where outputs from one service feed into another\n7. Structure combined JSON response format\n8. Maintain individual asset structure within response\n9. Add error handling for partial failures\n10. Create caching mechanism for repeated requests\n11. Implement response streaming for long-running operations",
+        "testStrategy": "1. Test endpoint with various website inputs\n2. Test with different combinations of optional user_inputted_context and llm_inferred_context\n3. Verify response structure matches schema\n4. Test with both user-provided and inferred ICPs\n5. Verify proper chaining of data between modular services\n6. Benchmark endpoint performance against individual requests\n7. Verify error handling for partial failures\n8. Test streaming response functionality\n9. Validate overall response quality and consistency",
         "subtasks": [
           {
             "id": 1,
-            "title": "Define API Endpoints",
-            "description": "Design and document clear, RESTful API endpoints that reflect the required resources and actions, ensuring intuitive structure and versioning.",
+            "title": "Define API endpoint specification",
+            "description": "Create the OpenAPI specification for the complete campaign package endpoint, including request/response schemas, path parameters, and documentation.",
             "dependencies": [],
-            "details": "Endpoints should use nouns for resources and HTTP methods for actions. Include versioning in the URL or headers for backward compatibility.",
+            "details": "Define the endpoint path, HTTP method (POST), required headers, request body schema with campaign parameters, and response schema. Document all possible response codes and include examples. Ensure the specification aligns with existing API patterns.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Implement Request Validation",
-            "description": "Develop validation logic to ensure incoming requests conform to expected formats, types, and business rules before processing.",
+            "title": "Implement request validation middleware",
+            "description": "Create middleware to validate incoming requests against the defined schema before processing.",
             "dependencies": [
               1
             ],
-            "details": "Validate parameters, payloads, and headers to prevent invalid data from reaching downstream services.",
+            "details": "Implement validation for required fields, data types, and value constraints. Handle validation errors gracefully with appropriate status codes and error messages. Include sanitization of inputs where necessary.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Orchestrate Sub-Service Calls",
-            "description": "Design orchestration logic to coordinate calls to multiple sub-services, managing dependencies and data flow between them.",
+            "title": "Develop service orchestration controller",
+            "description": "Create the main controller that will coordinate calls to various sub-services based on the campaign package requirements.",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Ensure loose coupling and high cohesion among services, and avoid direct data or code sharing between microservices.",
+            "details": "Implement the controller function that receives validated requests and determines which sub-services to call. Create a workflow that manages the sequence of operations and handles the overall request lifecycle.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Enable Parallel Execution",
-            "description": "Implement mechanisms to execute independent sub-service calls in parallel to optimize performance and reduce latency.",
+            "title": "Implement parallel execution engine",
+            "description": "Build a mechanism to execute independent sub-service calls in parallel to optimize response time.",
             "dependencies": [
               3
             ],
-            "details": "Identify which service calls can be parallelized and manage their execution and result aggregation.",
+            "details": "Use Promise.all or similar patterns to execute non-dependent service calls concurrently. Implement proper error handling for parallel execution. Include configurable concurrency limits to prevent overwhelming downstream services.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Format API Response",
-            "description": "Aggregate and format the results from sub-services into a unified, client-friendly API response structure.",
+            "title": "Create service chaining logic",
+            "description": "Implement logic to chain dependent service calls where the output of one service is required as input for another.",
             "dependencies": [
-              4
+              3
             ],
-            "details": "Ensure consistency, clarity, and completeness in the response format, following API best practices.",
+            "details": "Develop a flexible chaining mechanism that can handle conditional execution paths. Implement data transformation between service calls to ensure compatible inputs/outputs. Include retry logic for transient failures in the chain.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Implement Error Handling",
-            "description": "Develop robust error handling to capture, log, and respond to failures in sub-services or orchestration, providing meaningful feedback to clients.",
+            "title": "Implement context management",
+            "description": "Create a context object that maintains state throughout the request lifecycle across multiple service calls.",
             "dependencies": [
-              3
+              3,
+              4,
+              5
             ],
-            "details": "Isolate failures, prevent cascading errors, and return standardized error responses with appropriate status codes.",
+            "details": "Design a context structure that can store intermediate results, track progress, and maintain configuration. Implement methods to update and access the context safely across asynchronous operations. Include logging within the context for debugging.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 7,
-            "title": "Integrate Caching Mechanisms",
-            "description": "Add caching layers where appropriate to store and quickly retrieve frequently accessed or computationally expensive data.",
+            "title": "Develop comprehensive error handling",
+            "description": "Implement robust error handling that manages failures at different levels of the service chain.",
             "dependencies": [
-              5
+              3,
+              4,
+              5,
+              6
             ],
-            "details": "Determine cacheable endpoints and data, and implement cache invalidation strategies to maintain data consistency.",
+            "details": "Create error classification (e.g., validation errors, service unavailable, timeout). Implement graceful degradation for non-critical service failures. Design consistent error response format. Add detailed logging for troubleshooting.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 8,
-            "title": "Support Streaming Responses",
-            "description": "Implement streaming capabilities for endpoints that deliver large or real-time data, enabling clients to process data as it arrives.",
+            "title": "Implement response formatting",
+            "description": "Create utilities to format the aggregated results from various services into a consistent response structure.",
             "dependencies": [
-              5
+              3,
+              6
             ],
-            "details": "Use appropriate protocols and formats (e.g., Server-Sent Events, WebSockets, chunked HTTP) for streaming.",
+            "details": "Implement transformation logic to convert internal data structures to the defined API response format. Handle partial results in case of partial service failures. Include metadata about processing time and service versions used.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 9,
-            "title": "Test and Validate End-to-End Workflow",
-            "description": "Develop and execute comprehensive tests to validate endpoint behavior, orchestration logic, parallel execution, error handling, caching, and streaming.",
+            "title": "Add caching integration",
+            "description": "Implement caching mechanisms to improve performance for frequently requested campaign packages.",
             "dependencies": [
-              6,
-              7,
+              3,
               8
             ],
-            "details": "Use mocking and integration tests to ensure reliability, performance, and correctness under various scenarios.",
+            "details": "Integrate with the caching service. Implement cache key generation based on request parameters. Add cache invalidation triggers. Include configurable TTL for different types of campaign data.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Implement streaming response support",
+            "description": "Add capability to stream large campaign package responses rather than waiting for complete assembly.",
+            "dependencies": [
+              3,
+              8
+            ],
+            "details": "Modify the response handling to support streaming for large payloads. Implement progressive response generation as sub-service results become available. Add proper error handling within stream processing.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Create end-to-end tests",
+            "description": "Develop comprehensive tests for the complete campaign package endpoint.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ],
+            "details": "Create unit tests for individual components. Implement integration tests with mocked sub-services. Develop end-to-end tests with actual service dependencies. Include performance tests to verify response time requirements. Add test cases for error scenarios and edge cases.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -3000,7 +3175,7 @@
     ],
     "metadata": {
       "created": "2025-06-23T19:26:10.277Z",
-      "updated": "2025-06-24T00:21:29.475Z",
+      "updated": "2025-06-24T17:17:43.710Z",
       "description": "Tasks for master context"
     }
   }
