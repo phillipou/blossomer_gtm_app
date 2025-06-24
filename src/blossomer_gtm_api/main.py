@@ -1,8 +1,22 @@
-from fastapi import FastAPI
+import os
+import time
+import json
+import logging
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from blossomer_gtm_api.prompts.registry import render_prompt
+from blossomer_gtm_api.prompts.models import ICPPromptVars
+from blossomer_gtm_api.services.website_scraper import extract_website_content
+from blossomer_gtm_api.services.llm_service import LLMClient, LLMRequest, OpenAIProvider
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
+
+llm_client = LLMClient([OpenAIProvider()])  # Instantiate once for reuse
 
 
 class PositioningRequest(BaseModel):
@@ -86,6 +100,12 @@ class PositioningResponse(BaseModel):
                 ],
             }
         }
+
+
+class ICPRequest(BaseModel):
+    website_url: str
+    user_inputted_context: Optional[str] = None
+    llm_inferred_context: Optional[str] = None
 
 
 @app.post(
@@ -173,6 +193,80 @@ async def generate_positioning(data: PositioningRequest):
             ),
         ],
     )
+
+
+@app.post(
+    "/campaigns/icp",
+    summary="Generate Ideal Customer Profile (ICP)",
+    tags=["Campaigns", "ICP", "AI"],
+    response_description="A structured ICP definition for the given company context.",
+)
+async def generate_icp(data: ICPRequest):
+    """
+    Generate a structured Ideal Customer Profile (ICP) for a B2B SaaS company.
+    """
+    # 1. Context resolution with retry logic for website scraping
+    website_content = None
+    if not (data.user_inputted_context or data.llm_inferred_context):
+        max_retries = 3
+        delay = 2  # seconds
+        for attempt in range(max_retries):
+            try:
+                website_content = extract_website_content(data.website_url).get(
+                    "content", ""
+                )
+                if isinstance(website_content, list):
+                    # Join list of content chunks into a single string for prompt compatibility
+                    website_content = "\n\n".join(website_content)
+                break  # Success, exit retry loop
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"Website scrape failed after {max_retries} attempts: {e}"
+                        ),
+                    )
+
+    # Ensure website_content is a string for ICPPromptVars
+    if isinstance(website_content, list):
+        website_content = "\n\n".join(website_content)
+
+    # 2. Render the prompt using your template system
+    prompt_vars = ICPPromptVars(
+        user_inputted_context=data.user_inputted_context,
+        llm_inferred_context=data.llm_inferred_context,
+        website_content=website_content,
+    )
+    prompt = render_prompt("icp", prompt_vars)
+
+    # Logging prompt and API key presence
+    print("=== FULL LLM PROMPT ===")
+    print(prompt)
+    logging.info(f"Prompt sent to LLM (first 500 chars): {prompt[:500]}...")
+    logging.info(f"OPENAI_API_KEY present: {bool(os.getenv('OPENAI_API_KEY'))}")
+
+    # 3. Call the LLM via the abstraction layer
+    try:
+        llm_request = LLMRequest(prompt=prompt)
+        llm_response = await llm_client.generate(llm_request)
+    except Exception as e:
+        logging.exception("LLM provider error")
+        raise HTTPException(status_code=502, detail=f"LLM provider error: {e}")
+
+    # 4. Parse the LLM output as JSON
+    try:
+        icp_json = json.loads(llm_response.text)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"LLM output was not valid JSON: {e}\nRaw output: {llm_response.text}",
+        )
+
+    # 5. Return the parsed JSON
+    return icp_json
 
 
 @app.get("/health")

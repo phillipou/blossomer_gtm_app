@@ -25,6 +25,9 @@ from pydantic import BaseModel
 import os
 import logging
 import openai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # -----------------------------
@@ -125,7 +128,7 @@ class OpenAIProvider(BaseLLMProvider):
             logging.error("OPENAI_API_KEY is not set in the environment.")
             raise ValueError("OPENAI_API_KEY is required.")
         self.client = openai.OpenAI(api_key=api_key)
-        self.model = "gpt-4o"  # Default model; can be changed
+        self.model = "gpt-4o"  # or "gpt-4-turbo" if you prefer
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
@@ -150,26 +153,40 @@ class OpenAIProvider(BaseLLMProvider):
                 text=text, model=self.model, provider=self.name, usage=usage
             )
         except Exception as e:
-            logging.error(f"OpenAIProvider error: {e}")
+            print("=== OPENAI ERROR ===")
+            print(e)
+            import traceback
+
+            traceback.print_exc()
+            logging.error(f"OpenAIProvider error: {e}", exc_info=True)
             raise
 
     async def health_check(self) -> bool:
         """
         Check if OpenAI API is available by making a lightweight call.
         """
+        import logging
+
+        print("OpenAIProvider.health_check called")
+        logging.info("OpenAIProvider.health_check called")
         try:
             import asyncio
 
             loop = asyncio.get_event_loop()
+            print("About to call OpenAI API for health check")
+            logging.info("About to call OpenAI API for health check")
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
                     model=self.model, messages=[{"role": "user", "content": "ping"}]
                 ),
             )
-            return bool(response.choices[0].message.content)
+            print(f"OpenAI health check response: {response}")
+            logging.info(f"OpenAI health check response: {response}")
+            return True
         except Exception as e:
-            logging.warning(f"OpenAIProvider health check failed: {e}")
+            print(f"OpenAIProvider health check failed: {e}")
+            logging.warning(f"OpenAIProvider health check failed: {e}", exc_info=True)
             return False
 
 
@@ -305,8 +322,13 @@ class LLMClient:
         Args:
             providers (Optional[List[BaseLLMProvider]]): Providers to register (default: empty list)
         """
+        import logging
+
         self.providers: List[BaseLLMProvider] = providers or []
         self.providers.sort(key=lambda p: p.priority)
+        logging.info(
+            f"LLMClient initialized with providers: {[p.name for p in self.providers]}"
+        )
 
     def register_provider(self, provider: BaseLLMProvider) -> None:
         """
@@ -333,9 +355,19 @@ class LLMClient:
         """
         for provider in self.providers:
             try:
-                if await provider.health_check():
+                print(f"Trying provider: {provider.name}")
+                healthy = await provider.health_check()
+                print(f"Provider {provider.name} health: {healthy}")
+                if healthy:
+                    print(f"Calling generate on provider: {provider.name}")
                     return await provider.generate(request)
             except Exception as e:
-                logging.warning(f"Provider {provider.name} failed: {e}")
-                continue
+                print("=== LLM CLIENT ERROR ===")
+                print(e)
+                import traceback
+
+                traceback.print_exc()
+                logging.error(f"LLMService error: {e}", exc_info=True)
+                # Continue to next provider
+        print("All providers failed or are unavailable.")
         raise RuntimeError("All LLM providers failed or are unavailable.")
