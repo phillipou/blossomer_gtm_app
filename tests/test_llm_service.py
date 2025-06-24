@@ -146,3 +146,58 @@ async def test_openai_provider_health_check(monkeypatch):
     assert await provider.health_check() is True
     monkeypatch.setattr(provider, "health_check", AsyncMock(return_value=False))
     assert await provider.health_check() is False
+
+
+def test_llmresponse_model_validate_and_dump():
+    """
+    Test that LLMResponse.model_validate and model_dump work as expected (Pydantic v2 roundtrip).
+    Ensures that a dict can be validated into a model and dumped back to the same dict.
+    """
+    data = {
+        "text": "Hello",
+        "model": "gpt-4o",
+        "provider": "openai",
+        "usage": {"tokens": 10},
+    }
+    obj = LLMResponse.model_validate(data)
+    assert isinstance(obj, LLMResponse)
+    dumped = obj.model_dump()
+    assert dumped == data
+
+
+def test_llmclient_register_provider():
+    """
+    Test that LLMClient.register_provider successfully adds a provider to the client.
+    Ensures the provider appears in the providers list after registration.
+    """
+    client = LLMClient()
+    provider = OpenAIProvider.__new__(OpenAIProvider)  # Bypass __init__
+    client.register_provider(provider)
+    assert provider in client.providers
+
+
+def test_llmclient_no_providers():
+    """
+    Test that LLMClient.generate raises RuntimeError if no providers are registered.
+    This checks the fail-safe path for an empty provider list.
+    """
+    import pytest
+
+    client = LLMClient([])
+    request = LLMRequest(prompt="Test")
+    import asyncio
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(client.generate(request))
+
+
+def test_llmrequest_with_and_without_parameters():
+    """
+    Test LLMRequest construction with and without the optional 'parameters' field.
+    Ensures default is None and custom dict is accepted.
+    """
+    req1 = LLMRequest(prompt="Test prompt")
+    assert req1.prompt == "Test prompt"
+    assert req1.parameters is None  # Default should be None
+    req2 = LLMRequest(prompt="Test prompt", parameters={"temperature": 0.5})
+    assert req2.parameters == {"temperature": 0.5}
