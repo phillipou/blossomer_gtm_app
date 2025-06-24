@@ -9,7 +9,7 @@
         "testStrategy": "1. Verify all dependencies install correctly\n2. Ensure pre-commit hooks run successfully\n3. Confirm Python 3.11+ compatibility\n4. Test environment variable loading across different configurations",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -39,7 +39,7 @@
               2
             ],
             "details": "Specify the Python version and create an isolated environment to manage project dependencies.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -50,7 +50,7 @@
               3
             ],
             "details": "Use a dependency manager (e.g., pip, poetry) to install and record all necessary packages in requirements.txt or pyproject.toml.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -61,7 +61,7 @@
               4
             ],
             "details": "Create a .env file or use another secure method to manage sensitive information and configuration values.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -72,7 +72,7 @@
               4
             ],
             "details": "Install and configure tools like pre-commit, black, flake8, or isort to automatically check and format code.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -83,7 +83,7 @@
               2
             ],
             "details": "Create a README.md with project overview, setup instructions, and usage examples. Optionally, start a docs/ folder for extended documentation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -111,7 +111,7 @@
         "dependencies": [
           21
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -216,6 +216,35 @@
               8
             ],
             "details": "Perform unit, integration, and performance tests; validate data integrity and compliance with requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Content Storage",
+            "description": "Store the cleaned data in a structured format for further processing.",
+            "dependencies": [
+              5
+            ],
+            "details": "Save data to databases, files, or cloud storage in formats such as JSON, CSV, or SQL.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Content Embedding",
+            "description": "Generate vector embeddings or other representations for the stored content.",
+            "dependencies": [],
+            "details": "Use NLP models or embedding APIs to convert text into vector representations for downstream tasks.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 12,
+            "title": "Caching",
+            "description": "Implement caching mechanisms to avoid redundant scraping and speed up repeated requests.",
+            "dependencies": [],
+            "details": "Cache raw HTML, extracted data, or embeddings using in-memory or persistent storage solutions.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -347,7 +376,7 @@
           21,
           22
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -355,7 +384,7 @@
             "description": "Verify that the provided URLs are well-formed, reachable, and allowed for scraping according to robots.txt.",
             "dependencies": [],
             "details": "Check URL syntax, perform DNS resolution, and fetch robots.txt to ensure compliance.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -366,7 +395,7 @@
               1
             ],
             "details": "Choose between basic HTML parsers or headless browsers for dynamic sites; configure user agents and proxies if needed.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -377,7 +406,7 @@
               2
             ],
             "details": "Utilize headless browsers or JavaScript execution frameworks to load and extract dynamic data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -388,7 +417,7 @@
               3
             ],
             "details": "Use HTML parsing, CSS selectors, or XPath to target and extract required content.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -399,36 +428,7 @@
               4
             ],
             "details": "Remove HTML tags, scripts, and irrelevant elements; normalize text and handle encoding issues.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Content Storage",
-            "description": "Store the cleaned data in a structured format for further processing.",
-            "dependencies": [
-              5
-            ],
-            "details": "Save data to databases, files, or cloud storage in formats such as JSON, CSV, or SQL.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Content Embedding",
-            "description": "Generate vector embeddings or other representations for the stored content.",
-            "dependencies": [],
-            "details": "Use NLP models or embedding APIs to convert text into vector representations for downstream tasks.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 8,
-            "title": "Caching",
-            "description": "Implement caching mechanisms to avoid redundant scraping and speed up repeated requests.",
-            "dependencies": [],
-            "details": "Cache raw HTML, extracted data, or embeddings using in-memory or persistent storage solutions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -439,7 +439,7 @@
               2
             ],
             "details": "Log errors, handle HTTP failures, timeouts, and unexpected content structures gracefully.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -448,7 +448,7 @@
             "description": "Implement retry logic for failed requests or processing steps.",
             "dependencies": [],
             "details": "Automatically retry failed operations with exponential backoff and respect rate limits.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -592,15 +592,15 @@
         "dependencies": [
           21
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
             "title": "Design Abstraction Layer Architecture",
             "description": "Define and document the architecture for an abstraction layer that standardizes interactions with multiple LLM providers.",
             "dependencies": [],
-            "details": "Specify interfaces, data contracts, and extensibility points to ensure provider-agnostic integration.",
-            "status": "pending",
+            "details": "Specify interfaces, data contracts, and extensibility points to ensure provider-agnostic integration.\n<info added on 2025-06-23T22:37:41.944Z>\n# Implementation Plan for LLM Provider Abstraction Layer\n\n## Goal\nDesign and document the architecture for an abstraction layer that standardizes interactions with multiple LLM providers (e.g., OpenAI, Anthropic/Claude).\n\n## Plan\n1. **File/Module Structure**\n   - Create src/blossomer_gtm_api/services/llm_service.py\n   - This module will contain:\n     - The main abstraction interface (BaseLLMProvider)\n     - Concrete provider adapters (OpenAIProvider, AnthropicProvider)\n     - The orchestrator/client (LLMClient) that manages provider selection, failover, and unified API\n\n2. **Interfaces & Data Contracts**\n   - BaseLLMProvider: Abstract base class or protocol defining:\n     - async def generate(self, prompt: str, **kwargs) -> LLMResponse\n     - Provider metadata (name, priority, health check, etc.)\n   - LLMResponse: Pydantic model for standardized output (text, usage, model, etc.)\n   - LLMRequest: (Optional) Pydantic model for input, if more structure is needed than just a prompt.\n\n3. **Extensibility Points**\n   - Each provider implements the BaseLLMProvider interface.\n   - New providers can be added by subclassing and registering with the orchestrator.\n   - The orchestrator (LLMClient) manages:\n     - Provider selection (priority, health, etc.)\n     - Failover logic (try next provider on error)\n     - Unified API for campaign generation services\n\n4. **Fallback & Error Handling**\n   - On provider failure, log and try the next provider.\n   - Raise a unified exception if all providers fail.\n   - All errors should be wrapped in a consistent error model for the API layer.\n\n5. **Async & Stateless**\n   - All methods are async.\n   - No persistent state; all configuration is via environment or dependency injection.\n\n6. **Pydantic for Validation**\n   - All input/output to LLMs and between services uses Pydantic models for validation and serialization.\n\n7. **Quality & Testing**\n   - Include a stub for LLM-assisted scoring/validation (to be implemented in a later task).\n   - Unit tests should be written for the abstraction layer (per TDD preference).\n\n## Next Steps\n- Begin implementation in llm_service.py with interface, base class, and stubs for providers and orchestrator.\n- Write initial unit tests for the abstraction layer.\n</info added on 2025-06-23T22:37:41.944Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -610,8 +610,8 @@
             "dependencies": [
               1
             ],
-            "details": "Utilize official SDKs or custom HTTP clients as needed for providers like OpenAI, Anthropic, and Cohere.",
-            "status": "pending",
+            "details": "Utilize official SDKs or custom HTTP clients as needed for providers like OpenAI, Anthropic, and Cohere.\n<info added on 2025-06-23T23:19:58.142Z>\nImplementation complete for OpenAI and Gemini providers in the LLM abstraction layer:\n\n- Both providers implemented with async-compatible logic\n- API keys loaded securely from environment variables\n- OpenAIProvider uses official openai SDK with gpt-4o support\n- GeminiProvider uses generativeai SDK (correct import)\n- Comprehensive async unit tests with pytest-asyncio and AsyncMock\n- All tests use mocking to avoid consuming API credits\n- Claude (Anthropic) integration postponed for future implementation\n\nCode and tests committed and passing CI. Ready for code review or expansion to additional providers.\n</info added on 2025-06-23T23:19:58.142Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -633,7 +633,7 @@
               1
             ],
             "details": "Support variable interpolation, conditional logic, and provider-specific formatting.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -3000,7 +3000,7 @@
     ],
     "metadata": {
       "created": "2025-06-23T19:26:10.277Z",
-      "updated": "2025-06-23T20:34:20.898Z",
+      "updated": "2025-06-24T00:21:29.475Z",
       "description": "Tasks for master context"
     }
   }

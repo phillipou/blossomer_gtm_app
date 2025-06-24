@@ -53,7 +53,15 @@ For the initial development phase, the API will remain stateless. No database mo
 
 ## 2. System Components and Services
 
-### Core Component Architecture
+### Core Component Architecture (Updated)
+
+- **API Gateway Layer**: Exposes modular endpoints for each campaign asset and analysis:
+  - `/campaigns/icp`
+  - `/campaigns/positioning`
+  - `/campaigns/valueprops`
+  - `/campaigns/email`
+  - `/campaigns/usecasefit`
+- All endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context` for chaining and agentic workflows.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -89,13 +97,13 @@ For the initial development phase, the API will remain stateless. No database mo
 
 ### Service Boundaries and Responsibilities
 
-#### 1. Campaign Service
+#### 1. Campaign Service (Updated)
 
-**Responsibility**: Orchestrate campaign asset generation
+**Responsibility**: Orchestrate campaign asset generation via modular endpoints
 
-- **Endpoints**: `/campaigns/positioning`, `/campaigns/email`, `/campaigns/enrichment`, `/campaigns/complete`
-- **Business Logic**: Campaign workflow coordination, asset composition
-- **Dependencies**: Content Service, AI Agent Orchestrator, User Service
+- **Endpoints**: `/campaigns/icp`, `/campaigns/positioning`, `/campaigns/valueprops`, `/campaigns/email`, `/campaigns/usecasefit`
+- **Business Logic**: Each endpoint is atomic but can accept context from previous steps for chaining
+- **Extensibility**: New endpoints can be added with minimal impact
 
 #### 2. Content Service
 
@@ -114,13 +122,11 @@ For the initial development phase, the API will remain stateless. No database mo
 - **Security**: JWT token validation, role-based access control
 - **Analytics**: Usage metrics and API call tracking
 
-#### 4. AI Agent Orchestrator
+#### 4. AI Agent Orchestrator (Updated)
 
-**Responsibility**: LLM integration and agent workflow management
-
-- **Providers**: OpenAI GPT-4, Anthropic Claude with failover
-- **Workflow**: LangGraph-based agent coordination
-- **Quality**: Response validation and quality scoring
+- Modular, composable API design supports both atomic and orchestrated/agentic workflows
+- Endpoints can be chained by passing `llm_inferred_context` from one to the next
+- Extensible for future asset types and analyses
 
 #### 4.1 LLM Provider Abstraction Layer
 
@@ -818,22 +824,12 @@ class LoggingMiddleware:
 - **Performance Profiling**: py-spy for production profiling
 - **Request Tracing**: OpenTelemetry integration for distributed tracing
 
-## API Design Best Practices for AI Integration
+## API Design Best Practices for AI Integration (Updated)
 
-All API endpoints in this project are designed following best practices for AI integration, as outlined in [this article](https://medium.com/nerd-for-tech/api-design-best-practices-for-ai-integration-889f9c08dde0):
-
-- Clear endpoint purpose and use case
-- RESTful, intuitive endpoint naming and versioning
-- Strict input validation and descriptive error messages
-- Optimized for performance and scalability
-- Support for batch processing (where relevant)
-- Stateless design for easy scaling
-- Security: HTTPS, authentication, rate limiting
-- Comprehensive logging and monitoring
-- OpenAPI/Swagger documentation
-- Ethical and privacy considerations
-- Model retrainability and future extensibility
-- Cross-platform integration readiness
+- Modular, composable endpoints for each campaign asset and analysis
+- Consistent input schema: all endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context`
+- Designed for both atomic and orchestrated workflows
+- Extensible for future features
 
 **Endpoint Design Checklist:**
 - [ ] Clear, documented purpose

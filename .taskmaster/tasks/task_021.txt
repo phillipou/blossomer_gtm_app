@@ -1,0 +1,78 @@
+# Task ID: 21
+# Title: Setup Project Repository and Environment
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Initialize the project repository with Python 3.11+, FastAPI, and required dependencies. Set up development environment with proper configuration for different environments.
+# Details:
+1. Create a new GitHub repository for the Blossomer GTM API
+2. Initialize Python project with Poetry or pip for dependency management
+3. Set up Python 3.11+ virtual environment
+4. Install core dependencies:
+   - FastAPI and Uvicorn for API framework
+   - Pydantic for data validation
+   - SQLAlchemy for database ORM
+   - Alembic for database migrations
+   - LangChain and LangGraph for LLM orchestration
+   - ChromaDB for vector storage
+   - pytest for testing
+5. Configure environment variables for development, testing, and production
+6. Set up pre-commit hooks with Black and MyPy
+7. Create initial README.md with project overview and setup instructions
+8. Implement directory structure as outlined in the PRD
+
+# Test Strategy:
+1. Verify all dependencies install correctly
+2. Ensure pre-commit hooks run successfully
+3. Confirm Python 3.11+ compatibility
+4. Test environment variable loading across different configurations
+
+# Subtasks:
+## 1. Create Repository [done]
+### Dependencies: None
+### Description: Initialize a new version-controlled repository for the project using a platform like GitHub or GitLab.
+### Details:
+Set up the repository with an appropriate name, add a .gitignore file, and protect the main branch if necessary.
+
+## 2. Implement Directory Structure [done]
+### Dependencies: 21.1
+### Description: Establish a clear and organized directory structure for the project.
+### Details:
+Create main source code, tests, documentation, and configuration folders (e.g., src/, tests/, docs/, configs/), and include essential files like README.md and setup.py.
+
+## 3. Set Up Python Environment [done]
+### Dependencies: 21.2
+### Description: Configure a Python environment for the project using a tool like venv, conda, or poetry.
+### Details:
+Specify the Python version and create an isolated environment to manage project dependencies.
+
+## 4. Install Project Dependencies [done]
+### Dependencies: 21.3
+### Description: Install required Python packages and dependencies for the project.
+### Details:
+Use a dependency manager (e.g., pip, poetry) to install and record all necessary packages in requirements.txt or pyproject.toml.
+
+## 5. Configure Environment Variables [done]
+### Dependencies: 21.4
+### Description: Set up environment variables needed for the project.
+### Details:
+Create a .env file or use another secure method to manage sensitive information and configuration values.
+
+## 6. Set Up Pre-commit Hooks [done]
+### Dependencies: 21.4
+### Description: Configure pre-commit hooks to enforce code quality and standards before commits.
+### Details:
+Install and configure tools like pre-commit, black, flake8, or isort to automatically check and format code.
+
+## 7. Write Initial Documentation [done]
+### Dependencies: 21.2
+### Description: Draft initial documentation to guide contributors and users.
+### Details:
+Create a README.md with project overview, setup instructions, and usage examples. Optionally, start a docs/ folder for extended documentation.
+
+## 8. Verify and Finalize Setup [done]
+### Dependencies: 21.5, 21.6, 21.7
+### Description: Review the setup to ensure all components are correctly configured and functional.
+### Details:
+Test the environment, run pre-commit hooks, and check that documentation and directory structure meet project standards.
+

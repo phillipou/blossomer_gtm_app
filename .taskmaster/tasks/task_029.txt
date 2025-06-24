@@ -1,0 +1,84 @@
+# Task ID: 29
+# Title: Implement Positioning Canvas Generation Endpoint
+# Status: pending
+# Dependencies: 23, 24, 25, 26, 28
+# Priority: medium
+# Description: Create the /campaigns/positioning endpoint to generate positioning canvas with market timing and value propositions.
+# Details:
+1. Create FastAPI endpoint for /campaigns/positioning
+2. Implement request validation using Pydantic
+3. Create positioning canvas generation workflow:
+   - Extract company positioning from website
+   - Generate "why us / why now" summary
+   - Create three unique value propositions
+   - Tailor to ICP characteristics
+4. Structure JSON response format
+5. Add metadata for ICP source and confidence
+6. Implement error handling for insufficient information
+7. Add quality scoring for generated content
+8. Create caching mechanism for repeated requests
+9. Implement response streaming for long-running operations
+
+# Test Strategy:
+1. Test endpoint with various website inputs
+2. Verify response structure matches schema
+3. Test with both user-provided and inferred ICPs
+4. Benchmark endpoint performance
+5. Verify error handling for edge cases
+6. Test streaming response functionality
+
+# Subtasks:
+## 1. API Endpoint Creation [pending]
+### Dependencies: None
+### Description: Design and implement RESTful API endpoints following best practices, including versioning, naming conventions, and HTTP method usage.
+### Details:
+Endpoints should use descriptive resource names, plural nouns for collections, and include versioning in the URL or headers.
+
+## 2. Request Validation Implementation [pending]
+### Dependencies: 29.1
+### Description: Develop logic to validate incoming API requests for required parameters, data types, and schema compliance.
+### Details:
+Ensure all requests are checked for completeness and correctness before processing, returning appropriate error responses for invalid input.
+
+## 3. Workflow Orchestration [pending]
+### Dependencies: 29.2
+### Description: Implement the core workflow logic that coordinates the sequence of operations and integrates with upstream services.
+### Details:
+Define the workflow steps, manage state transitions, and handle communication with external systems as needed.
+
+## 4. Response Formatting [pending]
+### Dependencies: 29.3
+### Description: Format API responses in a consistent JSON structure, including data payloads and metadata.
+### Details:
+Ensure responses follow a standard schema, use camelCase or snake_case consistently, and include pagination metadata where applicable.
+
+## 5. Metadata Inclusion [pending]
+### Dependencies: 29.4
+### Description: Add relevant metadata to API responses, such as pagination info, request IDs, and processing timestamps.
+### Details:
+Metadata should help clients interpret responses and debug issues, following best practices for clarity and completeness.
+
+## 6. Error Handling and Reporting [pending]
+### Dependencies: 29.4
+### Description: Implement robust error handling with meaningful HTTP status codes and detailed error messages in a consistent format.
+### Details:
+Return error codes, messages, and context in the response body, ensuring consistency across all endpoints.
+
+## 7. Quality Scoring Logic [pending]
+### Dependencies: 29.3
+### Description: Develop and integrate a quality scoring mechanism to evaluate and score workflow outputs.
+### Details:
+Define scoring criteria, implement scoring algorithms, and include scores in the response payload.
+
+## 8. Caching Strategy Implementation [pending]
+### Dependencies: 29.3
+### Description: Design and implement caching for API responses or workflow results to improve performance and reduce load on upstream services.
+### Details:
+Determine cache keys, expiration policies, and invalidation strategies appropriate for the data and workflow.
+
+## 9. Streaming Support [pending]
+### Dependencies: 29.3
+### Description: Enable streaming of large or long-running responses to clients, ensuring efficient data delivery and resource management.
+### Details:
+Implement chunked transfer encoding or server-sent events as appropriate for the use case.
+

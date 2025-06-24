@@ -22,6 +22,10 @@ See PRD.md and ARCHITECTURE.md for requirements and design rationale.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
+import os
+import logging
+from google import generativeai as genai
+import openai
 
 
 # -----------------------------
@@ -121,19 +125,58 @@ class OpenAIProvider(BaseLLMProvider):
     name = "openai"
     priority = 1
 
+    def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logging.error("OPENAI_API_KEY is not set in the environment.")
+            raise ValueError("OPENAI_API_KEY is required.")
+        self.client = openai.OpenAI(api_key=api_key)
+        self.model = "gpt-4o"  # You can change to gpt-3.5-turbo if needed
+
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
-        Stub for OpenAI LLM generation.
-        Replace with actual OpenAI API integration.
+        Generate text using OpenAI API.
         """
-        raise NotImplementedError
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": request.prompt}],
+                    **(request.parameters or {}),
+                ),
+            )
+            # OpenAI returns response.choices[0].message.content
+            text = response.choices[0].message.content if response.choices else ""
+            usage = dict(response.usage) if hasattr(response, "usage") else None
+            return LLMResponse(
+                text=text, model=self.model, provider=self.name, usage=usage
+            )
+        except Exception as e:
+            logging.error(f"OpenAIProvider error: {e}")
+            raise
 
     async def health_check(self) -> bool:
         """
-        Stub for OpenAI health check.
-        Replace with actual health check logic.
+        Check if OpenAI API is available by making a lightweight call.
         """
-        return True
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat.completions.create(
+                    model=self.model, messages=[{"role": "user", "content": "ping"}]
+                ),
+            )
+            return bool(response.choices[0].message.content)
+        except Exception as e:
+            logging.warning(f"OpenAIProvider health check failed: {e}")
+            return False
 
 
 class AnthropicProvider(BaseLLMProvider):
@@ -169,19 +212,56 @@ class GeminiProvider(BaseLLMProvider):
     name = "gemini"
     priority = 3
 
+    def __init__(self):
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            logging.error("GEMINI_API_KEY is not set in the environment.")
+            raise ValueError("GEMINI_API_KEY is required.")
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-2.5-flash"
+
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
-        Stub for Gemini LLM generation.
-        Replace with actual Gemini API integration.
+        Generate text using Gemini API.
         """
-        raise NotImplementedError
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.model, contents=request.prompt
+                ),
+            )
+            return LLMResponse(
+                text=getattr(response, "text", ""),
+                model=self.model,
+                provider=self.name,
+                usage=None,  # Gemini API may not return usage info
+            )
+        except Exception as e:
+            logging.error(f"GeminiProvider error: {e}")
+            raise
 
     async def health_check(self) -> bool:
         """
-        Stub for Gemini health check.
-        Replace with actual health check logic.
+        Check if Gemini API is available by making a lightweight call.
         """
-        return True
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.model, contents="ping"
+                ),
+            )
+            return bool(getattr(response, "text", None))
+        except Exception as e:
+            logging.warning(f"GeminiProvider health check failed: {e}")
+            return False
 
 
 # -----------------------------

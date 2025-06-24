@@ -1,5 +1,16 @@
 # Blossomer GTM API
 
+---
+
+## Changelog
+
+### [Unreleased]
+- **Modular API Redesign:**
+  - Each major feature (ICP inference, Positioning, Value Props, Email Campaign, Use Case Fit) is now a separate endpoint.
+  - All endpoints require `website_url` as input, and accept optional `user_inputted_context` and `llm_inferred_context` fields.
+  - This change improves composability, extensibility, and supports both atomic and orchestrated/agentic workflows.
+  - Rationale: Enables easier addition of new features, more flexible client integration, and better alignment with agentic/LLM-powered workflows. See PRD.md and ARCHITECTURE.md for details.
+
 **AI-powered go-to-market campaign generator for B2B founders.**
 
 ---

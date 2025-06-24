@@ -8,7 +8,7 @@ The Blossomer GTM API aims to democratize expert-level go-to-market strategy and
 
 ## 2. Product overview
 
-The Blossomer GTM API is a developer-focused, AI-powered service that transforms minimal input (website URL and ICP description) into comprehensive go-to-market campaign assets. The product leverages advanced AI agent orchestration to analyze company positioning, generate targeted messaging, and provide structured data enrichment guidance.
+The Blossomer GTM API is an AI-powered API that takes just your website URL and target customer info to create complete marketing campaign materials. It analyzes your company's positioning, writes targeted messaging, and gives you guidance on improving your data quality.
 
 Unlike traditional marketing automation tools that focus on campaign execution, Blossomer emphasizes strategic foundation-building through systematic experimentation and expert-level guidance delivered via structured API responses. The product operates on a "0-90% philosophy" - providing founders with 90% complete, expert-quality campaigns that require minimal refinement rather than starting from scratch.
 
@@ -92,39 +92,27 @@ Unlike traditional marketing automation tools that focus on campaign execution, 
 - **Memory persistence**: Cross-step context retention for coherent campaign generation
 - **Quality evaluation**: LLM-assisted scoring and validation of generated content
 
-#### 5.3 Campaign asset generation
+#### 5.3 Campaign asset generation (Updated)
 
-The API provides modular endpoints for generating specific campaign assets independently, enabling flexible integration and frontend development. Each asset can be requested separately or in combination based on user needs.
+The API provides modular endpoints for generating specific campaign assets independently, enabling flexible integration and frontend development. Each asset can be requested separately or in combination based on user needs. **All endpoints require a `website_url` input, and accept optional `user_inputted_context` and `llm_inferred_context` fields to support chaining and agentic workflows.**
 
-**Positioning Canvas (JSON Output)**
+**Modular Endpoints:**
+- `/campaigns/icp`: Infer or process Ideal Customer Profile (ICP)
+- `/campaigns/positioning`: Generate positioning canvas (requires ICP)
+- `/campaigns/valueprops`: Generate unique value propositions (requires ICP, positioning)
+- `/campaigns/email`: Generate email campaign pack (requires ICP, positioning, value props)
+- `/campaigns/usecasefit`: Research relevant use cases and determine specific workflow fit (requires ICP, positioning, value props)
 
-- Endpoint: `/campaigns/positioning`
-- One-paragraph "why us / why now" summary with market timing and competitive differentiation
-- Three unique value propositions specifically tailored to ICP characteristics (user-provided or inferred)
-- Structured data format enabling programmatic usage and modification
-- Metadata indicating whether ICP was user-provided or AI-inferred
+All endpoints:
+- Require: `website_url`
+- Optional: `user_inputted_context` (user-provided context, e.g., ICP description)
+- Optional: `llm_inferred_context` (output from previous endpoints, for chaining)
 
-**Email Campaign Pack (JSON Output)**
-
-- Endpoint: `/campaigns/email`
-- Three optimized subject line variations with A/B testing recommendations
-- Two-step email sequence: initial outreach with value-focused messaging and strategic follow-up
-- Professional but approachable tone calibrated for B2B decision-makers
-- Personalization placeholders for dynamic content insertion
-
-**Enrichment Blueprint (JSON Output)**
-
-- Endpoint: `/campaigns/enrichment`
-- Firmographic data points for lead qualification (company size, industry, revenue)
-- Technographic data points for targeting (tech stack, tools, integrations)
-- Personalization data points for outreach customization (recent news, job changes, company updates)
-
-**Complete Campaign Package**
-
-- Endpoint: `/campaigns/complete`
-- Single request returning all three asset types in structured response
-- Optimized for scenarios requiring full campaign generation
-- Maintains individual asset structure within combined response
+**Rationale:**
+- Improves composability and extensibility for future features
+- Enables clients to chain endpoints or use primitives independently
+- Supports both atomic and orchestrated/agentic workflows
+- Simplifies adding new asset types in the future
 
 #### 5.4 External integrations
 
@@ -135,10 +123,12 @@ The API provides modular endpoints for generating specific campaign assets indep
 
 ### Technical requirements
 
-#### 5.5 API specifications
+#### 5.5 API specifications (Updated)
 
 - **RESTful API design**: Standard HTTP methods with JSON request/response format
-- **Modular endpoint structure**: Separate endpoints for each campaign asset type enabling flexible frontend integration
+- **Modular endpoint structure**: Each campaign asset type and analysis is a separate endpoint, all with consistent input schema (see above)
+- **Composable context**: Endpoints accept optional user and LLM-inferred context for chaining
+- **Extensible for new features**: New endpoints can be added with minimal impact
 - **Streaming responses**: Real-time updates for long-running campaign generation processes
 - **Rate limiting**: Configurable throttling to manage API usage and costs
 - **Error handling**: Comprehensive error responses with actionable guidance
@@ -429,12 +419,25 @@ As a platform administrator, I want LLM service failures to be handled gracefull
 
 To enable rapid prototyping and flexibility, the initial implementation of the API will be stateless. Database models and persistence will be deferred until requirements are better understood. Endpoints will use mock or in-memory data, and persistence will be added as the product matures.
 
+### 4. LLM Provider Abstraction Layer
+
+- Implement an adapter-based abstraction layer for LLM provider integration in `src/blossomer_gtm_api/services/llm_service.py`.
+- Define a `BaseLLMProvider` interface (async, provider metadata, generate method).
+- Implement concrete adapters for each provider (e.g., OpenAI, Anthropic/Claude).
+- Create an orchestrator (`LLMClient`) to manage provider selection, failover, and unified API.
+- Use Pydantic models for all input/output schemas (`LLMRequest`, `LLMResponse`).
+- All methods async; no persistent state (stateless, config via env/dependency injection).
+- Extensibility: Add new providers by subclassing and registering with orchestrator.
+- Unified error handling and failover logic.
+- TDD/unit tests required for abstraction layer.
+
 ## 8. Design and user interface
 
-### API design principles
+### API design principles (Updated)
 
-**Developer-first approach**
-The Blossomer GTM API prioritizes developer experience through clean, predictable API design that follows RESTful conventions and provides comprehensive documentation. The interface emphasizes clarity and systematic organization, reflecting the product's utilitarian aesthetic.
+**Modular, composable endpoints for each campaign asset and analysis**
+- Consistent input schema: all endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context`
+- Designed for both atomic and orchestrated workflows
 
 **Response structure consistency**
 All API responses follow consistent JSON schemas with standardized error handling, metadata inclusion, and clear data hierarchies. Response structures are designed for programmatic consumption while remaining human-readable for debugging and development.
@@ -447,10 +450,10 @@ The API documentation and developer resources adopt a GitHub/AWS Console aesthet
 **Copy and messaging**
 Documentation maintains a professional but approachable tone, providing confident guidance while acknowledging the systematic nature of go-to-market strategy development. Technical explanations are clear and actionable, avoiding jargon while maintaining precision.
 
-### JSON response schemas
+### JSON response schemas (Updated)
 
-**Structured output format**
-All generated campaign assets are returned as structured JSON with consistent field naming, data types, and hierarchical organization. Schemas include metadata fields for generation parameters, quality scores, and usage recommendations.
+**All endpoints return structured JSON with clear field naming**
+- Context fields are versioned and documented for future extensibility
 
 **Integration considerations**
 Response formats are optimized for integration with common B2B tools and workflows, including placeholder formatting for personalization, export compatibility for email platforms, and structured data for CRM integration.
@@ -471,7 +474,7 @@ For long-running operations, the API provides clear progress indication through 
 
 ---
 
-## Technical Implementation Plan (Reference)
+## Technical Implementation Plan (Reference) (Updated)
 
 ### 1. Initial Scope (MVP)
 
@@ -530,6 +533,24 @@ src/
 8. Prepare for LLM and ChromaDB integration (stub service classes)
 9. Implement error handling and rate limiting
 10. Write initial tests and documentation
+
+### 4. LLM Provider Abstraction Layer (NEW)
+
+- Implement an adapter-based abstraction layer for LLM provider integration in `src/blossomer_gtm_api/services/llm_service.py`.
+- Define a `BaseLLMProvider` interface (async, provider metadata, generate method).
+- Implement concrete adapters for each provider (e.g., OpenAI, Anthropic/Claude).
+- Create an orchestrator (`LLMClient`) to manage provider selection, failover, and unified API.
+- Use Pydantic models for all input/output schemas (`LLMRequest`, `LLMResponse`).
+- All methods async; no persistent state (stateless, config via env/dependency injection).
+- Extensibility: Add new providers by subclassing and registering with orchestrator.
+- Unified error handling and failover logic.
+- TDD/unit tests required for abstraction layer.
+
+### 5. Modularize endpoints: `/campaigns/icp`, `/campaigns/positioning`, `/campaigns/valueprops`, `/campaigns/email`, `/campaigns/usecasefit`
+
+- All endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context`
+- Orchestrator logic (internal or client-side) can chain outputs as needed
+- Document context contract and error handling for missing/invalid context
 
 ---
 
