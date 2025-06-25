@@ -181,6 +181,12 @@ class ContextAssessment:
 
 ### Core AI Agents
 
+#### ContextOrchestrator Agent
+- **Purpose**: Assess the quality of website content to determine if it's sufficient for generating high-quality marketing assets.
+- **Input**: Website content string.
+- **Output**: Structured `ContextAssessmentResult` Pydantic model.
+- **Integrations**: `LLMClient`, `prompts/templates/context_assessment.jinja2`.
+
 #### WebsiteAnalysisAgent
 - **Purpose**: Scrape, process, and analyze website content
 - **Input**: Website URL, scraping preferences

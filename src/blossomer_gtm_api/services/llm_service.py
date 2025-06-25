@@ -26,8 +26,22 @@ import os
 import logging
 import openai
 from dotenv import load_dotenv
+from blossomer_gtm_api.services.circuit_breaker import CircuitBreaker
+import json
+from pydantic import ValidationError
 
 load_dotenv()
+
+# Circuit Breaker config for LLM providers
+LLM_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = int(
+    os.getenv("LLM_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 5)
+)
+LLM_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: int = int(
+    os.getenv("LLM_CIRCUIT_BREAKER_RECOVERY_TIMEOUT", 300)
+)
+LLM_CIRCUIT_BREAKER_DISABLE: bool = (
+    os.getenv("LLM_CIRCUIT_BREAKER_DISABLE", "false").lower() == "true"
+)
 
 
 # -----------------------------
@@ -333,6 +347,16 @@ class LLMClient:
         logging.info(
             f"LLMClient initialized with providers: {[p.name for p in self.providers]}"
         )
+        # CircuitBreaker per provider
+        self.circuit_breakers: Dict[str, CircuitBreaker] = {
+            p.name: CircuitBreaker(
+                provider_name=p.name,
+                failure_threshold=LLM_CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+                recovery_timeout=LLM_CIRCUIT_BREAKER_RECOVERY_TIMEOUT,
+                disable=LLM_CIRCUIT_BREAKER_DISABLE,
+            )
+            for p in self.providers
+        }
 
     def register_provider(self, provider: BaseLLMProvider) -> None:
         """
@@ -343,10 +367,53 @@ class LLMClient:
         """
         self.providers.append(provider)
         self.providers.sort(key=lambda p: p.priority)
+        # Register a circuit breaker for the new provider
+        self.circuit_breakers[provider.name] = CircuitBreaker(
+            provider_name=provider.name,
+            failure_threshold=LLM_CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            recovery_timeout=LLM_CIRCUIT_BREAKER_RECOVERY_TIMEOUT,
+            disable=LLM_CIRCUIT_BREAKER_DISABLE,
+        )
+
+    async def generate_structured_output(
+        self, prompt: str, response_model: type[BaseModel]
+    ) -> BaseModel:
+        """
+        Generates a structured response from an LLM by parsing its output into a Pydantic model.
+
+        Args:
+            prompt (str): The prompt to send to the LLM.
+            response_model (type[BaseModel]): The Pydantic model to parse the response into.
+
+        Returns:
+            BaseModel: An instance of the provided Pydantic model.
+
+        Raises:
+            ValueError: If the LLM response cannot be parsed into the desired model.
+        """
+        request = LLMRequest(prompt=prompt)
+        llm_response = await self.generate(request)
+
+        try:
+            # Basic JSON extraction - assumes LLM returns a clean JSON string
+            json_text = llm_response.text
+            if "```json" in json_text:
+                json_text = json_text.split("```json")[1].split("```")[0]
+
+            parsed_json = json.loads(json_text)
+            return response_model.parse_obj(parsed_json)
+        except (json.JSONDecodeError, ValidationError) as e:
+            logging.error(
+                f"Failed to parse LLM output into {response_model.__name__}: {e}"
+            )
+            logging.error(f"Raw LLM output: {llm_response.text}")
+            raise ValueError(
+                f"LLM response could not be parsed into {response_model.__name__}."
+            ) from e
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
-        Try providers in order of priority, with failover on error.
+        Try providers in order of priority, with failover on error and circuit breaker logic.
 
         Args:
             request (LLMRequest): The standardized request object.
@@ -358,13 +425,22 @@ class LLMClient:
             RuntimeError: If all providers fail or are unavailable.
         """
         for provider in self.providers:
+            cb = self.circuit_breakers[provider.name]
+            if not await cb.can_execute():
+                print(f"Circuit breaker OPEN for provider: {provider.name}, skipping.")
+                continue
             try:
                 print(f"Trying provider: {provider.name}")
                 healthy = await provider.health_check()
                 print(f"Provider {provider.name} health: {healthy}")
                 if healthy:
                     print(f"Calling generate on provider: {provider.name}")
-                    return await provider.generate(request)
+                    response = await provider.generate(request)
+                    await cb.record_success()
+                    return response
+                else:
+                    # Health check failed, record as failure
+                    await cb.record_failure()
             except Exception as e:
                 print("=== LLM CLIENT ERROR ===")
                 print(e)
@@ -372,6 +448,7 @@ class LLMClient:
 
                 traceback.print_exc()
                 logging.error(f"LLMService error: {e}", exc_info=True)
+                await cb.record_failure()
                 # Continue to next provider
         print("All providers failed or are unavailable.")
         raise RuntimeError("All LLM providers failed or are unavailable.")
