@@ -3,6 +3,26 @@ description: Guidelines for creating and maintaining Cursor rules to ensure cons
 globs: .cursor/rules/*.mdc
 alwaysApply: true
 ---
+- **All LLM prompts must be constructed using Jinja2 templates via the prompt registry.**
+    - Do not use f-strings or string concatenation for prompts in production code.
+    - Define prompt variables as Pydantic models in `prompts/models.py`.
+    - Render prompts using `render_prompt(template_name, context_model)` from `prompts/registry.py`.
+    - Place all prompt templates in `prompts/templates/`.
+    - Handle context merging and formatting in the template, not in Python code.
+- **Rationale:** Ensures maintainability, testability, and consistent context resolution across all endpoints and agents. Makes prompt changes easy and safe.
+- **Example:**
+    ```python
+    from blossomer_gtm_api.prompts.registry import render_prompt
+    from blossomer_gtm_api.prompts.models import MyPromptVars
+
+    context = MyPromptVars(...)
+    prompt = render_prompt("my_template", context)
+    # Pass prompt to LLM
+    ```
+- **Enforcement:**
+    - All new endpoints, agents, and prompt construction logic must follow this pattern.
+    - Code reviews should reject direct string-based prompt construction for LLMs.
+    - Refactor legacy endpoints to use this system as they are updated.
 
 - **Required Rule Structure:**
   ```markdown

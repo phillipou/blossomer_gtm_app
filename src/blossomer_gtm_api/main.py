@@ -12,6 +12,8 @@ from blossomer_gtm_api.services.content_preprocessing import (
     BoilerplateFilter,
 )
 from blossomer_gtm_api.schemas import ICP_SCHEMA
+from blossomer_gtm_api.prompts.registry import render_prompt
+from blossomer_gtm_api.prompts.models import ICPPromptVars
 
 load_dotenv()
 
@@ -208,7 +210,6 @@ async def generate_icp(data: ICPRequest):
     # 1. Scrape website content
     try:
         website_data = extract_website_content(data.website_url)
-        # Assume markdown is the main content
         raw_content = website_data.get("markdown") or website_data.get("content") or ""
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
@@ -220,26 +221,13 @@ async def generate_icp(data: ICPRequest):
     processed_chunks = pipeline.process(raw_content)
     processed_content = "\n".join(processed_chunks)
 
-    # 3. Build prompt
-    prompt = (
-        "You are an expert B2B SaaS go-to-market strategist. "
-        "Given the following company website content and context, generate an Ideal Customer "
-        "Profile (ICP) for the company. Respond ONLY with a valid JSON object matching the "
-        "schema provided. Do not include markdown, code fences, or explanations.\n\n"
-        f"Website Content:\n{processed_content}\n\n"
-        f"Company Description:\n"
-        f"{data.user_inputted_context or data.llm_inferred_context or data.website_url}\n\n"
-        "Schema:\n"
-        "{\n"
-        '  "target_company": string,\n'
-        '  "company_attributes": [string],\n'
-        '  "buying_signals": [string],\n'
-        '  "persona": string,\n'
-        '  "persona_attributes": [string],\n'
-        '  "persona_buying_signals": [string],\n'
-        '  "rationale": string\n'
-        "}\n"
+    # 3. Build prompt using Jinja2 template
+    context = ICPPromptVars(
+        user_inputted_context=data.user_inputted_context,
+        llm_inferred_context=data.llm_inferred_context,
+        website_content=processed_content,
     )
+    prompt = render_prompt("icp", context)
 
     # 4. Call LLM with structured output
     llm_request = LLMRequest(
