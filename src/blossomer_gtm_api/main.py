@@ -268,29 +268,54 @@ async def generate_product_overview(data: ProductOverviewRequest):
     - Scrapes and assesses website content quality
     - Calls LLM to generate structured overview
     """
-    # 1. Scrape website content
-    try:
-        website_data = extract_website_content(data.website_url)
-        raw_content = website_data.get("markdown") or website_data.get("content") or ""
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
+    import logging
 
-    # 2. Preprocess content (chunk, summarize, filter)
-    pipeline = ContentPreprocessingPipeline(
-        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
-    )
-    processed_chunks = pipeline.process(raw_content)
-    processed_content = "\n".join(processed_chunks)
-
-    # 3. Assess context quality
+    logger = logging.getLogger(__name__)
     orchestrator = ContextOrchestrator(llm_client)
-    assessment = await orchestrator.assess_url_context(
-        url=data.website_url,
+    logger.debug(
+        f"[API] Orchestrating context for product_overview: {data.website_url}"
+    )
+    orchestration_result = await orchestrator.orchestrate_context(
+        website_url=data.website_url,
         target_endpoint="product_overview",
         user_context=None,
-        crawl=False,
+        auto_enrich=True,
     )
-
+    assessment = orchestration_result["assessment"]
+    readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
+    logger.debug(f"[API] Readiness for product_overview: {readiness}")
+    if not readiness["is_ready"]:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "Insufficient content quality for product overview",
+                "quality_assessment": assessment.overall_quality.value,
+                "confidence": readiness["confidence"],
+                "missing_requirements": readiness["missing_requirements"],
+                "recommendations": readiness["recommendations"],
+            },
+        )
+    # Use enriched content if needed (for now, use processed_content as before)
+    # 2. Preprocess content (chunk, summarize, filter)
+    website_data = orchestration_result["enriched_content"].get("initial")
+    # If assessment contains website content, use it; else fallback to scraping
+    if hasattr(website_data, "website_content") and website_data.website_content:
+        processed_content = website_data.website_content
+    else:
+        try:
+            website_data_raw = extract_website_content(data.website_url)
+            raw_content = (
+                website_data_raw.get("markdown")
+                or website_data_raw.get("content")
+                or ""
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
+        pipeline = ContentPreprocessingPipeline(
+            SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
+        )
+        processed_chunks = pipeline.process(raw_content)
+        processed_content = "\n".join(processed_chunks)
     # 4. Build prompt variables
     prompt_vars = ProductOverviewPromptVars(
         website_content=processed_content,
@@ -300,7 +325,6 @@ async def generate_product_overview(data: ProductOverviewRequest):
         assessment_summary=assessment.summary,
     )
     prompt = render_prompt("product_overview", prompt_vars)
-
     # 5. Call LLM and parse output
     try:
         llm_request = LLMRequest(prompt=prompt)

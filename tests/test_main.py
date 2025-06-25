@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from blossomer_gtm_api.main import app
 import pytest
 import jsonschema
@@ -140,7 +140,7 @@ def test_icp_schema_rejects_wrong_type():
         jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)
 
 
-def test_product_overview_endpoint_success():
+def test_product_overview_endpoint_success(monkeypatch):
     """
     Test the /campaigns/product_overview endpoint for a successful response.
     Mocks website scraping and LLM response to ensure the endpoint returns valid JSON
@@ -161,6 +161,42 @@ def test_product_overview_endpoint_success():
     )
     fake_llm_response = MagicMock()
     fake_llm_response.text = fake_llm_json
+    # Patch orchestrator to return ready assessment
+    from blossomer_gtm_api.prompts.models import (
+        ContextAssessmentResult,
+        ContextQuality,
+        EndpointReadiness,
+    )
+
+    ready_assessment = ContextAssessmentResult(
+        overall_quality=ContextQuality.HIGH,
+        overall_confidence=0.95,
+        content_sections=[],
+        company_clarity={},
+        endpoint_readiness=[
+            EndpointReadiness(
+                endpoint="product_overview",
+                is_ready=True,
+                confidence=0.95,
+                missing_requirements=[],
+                recommendations=[],
+            )
+        ],
+        data_quality_metrics={},
+        recommendations={},
+        summary="Ready for product overview.",
+    )
+    fake_orchestration_result = {
+        "assessment": ready_assessment,
+        "enriched_content": {"initial": MagicMock(website_content=fake_content)},
+        "sources_used": ["website_scraper"],
+        "enrichment_performed": [],
+        "final_quality": "high",
+    }
+    monkeypatch.setattr(
+        "blossomer_gtm_api.main.ContextOrchestrator.orchestrate_context",
+        AsyncMock(return_value=fake_orchestration_result),
+    )
     with patch(
         "blossomer_gtm_api.main.extract_website_content",
         return_value={"content": fake_content},

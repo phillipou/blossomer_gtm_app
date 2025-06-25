@@ -109,11 +109,15 @@ def test_firecrawl_scrape_url_success(monkeypatch):
     expected = {"markdown": "# Example", "json": {"title": "Example"}}
 
     class MockResponse:
+        def __init__(self):
+            self.status_code = 200  # Simulate a successful HTTP response
+
         def raise_for_status(self):
             pass
 
         def json(self):
-            return expected
+            # Return a structure matching the real Firecrawl API
+            return {"success": True, "data": expected}
 
     def mock_post(*args, **kwargs):
         return MockResponse()
@@ -121,7 +125,8 @@ def test_firecrawl_scrape_url_success(monkeypatch):
     monkeypatch.setenv("FIRECRAWL_API_KEY", "dummy-key")
     with patch("requests.post", mock_post):
         result = firecrawl_scrape_url(test_url)
-        assert result == expected
+        assert result["markdown"] == expected["markdown"]
+        assert result["json"] == expected["json"]
 
 
 def test_firecrawl_scrape_url_missing_api_key(monkeypatch):

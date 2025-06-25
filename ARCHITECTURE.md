@@ -165,6 +165,61 @@ class ContextAssessment:
     source: str                 # Data source identifier
 ```
 
+### Quality Gating & Endpoint Readiness
+
+The Context Orchestrator enforces endpoint-specific readiness by mapping each endpoint to its required context fields and minimum confidence threshold. This logic is used to gate campaign generation and provide actionable feedback.
+
+#### Endpoint Readiness Mapping (Python Example)
+
+```python
+ENDPOINT_READINESS_CRITERIA = {
+    "product_overview": {
+        "required_fields": ["product_description", "key_features"],
+        "min_confidence": 0.5,
+    },
+    "target_company": {
+        "required_fields": ["b2b_indicator", "problem_space"],
+        "min_confidence": 0.4,
+    },
+    "target_persona": {
+        "required_fields": ["department", "problems_addressed"],
+        "min_confidence": 0.4,
+    },
+    "positioning": {
+        "required_fields": ["feature_list", "problems_solved"],
+        "min_confidence": 0.5,
+    },
+    "email": {
+        "required_fields": ["features", "problem_solution_fit"],
+        "min_confidence": 0.5,
+    },
+}
+```
+
+#### Orchestration Flow
+
+1. **Assessment:** Evaluate context quality and extract available fields.
+2. **Readiness Check:** Compare against endpoint criteria.
+3. **Enrichment (if enabled):** Attempt to fetch missing data.
+4. **Quality Gate:** If requirements not met, return 422 with actionable feedback.
+5. **Proceed:** If ready, continue to campaign generation.
+
+#### Example: Readiness Check Logic
+
+```python
+def check_endpoint_readiness(assessment, endpoint):
+    criteria = ENDPOINT_READINESS_CRITERIA[endpoint]
+    missing = [
+        field for field in criteria["required_fields"]
+        if not assessment.get(field)
+    ]
+    ready = (
+        assessment["confidence"] >= criteria["min_confidence"]
+        and not missing
+    )
+    return ready, missing
+```
+
 ## 4. AI Agent Architecture
 
 ### Agent vs. Endpoint Design Philosophy

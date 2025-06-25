@@ -505,6 +505,42 @@ For long-running operations, the API provides clear progress indication through 
 **Quality transparency**
 All responses include confidence levels and data source transparency, enabling users to make informed decisions about output reliability and areas for improvement.
 
+## Context Quality & Endpoint Readiness Criteria
+
+To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforces endpoint-specific context requirements and quality thresholds. The system automatically assesses the provided context and, if necessary, fetches additional data or returns actionable feedback to the user.
+
+### Why This Matters
+
+- **Founder Reality:** Early-stage founders often provide features but lack clear positioning or targeting.
+- **Progressive Quality:** Each endpoint builds on previous context, ensuring outputs are reliable and actionable.
+- **Actionable Feedback:** Users receive specific guidance on what's missing and how to improve their input.
+
+### Endpoint Readiness Criteria
+
+| Endpoint                      | Required Context                        | Min. Confidence | Notes/Logic                                                                 |
+|-------------------------------|-----------------------------------------|-----------------|----------------------------------------------------------------------------|
+| `/campaigns/product_overview` | Basic product description + 2-3 features| 0.5             | Can work without clear value prop                                           |
+| `/campaigns/target_company`   | Any B2B indicator + problem space       | 0.4             | Will infer from features if targeting unclear                              |
+| `/campaigns/target_persona`   | Department/function + problems addressed| 0.4             | Will infer seniority from feature complexity                               |
+| `/campaigns/positioning`      | Comprehensive feature list + problems   | 0.5             | Creates positioning, doesn't just extract                                  |
+| `/campaigns/email`            | Features + basic problem/solution fit   | 0.5             | Transforms features → benefits automatically                               |
+
+#### Example Error Response
+
+```json
+{
+  "error": "Insufficient content quality for product overview",
+  "quality_assessment": "low",
+  "confidence": 0.4,
+  "missing_requirements": ["Product features", "Pricing information"],
+  "recommendations": {
+    "immediate_actions": ["Add product features section"],
+    "data_enrichment": ["Enable website crawling"],
+    "user_input_needed": ["Target market definition"]
+  }
+}
+```
+
 ---
 
 ## Changelog
