@@ -15,7 +15,7 @@ alwaysApply: true
 - **Rate limiting**: All APIs and endpoints must implement rate limiting, as specified in the PRD and architecture.
 - **Avoid code duplication**: Reuse existing code and patterns where possible. Check for similar logic before adding new code.
 - **Environment awareness**: All code must account for dev, test, and prod environments. Never hardcode environment-specific logic.
-- **Clean and organized codebase**: Keep files under 200–300 lines. Refactor when files grow too large. Maintain clear module boundaries. All code should use a maximum line length of 90 characters (enforced by flake8 and Black).
+- **Clean and organized codebase**: Keep files under 200–300 lines. Refactor when files grow too large. Maintain clear module boundaries. All code should use a maximum line length of 100 characters (documented), with enforcement at 120 characters by flake8 and Black. This provides a buffer for code review and future-proofing.
 - **No scripts in main codebase**: Avoid writing scripts in files unless absolutely necessary. Scripts should not be included if only run once.
 - **No stubbing/fake data in dev/prod**: Mocking is only allowed in tests. Never add stubbing or fake data to dev or prod code.
 - **.env file safety**: Never overwrite the .env file without explicit user confirmation.

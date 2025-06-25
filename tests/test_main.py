@@ -1,8 +1,54 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from blossomer_gtm_api.main import app
+import pytest
+import jsonschema
+from blossomer_gtm_api.schemas import ICP_SCHEMA
 
 client = TestClient(app)
+
+# Example of valid ICP data
+VALID_ICP = {
+    "target_company": "Mid to large-sized software development firms",
+    "company_attributes": [
+        "Works on large-scale software projects",
+        "Requires collaboration on complex tasks",
+        "Interested in integrating AI to improve coding efficiency",
+        "Uses large files and requires advanced token management",
+        "Prefers open source solutions for customization and transparency",
+    ],
+    "buying_signals": [
+        "Exploring AI tools for software development",
+        "Looking to improve codebase management with AI",
+        "Seeking integration with multiple AI models",
+        "Interest in open source, customizable coding tools",
+        "Desire to manage development tasks efficiently",
+    ],
+    "persona": "CTO or Head of Engineering",
+    "persona_attributes": [
+        "Responsible for technological innovation",
+        "Seeks cost-effective ways to enhance development processes",
+        "Values open-source solutions for flexibility",
+        "Prioritizes tools that aid in managing large development teams",
+        "Focuses on productivity and efficiency improvements",
+    ],
+    "persona_buying_signals": [
+        "Interest in utilizing AI for coding",
+        "Focus on avoiding model-specific lock-in",
+        "Need for tools that support complex and large-scale project development",
+        "Exploring solutions that allow granular control over coding tasks",
+        "Evaluating options to leverage multiple AI models effectively",
+    ],
+    "rationale": (
+        "Plandex is ideal for companies that manage large and complex software projects "
+        "and are interested in leveraging AI to streamline coding tasks. The platform's "
+        "capabilities, such as handling large files, collaboration, and integration with "
+        "multiple AI models, align well with the needs of these firms. The personas targeted, "
+        "such as CTOs or Heads of Engineering, play a crucial role in adopting new technologies "
+        "that improve productivity while ensuring flexibility and cost-effectiveness, making "
+        "Plandex's open-source approach and customizable features attractive to them."
+    ),
+}
 
 
 def test_icp_endpoint_success():
@@ -66,3 +112,29 @@ def test_icp_endpoint_no_provider(monkeypatch):
             "LLM provider error" in response.text
             or "All LLM providers failed" in response.text
         )
+
+
+def test_icp_schema_is_valid():
+    """Test that the ICP_SCHEMA itself is a valid JSON schema."""
+    jsonschema.Draft7Validator.check_schema(ICP_SCHEMA)
+
+
+def test_icp_schema_accepts_valid_data():
+    """Test that valid ICP data passes the schema validation."""
+    jsonschema.validate(instance=VALID_ICP, schema=ICP_SCHEMA)
+
+
+def test_icp_schema_rejects_missing_required():
+    """Test that missing required fields are rejected."""
+    invalid = VALID_ICP.copy()
+    del invalid["persona"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)
+
+
+def test_icp_schema_rejects_wrong_type():
+    """Test that wrong types are rejected (e.g., persona as list)."""
+    invalid = VALID_ICP.copy()
+    invalid["persona"] = ["CTO"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)

@@ -1,18 +1,19 @@
-import os
-import time
 import json
-import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.prompts.models import ICPPromptVars
 from blossomer_gtm_api.services.website_scraper import extract_website_content
 from blossomer_gtm_api.services.llm_service import LLMClient, LLMRequest, OpenAIProvider
+from blossomer_gtm_api.services.content_preprocessing import (
+    ContentPreprocessingPipeline,
+    SectionChunker,
+    LangChainSummarizer,
+    BoilerplateFilter,
+)
+from blossomer_gtm_api.schemas import ICP_SCHEMA
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
@@ -198,74 +199,62 @@ async def generate_positioning(data: PositioningRequest):
 @app.post(
     "/campaigns/icp",
     summary="Generate Ideal Customer Profile (ICP)",
-    tags=["Campaigns", "ICP", "AI"],
     response_description="A structured ICP definition for the given company context.",
 )
 async def generate_icp(data: ICPRequest):
     """
-    Generate a structured Ideal Customer Profile (ICP) for a B2B SaaS company.
+    Generate an Ideal Customer Profile (ICP) for a B2B startup using website content and user context.
     """
-    # 1. Context resolution with retry logic for website scraping
-    website_content = None
-    if not (data.user_inputted_context or data.llm_inferred_context):
-        max_retries = 3
-        delay = 2  # seconds
-        for attempt in range(max_retries):
-            try:
-                website_content = extract_website_content(data.website_url).get(
-                    "content", ""
-                )
-                if isinstance(website_content, list):
-                    # Join list of content chunks into a single string for prompt compatibility
-                    website_content = "\n\n".join(website_content)
-                break  # Success, exit retry loop
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    time.sleep(delay)
-                else:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=(
-                            f"Website scrape failed after {max_retries} attempts: {e}"
-                        ),
-                    )
-
-    # Ensure website_content is a string for ICPPromptVars
-    if isinstance(website_content, list):
-        website_content = "\n\n".join(website_content)
-
-    # 2. Render the prompt using your template system
-    prompt_vars = ICPPromptVars(
-        user_inputted_context=data.user_inputted_context,
-        llm_inferred_context=data.llm_inferred_context,
-        website_content=website_content,
-    )
-    prompt = render_prompt("icp", prompt_vars)
-
-    # Logging prompt and API key presence
-    print("=== FULL LLM PROMPT ===")
-    print(prompt)
-    logging.info(f"Prompt sent to LLM (first 500 chars): {prompt[:500]}...")
-    logging.info(f"OPENAI_API_KEY present: {bool(os.getenv('OPENAI_API_KEY'))}")
-
-    # 3. Call the LLM via the abstraction layer
+    # 1. Scrape website content
     try:
-        llm_request = LLMRequest(prompt=prompt)
-        llm_response = await llm_client.generate(llm_request)
+        website_data = extract_website_content(data.website_url)
+        # Assume markdown is the main content
+        raw_content = website_data.get("markdown") or website_data.get("content") or ""
     except Exception as e:
-        logging.exception("LLM provider error")
-        raise HTTPException(status_code=502, detail=f"LLM provider error: {e}")
+        raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
 
-    # 4. Parse the LLM output as JSON
+    # 2. Preprocess content (chunk, summarize, filter)
+    pipeline = ContentPreprocessingPipeline(
+        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
+    )
+    processed_chunks = pipeline.process(raw_content)
+    processed_content = "\n".join(processed_chunks)
+
+    # 3. Build prompt
+    prompt = (
+        "You are an expert B2B SaaS go-to-market strategist. "
+        "Given the following company website content and context, generate an Ideal Customer "
+        "Profile (ICP) for the company. Respond ONLY with a valid JSON object matching the "
+        "schema provided. Do not include markdown, code fences, or explanations.\n\n"
+        f"Website Content:\n{processed_content}\n\n"
+        f"Company Description:\n"
+        f"{data.user_inputted_context or data.llm_inferred_context or data.website_url}\n\n"
+        "Schema:\n"
+        "{\n"
+        '  "target_company": string,\n'
+        '  "company_attributes": [string],\n'
+        '  "buying_signals": [string],\n'
+        '  "persona": string,\n'
+        '  "persona_attributes": [string],\n'
+        '  "persona_buying_signals": [string],\n'
+        '  "rationale": string\n'
+        "}\n"
+    )
+
+    # 4. Call LLM with structured output
+    llm_request = LLMRequest(
+        prompt=prompt,
+        response_schema=ICP_SCHEMA,
+    )
     try:
+        llm_response = await llm_client.generate(llm_request)
         icp_json = json.loads(llm_response.text)
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"LLM output was not valid JSON: {e}\nRaw output: {llm_response.text}",
+            detail=f"LLM output was not valid JSON or LLM call failed: {e}",
         )
 
-    # 5. Return the parsed JSON
     return icp_json
 
 
