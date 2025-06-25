@@ -1,28 +1,39 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 dev-debug.log
+
 # Dependency directories
 node_modules/
+
 # Environment variables
 .env
+
 # Editor directories and files
-.idea
-.vscode
+.idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
 # OS specific
 .DS_Store
 
+# Development cache
+dev_cache/
+
+# Python cache
+__pycache__/
+*.pyc
+
 # Task files
-# tasks.json
-# tasks/ 
+tasks.json
+tasks/
 
 # Database
 DATABASE_URL=
@@ -39,11 +50,4 @@ APOLLO_API_KEY=
 
 # Security
 API_KEY_SALT=
-JWT_SECRET_KEY=
-
-# Development cache
-dev_cache/
-
-# Python cache
-__pycache__/
-*.pyc 
+JWT_SECRET_KEY= 
