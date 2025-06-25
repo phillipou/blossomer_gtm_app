@@ -1,908 +1,580 @@
-# Blossomer GTM API - Software Architecture Blueprint
+# Blossomer GTM API - Software Architecture Blueprint v2.0
 
-## 1. Architectural Style and Pattern Selection
+## 1. Architectural Philosophy and Patterns
 
-### Recommended Architecture: Modular Monolith with Service-Oriented Design
+### Core Architecture: Enhanced Modular Monolith
 
-**Primary Choice: Modular Monolith**
+**Primary Choice: Intelligent Modular Monolith**
 
-For the Blossomer GTM API, I recommend starting with a **modular monolith** architecture that can evolve into microservices as the product scales.
+The Blossomer GTM API uses an enhanced modular monolith architecture with intelligent orchestration capabilities, designed to evolve gracefully into microservices.
 
-**Justification:**
+**Key Architectural Principles:**
 
-- **Early-stage appropriate**: Your pre-Series A target market aligns with a simpler deployment model
-- **Team size consideration**: Small teams (1-5 people) benefit from unified codebases
-- **Development velocity**: Faster iteration cycles during product-market fit discovery
-- **Cost efficiency**: Single deployment reduces infrastructure complexity and costs
-- **Data consistency**: Campaign generation requires strong consistency across AI workflows
+- **Smart Context Orchestration**: Intelligent data management across endpoints
+- **Atomic + Composable Endpoints**: Individual business value with chainable context
+- **Agent-Based Internal Architecture**: Clear separation between user-facing endpoints and internal processing agents
+- **AI-First Design**: Built for LLM reliability, quality validation, and iterative refinement
 
-**Architecture Pattern: Domain-Driven Design (DDD)**
+**Architecture Pattern: Domain-Driven Design (DDD) with AI Orchestration**
 
-- **Campaign Generation Domain**: Core business logic for AI-powered asset creation
-- **Content Processing Domain**: Website analysis and ICP inference
-- **User Management Domain**: Authentication, billing, and API key management
-- **Integration Domain**: External API management and data enrichment
-
-**Tradeoffs Analysis:**
-
-| Aspect | Modular Monolith | Pure Microservices |
-|--------|------------------|-------------------|
-| **Development Speed** | ✅ Fast initial development | ❌ Slower due to distributed complexity |
-| **Operational Complexity** | ✅ Simple deployment/monitoring | ❌ Complex service mesh, monitoring |
-| **Team Coordination** | ✅ Easier for small teams | ❌ Requires mature DevOps practices |
-| **Scaling Granularity** | ⚠️ Scale entire application | ✅ Scale individual services |
-| **Technology Diversity** | ❌ Single tech stack | ✅ Technology per service |
-| **Data Consistency** | ✅ ACID transactions | ❌ Eventual consistency complexity |
+- **Campaign Intelligence Domain**: Smart context management and orchestration
+- **Asset Generation Domain**: Modular campaign asset creation
+- **Content Processing Domain**: Website analysis and data enrichment
+- **User Experience Domain**: Authentication, corrections, and feedback loops
+- **Integration Domain**: External APIs and data source management
 
 **Evolution Path:**
 
-1. **Phase 1**: Modular monolith with clear domain boundaries
-2. **Phase 2**: Extract compute-intensive AI processing to separate services
-3. **Phase 3**: Microservices architecture for mature, high-scale operations
+1. **Phase 1** (Current): Enhanced modular monolith with smart orchestration
+2. **Phase 2**: Extract AI processing and context orchestration to separate services
+3. **Phase 3**: Full microservices with intelligent service mesh
 
-### Supporting Current Requirements
+## 2. Enhanced System Architecture
 
-**API-First Design**: REST endpoints with clear separation between presentation and business logic
-**AI Workflow Support**: Orchestrated agent processing within unified transaction boundaries
-**External Integrations**: Adapter pattern for LLM providers and data enrichment APIs
-**Frontend Preparation**: Clean separation of concerns enabling future UI development
-
-### Stateless API Strategy
-
-For the initial development phase, the API will remain stateless. No database models or persistent storage will be implemented until the requirements are clear. This allows for rapid iteration, easier refactoring, and a focus on API design. Endpoints will use mock or in-memory data until persistence is needed.
-
-## 2. System Components and Services
-
-### Core Component Architecture (Updated)
-
-- **API Gateway Layer**: Exposes modular endpoints for each campaign asset and analysis:
-  - `/campaigns/icp`
-  - `/campaigns/positioning`
-  - `/campaigns/valueprops`
-  - `/campaigns/email`
-  - `/campaigns/usecasefit`
-- All endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context` for chaining and agentic workflows.
+### Intelligent Component Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     API Gateway Layer                       │
 ├─────────────────────────────────────────────────────────────┤
 │  FastAPI Router │ Auth Middleware │ Rate Limiting │ Logging  │
+│  Circuit Breaker │ Context Tracking │ Quality Gates         │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Application Services                      │
+│                Smart Orchestration Layer                    │
+├─────────────────────────────────────────────────────────────┤
+│  Context Orchestrator │ Quality Validator │ Correction Engine│
+│  Data Source Manager │ Response Synthesizer │ Cache Manager  │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Domain Services Layer                     │
 ├─────────────────┬─────────────────┬─────────────────┬───────┤
-│   Campaign      │   Content       │   User          │ Admin │
-│   Service       │   Service       │   Service       │ Service│
+│   Campaign      │   Content       │   Enrichment    │ User  │
+│   Generation    │   Processing    │   Sources       │ Mgmt  │
 └─────────────────┴─────────────────┴─────────────────┴───────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Domain Logic Layer                       │
+│                    AI Agent Layer                          │
 ├─────────────────┬─────────────────┬─────────────────┬───────┤
-│   Campaign      │   Content       │   AI Agent      │ ICP   │
-│   Generator     │   Processor     │   Orchestrator  │ Engine│
+│   Website       │   ICP           │   Content       │ LLM   │
+│   Analysis      │   Inference     │   Synthesis     │ Client│
+│   Agent         │   Agent         │   Agent         │       │
 └─────────────────┴─────────────────┴─────────────────┴───────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  Infrastructure Layer                       │
 ├─────────────────┬─────────────────┬─────────────────┬───────┤
-│   Database      │   Vector Store  │   External      │ Queue │
-│   Repository    │   (ChromaDB)    │   API Client    │ System│
+│   PostgreSQL    │   ChromaDB      │   Redis Cache   │ External│
+│   Database      │   Vector Store  │   Context Store │ APIs  │
 └─────────────────┴─────────────────┴─────────────────┴───────┘
 ```
 
-### Service Boundaries and Responsibilities
+### Enhanced Endpoint Architecture
 
-#### 1. Campaign Service (Updated)
+#### Core Business Endpoints
 
-**Responsibility**: Orchestrate campaign asset generation via modular endpoints
+| Endpoint | Purpose | Context Dependencies | Output |
+|----------|---------|---------------------|---------|
+| `/campaigns/product_overview` | Foundation product analysis | `website_url` | Product features, customers, competitive context |
+| `/campaigns/target_company` | Company targeting strategy | `website_url`, `product_overview?` | Firmographics, buying signals, disqualifiers |
+| `/campaigns/target_persona` | Primary buyer persona | `website_url`, `target_company?` | Decision-maker profile, behaviors, pain points |
+| `/campaigns/positioning` | Positioning and value props | `website_url`, `target_company`, `target_persona` | Unique insight, value propositions |
+| `/campaigns/email` | Email campaign sequences | All above context | Subject lines, sequences, personalization |
+| `/campaigns/enrichment_sources` | Implementation guidance | Any targeting attributes | APIs, tools, costs, workflows |
 
-- **Endpoints**: `/campaigns/icp`, `/campaigns/positioning`, `/campaigns/valueprops`, `/campaigns/email`, `/campaigns/usecasefit`
-- **Business Logic**: Each endpoint is atomic but can accept context from previous steps for chaining
-- **Extensibility**: New endpoints can be added with minimal impact
+#### System Endpoints
 
-#### 2. Content Service
+| Endpoint | Purpose | Input | Output |
+|----------|---------|-------|--------|
+| `/campaigns/correct` | Output refinement | Original response + corrections | Improved response |
+| `/health` | System status | None | Provider health, performance metrics |
 
-**Responsibility**: Website analysis and content processing
+#### Legacy Endpoints (Backwards Compatibility)
 
-- **Functions**: URL scraping, content extraction, vectorization (using Firecrawl.dev API for dynamic content, JS, and media)
-- **Storage**: ChromaDB integration for semantic search
-- **Caching**: Intelligent content caching with TTL policies
-- **Rationale**: Firecrawl.dev chosen for reliability, dynamic content support, and fast integration; architecture supports future migration to in-house scraping if needed.
+| Endpoint | Purpose | Status | Migration Path |
+|----------|---------|--------|----------------|
+| `/campaigns/icp` | Consolidated ICP | Maintained | Internally routes to decomposed endpoints |
 
-#### 3. User Service
+## 3. Smart Context Orchestration System
 
-**Responsibility**: Authentication, authorization, and usage tracking
+### Context Management Architecture
 
-- **Functions**: API key management, rate limiting, billing integration
-- **Security**: JWT token validation, role-based access control
-- **Analytics**: Usage metrics and API call tracking
+The Context Orchestrator is the intelligence layer that manages data requirements and quality across all endpoints.
 
-#### 4. AI Agent Orchestrator (Updated)
-
-- Modular, composable API design supports both atomic and orchestrated/agentic workflows
-- Endpoints can be chained by passing `llm_inferred_context` from one to the next
-- Extensible for future asset types and analyses
-
-#### 4.1 LLM Provider Abstraction Layer
-
-- The AI Agent Orchestrator includes an adapter-based abstraction layer for LLM provider integration.
-- `BaseLLMProvider` interface defines async methods, provider metadata, and a unified generate method.
-- Concrete adapters (e.g., OpenAIProvider, AnthropicProvider) implement this interface.
-- The orchestrator (`LLMClient`) manages provider selection, failover, and exposes a unified API to the rest of the system.
-- All input/output uses Pydantic models for validation and serialization.
-- Extensibility: New providers are added by subclassing and registering with the orchestrator.
-- All logic is async and stateless; configuration is via environment or dependency injection.
-- Unified error handling and failover logic ensure reliability.
-- TDD/unit tests are required for this layer.
-
-#### 5. ICP Engine
-
-**Responsibility**: Ideal Customer Profile inference and processing
-
-- **Analysis**: Website-based ICP generation
-- **Validation**: User-provided ICP parsing and structuring
-- **Enrichment**: Market data integration for ICP enhancement
-
-### Communication Patterns
-
-**Internal Communication**: Direct function calls within monolith
-**External APIs**: HTTP clients with circuit breaker pattern
-**Async Processing**: Redis-based task queue for long-running operations
-**Event Publishing**: Domain events for cross-module communication
-
-### Data Flow Architecture
-
-```
-Website URL Input
-        │
-        ▼
-Content Service ──► ChromaDB Storage
-        │
-        ▼
-ICP Engine ──► ICP Analysis/Inference
-        │
-        ▼
-AI Agent Orchestrator ──► LLM APIs
-        │
-        ▼
-Campaign Service ──► Asset Generation
-        │
-        ▼
-PostgreSQL Storage ──► JSON Response
+```python
+class ContextOrchestrator:
+    """
+    Intelligent context management system
+    
+    Key responsibilities:
+    1. Assess quality of provided context
+    2. Determine what additional data is needed  
+    3. Orchestrate data fetching from multiple sources
+    4. Cache and reuse context across related requests
+    5. Provide transparent feedback on data quality
+    """
+    
+    def __init__(self):
+        self.data_sources = {
+            "website_scraper": WebsiteScrapingAgent(),
+            "product_analyzer": ProductAnalysisAgent(),
+            "market_research": MarketResearchAgent(),
+            "icp_inference": ICPInferenceAgent()
+        }
+        
+        self.endpoint_requirements = {
+            "target_company": [
+                ContextRequirement(
+                    context_type=ContextType.WEBSITE_CONTENT,
+                    required=True,
+                    quality_threshold=0.7,
+                    fallback_sources=["website_scraper"]
+                ),
+                ContextRequirement(
+                    context_type=ContextType.PRODUCT_OVERVIEW,
+                    required=False,
+                    quality_threshold=0.6,
+                    fallback_sources=["product_analyzer"]
+                )
+            ]
+            # ... other endpoint requirements
+        }
 ```
 
-## 3. Data Architecture
+### Context Quality Assessment
 
-### Storage Solutions Strategy
+```python
+class ContextQuality(Enum):
+    SUFFICIENT = "sufficient"    # >80% confidence, complete data
+    PARTIAL = "partial"         # 60-80% confidence, some gaps
+    INSUFFICIENT = "insufficient" # 40-60% confidence, major gaps  
+    MISSING = "missing"         # <40% confidence or no data
 
-#### Primary Database: PostgreSQL
+class ContextAssessment:
+    context_type: ContextType
+    quality: ContextQuality
+    confidence_score: float      # 0-1 confidence level
+    data_freshness: Optional[float]  # Hours since update
+    gaps: List[str]             # Specific missing information
+    source: str                 # Data source identifier
+```
 
-**Rationale**: ACID compliance, JSON support, mature ecosystem
+## 4. AI Agent Architecture
+
+### Agent vs. Endpoint Design Philosophy
+
+**Endpoints = User Value | Agents = Implementation Details**
+
+| Criteria | Endpoint | Internal Agent |
+|----------|----------|----------------|
+| **Purpose** | Direct business value to users | Internal processing step |
+| **Scope** | Complete, usable deliverable | Intermediate data transformation |
+| **Caching** | Results worth long-term storage | Ephemeral processing |
+| **Versioning** | Stable external contract | Can change with implementation |
+| **Error Handling** | User-friendly error responses | Technical error propagation |
+
+### Core AI Agents
+
+#### WebsiteAnalysisAgent
+- **Purpose**: Scrape, process, and analyze website content
+- **Input**: Website URL, scraping preferences
+- **Output**: Structured website data, content embeddings
+- **Integrations**: Firecrawl.dev API, content preprocessing pipeline
+
+#### ICPInferenceAgent  
+- **Purpose**: Generate ideal customer profiles from website analysis
+- **Input**: Website content, user context (optional)
+- **Output**: Target company and persona profiles
+- **Logic**: LLM-powered analysis with confidence scoring
+
+#### ContentSynthesisAgent
+- **Purpose**: Combine multiple data sources into coherent context
+- **Input**: Multiple data sources, synthesis requirements
+- **Output**: Unified context for campaign generation
+- **Logic**: Intelligent data merging and gap identification
+
+#### EnrichmentRecommendationAgent
+- **Purpose**: Recommend specific data sources and APIs
+- **Input**: Target attributes, budget constraints
+- **Output**: Prioritized data source recommendations
+- **Database**: 20+ data source catalog with cost/quality metadata
+
+## 5. Enhanced LLM Provider Architecture
+
+### Circuit Breaker Pattern Implementation
+
+```python
+class EnhancedLLMClient:
+    """
+    Production-ready LLM client with comprehensive error handling
+    """
+    
+    def __init__(self, providers: List[BaseLLMProvider]):
+        self.providers = sorted(providers, key=lambda p: p.priority)
+        self.circuit_breakers = {
+            provider.name: CircuitBreaker(
+                failure_threshold=5,
+                recovery_timeout=60
+            ) for provider in providers
+        }
+        self.metrics = LLMMetrics()
+    
+    async def generate_with_failover(
+        self, 
+        request: LLMRequest,
+        max_retries: int = 2,
+        timeout: float = 30.0
+    ) -> LLMResponse:
+        """Generate with automatic failover and retry logic"""
+        
+        for provider in self.providers:
+            circuit_breaker = self.circuit_breakers[provider.name]
+            
+            if not circuit_breaker.can_execute():
+                continue
+                
+            for attempt in range(max_retries + 1):
+                try:
+                    response = await asyncio.wait_for(
+                        provider.generate(request),
+                        timeout=timeout
+                    )
+                    
+                    circuit_breaker.record_success()
+                    self.metrics.record_success(provider.name)
+                    return response
+                    
+                except asyncio.TimeoutError:
+                    circuit_breaker.record_failure()
+                    break  # Don't retry timeouts
+                    
+                except Exception as e:
+                    if attempt < max_retries:
+                        await asyncio.sleep((2 ** attempt) * 0.1)  # Exponential backoff
+                    else:
+                        circuit_breaker.record_failure()
+                        break
+        
+        raise AllProvidersFailedException("All LLM providers failed")
+```
+
+### Output Validation and Recovery
+
+```python
+class LLMOutputValidator:
+    """Advanced output validation with error recovery"""
+    
+    @classmethod
+    def validate_and_parse(
+        cls,
+        llm_output: str,
+        expected_schema: Type[BaseModel],
+        max_retry_attempts: int = 3
+    ) -> BaseModel:
+        """Validate with progressive error recovery strategies"""
+        
+        for attempt in range(max_retry_attempts):
+            try:
+                # Extract and clean JSON
+                json_str = cls.extract_json_from_text(llm_output)
+                cleaned_json = cls.clean_json_string(json_str)
+                
+                # Parse and validate
+                parsed_data = json.loads(cleaned_json)
+                validated_output = expected_schema.parse_obj(parsed_data)
+                
+                return validated_output
+                
+            except json.JSONDecodeError as e:
+                if attempt < max_retry_attempts - 1:
+                    llm_output = cls._aggressive_json_cleanup(llm_output)
+                    
+            except ValidationError as e:
+                if attempt < max_retry_attempts - 1:
+                    llm_output = cls._fill_missing_fields(llm_output, expected_schema, e)
+        
+        raise OutputValidationError(f"Failed validation after {max_retry_attempts} attempts")
+```
+
+## 6. Data Architecture and Storage Strategy
+
+### Multi-Layer Storage Architecture
+
+#### PostgreSQL (Primary Database)
+- **User management**: Authentication, API keys, billing
+- **Campaign storage**: Generated assets and metadata  
+- **Context caching**: Processed website content and analysis
+- **Usage tracking**: API calls, rate limiting, analytics
+
+#### ChromaDB (Vector Database)
+- **Content embeddings**: Website content for semantic search
+- **Template matching**: Similar company pattern recognition
+- **Context similarity**: Related context retrieval for chaining
+
+#### Redis (Caching and Session Management)
+- **Context cache**: Short-term context storage for endpoint chaining
+- **Rate limiting**: API call counting with TTL
+- **Session management**: User authentication state
+- **Queue management**: Async task processing
+
+### Enhanced Database Schema
 
 ```sql
--- Core tables structure
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    api_key_hash VARCHAR(255) NOT NULL,
-    tier VARCHAR(50) DEFAULT 'free',
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
+-- Enhanced campaign storage with decomposed structure
 CREATE TABLE campaigns (
     id UUID PRIMARY KEY,
     user_id UUID REFERENCES users(id),
     website_url TEXT NOT NULL,
-    icp_source VARCHAR(20) CHECK (icp_source IN ('user', 'inferred')),
-    icp_data JSONB,
-    positioning_canvas JSONB,
+    
+    -- Decomposed campaign components
+    product_overview JSONB,
+    target_company JSONB,
+    target_persona JSONB,
+    positioning JSONB,
     email_campaign JSONB,
-    enrichment_blueprint JSONB,
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT NOW()
+    enrichment_sources JSONB,
+    
+    -- Metadata and tracking
+    context_sources TEXT[],
+    confidence_scores JSONB,
+    corrections_applied JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE website_content (
+-- Context storage for intelligent orchestration
+CREATE TABLE context_cache (
     id UUID PRIMARY KEY,
-    url_hash VARCHAR(64) UNIQUE NOT NULL,
-    url TEXT NOT NULL,
-    content_text TEXT,
-    metadata JSONB,
-    cached_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP
+    url_hash VARCHAR(64) NOT NULL,
+    context_type VARCHAR(50) NOT NULL,
+    context_data JSONB NOT NULL,
+    quality_score FLOAT NOT NULL,
+    data_sources TEXT[],
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(url_hash, context_type)
 );
 
-CREATE TABLE api_usage (
+-- Enhanced API usage tracking
+CREATE TABLE api_usage_detailed (
     id UUID PRIMARY KEY,
     user_id UUID REFERENCES users(id),
     endpoint VARCHAR(100) NOT NULL,
-    request_count INTEGER DEFAULT 1,
-    date DATE NOT NULL,
-    UNIQUE(user_id, endpoint, date)
+    context_sources TEXT[],
+    processing_time_ms INTEGER,
+    llm_provider VARCHAR(50),
+    tokens_used INTEGER,
+    cost_estimate DECIMAL(10,4),
+    quality_score FLOAT,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
-#### Vector Database: ChromaDB
+## 7. Correction and Refinement System
 
-**Purpose**: Semantic search and RAG operations
-
-- **Website content embeddings** for contextual retrieval
-- **Campaign template storage** for similar company matching
-- **ICP classification** support with semantic similarity
-
-#### Caching Layer: Redis
-
-**Use Cases**:
-
-- **Session management**: User authentication state
-- **Rate limiting**: API call counting with TTL
-- **Content caching**: Processed website content
-- **Queue management**: Async task processing
-
-### Data Access Patterns
-
-#### Repository Pattern Implementation
+### Correction Architecture
 
 ```python
-class CampaignRepository:
-    async def create_campaign(self, campaign_data: CampaignCreate) -> Campaign
-    async def get_campaign(self, campaign_id: UUID) -> Optional[Campaign]
-    async def get_user_campaigns(self, user_id: UUID) -> List[Campaign]
-    async def update_campaign(self, campaign_id: UUID, updates: dict) -> Campaign
-
-class ContentRepository:
-    async def get_cached_content(self, url_hash: str) -> Optional[WebsiteContent]
-    async def cache_content(self, content: WebsiteContent) -> None
-    async def invalidate_cache(self, url_hash: str) -> None
-```
-
-#### Query Optimization Strategy
-
-- **Indexes**: User ID, campaign creation date, URL hash
-- **Partitioning**: API usage by date for historical data management
-- **Connection pooling**: SQLAlchemy async pool for concurrent requests
-
-### Data Evolution Strategy
-
-#### Schema Migration Management
-
-- **Alembic** for version-controlled database migrations
-- **Backward compatibility** maintenance for API responses
-- **Blue-green deployment** support for zero-downtime updates
-
-#### Data Retention Policies
-
-- **Campaign data**: 2-year retention with configurable policies
-- **Website content cache**: 30-day TTL with refresh logic
-- **API usage logs**: 1-year retention for billing and analytics
-
-## 4. Security Architecture
-
-### Authentication and Authorization
-
-#### API Key Authentication
-
-```python
-class APIKeyAuth:
-    def __init__(self, api_key_header: str = "X-API-Key"):
-        self.api_key_header = api_key_header
+class CampaignCorrector:
+    """Handles user corrections and output refinement"""
     
-    async def authenticate(self, request: Request) -> User:
-        api_key = request.headers.get(self.api_key_header)
-        if not api_key:
-            raise HTTPException(401, "API key required")
-        
-        user = await self.validate_api_key(api_key)
-        if not user:
-            raise HTTPException(401, "Invalid API key")
-        
-        return user
-```
-
-#### Rate Limiting Strategy
-
-- **Tier-based limits**: Free (100/day), Pro (1000/day), Enterprise (unlimited)
-- **Endpoint-specific limits**: Resource-intensive operations have lower limits
-- **Redis-based tracking**: Sliding window rate limiting implementation
-
-### Data Protection Strategies
-
-#### Encryption at Rest
-
-- **Database encryption**: PostgreSQL TDE for sensitive data
-- **API key hashing**: bcrypt with salt for stored credentials
-- **Content encryption**: Sensitive website content encrypted in ChromaDB
-
-#### Encryption in Transit
-
-- **TLS 1.3**: All API endpoints require HTTPS
-- **Certificate management**: Let's Encrypt with auto-renewal
-- **Internal communication**: mTLS for service-to-service communication (future microservices)
-
-#### Data Privacy Compliance
-
-- **GDPR compliance**: User data deletion and export capabilities
-- **Data minimization**: Only collect necessary information
-- **Anonymization**: Remove PII from analytics and logging
-
-### Security Monitoring
-
-#### Threat Detection
-
-```python
-class SecurityMonitor:
-    async def log_suspicious_activity(self, event: SecurityEvent):
-        # Log to security monitoring system
-        # Alert on patterns: unusual API usage, failed auth attempts
-        pass
-    
-    async def check_rate_limit_abuse(self, user_id: UUID) -> bool:
-        # Detect rapid successive requests
-        # Flag potential API abuse patterns
-        pass
-```
-
-#### Audit Logging
-
-- **API access logs**: All requests with user identification
-- **Data access tracking**: Campaign generation and retrieval
-- **Administrative actions**: User management and configuration changes
-
-## 5. Scalability and Performance
-
-### Scaling Strategy
-
-#### Horizontal Scaling Approach
-
-**Phase 1: Vertical Scaling**
-
-- **Database**: Increase PostgreSQL instance size
-- **Application**: Multi-core CPU optimization with async processing
-- **Memory**: Redis cache expansion for better hit rates
-
-**Phase 2: Horizontal Scaling**
-
-- **Load balancer**: Multiple FastAPI instances behind nginx
-- **Database scaling**: Read replicas for query distribution
-- **Cache distribution**: Redis cluster for session management
-
-**Phase 3: Service Extraction**
-
-- **AI processing service**: Separate compute-intensive operations
-- **Content processing service**: Independent website analysis
-- **API gateway**: Centralized routing and rate limiting
-
-### Performance Optimization
-
-#### Application-Level Optimizations
-
-```python
-# Async processing for I/O operations
-async def generate_campaign_async(website_url: str, icp_data: Optional[str]):
-    tasks = []
-    
-    # Parallel processing of independent operations
-    tasks.append(scrape_website_content(website_url))
-    if not icp_data:
-        tasks.append(infer_icp_from_website(website_url))
-    
-    # Await all tasks concurrently
-    results = await asyncio.gather(*tasks)
-    return process_campaign_generation(results)
-```
-
-#### Database Performance
-
-- **Query optimization**: Proper indexing and query planning
-- **Connection pooling**: Async SQLAlchemy pool management
-- **Prepared statements**: Parameterized queries for security and performance
-
-#### Caching Strategy
-
-```python
-class CacheStrategy:
-    # L1: In-memory cache for frequently accessed data
-    # L2: Redis cache for session and content data
-    # L3: Database with optimized queries
-    
-    async def get_website_content(self, url: str) -> WebsiteContent:
-        # Check L1 cache first
-        if content := self.memory_cache.get(url):
-            return content
-        
-        # Check L2 cache (Redis)
-        if content := await self.redis_cache.get(url):
-            self.memory_cache.set(url, content)
-            return content
-        
-        # Fetch from database and populate caches
-        content = await self.database.get_content(url)
-        await self.redis_cache.set(url, content, ttl=3600)
-        self.memory_cache.set(url, content)
-        return content
-```
-
-### Resource Estimation
-
-#### Traffic Projections
-
-- **Current target**: 1000 API calls/day across all users
-- **6-month projection**: 10,000 API calls/day
-- **12-month projection**: 100,000 API calls/day
-
-#### Infrastructure Requirements
-
-```yaml
-# Initial deployment (Render/Railway)
-CPU: 2 vCPU
-Memory: 4 GB RAM
-Storage: 50 GB SSD
-Database: PostgreSQL (2 CPU, 4 GB RAM)
-Redis: 1 GB memory cache
-
-# 6-month scaling
-CPU: 4 vCPU
-Memory: 8 GB RAM
-Storage: 100 GB SSD
-Database: PostgreSQL (4 CPU, 8 GB RAM)
-Redis: 2 GB memory cache
-
-# 12-month scaling (microservices transition)
-Load Balancer: nginx with SSL termination
-App Instances: 3x (2 CPU, 4 GB each)
-Database: PostgreSQL (8 CPU, 16 GB RAM) + read replica
-Cache: Redis cluster (4 GB total)
-```
-
-## 6. Resilience and Reliability
-
-### Failure Modes and Recovery
-
-#### LLM Service Failures
-
-```python
-class LLMClient:
     def __init__(self):
-        self.providers = [
-            OpenAIProvider(priority=1),
-            AnthropicProvider(priority=2)
-        ]
+        self.correction_strategies = {
+            CorrectionScope.FIELD_SPECIFIC: self._apply_field_corrections,
+            CorrectionScope.SECTION_WIDE: self._apply_section_corrections,
+            CorrectionScope.GLOBAL: self._apply_global_corrections
+        }
     
-    async def generate_with_fallback(self, prompt: str) -> str:
-        for provider in self.providers:
-            try:
-                result = await provider.generate(prompt)
-                return result
-            except ProviderException as e:
-                logger.warning(f"Provider {provider.name} failed: {e}")
-                continue
+    async def apply_corrections(self, request: CorrectionRequest) -> CorrectionResponse:
+        """Apply corrections using appropriate strategy"""
         
-        raise AllProvidersFailedException("All LLM providers unavailable")
-```
-
-#### Database Resilience
-
-- **Connection retry logic**: Exponential backoff for transient failures
-- **Read replica failover**: Automatic switching for read operations
-- **Transaction rollback**: Proper error handling with cleanup
-
-#### External API Resilience
-
-```python
-class ExternalAPIClient:
-    def __init__(self):
-        self.circuit_breaker = CircuitBreaker(
-            failure_threshold=5,
-            recovery_timeout=30,
-            expected_exception=HTTPException
+        strategy = self.correction_strategies[request.correction_scope]
+        corrected_data, changes_made = await strategy(request)
+        
+        return CorrectionResponse(
+            corrected_data=corrected_data,
+            correction_summary=CorrectionSummary(
+                changes_made=changes_made,
+                fields_updated=self._extract_updated_fields(changes_made),
+                confidence_impact=self._assess_confidence_impact(request, corrected_data)
+            ),
+            confidence_level=self._calculate_new_confidence(request, corrected_data)
         )
-    
-    @circuit_breaker
-    async def fetch_company_data(self, domain: str) -> CompanyData:
-        # Circuit breaker protects against cascading failures
-        # Falls back to cached data or graceful degradation
-        pass
 ```
 
-### Monitoring and Alerting
+### Correction Types and Strategies
 
-#### Health Check Endpoints
+| Correction Scope | Use Case | Strategy |
+|------------------|----------|----------|
+| **Field-Specific** | Single field corrections | Direct field updates with related field validation |
+| **Section-Wide** | Multiple related fields | AI-assisted section improvement with user guidance |
+| **Global** | Tone, style, approach changes | Complete regeneration with enhanced context |
 
+## 8. Performance and Reliability Requirements
+
+### Performance Targets
+
+| Metric | Target | Measurement |
+|--------|---------|-------------|
+| **Individual Endpoint Response** | <30 seconds | 95th percentile |
+| **Context Orchestration Overhead** | <5 seconds | Average additional time |
+| **LLM Provider Failover** | <2 seconds | Time to switch providers |
+| **Context Cache Hit Rate** | >80% | For repeated URL analysis |
+| **Output Validation Success** | >95% | First-attempt validation rate |
+
+### Reliability Mechanisms
+
+#### Circuit Breaker Configuration
 ```python
-@app.get("/health")
-async def health_check():
-    checks = {
-        "database": await check_database_connection(),
-        "redis": await check_redis_connection(),
-        "llm_providers": await check_llm_providers(),
-        "external_apis": await check_external_apis()
-    }
-    
-    status = "healthy" if all(checks.values()) else "degraded"
-    return {"status": status, "checks": checks}
-```
-
-#### Observability Stack
-
-- **Metrics**: Prometheus for performance metrics
-- **Logging**: Structured JSON logs with correlation IDs
-- **Tracing**: OpenTelemetry for request tracing
-- **Alerting**: PagerDuty integration for critical failures
-
-#### SLA Targets
-
-- **Availability**: 99.5% uptime (3.6 hours downtime/month)
-- **Response time**: 95th percentile under 30 seconds
-- **Error rate**: Less than 1% of requests fail
-- **Data durability**: 99.99% for campaign data
-
-### Disaster Recovery
-
-#### Backup Strategy
-
-```yaml
-Database Backups:
-  - Full backup: Daily at 2 AM UTC
-  - Incremental: Every 6 hours
-  - Retention: 30 days full, 7 days incremental
-  - Cross-region replication: Weekly snapshots
-
-Vector Database:
-  - ChromaDB export: Daily
-  - S3 storage with versioning
-  - Retention: 30 days
-
-Redis:
-  - RDB snapshots: Every 12 hours
-  - AOF persistence: Enabled
-  - Backup retention: 7 days
-```
-
-#### Recovery Procedures
-
-- **RTO (Recovery Time Objective)**: 4 hours for full service restoration
-- **RPO (Recovery Point Objective)**: 1 hour maximum data loss
-- **Automated failover**: Database and cache layer switching
-- **Manual processes**: Application deployment and configuration
-
-## 7. Development and Deployment
-
-### Local Development Environment
-
-**Dependency and Environment Management**
-
-- Poetry 2.1.3 is the standard tool for managing Python dependencies and virtual environments in this project. All contributors should use Poetry for installing, adding, or updating dependencies, and for managing the project's virtual environment. See the README for installation and usage instructions.
-
-#### Docker Compose Setup
-
-```yaml
-version: '3.8'
-services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/blossomer
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - db
-      - redis
-      - chromadb
-
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: blossomer
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-
-  chromadb:
-    image: chromadb/chroma:latest
-    ports:
-      - "8001:8000"
-    volumes:
-      - chromadb_data:/chroma/chroma
-```
-
-#### Development Workflow
-
-```bash
-# Setup local environment
-make setup-dev
-docker-compose up -d
-
-# Run tests
-make test
-make test-integration
-
-# Code quality checks
-make lint
-make type-check
-make security-scan
-
-# Database migrations
-alembic upgrade head
-alembic revision --autogenerate -m "description"
-```
-
-### CI/CD Pipeline
-
-#### GitHub Actions Workflow
-
-```yaml
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-dev.txt
-      
-      - name: Run tests
-        run: |
-          pytest tests/ --cov=src/ --cov-report=xml
-      
-      - name: Security scan
-        run: |
-          bandit -r src/
-          safety check
-
-  deploy-staging:
-    needs: test
-    if: github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to staging
-        run: |
-          # Deploy to Render staging environment
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
-
-  deploy-production:
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to production
-        run: |
-          # Deploy to Render production environment
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
-```
-
-### Environment Strategy
-
-#### Configuration Management
-
-```python
-class Settings(BaseSettings):
-    # Environment-specific configuration
-    environment: str = "development"
-    debug: bool = False
-    
-    # Database
-    database_url: str
-    database_pool_size: int = 10
-    
-    # Redis
-    redis_url: str
-    
-    # External APIs
-    openai_api_key: str
-    anthropic_api_key: str
-    bing_search_api_key: str
-    
-    # Security
-    api_key_salt: str
-    jwt_secret_key: str
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-
-# Environment-specific overrides
-environments = {
-    "development": {
-        "debug": True,
-        "database_pool_size": 5
-    },
-    "staging": {
-        "debug": False,
-        "database_pool_size": 10
-    },
-    "production": {
-        "debug": False,
-        "database_pool_size": 20
-    }
+circuit_breaker_config = {
+    "failure_threshold": 5,      # Failures before opening circuit
+    "recovery_timeout": 60,      # Seconds before trying again
+    "test_request_timeout": 10   # Timeout for health check requests
 }
 ```
 
-### Feature Flagging
+#### Quality Gates
+- **Context Quality**: Minimum 70% confidence before processing
+- **Output Validation**: Schema compliance required for all responses
+- **Provider Health**: Automatic failover for unhealthy LLM providers
+- **Data Freshness**: Context cache TTL based on data type
 
-#### Progressive Rollout Strategy
+## 9. Implementation Roadmap and Priorities
 
+### Phase 1: Foundation Enhancement (Weeks 1-3)
+#### Priority 1: Reliability Infrastructure
+- [ ] Enhanced LLM client with circuit breaker pattern
+- [ ] Advanced output validation and error recovery
+- [ ] Comprehensive error handling and logging
+
+#### Priority 2: Core Business Value
+- [ ] Product overview endpoint implementation
+- [ ] Correction system for user refinement
+- [ ] Context quality assessment foundation
+
+### Phase 2: Intelligence Layer (Weeks 4-6)
+#### Priority 1: Smart Context Orchestration
+- [ ] Context orchestrator with automatic data fetching
+- [ ] Quality-based context management
+- [ ] Transparent data source tracking
+
+#### Priority 2: Decomposed Architecture
+- [ ] Target company analysis endpoint
+- [ ] Target persona development endpoint
+
+### Phase 3: Implementation Guidance (Weeks 7-8)
+#### Priority 1: Enrichment Recommendations
+- [ ] Data source recommendation engine
+- [ ] Cost calculation and workflow generation
+- [ ] Integration with 20+ data providers
+
+#### Priority 2: Optimization and Polish
+- [ ] Performance optimization and caching
+- [ ] End-to-end testing and validation
+- [ ] Documentation and developer experience
+
+### Migration and Backwards Compatibility
+
+#### Legacy Endpoint Strategy
+- **Keep existing `/campaigns/icp`** for backwards compatibility
+- **Internal routing** to new decomposed endpoints
+- **Response transformation** to maintain existing format
+- **Deprecation timeline** with advance notice to users
+
+## 10. Security and Compliance
+
+### Enhanced Security Architecture
+
+#### API Security
+- **API key authentication** with rate limiting per tier
+- **Request validation** with comprehensive input sanitization
+- **Response sanitization** to prevent data leakage
+- **Audit logging** for all API interactions
+
+#### Data Protection
+- **Context encryption** for sensitive website content
+- **PII detection** and automatic anonymization
+- **GDPR compliance** with data deletion and export capabilities
+- **SOC 2 preparation** with comprehensive audit trails
+
+### Monitoring and Observability
+
+#### Health Monitoring
 ```python
-class FeatureFlags:
-    def __init__(self):
-        self.flags = {
-            "new_icp_algorithm": {
-                "enabled": True,
-                "rollout_percentage": 10,
-                "user_whitelist": ["beta_user_1", "beta_user_2"]
-            },
-            "enhanced_email_generation": {
-                "enabled": False,
-                "rollout_percentage": 0
-            }
+@app.get("/health")
+async def comprehensive_health_check():
+    return {
+        "status": "healthy",
+        "checks": {
+            "database": await check_database_connection(),
+            "redis": await check_redis_connection(),
+            "chromadb": await check_vector_database(),
+            "llm_providers": await check_all_llm_providers(),
+            "external_apis": await check_external_integrations()
+        },
+        "metrics": {
+            "avg_response_time": get_avg_response_time(),
+            "error_rate": get_error_rate(),
+            "context_cache_hit_rate": get_cache_hit_rate()
         }
-    
-    def is_enabled(self, flag_name: str, user_id: str) -> bool:
-        flag = self.flags.get(flag_name, {"enabled": False})
-        
-        if not flag["enabled"]:
-            return False
-        
-        if user_id in flag.get("user_whitelist", []):
-            return True
-        
-        # Hash-based consistent rollout
-        rollout_hash = int(hashlib.md5(f"{flag_name}:{user_id}".encode()).hexdigest(), 16)
-        return (rollout_hash % 100) < flag.get("rollout_percentage", 0)
+    }
 ```
 
-### Observability and Debugging
-
-#### Logging Strategy
-
-```python
-import structlog
-
-logger = structlog.get_logger()
-
-class LoggingMiddleware:
-    async def __call__(self, request: Request, call_next):
-        correlation_id = str(uuid.uuid4())
-        
-        # Add correlation ID to context
-        with structlog.contextvars.bound_contextvars(
-            correlation_id=correlation_id,
-            user_id=getattr(request.state, 'user_id', None),
-            endpoint=request.url.path
-        ):
-            start_time = time.time()
-            
-            try:
-                response = await call_next(request)
-                duration = time.time() - start_time
-                
-                logger.info(
-                    "request_completed",
-                    status_code=response.status_code,
-                    duration=duration
-                )
-                
-                return response
-            except Exception as e:
-                duration = time.time() - start_time
-                logger.error(
-                    "request_failed",
-                    error=str(e),
-                    duration=duration
-                )
-                raise
-```
-
-#### Debugging Tools
-
-- **FastAPI Debug Mode**: Automatic reload and detailed error pages
-- **Database Query Logging**: SQLAlchemy query profiling
-- **Performance Profiling**: py-spy for production profiling
-- **Request Tracing**: OpenTelemetry integration for distributed tracing
-
-## API Design Best Practices for AI Integration (Updated)
-
-- Modular, composable endpoints for each campaign asset and analysis
-- Consistent input schema: all endpoints require `website_url`, accept optional `user_inputted_context` and `llm_inferred_context`
-- Designed for both atomic and orchestrated workflows
-- Extensible for future features
-
-**Endpoint Design Checklist:**
-- [ ] Clear, documented purpose
-- [ ] RESTful path and method
-- [ ] Input validation (Pydantic models)
-- [ ] Descriptive error handling
-- [ ] Fast, stateless response
-- [ ] Security considerations
-- [ ] Logging/monitoring hooks
-- [ ] Documented in OpenAPI/Swagger
-- [ ] Privacy/ethics reviewed
-
-These principles are referenced throughout the codebase and documentation to ensure consistent, high-quality API design.
+#### Observability Stack
+- **Structured logging** with correlation IDs across all requests
+- **Performance metrics** with Prometheus integration
+- **Error tracking** with comprehensive stack traces
+- **User behavior analytics** for API usage patterns
 
 ---
 
-## Architecture Decision Records
+## Architecture Decision Records (Updated)
 
-### ADR-001: Modular Monolith vs Microservices
+### ADR-004: Smart Context Orchestration
+**Decision**: Implement intelligent context management layer
+**Rationale**: Eliminates manual context management burden, improves user experience
+**Consequences**: Added complexity, significant competitive advantage
 
-**Decision**: Start with modular monolith
-**Rationale**: Team size, development velocity, cost optimization
-**Consequences**: Easier initial development, planned evolution to microservices
+### ADR-005: ICP Endpoint Decomposition  
+**Decision**: Break monolithic ICP into focused endpoints
+**Rationale**: Better performance, caching, user experience
+**Consequences**: More endpoints to maintain, improved flexibility
 
-### ADR-002: PostgreSQL vs MongoDB
+### ADR-006: Correction System Architecture
+**Decision**: Build comprehensive correction and refinement system
+**Rationale**: Essential for AI output quality and user adoption
+**Consequences**: Additional complexity, unique market differentiation
 
-**Decision**: PostgreSQL with JSONB
-**Rationale**: ACID compliance, mature ecosystem, JSON flexibility
-**Consequences**: Strong consistency, familiar tooling, SQL optimization
+### ADR-007: Enhanced LLM Reliability
+**Decision**: Implement circuit breaker pattern with advanced failover
+**Rationale**: Production reliability requirements, cost optimization
+**Consequences**: More complex provider management, significantly improved uptime
 
-### ADR-003: FastAPI vs Flask/Django
+---
 
-**Decision**: FastAPI
-**Rationale**: Async support, automatic documentation, type safety
-**Consequences**: Modern Python features, excellent performance, smaller ecosystem
+## Removed from Previous Version
 
-This architecture provides a solid foundation for the Blossomer GTM API while maintaining flexibility for future growth and evolution into a microservices architecture as the product and team scale.
+To streamline the architecture document, I've removed or consolidated:
 
-## Prompt Templating System Architecture
+1. **Detailed Infrastructure Requirements**: Moved specific server specs to deployment docs
+2. **Comprehensive Database Queries**: Simplified to essential schema and patterns  
+3. **Extensive Code Examples**: Kept only architecture-defining code snippets
+4. **Detailed Backup Procedures**: Moved operational details to ops documentation
+5. **Feature Flag Examples**: Kept concept, removed detailed implementation
+6. **Extensive CI/CD Pipeline**: Simplified to essential deployment strategy
+7. **Detailed Cost Projections**: Moved to business planning documents
 
-The prompt templating system centralizes and manages all prompt templates for LLM providers, ensuring consistency, extensibility, and provider-agnostic design. It is implemented as a dedicated module with the following goals:
+The updated architecture focuses on the core architectural decisions, patterns, and systems that developers need to understand and implement, while removing operational details that belong in separate documentation.
 
-- Centralize all prompt templates (for campaign assets, LLM tasks, etc.)
-- Handle variable substitution and validation using Pydantic models
-- Decouple prompt construction from LLM provider logic
-- Support easy extension and robust testing
+---
 
-**Key Components:**
-- Jinja2 template files for each campaign asset/use case
-- Pydantic models for type-safe variable validation
-- Template engine for rendering and error handling
-- Registry for mapping use cases to templates and models
-
-**Extensibility:**
-- Add new templates by creating a new .jinja2 file, a Pydantic model, and registering in the registry
-- Provider-agnostic: output is a plain string, ready for any LLM
-
-**See [PROMPT_TEMPLATES.md](PROMPT_TEMPLATES.md) for full details, examples, and usage patterns.**
-
-```mermaid
-flowchart TD
-    A[API/Service Layer] --> B[Prompt Registry]
-    B --> C[Template Engine]
-    C --> D[Templates (.jinja2)]
-    B --> E[Pydantic Models]
-    C --> F[Rendered Prompt String]
-    F --> G[LLM Provider]
-```
-
-| Component         | Responsibility                                  |
-|-------------------|-------------------------------------------------|
-| templates/        | Store Jinja2 template files                     |
-| base.py           | Core rendering and validation logic             |
-| models.py         | Pydantic models for template variables          |
-| registry.py       | Maps use cases to templates and models          |
-| Unit tests        | Ensure correctness and safety                   |
+*Architecture version: 2.0*  
+*Last updated: January 2025*  
+*Aligned with: PRD v2.0*
