@@ -93,6 +93,9 @@ class ContextOrchestrator:
             logger.debug(f"Attempting to scrape website: {url} (crawl={crawl})")
             scrape_result = extract_website_content(url, crawl=crawl)
             website_content = scrape_result.get("content", "")
+            logger.debug(
+                f"[DEBUG] Raw website content for {url}:\n" f"{website_content[:1000]}"
+            )
         except Exception as e:
             logger.warning(f"Website scrape failed for {url}: {e}")
 
@@ -108,7 +111,8 @@ class ContextOrchestrator:
                     logger.warning(f"Website crawl failed for {url}: {e}")
             if not website_content:
                 logger.debug(
-                    f"No content found after full crawl for {url}. Returning insufficient result."
+                    "No content found after full crawl for %s. Returning insufficient result.",
+                    url,
                 )
                 return ContextAssessmentResult(
                     overall_quality=ContextQuality.INSUFFICIENT,
@@ -196,16 +200,6 @@ class ContextOrchestrator:
     ) -> Dict[str, Any]:
         """
         Main orchestration method: assess → plan → enrich → reassess (iterative improvement).
-
-        Args:
-            website_url (str): The website URL to analyze.
-            target_endpoint (str): The endpoint being assessed (e.g., 'product_overview').
-            user_context (Optional[dict]): Optional user-provided context for campaign generation.
-            auto_enrich (bool): Whether to automatically fetch missing data.
-            max_steps (int): Maximum number of enrichment iterations.
-
-        Returns:
-            Dict[str, Any]: Orchestration result with assessment, content, sources, enrichment steps, quality.
         """
         logger = logging.getLogger(__name__)
         all_content = {}
@@ -214,12 +208,28 @@ class ContextOrchestrator:
         step = 0
         # Initial fetch (scrape/crawl)
         logger.debug(f"[Orchestrator] Step 1: Initial content fetch for {website_url}")
-        assessment = await self.assess_url_context(
-            url=website_url,
+        # Scrape website content directly here
+        website_content = ""
+        try:
+            scrape_result = extract_website_content(website_url, crawl=False)
+            website_content = scrape_result.get("content", "")
+        except Exception as e:
+            logger.warning(f"Website scrape failed for {website_url}: {e}")
+        # If no content, try crawling
+        if not website_content:
+            try:
+                scrape_result = extract_website_content(website_url, crawl=True)
+                website_content = scrape_result.get("content", "")
+            except Exception as e:
+                logger.warning(f"Website crawl failed for {website_url}: {e}")
+        # Assess context
+        assessment = await self.assess_context(
+            website_content=website_content,
             target_endpoint=target_endpoint,
             user_context=user_context,
         )
         all_content["initial"] = assessment
+        all_content["raw_website_content"] = website_content
         sources_used.append("website_scraper")
         # Check readiness
         readiness = self.check_endpoint_readiness(assessment, target_endpoint)
@@ -229,16 +239,10 @@ class ContextOrchestrator:
             logger.debug(
                 f"[Orchestrator] Enrichment iteration {step+1} for {website_url}"
             )
-            # TODO: Create enrichment plan based on assessment and readiness
             enrichment_plan = self._create_enrichment_plan(assessment, target_endpoint)
-            # TODO: Execute enrichment plan (fetch more data, crawl specific pages, etc.)
             enrichment_result = self._execute_enrichment(enrichment_plan, website_url)
             enrichment_performed.append(enrichment_result)
-            # TODO: Merge new content into all_content
-            # Reassess with new content (placeholder: just re-use initial assessment for now)
-            # In future: combine all_content and reassess
             step += 1
-            # For now, break loop (to be implemented)
             break
         final_quality = assessment.overall_quality.value
         enrichment_successful = readiness["is_ready"] if readiness else False
