@@ -17,7 +17,10 @@ from blossomer_gtm_api.schemas import (
     ProductOverviewResponse,
 )
 from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.prompts.models import ICPPromptVars
+from blossomer_gtm_api.prompts.models import (
+    ICPPromptVars,
+    ProductOverviewPromptVars,
+)
 from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
 
 load_dotenv()
@@ -260,54 +263,53 @@ async def generate_icp(data: ICPRequest):
 )
 async def generate_product_overview(data: ProductOverviewRequest):
     """
-    Generate a comprehensive product overview for a B2B company using website content and user context.
+    Generate a comprehensive product overview for a B2B company using website content
+    and user context.
     - Scrapes and assesses website content quality
-    - (Next: Calls LLM to generate structured overview)
+    - Calls LLM to generate structured overview
     """
-    # 1. Scrape and assess website context
+    # 1. Scrape website content
+    try:
+        website_data = extract_website_content(data.website_url)
+        raw_content = website_data.get("markdown") or website_data.get("content") or ""
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
+
+    # 2. Preprocess content (chunk, summarize, filter)
+    pipeline = ContentPreprocessingPipeline(
+        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
+    )
+    processed_chunks = pipeline.process(raw_content)
+    processed_content = "\n".join(processed_chunks)
+
+    # 3. Assess context quality
     assessment = await ContextOrchestrator.assess_website_context(
         url=data.website_url,
         orchestrator=ContextOrchestrator(llm_client),
     )
-    # 2. (Next: Use assessment to inform LLM prompt and generate overview)
-    # 3. Return placeholder response for now
-    return ProductOverviewResponse(
-        product_description=(
-            "[Placeholder] Product description will be generated here."
-        ),
-        key_features=["[Placeholder] Feature 1", "[Placeholder] Feature 2"],
-        company_profiles=[
-            "[Placeholder] Industry: SaaS",
-            "[Placeholder] Size: SMB",
-        ],
-        persona_profiles=[
-            "[Placeholder] Job Title: CTO",
-            "[Placeholder] Seniority: Executive",
-        ],
-        use_cases=[
-            "[Placeholder] Use case 1",
-            "[Placeholder] Use case 2",
-        ],
-        pain_points=[
-            "[Placeholder] Pain point 1",
-            "[Placeholder] Pain point 2",
-        ],
-        pricing=None,
-        confidence_scores={
-            "product_description": 0.0,
-            "key_features": 0.0,
-            "company_profiles": 0.0,
-            "persona_profiles": 0.0,
-            "use_cases": 0.0,
-            "pain_points": 0.0,
-            "pricing": 0.0,
-        },
-        metadata={
-            "context_quality": assessment.overall_quality.value,
-            "context_confidence": assessment.overall_confidence,
-            "assessment_summary": assessment.summary,
-        },
+
+    # 4. Build prompt variables
+    prompt_vars = ProductOverviewPromptVars(
+        website_content=processed_content,
+        user_inputted_context=data.user_inputted_context,
+        llm_inferred_context=data.llm_inferred_context,
+        context_quality=assessment.overall_quality.value,
+        assessment_summary=assessment.summary,
     )
+    prompt = render_prompt("product_overview", prompt_vars)
+
+    # 5. Call LLM and parse output
+    try:
+        llm_request = LLMRequest(prompt=prompt)
+        llm_response = await llm_client.generate(llm_request)
+        response_json = llm_response.text
+        # Parse as ProductOverviewResponse (Pydantic will validate fields)
+        return ProductOverviewResponse.parse_raw(response_json)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=("LLM output was not valid JSON or LLM call failed: " f"{e}"),
+        )
 
 
 @app.get("/health")

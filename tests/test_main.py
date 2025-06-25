@@ -138,3 +138,44 @@ def test_icp_schema_rejects_wrong_type():
     invalid["persona"] = ["CTO"]
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)
+
+
+def test_product_overview_endpoint_success():
+    """
+    Test the /campaigns/product_overview endpoint for a successful response.
+    Mocks website scraping and LLM response to ensure the endpoint returns valid JSON
+    and status 200.
+    """
+    payload = {
+        "website_url": "https://example.com",
+        "user_inputted_context": "",
+        "llm_inferred_context": "",
+    }
+    fake_content = "Fake company info."
+    # Minimal valid ProductOverviewResponse JSON
+    fake_llm_json = (
+        '{"product_description": "desc", "key_features": ["f1"], "company_profiles": ["c1"], '
+        '"persona_profiles": ["p1"], "use_cases": ["u1"], "pain_points": ["pp1"], "pricing": "", '
+        '"confidence_scores": {"product_description": 1, "key_features": 1, "company_profiles": 1, '
+        '"persona_profiles": 1, "use_cases": 1, "pain_points": 1, "pricing": 1}, "metadata": {}}'
+    )
+    fake_llm_response = MagicMock()
+    fake_llm_response.text = fake_llm_json
+    with patch(
+        "blossomer_gtm_api.main.extract_website_content",
+        return_value={"content": fake_content},
+    ), patch(
+        "blossomer_gtm_api.main.llm_client.generate",
+        return_value=fake_llm_response,
+    ):
+        response = client.post("/campaigns/product_overview", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "product_description" in data
+        assert "key_features" in data
+        assert "company_profiles" in data
+        assert "persona_profiles" in data
+        assert "use_cases" in data
+        assert "pain_points" in data
+        assert "confidence_scores" in data
+        assert "metadata" in data
