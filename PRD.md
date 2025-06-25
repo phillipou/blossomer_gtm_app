@@ -205,8 +205,9 @@ As a B2B founder, I want to generate a comprehensive product overview from my we
 
 *Acceptance criteria:*
 - Product overview can be generated via `/campaigns/product_overview` endpoint
-- Output includes product description, key features, customer profiles, and pricing
+- Output includes product description, key features, company profiles, persona profiles, use cases, pain points, and pricing
 - Customer profiles are extracted from testimonials and case studies
+- Use cases and pain points are extracted from explicit mentions on the website
 - Technology stack and competitive context are identified
 - Confidence scoring indicates data quality and gaps
 

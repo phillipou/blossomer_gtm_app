@@ -81,7 +81,7 @@ The Blossomer GTM API uses an enhanced modular monolith architecture with intell
 
 | Endpoint | Purpose | Context Dependencies | Output |
 |----------|---------|---------------------|---------|
-| `/campaigns/product_overview` | Foundation product analysis | `website_url` | Product features, customers, competitive context |
+| `/campaigns/product_overview` | Foundation product analysis | `website_url` | Product features, company profiles, persona profiles, use cases, pain points, competitive context |
 | `/campaigns/target_company` | Company targeting strategy | `website_url`, `product_overview?` | Firmographics, buying signals, disqualifiers |
 | `/campaigns/target_persona` | Primary buyer persona | `website_url`, `target_company?` | Decision-maker profile, behaviors, pain points |
 | `/campaigns/positioning` | Positioning and value props | `website_url`, `target_company`, `target_persona` | Unique insight, value propositions |
@@ -584,3 +584,14 @@ The updated architecture focuses on the core architectural decisions, patterns, 
 *Architecture version: 2.0*  
 *Last updated: January 2025*  
 *Aligned with: PRD v2.0*
+
+**ProductOverviewResponse fields:**
+- product_description: Main product summary
+- key_features: List of product features/benefits
+- company_profiles: Company/firmographic segments (e.g., industry, size, region)
+- persona_profiles: Persona/job role segments (e.g., job title, seniority, department)
+- use_cases: Use cases explicitly listed on the website
+- pain_points: Pain points explicitly listed on the website
+- pricing: Pricing information if available
+- confidence_scores: Confidence/quality scores for each section (0-1)
+- metadata: Additional metadata (sources, context quality, processing time, etc.)
