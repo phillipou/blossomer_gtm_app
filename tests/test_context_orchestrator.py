@@ -20,16 +20,15 @@ async def test_assess_context_empty_content():
 
 
 @pytest.mark.asyncio
-async def test_assess_website_context_scrape_failure():
+async def test_assess_url_context_scrape_failure():
     """Test that a website scrape failure returns 'insufficient' result."""
     orchestrator = ContextOrchestrator(MagicMock())
     with patch(
         "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
         side_effect=Exception("scrape failed"),
     ):
-        result = await ContextOrchestrator.assess_website_context(
+        result = await orchestrator.assess_url_context(
             url="https://fail.com",
-            orchestrator=orchestrator,
         )
     assert result.overall_quality == ContextQuality.INSUFFICIENT
     assert result.summary.startswith("Website scrape failed")
@@ -63,7 +62,7 @@ async def test_assess_context_happy_path():
 
 
 @pytest.mark.asyncio
-async def test_assess_website_context_happy_path():
+async def test_assess_url_context_happy_path():
     """Test the full orchestration: scrape returns content, LLM returns valid assessment."""
     orchestrator = ContextOrchestrator(MagicMock())
     orchestrator.assess_context = AsyncMock(
@@ -82,9 +81,8 @@ async def test_assess_website_context_happy_path():
         "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
         return_value={"content": "Some content"},
     ):
-        result = await ContextOrchestrator.assess_website_context(
+        result = await orchestrator.assess_url_context(
             url="https://good.com",
-            orchestrator=orchestrator,
         )
     assert result.overall_quality == ContextQuality.HIGH
     assert result.summary == "Looks great."

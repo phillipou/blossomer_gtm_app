@@ -283,9 +283,12 @@ async def generate_product_overview(data: ProductOverviewRequest):
     processed_content = "\n".join(processed_chunks)
 
     # 3. Assess context quality
-    assessment = await ContextOrchestrator.assess_website_context(
+    orchestrator = ContextOrchestrator(llm_client)
+    assessment = await orchestrator.assess_url_context(
         url=data.website_url,
-        orchestrator=ContextOrchestrator(llm_client),
+        target_endpoint="product_overview",
+        user_context=None,
+        crawl=False,
     )
 
     # 4. Build prompt variables

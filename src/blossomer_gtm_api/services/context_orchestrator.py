@@ -68,10 +68,9 @@ class ContextOrchestrator:
         )
         return ContextAssessmentResult.parse_obj(response_model)
 
-    @staticmethod
-    async def assess_website_context(
+    async def assess_url_context(
+        self,
         url: str,
-        orchestrator: "ContextOrchestrator",
         target_endpoint: Optional[str] = None,
         user_context: Optional[Dict[str, Any]] = None,
         crawl: bool = False,
@@ -81,7 +80,6 @@ class ContextOrchestrator:
 
         Args:
             url (str): The website URL to analyze.
-            orchestrator (ContextOrchestrator): The LLM-powered context orchestrator agent.
             target_endpoint (Optional[str]): The endpoint being assessed (e.g., 'product_overview').
             user_context (Optional[dict]): Optional user-provided context for campaign generation.
             crawl (bool): Whether to crawl the site (multi-page) or just scrape the main page.
@@ -106,7 +104,7 @@ class ContextOrchestrator:
                 summary=f"Website scrape failed: {e}",
             )
 
-        return await orchestrator.assess_context(
+        return await self.assess_context(
             website_content=website_content,
             target_endpoint=target_endpoint,
             user_context=user_context,
