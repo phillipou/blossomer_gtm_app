@@ -43,10 +43,12 @@ class LLMRequest(BaseModel):
         prompt (str): The prompt to send to the LLM.
         parameters (Optional[Dict[str, Any]]): Optional provider-specific parameters
             (e.g., temperature, max_tokens).
+        response_schema (Optional[Dict[str, Any]]): Optional JSON schema for structured output.
     """
 
     prompt: str
     parameters: Optional[Dict[str, Any]] = None
+    response_schema: Optional[Dict[str, Any]] = None
 
 
 class LLMResponse(BaseModel):
@@ -132,10 +134,18 @@ class OpenAIProvider(BaseLLMProvider):
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
-        Generate text using OpenAI API.
+        Generate text using OpenAI API, supporting structured output via response_format.
         """
         try:
             import asyncio
+
+            kwargs = request.parameters.copy() if request.parameters else {}
+
+            if request.response_schema:
+                # For now, just request JSON output.
+                # Schema enforcement is not supported in OpenAI API.
+                # Validate after response if needed.
+                kwargs["response_format"] = {"type": "json_object"}
 
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
@@ -143,18 +153,15 @@ class OpenAIProvider(BaseLLMProvider):
                 lambda: self.client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": request.prompt}],
-                    **(request.parameters or {}),
+                    **kwargs,
                 ),
             )
-            # OpenAI returns response.choices[0].message.content
             text = response.choices[0].message.content if response.choices else ""
             usage = dict(response.usage) if hasattr(response, "usage") else None
             return LLMResponse(
                 text=text, model=self.model, provider=self.name, usage=usage
             )
         except Exception as e:
-            print("=== OPENAI ERROR ===")
-            print(e)
             import traceback
 
             traceback.print_exc()
@@ -167,13 +174,11 @@ class OpenAIProvider(BaseLLMProvider):
         """
         import logging
 
-        print("OpenAIProvider.health_check called")
         logging.info("OpenAIProvider.health_check called")
         try:
             import asyncio
 
             loop = asyncio.get_event_loop()
-            print("About to call OpenAI API for health check")
             logging.info("About to call OpenAI API for health check")
             response = await loop.run_in_executor(
                 None,
@@ -181,7 +186,6 @@ class OpenAIProvider(BaseLLMProvider):
                     model=self.model, messages=[{"role": "user", "content": "ping"}]
                 ),
             )
-            print(f"OpenAI health check response: {response}")
             logging.info(f"OpenAI health check response: {response}")
             return True
         except Exception as e:
