@@ -39,4 +39,11 @@ APOLLO_API_KEY=
 
 # Security
 API_KEY_SALT=
-JWT_SECRET_KEY= 
+JWT_SECRET_KEY=
+
+# Development cache
+dev_cache/
+
+# Python cache
+__pycache__/
+*.pyc 

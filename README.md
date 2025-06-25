@@ -98,6 +98,12 @@ uvicorn src.main:app --reload
 
 ---
 
+## Development Cache (`dev_cache/`)
+
+During development, website scraping results are cached in the `dev_cache/website_scrapes/` directory. This prevents repeated API calls (e.g., to Firecrawl) for the same URLs, saving credits and speeding up local testing. The cache is keyed by a hash of the URL and stores results as JSON files. This directory is ignored by git and is safe to delete at any time (files will be regenerated as needed).
+
+---
+
 ## Development Approach: Stateless First
 
 For early development and prototyping, the Blossomer GTM API is intentionally designed to be stateless. Database models and persistent storage will be added later, once requirements are clearer. Endpoints currently use mock or in-memory data, allowing rapid iteration and easy refactoring. This approach enables fast progress on API design and business logic without being blocked by database setup or migrations.

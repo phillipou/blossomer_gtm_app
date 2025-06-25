@@ -6,6 +6,10 @@ import logging
 from urllib import robotparser
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
+from blossomer_gtm_api.services.dev_file_cache import (
+    load_cached_scrape,
+    save_scrape_to_cache,
+)
 
 load_dotenv()
 
@@ -185,6 +189,15 @@ def extract_website_content(
     Returns:
         Dict[str, Any]: Structured result with validation, content, and metadata.
     """
+    # Use file-based cache in development (not in production)
+    if os.getenv("ENV") != "production":
+        cached = load_cached_scrape(url)
+        if cached is not None:
+            logger.info(f"[DEV CACHE] Cache hit for URL: {url}")
+            return cached
+        else:
+            logger.info(f"[DEV CACHE] Cache miss for URL: {url}")
+
     validation = validate_url(url)
     if not validation["is_valid"] or not validation["reachable"]:
         logger.warning(f"URL validation failed: {validation}")
@@ -212,6 +225,8 @@ def extract_website_content(
         "metadata": metadata,
         "crawl": crawl,
     }
+    if os.getenv("ENV") != "production":
+        save_scrape_to_cache(url, result)
     return result
 
 
