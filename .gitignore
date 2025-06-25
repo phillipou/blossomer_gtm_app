@@ -35,6 +35,22 @@ __pycache__/
 tasks.json
 tasks/
 
+# Tool-specific and environment folders
+.taskmaster/
+.cursor/
+.roo/
+.windsurf/
+.trae/
+.clinerules/
+.roomodes/
+~/.npm-global/
+
+# Common Python/IDE/venv
+.venv/
+venv/
+env/
+.pytest_cache/
+
 # Database
 DATABASE_URL=
 
