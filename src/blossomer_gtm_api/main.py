@@ -275,16 +275,22 @@ async def generate_product_overview(data: ProductOverviewRequest):
     logger.debug(
         f"[API] Orchestrating context for product_overview: {data.website_url}"
     )
-    orchestration_result = await orchestrator.orchestrate_context(
+    # Pass user_context from the request
+    user_context = {
+        "user_inputted_context": data.user_inputted_context,
+        "llm_inferred_context": data.llm_inferred_context,
+    }
+    result = await orchestrator.orchestrate_context(
         website_url=data.website_url,
         target_endpoint="product_overview",
-        user_context=None,
+        user_context=user_context,
         auto_enrich=True,
     )
-    assessment = orchestration_result["assessment"]
-    readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
-    logger.debug(f"[API] Readiness for product_overview: {readiness}")
-    if not readiness["is_ready"]:
+    if not result["enrichment_successful"]:
+        assessment = result["assessment"]
+        readiness = orchestrator.check_endpoint_readiness(
+            assessment, "product_overview"
+        )
         raise HTTPException(
             status_code=422,
             detail={
@@ -293,44 +299,30 @@ async def generate_product_overview(data: ProductOverviewRequest):
                 "confidence": readiness["confidence"],
                 "missing_requirements": readiness["missing_requirements"],
                 "recommendations": readiness["recommendations"],
+                "assessment_summary": assessment.summary,
             },
         )
-    # Use enriched content if needed (for now, use processed_content as before)
-    # 2. Preprocess content (chunk, summarize, filter)
-    website_data = orchestration_result["enriched_content"].get("initial")
-    # If assessment contains website content, use it; else fallback to scraping
-    if hasattr(website_data, "website_content") and website_data.website_content:
-        processed_content = website_data.website_content
+    # Use enriched content for generation
+    all_content = result["enriched_content"]
+    website_data = all_content.get("initial")
+    has_content = hasattr(website_data, "website_content")
+    content_val = website_data.website_content if has_content else ""
+    if has_content and content_val:
+        processed_content = content_val
     else:
-        try:
-            website_data_raw = extract_website_content(data.website_url)
-            raw_content = (
-                website_data_raw.get("markdown")
-                or website_data_raw.get("content")
-                or ""
-            )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
-        pipeline = ContentPreprocessingPipeline(
-            SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
-        )
-        processed_chunks = pipeline.process(raw_content)
-        processed_content = "\n".join(processed_chunks)
-    # 4. Build prompt variables
+        processed_content = ""
     prompt_vars = ProductOverviewPromptVars(
         website_content=processed_content,
         user_inputted_context=data.user_inputted_context,
         llm_inferred_context=data.llm_inferred_context,
-        context_quality=assessment.overall_quality.value,
-        assessment_summary=assessment.summary,
+        context_quality=result["assessment"].overall_quality.value,
+        assessment_summary=result["assessment"].summary,
     )
     prompt = render_prompt("product_overview", prompt_vars)
-    # 5. Call LLM and parse output
     try:
         llm_request = LLMRequest(prompt=prompt)
         llm_response = await llm_client.generate(llm_request)
         response_json = llm_response.text
-        # Parse as ProductOverviewResponse (Pydantic will validate fields)
         return ProductOverviewResponse.parse_raw(response_json)
     except Exception as e:
         raise HTTPException(

@@ -241,12 +241,14 @@ class ContextOrchestrator:
             # For now, break loop (to be implemented)
             break
         final_quality = assessment.overall_quality.value
+        enrichment_successful = readiness["is_ready"] if readiness else False
         return {
             "assessment": assessment,
             "enriched_content": all_content,
             "sources_used": sources_used,
             "enrichment_performed": enrichment_performed,
             "final_quality": final_quality,
+            "enrichment_successful": enrichment_successful,
         }
 
     def _create_enrichment_plan(self, assessment, target_endpoint):
