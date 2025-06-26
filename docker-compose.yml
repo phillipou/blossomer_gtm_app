@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: blossomer-gtm-api
+    command: gunicorn -k uvicorn.workers.UvicornWorker -c python:src.blossomer_gtm_api.main:app --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    restart: on-failure
+    # Uncomment and configure the following if you add a database service
+    # depends_on:
+    #   - db
+
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_USER: youruser
+  #     POSTGRES_PASSWORD: yourpassword
+  #     POSTGRES_DB: blossomer
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+
+# volumes:
+#   pgdata: 
