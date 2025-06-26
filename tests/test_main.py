@@ -192,6 +192,7 @@ def test_product_overview_endpoint_success(monkeypatch):
         "sources_used": ["website_scraper"],
         "enrichment_performed": [],
         "final_quality": "high",
+        "enrichment_successful": True,
     }
     monkeypatch.setattr(
         "blossomer_gtm_api.main.ContextOrchestrator.orchestrate_context",
@@ -215,3 +216,182 @@ def test_product_overview_endpoint_success(monkeypatch):
         assert "pain_points" in data
         assert "confidence_scores" in data
         assert "metadata" in data
+
+
+def test_product_overview_llm_refusal(monkeypatch):
+    """Test that the API returns a 422 error with a user-friendly message when the LLM refuses to answer."""
+    from blossomer_gtm_api.services.product_overview_service import (
+        generate_product_overview_service,
+    )
+    from blossomer_gtm_api.schemas import ProductOverviewRequest
+    from fastapi import HTTPException
+    import pytest
+
+    class FakeLLMResponse:
+        text = (
+            "I'm sorry, but I am unable to extract the required product overview information from the "
+            "provided content. If you can provide more explicit product details or additional context, "
+            "I can assist you further."
+        )
+
+    class FakeLLMClient:
+        async def generate(self, request):
+            return FakeLLMResponse()
+
+    class FakeAssessment:
+        def __init__(self):
+            class Quality:
+                value = "low"
+
+            self.overall_quality = Quality()
+            self.summary = "Not enough info."
+
+    class FakeOrchestrator:
+        async def orchestrate_context(self, *args, **kwargs):
+            return {
+                "assessment": FakeAssessment(),
+                "enriched_content": {
+                    "initial": type("Fake", (), {"website_content": "Fake content"})()
+                },
+                "sources_used": ["website_scraper"],
+                "enrichment_performed": [],
+                "final_quality": "medium",
+                "enrichment_successful": False,
+            }
+
+        def check_endpoint_readiness(self, assessment, endpoint):
+            return {
+                "confidence": 0.0,
+                "missing_requirements": ["product_description"],
+                "recommendations": ["Add more product details"],
+            }
+
+    data = ProductOverviewRequest(website_url="https://intryc.com")
+    orchestrator = FakeOrchestrator()
+    llm_client = FakeLLMClient()
+
+    with pytest.raises(HTTPException) as exc_info:
+        import asyncio
+
+        asyncio.run(generate_product_overview_service(data, orchestrator, llm_client))
+    assert exc_info.value.status_code == 422
+    detail = exc_info.value.detail
+    for key in [
+        "error",
+        "quality_assessment",
+        "confidence",
+        "missing_requirements",
+        "recommendations",
+        "assessment_summary",
+    ]:
+        assert key in detail
+
+
+def test_target_company_endpoint_success(monkeypatch):
+    """
+    Test the /campaigns/target_company endpoint for a successful response.
+    Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
+    """
+    from blossomer_gtm_api.schemas import TargetCompanyResponse
+
+    payload = {
+        "website_url": "https://example.com",
+        "user_inputted_context": "",
+        "llm_inferred_context": "",
+    }
+    fake_content = "Fake company info."
+    fake_response = TargetCompanyResponse(
+        target_company="Tech-forward SaaS companies",
+        company_attributes=["SaaS", "Tech-forward", "100-500 employees"],
+        buying_signals=["Hiring AI engineers", "Investing in automation"],
+        rationale="These companies are ideal due to their innovation focus.",
+        confidence_scores={"target_company": 0.95},
+        metadata={"source": "test"},
+    )
+
+    async def fake_generate_structured_output(prompt, response_model):
+        return fake_response
+
+    async def fake_resolve_context_for_endpoint(req, endpoint, orchestrator):
+        return {"context": fake_content, "source": "website"}
+
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_company_service.resolve_context_for_endpoint",
+        fake_resolve_context_for_endpoint,
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_company_service.render_prompt",
+        lambda template, vars: "prompt",
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_company_service.TargetCompanyPromptVars",
+        lambda **kwargs: kwargs,
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.main.llm_client.generate_structured_output",
+        fake_generate_structured_output,
+    )
+    response = client.post("/campaigns/target_company", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "target_company" in data
+    assert "company_attributes" in data
+    assert "buying_signals" in data
+    assert "rationale" in data
+    assert "confidence_scores" in data
+    assert "metadata" in data
+
+
+def test_target_persona_endpoint_success(monkeypatch):
+    """
+    Test the /campaigns/target_persona endpoint for a successful response.
+    Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
+    """
+    from blossomer_gtm_api.schemas import TargetPersonaResponse
+
+    payload = {
+        "website_url": "https://example.com",
+        "user_inputted_context": "",
+        "llm_inferred_context": "",
+    }
+    fake_content = "Fake company info."
+    fake_response = TargetPersonaResponse(
+        persona="Head of Operations",
+        persona_attributes=["Decision maker", "Process-oriented"],
+        persona_buying_signals=["Seeking efficiency", "Evaluating automation"],
+        rationale="This persona drives operational improvements.",
+        confidence_scores={"persona": 0.92},
+        metadata={"source": "test"},
+    )
+
+    async def fake_generate_structured_output(prompt, response_model):
+        return fake_response
+
+    async def fake_resolve_context_for_endpoint(req, endpoint, orchestrator):
+        return {"context": fake_content, "source": "website"}
+
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_persona_service.resolve_context_for_endpoint",
+        fake_resolve_context_for_endpoint,
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_persona_service.render_prompt",
+        lambda template, vars: "prompt",
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.target_persona_service.TargetPersonaPromptVars",
+        lambda **kwargs: kwargs,
+    )
+    monkeypatch.setattr(
+        "blossomer_gtm_api.main.llm_client.generate_structured_output",
+        fake_generate_structured_output,
+    )
+    response = client.post("/campaigns/target_persona", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "persona" in data
+    assert "persona_attributes" in data
+    assert "persona_buying_signals" in data
+    assert "rationale" in data
+    assert "confidence_scores" in data
+    assert "metadata" in data
