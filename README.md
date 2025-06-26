@@ -1,5 +1,11 @@
 # Blossomer GTM API
 
+> **Note:** All project documentation, requirements, architecture, and task tracking are now located in the [.notes](.notes/) directory. See:
+> - [.notes/TASKS.md](.notes/TASKS.md) — Project tasks and status
+> - [.notes/PRD.md](.notes/PRD.md) — Product Requirements Document
+> - [.notes/ARCHITECTURE.md](.notes/ARCHITECTURE.md) — Architecture Blueprint
+> - [.notes/PROMPT_TEMPLATES.md](.notes/PROMPT_TEMPLATES.md) — Prompt Templating System
+
 ---
 
 ## Changelog
