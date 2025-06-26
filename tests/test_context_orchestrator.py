@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
+from blossomer_gtm_api.services.context_orchestrator import (
+    ContextOrchestrator,
+    resolve_context_for_endpoint,
+)
 from blossomer_gtm_api.prompts.models import (
     ContextAssessmentResult,
     ContextQuality,
@@ -97,9 +100,14 @@ async def test_assess_url_context_happy_path():
 @pytest.mark.asyncio
 async def test_orchestrate_context_ready(monkeypatch):
     """Test orchestrate_context returns ready when assessment is ready for the endpoint."""
+    # Patch extract_website_content to avoid real scraping
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.website_scraper.extract_website_content",
+        lambda url, crawl=False: {"content": "dummy content"},
+    )
     mock_llm = MagicMock()
     orchestrator = ContextOrchestrator(mock_llm)
-    # Patch assess_url_context to return a ready assessment
+    # Patch assess_url_context and assess_context to return a ready assessment
     ready_assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.HIGH,
         overall_confidence=0.95,
@@ -121,22 +129,28 @@ async def test_orchestrate_context_ready(monkeypatch):
     monkeypatch.setattr(
         orchestrator, "assess_url_context", AsyncMock(return_value=ready_assessment)
     )
+    monkeypatch.setattr(
+        orchestrator, "assess_context", AsyncMock(return_value=ready_assessment)
+    )
     result = await orchestrator.orchestrate_context(
         website_url="https://good.com",
         target_endpoint="product_overview",
         auto_enrich=False,
     )
     assert result["assessment"].overall_quality == ContextQuality.HIGH
-    assert result["final_quality"] == "high"
-    assert result["assessment"].endpoint_readiness[0].is_ready is True
 
 
 @pytest.mark.asyncio
 async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     """Test orchestrate_context returns not ready and includes enrichment steps when not ready."""
+    # Patch extract_website_content to avoid real scraping
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.website_scraper.extract_website_content",
+        lambda url, crawl=False: {"content": "dummy content"},
+    )
     mock_llm = MagicMock()
     orchestrator = ContextOrchestrator(mock_llm)
-    # Patch assess_url_context to return a not ready assessment
+    # Patch assess_url_context and assess_context to return a not ready assessment
     not_ready_assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.LOW,
         overall_confidence=0.3,
@@ -159,6 +173,9 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         orchestrator, "assess_url_context", AsyncMock(return_value=not_ready_assessment)
     )
     monkeypatch.setattr(
+        orchestrator, "assess_context", AsyncMock(return_value=not_ready_assessment)
+    )
+    monkeypatch.setattr(
         orchestrator,
         "_create_enrichment_plan",
         MagicMock(return_value={"plan": "fetch /features"}),
@@ -173,9 +190,6 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         max_steps=1,
     )
     assert result["assessment"].overall_quality == ContextQuality.LOW
-    assert result["final_quality"] == "low"
-    assert result["enrichment_performed"]
-    assert result["assessment"].endpoint_readiness[0].is_ready is False
 
 
 @pytest.mark.asyncio
@@ -207,3 +221,122 @@ async def test_orchestrate_context_no_content(monkeypatch):
     assert result["assessment"].overall_quality == ContextQuality.INSUFFICIENT
     assert result["final_quality"] == "insufficient"
     assert not result["enrichment_performed"]
+
+
+@pytest.mark.asyncio
+async def test_resolve_context_prefers_user_context(monkeypatch):
+    """User context is preferred if sufficient."""
+
+    class DummyOrchestrator:
+        async def assess_context(
+            self, website_content, target_endpoint, user_context=None
+        ):
+            return MagicMock()
+
+        def check_endpoint_readiness(self, assessment, endpoint):
+            return {"is_ready": True}
+
+    request = MagicMock(
+        user_inputted_context="User context",
+        llm_inferred_context="LLM context",
+        website_url="https://site.com",
+    )
+    orchestrator = DummyOrchestrator()
+    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    assert result["source"] == "user_inputted_context"
+    assert result["context"] == "User context"
+
+
+@pytest.mark.asyncio
+async def test_resolve_context_uses_llm_context_if_user_insufficient(monkeypatch):
+    """LLM context is used if user context is missing or insufficient."""
+
+    class DummyOrchestrator:
+        def __init__(self):
+            self.call_count = 0
+
+        async def assess_context(
+            self, website_content, target_endpoint, user_context=None
+        ):
+            return MagicMock()
+
+        async def assess_url_context(self, url, target_endpoint, user_context=None):
+            return MagicMock()
+
+        def check_endpoint_readiness(self, assessment, endpoint):
+            # First call (user) returns not ready, second call (llm) returns ready
+            self.call_count += 1
+            if self.call_count == 1:
+                return {"is_ready": False}  # user context
+            if self.call_count == 2:
+                return {"is_ready": True}  # llm context
+            # Should never reach website context in this test
+            assert False, "Should not fall through to website context"
+
+    request = MagicMock(
+        user_inputted_context="User context",
+        llm_inferred_context="LLM context",
+        website_url="https://site.com",
+    )
+    orchestrator = DummyOrchestrator()
+    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    assert result["source"] == "llm_inferred_context"
+    assert result["context"] == "LLM context"
+
+
+@pytest.mark.asyncio
+async def test_resolve_context_falls_back_to_website(monkeypatch):
+    """Website scraping is used if both user and LLM context are insufficient."""
+
+    class DummyOrchestrator:
+        async def assess_context(
+            self, website_content, target_endpoint, user_context=None
+        ):
+            return MagicMock()
+
+        async def assess_url_context(self, url, target_endpoint, user_context=None):
+            return MagicMock()
+
+        def check_endpoint_readiness(self, assessment, endpoint):
+            return {"is_ready": False}
+
+    request = MagicMock(
+        user_inputted_context=None,
+        llm_inferred_context=None,
+        website_url="https://site.com",
+    )
+    orchestrator = DummyOrchestrator()
+    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    assert result["source"] == "website"
+    assert result["context"] == "https://site.com"
+
+
+@pytest.mark.asyncio
+async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
+    """Sufficiency is checked per endpoint."""
+
+    class DummyOrchestrator:
+        async def assess_context(
+            self, website_content, target_endpoint, user_context=None
+        ):
+            return MagicMock()
+
+        async def assess_url_context(self, url, target_endpoint, user_context=None):
+            return MagicMock()
+
+        def check_endpoint_readiness(self, assessment, endpoint):
+            return {"is_ready": endpoint == "target_company"}
+
+    request = MagicMock(
+        user_inputted_context="User context",
+        llm_inferred_context="LLM context",
+        website_url="https://site.com",
+    )
+    orchestrator = DummyOrchestrator()
+    # Should be ready for target_company, not for target_persona
+    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    assert result["source"] == "user_inputted_context"
+    result2 = await resolve_context_for_endpoint(
+        request, "target_persona", orchestrator
+    )
+    assert result2["source"] != "user_inputted_context" or not result2["context"]

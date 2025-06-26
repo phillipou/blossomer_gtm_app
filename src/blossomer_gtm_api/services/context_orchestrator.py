@@ -16,6 +16,61 @@ from blossomer_gtm_api.services.llm_service import LLMClient
 from blossomer_gtm_api.services.website_scraper import extract_website_content
 
 
+async def resolve_context_for_endpoint(
+    request, endpoint_name: str, orchestrator
+) -> Dict[str, Any]:
+    """
+    Resolve the best context for a given endpoint, preferring user, then LLM, then website scraping.
+    Returns a dict with keys: 'source', 'context', 'is_ready'.
+    """
+    # 1. User-provided context
+    user_ctx = getattr(request, "user_inputted_context", None)
+    if user_ctx:
+        assessment = await orchestrator.assess_context(
+            website_content=user_ctx,
+            target_endpoint=endpoint_name,
+            user_context=None,
+        )
+        readiness = orchestrator.check_endpoint_readiness(assessment, endpoint_name)
+        if readiness.get("is_ready"):
+            return {
+                "source": "user_inputted_context",
+                "context": user_ctx,
+                "is_ready": True,
+            }
+    # 2. LLM-inferred context
+    llm_ctx = getattr(request, "llm_inferred_context", None)
+    if llm_ctx:
+        assessment = await orchestrator.assess_context(
+            website_content=llm_ctx,
+            target_endpoint=endpoint_name,
+            user_context=None,
+        )
+        readiness = orchestrator.check_endpoint_readiness(assessment, endpoint_name)
+        if readiness.get("is_ready"):
+            return {
+                "source": "llm_inferred_context",
+                "context": llm_ctx,
+                "is_ready": True,
+            }
+    # 3. Website scraping
+    website_url = getattr(request, "website_url", None)
+    if website_url:
+        assessment = await orchestrator.assess_url_context(
+            url=website_url,
+            target_endpoint=endpoint_name,
+            user_context=None,
+        )
+        readiness = orchestrator.check_endpoint_readiness(assessment, endpoint_name)
+        return {
+            "source": "website",
+            "context": website_url,
+            "is_ready": readiness.get("is_ready", False),
+        }
+    # If all fail
+    return {"source": None, "context": None, "is_ready": False}
+
+
 class ContextOrchestrator:
     """
     An LLM-powered agent that assesses the quality of website content to determine
@@ -66,7 +121,7 @@ class ContextOrchestrator:
         response_model = await self.llm_client.generate_structured_output(
             prompt=prompt, response_model=ContextAssessmentResult
         )
-        return ContextAssessmentResult.parse_obj(response_model)
+        return ContextAssessmentResult.model_validate(response_model)
 
     async def assess_url_context(
         self,
@@ -93,11 +148,14 @@ class ContextOrchestrator:
             logger.debug(f"Attempting to scrape website: {url} (crawl={crawl})")
             scrape_result = extract_website_content(url, crawl=crawl)
             website_content = scrape_result.get("content", "")
-            logger.debug(
-                f"[DEBUG] Raw website content for {url}:\n" f"{website_content[:1000]}"
-            )
+            logger.debug("[DEBUG] Raw website content for %s:", url)
+            logger.debug("%s", website_content[:100])
         except Exception as e:
-            logger.warning(f"Website scrape failed for {url}: {e}")
+            logger.warning(
+                "Website scrape failed for %s: %s",
+                url,
+                e,
+            )
 
         if not website_content:
             if not crawl:
@@ -108,7 +166,11 @@ class ContextOrchestrator:
                     scrape_result = extract_website_content(url, crawl=True)
                     website_content = scrape_result.get("content", "")
                 except Exception as e:
-                    logger.warning(f"Website crawl failed for {url}: {e}")
+                    logger.warning(
+                        "Website crawl failed for %s: %s",
+                        url,
+                        e,
+                    )
             if not website_content:
                 logger.debug(
                     "No content found after full crawl for %s. Returning insufficient result.",
@@ -221,7 +283,11 @@ class ContextOrchestrator:
                 scrape_result = extract_website_content(website_url, crawl=True)
                 website_content = scrape_result.get("content", "")
             except Exception as e:
-                logger.warning(f"Website crawl failed for {website_url}: {e}")
+                logger.warning(
+                    "Website crawl failed for %s: %s",
+                    website_url,
+                    e,
+                )
         # Assess context
         assessment = await self.assess_context(
             website_content=website_content,
