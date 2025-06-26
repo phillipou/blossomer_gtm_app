@@ -20,8 +20,8 @@ Analyze the provided website and context to extract a comprehensive product over
 - Key features
 - Company/firmographic profiles
 - Persona/job role profiles
-- Use cases (only those explicitly listed on the website)
-- Pain points (only those explicitly listed on the website)
+- Use cases (prefer items explicitly listed on the website, but you may infer based on context if not available; clearly mark inferred items with 'Inferred: ...')
+- Pain points (prefer items explicitly listed on the website, but you may infer based on context if not available; clearly mark inferred items with 'Inferred: ...')
 - Pricing (if available)
 
 ## Required Output Format
@@ -29,8 +29,8 @@ Analyze the provided website and context to extract a comprehensive product over
 **Respond with valid JSON only. Do NOT include markdown code blocks or any text outside the JSON structure.**
 
 **Field Requirements:**
-- For use_cases and pain_points, only include items that are explicitly stated on the website.
-- For all other fields, prefer explicit statements but you may infer if clearly justified.
+- For use_cases and pain_points, prefer items that are explicitly stated on the website. If not available, you may infer based on context, but clearly mark inferred items (e.g., prefix with 'Inferred: ...').
+- For all other fields, you may infer based on context if explicit statements are not available.
 - If information is not available, use an empty string or empty list as appropriate.
 - For each section, provide a confidence score (0-1) for the quality and completeness of the extracted data.
 
@@ -59,7 +59,7 @@ Analyze the provided website and context to extract a comprehensive product over
 }
 
 ## Quality Criteria for Your Response:
-1. **Explicitness:** Only include use_cases and pain_points if they are directly stated on the website.
+1. **Explicitness:** Prefer use_cases and pain_points that are directly stated on the website, but inference is allowed if clearly marked.
 2. **Specificity:** All fields should be as specific and actionable as possible.
 3. **Evidence-based:** Reference specific elements from the provided context.
 4. **Actionable:** Output should be ready for use in sales/marketing planning.
@@ -68,4 +68,5 @@ Analyze the provided website and context to extract a comprehensive product over
 ## Important Notes:
 - If context is insufficient for certain sections, return an empty string or empty list.
 - Prioritize quality over completeness—better to have fewer, high-confidence items than many weak ones.
-- Do NOT include any text outside the JSON structure. 
+- Do NOT include any text outside the JSON structure.
+- **Never refuse to answer. Always return a valid JSON object, even if most fields are empty or marked as inferred. If you cannot find enough information, do your best to infer or leave fields empty, but always return valid JSON.** 

@@ -2,7 +2,13 @@
 registry.py - Template registry and selector logic for prompt templates.
 """
 
-from .models import ICPPromptVars, ProductOverviewPromptVars, ContextAssessmentVars
+from .models import (
+    ICPPromptVars,
+    ProductOverviewPromptVars,
+    ContextAssessmentVars,
+    TargetCompanyPromptVars,
+    TargetPersonaPromptVars,
+)
 from .base import render_template
 from pydantic import BaseModel
 
@@ -17,6 +23,8 @@ TEMPLATE_REGISTRY = {
         "model": ContextAssessmentVars,
         "template": "context_assessment",
     },
+    "target_company": {"model": TargetCompanyPromptVars, "template": "target_company"},
+    "target_persona": {"model": TargetPersonaPromptVars, "template": "target_persona"},
     # Add more templates here
 }
 

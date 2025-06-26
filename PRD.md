@@ -166,6 +166,25 @@ All endpoints support:
 - **Quality assurance**: Systematic validation and confidence scoring
 - **Monitoring**: Comprehensive observability and health checking
 
+## Context Assessment and Orchestration (v2.1)
+
+All campaign generation endpoints now use a unified, intelligent context assessment flow:
+
+- **Order of Precedence:**
+  1. User-provided context (if present and sufficient)
+  2. LLM-inferred context (if present and sufficient)
+  3. Website content (scraped and processed only if above are insufficient)
+- **Sufficiency is endpoint-specific:**
+  - Each endpoint (e.g., product_overview, target_company, target_persona) defines its own required fields and minimum confidence/quality thresholds.
+  - The Context Orchestrator enforces these requirements using its readiness logic.
+- **Benefits:**
+  - Reduces unnecessary scraping and LLM calls
+  - Enables chaining of endpoint outputs
+  - Provides a consistent, user-friendly experience
+  - Makes the system extensible and robust
+
+This design is now a core part of the smart context orchestration system and applies to all endpoints. See ARCHITECTURE.md for implementation details.
+
 ## 6. Enhanced user stories and acceptance criteria
 
 ### Authentication and access management

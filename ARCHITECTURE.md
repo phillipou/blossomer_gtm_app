@@ -220,6 +220,25 @@ def check_endpoint_readiness(assessment, endpoint):
     return ready, missing
 ```
 
+## Unified Context Assessment Logic (v2.1)
+
+All campaign endpoints now follow a unified context assessment and orchestration flow:
+
+- **Order of Precedence:**
+  1. User-provided context (preferred if present and sufficient)
+  2. LLM-inferred context (used if present and sufficient)
+  3. Website content (scraped and processed only if above are insufficient)
+- **Endpoint-Specific Sufficiency:**
+  - Each endpoint defines its own required fields and minimum confidence/quality thresholds.
+  - The Context Orchestrator's readiness logic enforces these requirements, ensuring only sufficient context is used for campaign generation.
+- **System Benefits:**
+  - Minimizes unnecessary scraping and LLM calls
+  - Enables chaining of endpoint outputs
+  - Provides a consistent, user-friendly, and robust experience
+  - Makes the system extensible and future-proof
+
+This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See PRD.md for rationale and user impact.
+
 ## 4. AI Agent Architecture
 
 ### Agent vs. Endpoint Design Philosophy

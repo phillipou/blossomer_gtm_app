@@ -78,3 +78,75 @@ class ProductOverviewResponse(BaseModel):
         None,
         description="Additional metadata (sources, context quality, processing time, etc.)",
     )
+
+
+class TargetCompanyRequest(BaseModel):
+    website_url: str = Field(..., description="Company website or landing page URL")
+    user_inputted_context: Optional[str] = Field(
+        None, description="Optional user-provided context for campaign generation"
+    )
+    llm_inferred_context: Optional[str] = Field(
+        None, description="Optional context inferred from previous endpoints"
+    )
+
+
+class TargetCompanyResponse(BaseModel):
+    """
+    Response model for the /campaigns/target_company endpoint.
+    """
+
+    target_company: str = Field(
+        ..., description="Ideal company type and why they need this solution"
+    )
+    company_attributes: List[str] = Field(
+        ..., description="Key company/firmographic attributes"
+    )
+    buying_signals: List[str] = Field(
+        ..., description="Observable buying signals for this company type"
+    )
+    rationale: str = Field(
+        ..., description="Explanation of why these companies are ideal customers"
+    )
+    confidence_scores: Optional[Dict[str, float]] = Field(
+        None,
+        description="Confidence/quality scores for each section (0-1)",
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Additional metadata (sources, context quality, processing time, etc.)",
+    )
+
+
+class TargetPersonaRequest(BaseModel):
+    website_url: str = Field(..., description="Company website or landing page URL")
+    user_inputted_context: Optional[str] = Field(
+        None, description="Optional user-provided context for campaign generation"
+    )
+    llm_inferred_context: Optional[str] = Field(
+        None, description="Optional context inferred from previous endpoints"
+    )
+
+
+class TargetPersonaResponse(BaseModel):
+    """
+    Response model for the /campaigns/target_persona endpoint.
+    """
+
+    persona: str = Field(..., description="Primary decision maker/influencer persona")
+    persona_attributes: List[str] = Field(
+        ..., description="Key attributes of the persona"
+    )
+    persona_buying_signals: List[str] = Field(
+        ..., description="Observable buying signals for this persona"
+    )
+    rationale: str = Field(
+        ..., description="Explanation of why this persona is the ideal buyer"
+    )
+    confidence_scores: Optional[Dict[str, float]] = Field(
+        None,
+        description="Confidence/quality scores for each section (0-1)",
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Additional metadata (sources, context quality, processing time, etc.)",
+    )

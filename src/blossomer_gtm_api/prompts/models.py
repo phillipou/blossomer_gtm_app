@@ -256,3 +256,37 @@ class ContextAssessmentResult(BaseModel):
                 ),
             }
         }
+
+
+class TargetCompanyPromptVars(BaseModel):
+    """
+    Variables for the target_company.jinja2 prompt template.
+    """
+
+    website_content: Optional[str] = Field(
+        None, description="The preprocessed content from the company's website."
+    )
+    user_inputted_context: Optional[str] = Field(
+        None, description="Optional user-provided context for campaign generation."
+    )
+    llm_inferred_context: Optional[str] = Field(
+        None,
+        description="Optional context inferred from previous endpoints for chaining.",
+    )
+
+
+class TargetPersonaPromptVars(BaseModel):
+    """
+    Variables for the target_persona.jinja2 prompt template.
+    """
+
+    website_content: Optional[str] = Field(
+        None, description="The preprocessed content from the company's website."
+    )
+    user_inputted_context: Optional[str] = Field(
+        None, description="Optional user-provided context for campaign generation."
+    )
+    llm_inferred_context: Optional[str] = Field(
+        None,
+        description="Optional context inferred from previous endpoints for chaining.",
+    )

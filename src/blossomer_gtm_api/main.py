@@ -1,3 +1,4 @@
+import logging
 import json
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -15,13 +16,28 @@ from blossomer_gtm_api.schemas import (
     ICP_SCHEMA,
     ProductOverviewRequest,
     ProductOverviewResponse,
+    TargetCompanyRequest,
+    TargetCompanyResponse,
+    TargetPersonaRequest,
+    TargetPersonaResponse,
 )
 from blossomer_gtm_api.prompts.registry import render_prompt
 from blossomer_gtm_api.prompts.models import (
     ICPPromptVars,
-    ProductOverviewPromptVars,
 )
 from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
+from blossomer_gtm_api.services.product_overview_service import (
+    generate_product_overview_service,
+)
+from blossomer_gtm_api.services.target_company_service import (
+    generate_target_company_profile,
+)
+from blossomer_gtm_api.services.target_persona_service import (
+    generate_target_persona_profile,
+)
+
+logging.basicConfig(level=logging.DEBUG)
+logging.debug("DEBUG LOGGING IS ENABLED")
 
 load_dotenv()
 
@@ -268,67 +284,38 @@ async def generate_product_overview(data: ProductOverviewRequest):
     - Scrapes and assesses website content quality
     - Calls LLM to generate structured overview
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
     orchestrator = ContextOrchestrator(llm_client)
-    logger.debug(
-        f"[API] Orchestrating context for product_overview: {data.website_url}"
-    )
-    # Pass user_context from the request
-    user_context = {
-        "user_inputted_context": data.user_inputted_context,
-        "llm_inferred_context": data.llm_inferred_context,
-    }
-    result = await orchestrator.orchestrate_context(
-        website_url=data.website_url,
-        target_endpoint="product_overview",
-        user_context=user_context,
-        auto_enrich=True,
-    )
-    if not result["enrichment_successful"]:
-        assessment = result["assessment"]
-        readiness = orchestrator.check_endpoint_readiness(
-            assessment, "product_overview"
-        )
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": "Insufficient content quality for product overview",
-                "quality_assessment": assessment.overall_quality.value,
-                "confidence": readiness["confidence"],
-                "missing_requirements": readiness["missing_requirements"],
-                "recommendations": readiness["recommendations"],
-                "assessment_summary": assessment.summary,
-            },
-        )
-    # Use enriched content for generation
-    all_content = result["enriched_content"]
-    website_data = all_content.get("initial")
-    has_content = hasattr(website_data, "website_content")
-    content_val = website_data.website_content if has_content else ""
-    if has_content and content_val:
-        processed_content = content_val
-    else:
-        processed_content = ""
-    prompt_vars = ProductOverviewPromptVars(
-        website_content=processed_content,
-        user_inputted_context=data.user_inputted_context,
-        llm_inferred_context=data.llm_inferred_context,
-        context_quality=result["assessment"].overall_quality.value,
-        assessment_summary=result["assessment"].summary,
-    )
-    prompt = render_prompt("product_overview", prompt_vars)
-    try:
-        llm_request = LLMRequest(prompt=prompt)
-        llm_response = await llm_client.generate(llm_request)
-        response_json = llm_response.text
-        return ProductOverviewResponse.parse_raw(response_json)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=("LLM output was not valid JSON or LLM call failed: " f"{e}"),
-        )
+    return await generate_product_overview_service(data, orchestrator, llm_client)
+
+
+@app.post(
+    "/campaigns/target_company",
+    response_model=TargetCompanyResponse,
+    summary="Generate Target Company Profile (firmographics, buying signals, rationale)",
+    tags=["Campaigns", "Target Company", "AI"],
+    response_description="A structured target company profile for the given company context.",
+)
+async def generate_target_company(data: TargetCompanyRequest):
+    """
+    Generate a target company profile (firmographics, buying signals, rationale) for a B2B product.
+    """
+    orchestrator = ContextOrchestrator(llm_client)
+    return await generate_target_company_profile(data, orchestrator, llm_client)
+
+
+@app.post(
+    "/campaigns/target_persona",
+    response_model=TargetPersonaResponse,
+    summary="Generate Target Persona Profile (attributes, buying signals, rationale)",
+    tags=["Campaigns", "Target Persona", "AI"],
+    response_description="A structured target persona profile for the given company context.",
+)
+async def generate_target_persona(data: TargetPersonaRequest):
+    """
+    Generate a target persona profile (attributes, buying signals, rationale) for a B2B product.
+    """
+    orchestrator = ContextOrchestrator(llm_client)
+    return await generate_target_persona_profile(data, orchestrator, llm_client)
 
 
 @app.get("/health")
