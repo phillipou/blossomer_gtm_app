@@ -264,7 +264,7 @@ class ContextOrchestrator:
         Main orchestration method: assess → plan → enrich → reassess (iterative improvement).
         """
         logger = logging.getLogger(__name__)
-        all_content = {}
+        all_content: Dict[str, Any] = {}
         sources_used = []
         enrichment_performed = []
         step = 0

@@ -11,9 +11,16 @@ from .models import (
 )
 from .base import render_template
 from pydantic import BaseModel
+from typing import Dict, Type
+from typing_extensions import TypedDict
 
 
-TEMPLATE_REGISTRY = {
+class TemplateEntry(TypedDict):
+    model: Type[BaseModel]
+    template: str
+
+
+TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
     "icp": {"model": ICPPromptVars, "template": "icp"},
     "product_overview": {
         "model": ProductOverviewPromptVars,
@@ -31,5 +38,8 @@ TEMPLATE_REGISTRY = {
 
 def render_prompt(template_name: str, variables: BaseModel) -> str:
     entry = TEMPLATE_REGISTRY[template_name]
-    validated = entry["model"].parse_obj(variables)
-    return render_template(entry["template"], validated.dict())
+    if not isinstance(variables, BaseModel):
+        raise TypeError(
+            f"variables must be a Pydantic BaseModel instance, got {type(variables)}"
+        )
+    return render_template(entry["template"], variables.dict())
