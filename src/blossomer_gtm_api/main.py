@@ -1,29 +1,16 @@
 import logging
-import json
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from blossomer_gtm_api.services.website_scraper import extract_website_content
-from blossomer_gtm_api.services.llm_service import LLMClient, LLMRequest, OpenAIProvider
-from blossomer_gtm_api.services.content_preprocessing import (
-    ContentPreprocessingPipeline,
-    SectionChunker,
-    LangChainSummarizer,
-    BoilerplateFilter,
-)
+from blossomer_gtm_api.services.llm_service import LLMClient, OpenAIProvider
 from blossomer_gtm_api.schemas import (
-    ICP_SCHEMA,
     ProductOverviewRequest,
     ProductOverviewResponse,
     TargetCompanyRequest,
     TargetCompanyResponse,
     TargetPersonaRequest,
     TargetPersonaResponse,
-)
-from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.prompts.models import (
-    ICPPromptVars,
 )
 from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
 from blossomer_gtm_api.services.product_overview_service import (
@@ -140,12 +127,6 @@ class PositioningResponse(BaseModel):
         }
 
 
-class ICPRequest(BaseModel):
-    website_url: str
-    user_inputted_context: Optional[str] = None
-    llm_inferred_context: Optional[str] = None
-
-
 @app.post(
     "/campaigns/positioning",
     response_model=PositioningResponse,
@@ -235,54 +216,6 @@ async def generate_positioning(
             ),
         ],
     )
-
-
-@app.post(
-    "/campaigns/icp",
-    summary="Generate Ideal Customer Profile (ICP)",
-    response_description="A structured ICP definition for the given company context.",
-)
-async def generate_icp(data: ICPRequest):
-    """
-    Generate an Ideal Customer Profile (ICP) for a B2B startup using website content and user context.
-    """
-    # 1. Scrape website content
-    try:
-        website_data = extract_website_content(data.website_url)
-        raw_content = website_data.get("markdown") or website_data.get("content") or ""
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Website scraping failed: {e}")
-
-    # 2. Preprocess content (chunk, summarize, filter)
-    pipeline = ContentPreprocessingPipeline(
-        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
-    )
-    processed_chunks = pipeline.process(raw_content)
-    processed_content = "\n".join(processed_chunks)
-
-    # 3. Build prompt using Jinja2 template
-    context = ICPPromptVars(
-        user_inputted_context=data.user_inputted_context,
-        llm_inferred_context=data.llm_inferred_context,
-        website_content=processed_content,
-    )
-    prompt = render_prompt("icp", context)
-
-    # 4. Call LLM with structured output
-    llm_request = LLMRequest(
-        prompt=prompt,
-        response_schema=ICP_SCHEMA,
-    )
-    try:
-        llm_response = await llm_client.generate(llm_request)
-        icp_json = json.loads(llm_response.text)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"LLM output was not valid JSON or LLM call failed: {e}",
-        )
-
-    return icp_json
 
 
 @app.post(

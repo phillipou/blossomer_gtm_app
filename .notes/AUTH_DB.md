@@ -46,14 +46,14 @@ CREATE TABLE api_usage (
     success BOOLEAN NOT NULL,
     response_time_ms INTEGER,
     error_code VARCHAR(50),
-    created_at TIMESTAMP DEFAULT NOW()
+    timestamp TIMESTAMP DEFAULT NOW()
 );
 
 -- Performance indexes
 CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
 CREATE INDEX idx_api_keys_user ON api_keys(user_id);
-CREATE INDEX idx_api_usage_key_time ON api_usage(api_key_id, created_at);
-CREATE INDEX idx_api_usage_endpoint ON api_usage(endpoint, created_at);
+CREATE INDEX idx_api_usage_key_time ON api_usage(api_key_id, timestamp);
+CREATE INDEX idx_api_usage_endpoint ON api_usage(endpoint, timestamp);
 ```
 
 ## Authentication System
@@ -132,7 +132,7 @@ class APIUsage(Base):
     success = Column(Boolean, nullable=False)
     response_time_ms = Column(Integer)
     error_code = Column(String(50))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow)
     
     api_key = relationship("APIKey", back_populates="usage_records")
 ```
@@ -312,7 +312,7 @@ class AuthService:
         hourly_usage = db.query(func.count(APIUsage.id)).filter(
             and_(
                 APIUsage.api_key_id == api_key_record.id,
-                APIUsage.created_at >= hour_ago,
+                APIUsage.timestamp >= hour_ago,
                 APIUsage.endpoint == endpoint
             )
         ).scalar()
@@ -325,7 +325,7 @@ class AuthService:
         daily_usage = db.query(func.count(APIUsage.id)).filter(
             and_(
                 APIUsage.api_key_id == api_key_record.id,
-                APIUsage.created_at >= day_ago
+                APIUsage.timestamp >= day_ago
             )
         ).scalar()
         

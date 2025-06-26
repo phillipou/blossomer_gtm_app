@@ -6,6 +6,7 @@ __pycache__/
 .DS_Store
 .env
 .env.*
+!.env.example
 tests/
 .vscode/
 .cursor/

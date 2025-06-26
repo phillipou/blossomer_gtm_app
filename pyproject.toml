@@ -3,23 +3,10 @@ name = "blossomer-gtm-api"
 version = "0.1.0"
 description = "AI-powered go-to-market campaign generator API for B2B founders"
 authors = [
-    {name = "Your Name"}
+    {name = "Phillip Ou"}
 ]
 readme = "README.md"
 requires-python = "^3.11"
-dependencies = [
-    "fastapi (>=0.115.13,<0.116.0)",
-    "uvicorn (>=0.34.3,<0.35.0)",
-    "requests (>=2.32.4,<3.0.0)",
-    "firecrawl-py (>=2.9.0,<3.0.0)",
-    "openai (>=1.91.0,<2.0.0)",
-    "google-generativeai (>=0.8.5,<0.9.0)",
-    "jsonschema (>=4.24.0,<5.0.0)",
-    "sqlalchemy (>=2.0.41,<3.0.0)",
-    "asyncpg (>=0.30.0,<0.31.0)",
-    "psycopg2-binary (>=2.9.10,<3.0.0)"
-]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -29,11 +16,26 @@ build-backend = "poetry.core.masonry.api"
 name = "blossomer-gtm-api"
 version = "0.1.0"
 description = "AI-powered go-to-market campaign generator API for B2B founders"
-authors = ["Your Name"]
+authors = ["Phillip Ou"]
 
 packages = [
     { include = "blossomer_gtm_api", from = "src" }
 ]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = ">=0.115.13,<0.116.0"
+uvicorn = ">=0.34.3,<0.35.0"
+requests = ">=2.32.4,<3.0.0"
+firecrawl-py = ">=2.9.0,<3.0.0"
+openai = ">=1.91.0,<2.0.0"
+google-generativeai = ">=0.8.5,<0.9.0"
+jsonschema = ">=4.24.0,<5.0.0"
+sqlalchemy = ">=2.0.41,<3.0.0"
+asyncpg = ">=0.30.0,<0.31.0"
+psycopg2-binary = ">=2.9.10,<3.0.0"
+python-dotenv = ">=1.1.1,<2.0.0"
+jinja2 = "^3.1.6"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.2.0"
@@ -43,7 +45,6 @@ pytest = "^8.4.1"
 httpx = "^0.28.1"
 pytest-mock = "^3.14.1"
 pytest-asyncio = "^1.0.0"
-uvicorn = "^0.34.3"
 mypy = "^1.16.1"
 
 [tool.flake8]

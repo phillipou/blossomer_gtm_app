@@ -3,7 +3,6 @@ registry.py - Template registry and selector logic for prompt templates.
 """
 
 from .models import (
-    ICPPromptVars,
     ProductOverviewPromptVars,
     ContextAssessmentVars,
     TargetCompanyPromptVars,
@@ -21,7 +20,6 @@ class TemplateEntry(TypedDict):
 
 
 TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
-    "icp": {"model": ICPPromptVars, "template": "icp"},
     "product_overview": {
         "model": ProductOverviewPromptVars,
         "template": "product_overview",
