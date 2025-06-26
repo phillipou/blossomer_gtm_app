@@ -30,6 +30,10 @@ Your output must be a single, valid JSON object with the following fields:
     - confidence: Float 0-1
     - missing_requirements: List of what's needed for this endpoint
     - recommendations: List of suggestions to improve readiness
+    - Use the following criteria for readiness:
+        - "product_overview": is_ready = true if product_description is clear, at least 3 key_features are found, at least 1 use_case is found, and confidence >= 0.7.
+        - "target_company": is_ready = true if at least 2-3 firmographics (e.g., industry, size) and at least 2-3 behavioral/situational attributes (e.g., "has heavy compliance needs", "is tech-forward") can be inferred with evidence, at least 2 buying_signals are found, and confidence >= 0.75.
+        - "target_persona": is_ready = true if a clear persona/role is found, at least 2-3 behavioral/motivational attributes (e.g., "responsible for compliance", "under pressure to reduce overhead") can be inferred, at least 1 persona_buying_signal is found, and confidence >= 0.7.
 - data_quality_metrics: Object with floats for keys like "content_completeness", "information_specificity", "data_recency", "marketing_maturity"
 - recommendations: Object with lists for keys "immediate_actions", "data_enrichment", "user_input_needed"
 - summary: 2-3 sentence summary of the context assessment
