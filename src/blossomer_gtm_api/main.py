@@ -1,7 +1,7 @@
 import logging
 import json
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from blossomer_gtm_api.services.website_scraper import extract_website_content
@@ -35,6 +35,10 @@ from blossomer_gtm_api.services.target_company_service import (
 from blossomer_gtm_api.services.target_persona_service import (
     generate_target_persona_profile,
 )
+from blossomer_gtm_api.auth import rate_limit_dependency
+from blossomer_gtm_api.database import get_db
+from blossomer_gtm_api.models import APIKey
+from sqlalchemy.orm import Session
 
 logging.basicConfig(level=logging.DEBUG)
 logging.debug("DEBUG LOGGING IS ENABLED")
@@ -42,6 +46,13 @@ logging.debug("DEBUG LOGGING IS ENABLED")
 load_dotenv()
 
 app = FastAPI()
+
+# Register auth endpoints router if implemented
+# try:
+#     from blossomer_gtm_api.auth_endpoints import router as auth_router
+#     app.include_router(auth_router)
+# except ImportError:
+#     pass
 
 llm_client = LLMClient([OpenAIProvider()])  # Instantiate once for reuse
 
@@ -144,7 +155,11 @@ class ICPRequest(BaseModel):
         "A unique insight and a list of unique selling points for the given company context."
     ),
 )
-async def generate_positioning(data: PositioningRequest):
+async def generate_positioning(
+    data: PositioningRequest,
+    api_key_record: APIKey = Depends(rate_limit_dependency("positioning")),  # type: ignore
+    db: Session = Depends(get_db),
+):
     """
     Generate a Unique Insight (core reframe) and Unique Selling Points (USPs) for a B2B startup.
 
@@ -277,13 +292,11 @@ async def generate_icp(data: ICPRequest):
     tags=["Campaigns", "Product Overview", "AI"],
     response_description="A structured product overview for the given company context.",
 )
-async def generate_product_overview(data: ProductOverviewRequest):
-    """
-    Generate a comprehensive product overview for a B2B company using website content
-    and user context.
-    - Scrapes and assesses website content quality
-    - Calls LLM to generate structured overview
-    """
+async def generate_product_overview(
+    data: ProductOverviewRequest,
+    api_key_record: APIKey = Depends(rate_limit_dependency("product_overview")),  # type: ignore
+    db: Session = Depends(get_db),
+):
     orchestrator = ContextOrchestrator(llm_client)
     return await generate_product_overview_service(data, orchestrator, llm_client)
 
@@ -295,10 +308,11 @@ async def generate_product_overview(data: ProductOverviewRequest):
     tags=["Campaigns", "Target Company", "AI"],
     response_description="A structured target company profile for the given company context.",
 )
-async def generate_target_company(data: TargetCompanyRequest):
-    """
-    Generate a target company profile (firmographics, buying signals, rationale) for a B2B product.
-    """
+async def generate_target_company(
+    data: TargetCompanyRequest,
+    api_key_record: APIKey = Depends(rate_limit_dependency("target_company")),  # type: ignore
+    db: Session = Depends(get_db),
+):
     orchestrator = ContextOrchestrator(llm_client)
     return await generate_target_company_profile(data, orchestrator, llm_client)
 
@@ -310,10 +324,11 @@ async def generate_target_company(data: TargetCompanyRequest):
     tags=["Campaigns", "Target Persona", "AI"],
     response_description="A structured target persona profile for the given company context.",
 )
-async def generate_target_persona(data: TargetPersonaRequest):
-    """
-    Generate a target persona profile (attributes, buying signals, rationale) for a B2B product.
-    """
+async def generate_target_persona(
+    data: TargetPersonaRequest,
+    api_key_record: APIKey = Depends(rate_limit_dependency("target_persona")),  # type: ignore
+    db: Session = Depends(get_db),
+):
     orchestrator = ContextOrchestrator(llm_client)
     return await generate_target_persona_profile(data, orchestrator, llm_client)
 

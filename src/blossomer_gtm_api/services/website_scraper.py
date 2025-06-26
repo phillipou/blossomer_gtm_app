@@ -29,7 +29,7 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     Validate a website URL for syntax, reachability, and robots.txt compliance.
     Returns a dict with validation results.
     """
-    result = {
+    result: dict[str, Any] = {
         "is_valid": False,
         "reason": None,
         "reachable": False,

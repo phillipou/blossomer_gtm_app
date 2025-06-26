@@ -572,6 +572,8 @@ circuit_breaker_config = {
 
 ### Enhanced Security Architecture
 
+For detailed authentication and database implementation, see [AUTH_DB.md](AUTH_DB.md).
+
 #### API Security
 - **API key authentication** with rate limiting per tier
 - **Request validation** with comprehensive input sanitization

@@ -256,9 +256,9 @@ class GeminiProvider(BaseLLMProvider):
             return
         try:
             # Import generativeai only if available; linter may not recognize this dynamic import
-            from google import generativeai as genai  # type: ignore[import]
+            from google import genai  # type: ignore[import]
 
-            self.client = genai.Client(api_key=api_key)
+            self.client = genai.Client()
             self.model = "gemini-2.5-flash"
         except ImportError:
             # GeminiProvider is disabled if generativeai is not installed
@@ -278,11 +278,13 @@ class GeminiProvider(BaseLLMProvider):
             import asyncio
 
             loop = asyncio.get_event_loop()
+            if self.client is None:
+                raise RuntimeError("GeminiProvider client is not initialized.")
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.models.generate_content(  # type: ignore[attr-defined]
+                lambda: self.client.models.generate_content(  # type: ignore[union-attr]
                     model=self.model, contents=request.prompt
-                ),
+                ),  # type: ignore[union-attr]
             )
             return LLMResponse(
                 text=getattr(response, "text", ""),
@@ -304,11 +306,13 @@ class GeminiProvider(BaseLLMProvider):
             import asyncio
 
             loop = asyncio.get_event_loop()
+            if self.client is None:
+                return False
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.models.generate_content(  # type: ignore[attr-defined]
+                lambda: self.client.models.generate_content(  # type: ignore[union-attr]
                     model=self.model, contents="ping"
-                ),
+                ),  # type: ignore[union-attr]
             )
             return bool(getattr(response, "text", None))
         except Exception as e:
