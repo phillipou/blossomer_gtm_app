@@ -29,15 +29,11 @@ RUN <<EOF cat > .env.example
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/blossomer
 
-# Supabase
-SUPABASE_URL=https://your-supabase-url.supabase.co
-SUPABASE_KEY=your-supabase-key
-
 # API
 API_KEY=your-api-key
 
 # Other settings
-ENV=development
+ENV=production
 EOF
 
 # --- Final image ---
@@ -64,6 +60,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
 
 EXPOSE 8000
+
+# (Optional) Add a Docker healthcheck for /health endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
 
 # Entrypoint: Gunicorn with Uvicorn workers
 CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "src.blossomer_gtm_api.main:app"] 
