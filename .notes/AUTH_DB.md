@@ -2,13 +2,12 @@
 
 ## Overview
 
-This document outlines the implementation of user authentication and database layer for the Blossomer GTM API. We're implementing a self-service API key system with Supabase as our database provider.
+This document outlines the implementation of user authentication and database layer for the Blossomer GTM API. We're implementing a self-service API key system with Neon as our database provider (previously Supabase).
 
 ## Database Architecture
 
-### Database Provider: Supabase
-- **Why Supabase**: Free PostgreSQL with excellent tooling, real-time capabilities, and clear scaling path
-- **Free Tier**: 500MB storage, 50k MAU, full PostgreSQL 15 features
+### Database Provider: Neon
+- **Why Neon**: Free, serverless PostgreSQL with modern cloud features and easy scaling
 - **Connection**: Standard PostgreSQL connection string works with SQLAlchemy
 
 ### Database Schema
@@ -562,7 +561,7 @@ async def generate_product_overview(
 
 ```bash
 # Required for database connection
-DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
+DATABASE_URL=postgresql://neondb_owner:YOUR_PASSWORD@ep-purple-moon-a6mq1qgc-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require
 
 # Optional: Supabase client integration (for future features)
 SUPABASE_URL=https://[project].supabase.co
@@ -574,6 +573,19 @@ RATE_LIMIT_FREE_DAILY=50
 RATE_LIMIT_PAID_HOURLY=100
 RATE_LIMIT_PAID_DAILY=1000
 ```
+
+## Alembic Migrations
+- Use Alembic for all schema changes:
+  ```sh
+  poetry run dotenv run -- alembic revision --autogenerate -m "<message>"
+  poetry run dotenv run -- alembic upgrade head
+  ```
+- For scripts, always use `poetry run dotenv run -- python <script.py>` to ensure environment variables are loaded.
+
+## Docker Notes
+- The Dockerfile expects a valid `DATABASE_URL` in the environment.
+- For local development, mount your `.env` or pass `--env-file .env` to `docker run`.
+- Neon is cloud-hosted, so Docker containers can connect from anywhere with the right credentials.
 
 ## Setup Instructions
 

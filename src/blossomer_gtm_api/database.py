@@ -4,9 +4,9 @@ from sqlalchemy.orm import sessionmaker
 from .models import Base
 
 # Database configuration
-DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise ValueError("SUPABASE_DB_URL environment variable is required")
+    raise ValueError("DATABASE_URL environment variable is required")
 
 # Create engine with connection pooling
 engine = create_engine(

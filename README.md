@@ -161,3 +161,18 @@ Generate a Unique Insight (core reframe) and Unique Selling Points (USPs) for a 
 - Input is validated using Pydantic models.
 - The endpoint is stateless and currently returns a mock response for prototyping.
 - The response structure is designed for clarity, specificity, and future LLM integration.
+
+## Database Setup (Neon)
+- Blossomer now uses [Neon](https://neon.tech/) as the default Postgres database for all environments.
+- Set your `DATABASE_URL` in `.env` to your Neon connection string.
+- Use Alembic for migrations:
+  ```sh
+  poetry run dotenv run -- alembic revision --autogenerate -m "<message>"
+  poetry run dotenv run -- alembic upgrade head
+  ```
+- For scripts, always use `poetry run dotenv run -- python <script.py>` to ensure environment variables are loaded.
+
+## Docker Notes
+- The Dockerfile expects a valid `DATABASE_URL` in the environment.
+- For local development, mount your `.env` or pass `--env-file .env` to `docker run`.
+- Neon is cloud-hosted, so Docker containers can connect from anywhere with the right credentials.

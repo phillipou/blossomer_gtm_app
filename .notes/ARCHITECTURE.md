@@ -70,7 +70,7 @@ The Blossomer GTM API uses an enhanced modular monolith architecture with intell
 ┌─────────────────────────────────────────────────────────────┐
 │                  Infrastructure Layer                       │
 ├─────────────────┬─────────────────┬─────────────────┬───────┤
-│   PostgreSQL    │   ChromaDB      │   Redis Cache   │ External│
+│   Neon (PostgreSQL) │   ChromaDB      │   Redis Cache   │ External│
 │   Database      │   Vector Store  │   Context Store │ APIs  │
 └─────────────────┴─────────────────┴─────────────────┴───────┘
 ```
@@ -386,7 +386,7 @@ class LLMOutputValidator:
 
 ### Multi-Layer Storage Architecture
 
-#### PostgreSQL (Primary Database)
+#### PostgreSQL (Neon)
 - **User management**: Authentication, API keys, billing
 - **Campaign storage**: Generated assets and metadata  
 - **Context caching**: Processed website content and analysis

@@ -61,7 +61,7 @@ class APIKey(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     key_hash = Column(String(64), nullable=False, unique=True)
-    key_prefix = Column(String(20), nullable=False)
+    key_prefix = Column(String(32), nullable=False)
     name = Column(String(100))
     tier = Column(String(20), default="free")
     is_active = Column(Boolean, default=True)

@@ -46,6 +46,7 @@ httpx = "^0.28.1"
 pytest-mock = "^3.14.1"
 pytest-asyncio = "^1.0.0"
 mypy = "^1.16.1"
+alembic = "^1.16.2"
 
 [tool.flake8]
 max-line-length = 120
