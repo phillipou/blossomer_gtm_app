@@ -145,7 +145,7 @@ All endpoints support:
 - **Composable context**: Intelligent context chaining and orchestration
 - **Extensible architecture**: New endpoints can be added with minimal impact
 - **Streaming responses**: Real-time updates for long-running campaign generation processes
-- **Rate limiting**: Configurable throttling to manage API usage and costs
+- **Rate limiting**: Robust, per-API-key rate limiting enforced on all endpoints, with configurable hourly and daily limits based on API key tier (free, paid, enterprise). All responses include standard rate limit headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`). Exceeding limits returns HTTP 429 with a `Retry-After` header. Admin/test users may be exempt. All rate limit events are logged for analytics and monitoring.
 - **Comprehensive error handling**: Detailed error responses with actionable guidance
 - **Frontend-ready architecture**: API design optimized for eventual frontend integration
 - **Correction system**: Built-in refinement and improvement capabilities
@@ -206,6 +206,10 @@ As a platform administrator, I want to enforce rate limits per API key so that s
 - Rate limit headers are included in all responses
 - 429 Too Many Requests is returned when limits are exceeded
 - Rate limit resets are clearly communicated
+- Rate limiting logic is consistent across all endpoints
+- Exemptions for admin/test users are respected
+- Rate limit events are logged for analytics/monitoring
+- Rate limiting is documented in API docs and developer portal
 
 ### Enhanced campaign generation workflow
 
@@ -363,7 +367,7 @@ As a platform administrator, I want systematic output validation so users receiv
 - Environment-specific configuration management
 
 **Security and monitoring**
-- API key authentication with rate limiting
+- API key authentication with robust, per-key rate limiting (see above)
 - HTTPS enforcement for all API endpoints
 - Structured logging with request/response tracking
 - Error monitoring and alerting system
@@ -594,6 +598,7 @@ To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforc
 - **Content Processing**: Enhanced website analysis with smart preprocessing
 - **Data Sources**: Integration with 20+ enrichment providers and APIs
 - **Quality Assurance**: Systematic validation and confidence scoring
+- **Rate limiting**: Per-API-key, tier-based rate limiting with standard headers and analytics logging
 
 #### 📈 **Performance & Reliability**
 - **Response Times**: Individual endpoints under 30 seconds (improved from full campaign generation)

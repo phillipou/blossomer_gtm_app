@@ -33,11 +33,10 @@ The Blossomer GTM API uses an enhanced modular monolith architecture with intell
 
 ### Intelligent Component Architecture
 
-```
 ┌─────────────────────────────────────────────────────────────┐
 │                     API Gateway Layer                       │
 ├─────────────────────────────────────────────────────────────┤
-│  FastAPI Router │ Auth Middleware │ Rate Limiting │ Logging  │
+│  FastAPI Router │ Auth Middleware │ Rate Limiting │ Logging │
 │  Circuit Breaker │ Context Tracking │ Quality Gates         │
 └─────────────────────────────────────────────────────────────┘
                                 │
@@ -399,7 +398,7 @@ class LLMOutputValidator:
 
 #### Redis (Caching and Session Management)
 - **Context cache**: Short-term context storage for endpoint chaining
-- **Rate limiting**: API call counting with TTL
+- **Rate limiting**: Per-API-key, tier-based API call counting with TTL for hourly/daily windows. Used to enforce limits and return standard headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`). Exceeding limits returns HTTP 429 with `Retry-After`. All events logged for analytics.
 - **Session management**: User authentication state
 - **Queue management**: Async task processing
 
@@ -576,9 +575,12 @@ For detailed authentication and database implementation, see [AUTH_DB.md](AUTH_D
 
 #### API Security
 - **API key authentication** with rate limiting per tier
-- **Request validation** with comprehensive input sanitization
-- **Response sanitization** to prevent data leakage
-- **Audit logging** for all API interactions
+- **API key authentication** with robust, per-API-key, tier-based rate limiting
+  - Hourly and daily limits based on API key tier (free, paid, enterprise)
+  - All responses include standard rate limit headers
+  - HTTP 429 with `Retry-After` when limits exceeded
+  - Admin/test users may be exempt
+  - All rate limit events logged for analytics and abuse detection
 
 #### Data Protection
 - **Context encryption** for sensitive website content
@@ -614,6 +616,13 @@ async def comprehensive_health_check():
 - **Performance metrics** with Prometheus integration
 - **Error tracking** with comprehensive stack traces
 - **User behavior analytics** for API usage patterns
+
+### Rate Limiting
+All endpoints enforce per-API-key, tier-based rate limits (hourly/daily).
+Standard headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
+Exceeding limits returns HTTP 429 with `Retry-After`.
+Exemptions for admin/test users.
+All events logged for analytics and monitoring.
 
 ---
 

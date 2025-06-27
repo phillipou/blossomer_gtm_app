@@ -48,6 +48,9 @@ CREATE TABLE api_usage (
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
+-- Used for enforcing per-API-key, tier-based rate limits (hourly/daily)
+-- Optionally, Redis is used for fast, in-memory rate limit counters (see architecture doc)
+
 -- Performance indexes
 CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
 CREATE INDEX idx_api_keys_user ON api_keys(user_id);
@@ -74,6 +77,10 @@ Components:
 ### Security Principles
 1. **Never store actual API keys** - only SHA-256 hashes
 2. **Rate limiting** per key to prevent abuse (with ability to exempt certain users via `rate_limit_exempt` flag)
+   - Hourly and daily limits based on API key tier (free, paid, enterprise)
+   - All responses include standard rate limit headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`)
+   - HTTP 429 with `Retry-After` when limits exceeded
+   - All rate limit events logged for analytics and abuse detection
 3. **Key rotation** capability built-in
 4. **Audit logging** of all authentication attempts
 5. **Secure key generation** using cryptographic randomness
@@ -620,6 +627,7 @@ curl -X POST https://your-api.onrender.com/campaigns/product_overview \
 
 1. **API Key Storage**: Never log or store actual API keys, only hashes
 2. **Rate Limiting**: Aggressive limits prevent abuse during free tier
+   - Per-API-key, tier-based limits (hourly/daily) prevent abuse; all events logged; standard headers and 429/Retry-After returned; admin/test users may be exempt
 3. **Input Validation**: All endpoints validate input with Pydantic models
 4. **Error Handling**: Don't leak sensitive information in error messages
 5. **Audit Logging**: All authentication attempts and API usage is logged
