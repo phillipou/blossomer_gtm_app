@@ -8,6 +8,38 @@
 
 ---
 
+## Neon Migration & Database Modernization (2024-06)
+- [x] Migrate all environments to Neon as the default Postgres provider
+- [x] Refactor codebase to use DATABASE_URL (no more SUPABASE_DB_URL)
+- [x] Set up Alembic for schema migrations (production and dev)
+- [x] Add Alembic migration scripts for initial schema and key_prefix fix
+- [x] Update Dockerfile and Docker documentation for Neon and .env handling
+- [x] Update .env.example for Neon connection string
+- [x] Update README.md, ARCHITECTURE.md, and AUTH_DB.md for Neon, Alembic, and Docker
+- [x] Add scripts/create_test_user.py for quick API key testing
+- [x] Document dotenv usage for scripts and migrations
+- [x] Commit all changes with pre-commit hook exceptions for Alembic
+
+---
+
+## Docker Productionization & Render Deployment (2024-06)
+- [x] Productionize Dockerfile (multi-stage, non-root, Gunicorn/Uvicorn, .env.example)
+- [x] Document Docker environment variable handling for local and cloud
+- [x] Test Docker image locally with Neon
+- [x] Confirm Render as deployment target (see ARCHITECTURE.md)
+- [ ] Set up Render service with Docker deploy
+- [ ] Add Render environment variables (DATABASE_URL, API keys, etc.)
+- [ ] Add Render deploy hook for Alembic migrations
+- [ ] Verify health check and endpoint access on Render
+- [ ] Update documentation with Render deployment steps
+- [ ] Finalize Render service setup (Docker deploy, service type, build/start commands)
+- [ ] Configure Render environment variables and secrets (DATABASE_URL, API keys, etc.)
+- [ ] Set up Render deploy hook for Alembic migrations
+- [ ] Validate health check and endpoint access on Render
+- [ ] Update documentation with Render deployment and rollback steps
+
+---
+
 ## Product Overview Endpoint ([Linear Project](https://linear.app/blossomer/project/product-overview-endpoint-4c2b752b91f1))
 - [x] [API-47](https://linear.app/blossomer/issue/API-47/implement-campaignsproduct-overview-endpoint-logic): Implement /campaigns/product_overview endpoint logic
 - [x] [API-48](https://linear.app/blossomer/issue/API-48/integrate-content-preprocessing-pipeline): Integrate content preprocessing pipeline (chunking, summarization, filtering)
