@@ -411,9 +411,16 @@ class LLMClient:
                 f"Failed to parse LLM output into {response_model.__name__}: {e}"
             )
             logging.error(f"Raw LLM output: {llm_response.text}")
-            raise ValueError(
-                f"LLM response could not be parsed into {response_model.__name__}."
-            ) from e
+            # If it's a ValidationError, extract missing/invalid fields
+            if isinstance(e, ValidationError):
+                error_fields = [err["loc"] for err in e.errors()]
+                user_message = (
+                    f"LLM response is missing or has invalid required fields: {error_fields}. "
+                    "Please provide more complete context or check the LLM output format."
+                )
+            else:
+                user_message = "LLM did not return valid JSON."
+            raise ValueError(user_message) from e
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
