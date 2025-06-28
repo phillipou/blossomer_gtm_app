@@ -405,6 +405,23 @@ class LLMClient:
                 json_text = json_text.split("```json")[1].split("```")[0]
 
             parsed_json = json.loads(json_text)
+
+            # Post-processing: Ensure all required data_quality_metrics keys are present and floats
+            if "data_quality_metrics" in parsed_json and isinstance(
+                parsed_json["data_quality_metrics"], dict
+            ):
+                required_metrics = [
+                    "content_completeness",
+                    "information_specificity",
+                    "data_recency",
+                    "marketing_maturity",
+                ]
+                for key in required_metrics:
+                    val = parsed_json["data_quality_metrics"].get(key, 0.0)
+                    if val is None:
+                        val = 0.0
+                    parsed_json["data_quality_metrics"][key] = float(val)
+
             return response_model.parse_obj(parsed_json)
         except (json.JSONDecodeError, ValidationError) as e:
             logging.error(

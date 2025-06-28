@@ -1,6 +1,7 @@
 import logging
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from blossomer_gtm_api.services.llm_service import LLMClient, OpenAIProvider
@@ -42,6 +43,15 @@ app = FastAPI()
 #     pass
 
 llm_client = LLMClient([OpenAIProvider()])  # Instantiate once for reuse
+
+
+# Global exception handler for ValueError
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": str(exc)},
+    )
 
 
 class PositioningRequest(BaseModel):
@@ -231,7 +241,10 @@ async def generate_product_overview(
     db: Session = Depends(get_db),
 ):
     orchestrator = ContextOrchestrator(llm_client)
-    return await generate_product_overview_service(data, orchestrator, llm_client)
+    try:
+        return await generate_product_overview_service(data, orchestrator, llm_client)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @app.post(
@@ -247,7 +260,10 @@ async def generate_target_company(
     db: Session = Depends(get_db),
 ):
     orchestrator = ContextOrchestrator(llm_client)
-    return await generate_target_company_profile(data, orchestrator, llm_client)
+    try:
+        return await generate_target_company_profile(data, orchestrator, llm_client)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @app.post(
@@ -263,7 +279,10 @@ async def generate_target_persona(
     db: Session = Depends(get_db),
 ):
     orchestrator = ContextOrchestrator(llm_client)
-    return await generate_target_persona_profile(data, orchestrator, llm_client)
+    try:
+        return await generate_target_persona_profile(data, orchestrator, llm_client)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @app.get("/health")
