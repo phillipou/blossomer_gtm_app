@@ -80,10 +80,10 @@ The Blossomer GTM API uses an enhanced modular monolith architecture with intell
 
 | Endpoint | Purpose | Context Dependencies | Output |
 |----------|---------|---------------------|---------|
-| `/campaigns/product_overview` | Foundation product analysis | `website_url` | Product features, company profiles, persona profiles, use cases, pain points, competitive context |
-| `/campaigns/target_company` | Company targeting strategy | `website_url`, `product_overview?` | Firmographics, buying signals, disqualifiers |
-| `/campaigns/target_persona` | Primary buyer persona | `website_url`, `target_company?` | Decision-maker profile, behaviors, pain points |
-| `/campaigns/positioning` | Positioning and value props | `website_url`, `target_company`, `target_persona` | Unique insight, value propositions |
+| `/company/generate` | Foundation company overview | `website_url` | Product features, company profiles, persona profiles, use cases, pain points, competitive context |
+| `/customers/target_accounts` | Account targeting strategy | `website_url`, `company_overview?` | Firmographics, buying signals, disqualifiers |
+| `/customers/target_personas` | Primary buyer persona | `website_url`, `target_accounts?` | Decision-maker profile, behaviors, pain points |
+| `/campaigns/positioning` | Positioning and value props | `website_url`, `target_accounts`, `target_personas` | Unique insight, value propositions |
 | `/campaigns/email` | Email campaign sequences | All above context | Subject lines, sequences, personalization |
 | `/campaigns/enrichment_sources` | Implementation guidance | Any targeting attributes | APIs, tools, costs, workflows |
 
@@ -128,7 +128,7 @@ class ContextOrchestrator:
         }
         
         self.endpoint_requirements = {
-            "target_company": [
+            "target_accounts": [
                 ContextRequirement(
                     context_type=ContextType.WEBSITE_CONTENT,
                     required=True,
@@ -176,11 +176,11 @@ ENDPOINT_READINESS_CRITERIA = {
         "required_fields": ["product_description", "key_features"],
         "min_confidence": 0.5,
     },
-    "target_company": {
+    "target_accounts": {
         "required_fields": ["b2b_indicator", "problem_space"],
         "min_confidence": 0.4,
     },
-    "target_persona": {
+    "target_personas": {
         "required_fields": ["department", "problems_addressed"],
         "min_confidence": 0.4,
     },
@@ -413,8 +413,8 @@ CREATE TABLE campaigns (
     
     -- Decomposed campaign components
     product_overview JSONB,
-    target_company JSONB,
-    target_persona JSONB,
+    target_accounts JSONB,
+    target_personas JSONB,
     positioning JSONB,
     email_campaign JSONB,
     enrichment_sources JSONB,

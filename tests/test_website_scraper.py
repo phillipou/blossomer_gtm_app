@@ -122,7 +122,26 @@ def test_firecrawl_scrape_url_success(monkeypatch):
     def mock_post(*args, **kwargs):
         return MockResponse()
 
+    class DummyFirecrawlApp:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        class DummyResult:
+
+            def __init__(self, data):
+                self._data = data
+
+            def dict(self):
+                return self._data
+
+        def scrape_url(self, *args, **kwargs):
+            return self.DummyResult(expected)
+
     monkeypatch.setenv("FIRECRAWL_API_KEY", "dummy-key")
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.website_scraper.FirecrawlApp",
+        DummyFirecrawlApp,
+    )
     with patch("requests.post", mock_post):
         result = firecrawl_scrape_url(test_url)
         assert result["markdown"] == expected["markdown"]
@@ -134,6 +153,14 @@ def test_firecrawl_scrape_url_missing_api_key(monkeypatch):
     Test firecrawl_scrape_url raises ValueError if FIRECRAWL_API_KEY is missing.
     """
     test_url = "https://example.com"
+
+    class DummyFirecrawlApp:
+        pass
+
+    monkeypatch.setattr(
+        "blossomer_gtm_api.services.website_scraper.FirecrawlApp",
+        DummyFirecrawlApp,
+    )
     monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
     with pytest.raises(ValueError) as excinfo:
         firecrawl_scrape_url(test_url)

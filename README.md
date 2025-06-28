@@ -118,49 +118,94 @@ For early development and prototyping, the Blossomer GTM API is intentionally de
 
 ## API Endpoints
 
-### POST /campaigns/positioning
+### POST /company/generate
 
 **Purpose:**
-Generate a Unique Insight (core reframe) and Unique Selling Points (USPs) for a B2B startup, based on company description, website, and (optionally) ICP. This endpoint follows API design best practices and the unique insight/USP methodology described in the project documentation.
+Generate a Company Overview (features, company & persona profiles, pricing) for a B2B startup, based on company website and optional context. This endpoint helps summarize the company's product, features, and target segments for outbound campaigns.
 
 **Request Body:**
 ```json
 {
   "website_url": "https://example.com",
-  "description": "AI-powered marketing automation for SMBs",
-  "icp": "B2B SaaS startups" // optional
+  "user_inputted_context": "",
+  "llm_inferred_context": ""
 }
 ```
 
 **Response:**
 ```json
 {
-  "unique_insight": "Most B2B marketing tools focus on automation, but the real bottleneck is understanding what actually resonates with buyers. Blossomer reframes the problem: it's not about sending more messages, but about crafting the right message for the right ICP at the right time.",
-  "unique_selling_points": [
-    {
-      "theme": "Buyer-Centric Messaging",
-      "description": "Delivers messaging tailored to the emotional and practical needs of your ICP.",
-      "evidence": [
-        "Analyzes ICP pain points and language",
-        "Adapts messaging based on real buyer feedback"
-      ]
-    },
-    {
-      "theme": "Rapid Time to Value",
-      "description": "Get actionable campaign assets in minutes, not weeks.",
-      "evidence": [
-        "Automated campaign generation",
-        "No manual copywriting required"
-      ]
-    }
-  ]
+  "product_description": "desc",
+  "key_features": ["f1"],
+  "company_profiles": ["c1"],
+  "persona_profiles": ["p1"],
+  "use_cases": ["u1"],
+  "pain_points": ["pp1"],
+  "pricing": "",
+  "confidence_scores": {
+    "product_description": 1,
+    "key_features": 1,
+    "company_profiles": 1,
+    "persona_profiles": 1,
+    "use_cases": 1,
+    "pain_points": 1,
+    "pricing": 1
+  },
+  "metadata": {}
 }
 ```
 
-**Notes:**
-- Input is validated using Pydantic models.
-- The endpoint is stateless and currently returns a mock response for prototyping.
-- The response structure is designed for clarity, specificity, and future LLM integration.
+### POST /customers/target_accounts
+
+**Purpose:**
+Generate a Target Account Profile (firmographics, buying signals, rationale) for a B2B startup, based on company website and optional context. This endpoint helps identify ideal customer segments for outbound campaigns.
+
+**Request Body:**
+```json
+{
+  "website_url": "https://example.com",
+  "user_inputted_context": "",
+  "llm_inferred_context": ""
+}
+```
+
+**Response:**
+```json
+{
+  "target_company": "Tech-forward SaaS companies",
+  "company_attributes": ["SaaS", "Tech-forward", "100-500 employees"],
+  "buying_signals": ["Hiring AI engineers", "Investing in automation"],
+  "rationale": "These companies are ideal due to their innovation focus.",
+  "confidence_scores": {"target_company": 0.95},
+  "metadata": {"source": "test"}
+}
+```
+
+### POST /customers/target_personas
+
+**Purpose:**
+Generate a Target Persona Profile (attributes, buying signals, rationale) for a B2B startup, based on company website and optional context. This endpoint helps define the primary decision-maker or influencer for outbound campaigns.
+
+**Request Body:**
+```json
+{
+  "website_url": "https://example.com",
+  "user_inputted_context": "",
+  "llm_inferred_context": ""
+}
+```
+
+**Response:**
+```json
+{
+  "persona": "Head of Operations",
+  "persona_attributes": ["Decision maker", "Process-oriented"],
+  "persona_buying_signals": ["Seeking efficiency", "Evaluating automation"],
+  "rationale": "This persona drives operational improvements.",
+  "confidence_scores": {"persona": 0.92},
+  "metadata": {"source": "test"}
+}
+```
 
 ## Database Setup (Neon)
 - Blossomer now uses [Neon](https://neon.tech/) as the default Postgres database for all environments.
@@ -176,3 +221,96 @@ Generate a Unique Insight (core reframe) and Unique Selling Points (USPs) for a 
 - The Dockerfile expects a valid `DATABASE_URL` in the environment.
 - For local development, mount your `.env` or pass `--env-file .env` to `docker run`.
 - Neon is cloud-hosted, so Docker containers can connect from anywhere with the right credentials.
+
+## Automated Alembic Migrations with GitHub Actions
+
+This project uses a GitHub Actions workflow to automatically run Alembic migrations against the production database after each push to `main` or via manual trigger. This ensures your production schema is always up to date, even on Render's free plan.
+
+### Setup
+1. **Add your production database URL as a GitHub secret:**
+   - Go to your GitHub repo → Settings → Secrets and variables → Actions → New repository secret.
+   - Name: `PROD_DATABASE_URL`
+   - Value: (your production database URL)
+2. **Workflow file:**
+   - Located at `.github/workflows/alembic-migrate.yml`.
+
+### How it Works
+- On every push to `main` (or manual trigger), the workflow:
+  - Checks out the code
+  - Sets up Python and Poetry
+  - Installs dependencies
+  - Runs Alembic migrations using the production `DATABASE_URL`
+
+### Manual Trigger
+- Go to the Actions tab in GitHub
+- Select "Alembic Migrate (Production)"
+- Click "Run workflow"
+
+### Security Notes
+- Only trusted maintainers should have access to trigger this workflow, as it can modify your production database.
+- Never expose your production database URL or credentials in code or logs.
+
+### Example Workflow File
+```yaml
+name: Alembic Migrate (Production)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+      - name: Run Alembic migrations
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: poetry run alembic upgrade head
+```
+
+## Render Deployment Guide
+
+### Deploying to Render
+1. **Push to `main` branch:**
+   - Render is configured to auto-deploy from the `main` branch.
+2. **Dockerfile:**
+   - The project uses a production-ready Dockerfile at the repo root.
+3. **Root Directory:**
+   - Set to `.` (repo root) in Render settings.
+4. **Port:**
+   - Expose port 8000 (default for Gunicorn/Uvicorn).
+
+### Environment Variables
+- Set all required environment variables (e.g., `DATABASE_URL`, `API_KEY`, etc.) in the Render dashboard under the Environment tab.
+- Never commit secrets to the repo.
+
+### Manual Alembic Migrations (Free Plan)
+- If you are on Render's free plan, run Alembic migrations manually after each deploy:
+  ```sh
+  DATABASE_URL=your-production-db-url poetry run alembic upgrade head
+  ```
+- Or use the GitHub Actions workflow documented above for automation.
+
+### Rollback
+- To rollback a deploy, go to the Render dashboard, select your service, and redeploy a previous commit from the Deploys tab.
+- After rollback, re-run Alembic migrations if the schema changed.
+
+### Health Check
+- The health check endpoint is available at `/health` (e.g., `https://blossomer-gtm-api.onrender.com/health`).
+- Render uses this endpoint to determine if your service is live.
+
+### Additional Notes
+- For production, always use a separate database from development.
+- For more details, see the [Automated Alembic Migrations with GitHub Actions](#automated-alembic-migrations-with-github-actions) section above.

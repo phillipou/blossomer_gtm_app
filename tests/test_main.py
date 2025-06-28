@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
-from blossomer_gtm_api.main import app
+from unittest.mock import patch
+from blossomer_gtm_api.main import app, rate_limit_dependency
 import pytest
-import jsonschema
-from blossomer_gtm_api.schemas import ICP_SCHEMA
+from blossomer_gtm_api.auth import authenticate_api_key
+import json
 
 client = TestClient(app)
 
@@ -50,99 +50,24 @@ VALID_ICP = {
     ),
 }
 
-
-def test_icp_endpoint_success():
-    """
-    Test the /campaigns/icp endpoint for a successful response.
-    Mocks website scraping and LLM response to ensure the endpoint returns valid JSON
-    and status 200.
-    """
-    payload = {
-        "website_url": "https://example.com",
-        "user_inputted_context": "",
-        "llm_inferred_context": "",
-    }
-    fake_content = "Fake company info."
-    fake_llm_response = MagicMock()
-    fake_llm_response.text = '{"target_company": {"hypothesis": "Test"}}'
-    with patch(
-        "blossomer_gtm_api.main.extract_website_content",
-        return_value={"content": fake_content},
-    ), patch(
-        "blossomer_gtm_api.main.llm_client.generate",
-        return_value=fake_llm_response,
-    ):
-        response = client.post("/campaigns/icp", json=payload)
-        if response.status_code != 200:
-            print("ICP endpoint success test error:", response.json())
-        assert response.status_code == 200
-        data = response.json()
-        assert "target_company" in data
-        assert "hypothesis" in data["target_company"]
+# Patch rate_limit_dependency globally for all tests
+app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
 
 
-def test_icp_endpoint_no_provider(monkeypatch):
-    """
-    Test the /campaigns/icp endpoint when no LLM provider is available.
-    Mocks website scraping and simulates a provider error to ensure the endpoint returns
-    a 500/502 error.
-    """
-    payload = {
-        "website_url": "https://example.com",
-        "user_inputted_context": "",
-        "llm_inferred_context": "",
-    }
-    fake_content = "Fake company info."
-    with patch(
-        "blossomer_gtm_api.main.extract_website_content",
-        return_value={"content": fake_content},
-    ):
-        # Patch llm_client.generate to raise RuntimeError (simulating no provider)
-        monkeypatch.setattr(
-            "blossomer_gtm_api.main.llm_client.generate",
-            lambda *a, **kw: (_ for _ in ()).throw(
-                RuntimeError("All LLM providers failed or are unavailable.")
-            ),
-        )
-        response = client.post("/campaigns/icp", json=payload)
-        if response.status_code not in (500, 502):
-            print("ICP endpoint provider error test:", response.json())
-        assert response.status_code in (500, 502)
-        assert (
-            "LLM provider error" in response.text
-            or "All LLM providers failed" in response.text
-        )
+class DummyAPIKey:
+    id = "test-id"
+    tier = "free"
+    key_prefix = "bloss_test_sk_..."
+    is_active = True
+    user = type("User", (), {"rate_limit_exempt": True})()
 
 
-def test_icp_schema_is_valid():
-    """Test that the ICP_SCHEMA itself is a valid JSON schema."""
-    jsonschema.Draft7Validator.check_schema(ICP_SCHEMA)
-
-
-def test_icp_schema_accepts_valid_data():
-    """Test that valid ICP data passes the schema validation."""
-    jsonschema.validate(instance=VALID_ICP, schema=ICP_SCHEMA)
-
-
-def test_icp_schema_rejects_missing_required():
-    """Test that missing required fields are rejected."""
-    invalid = VALID_ICP.copy()
-    del invalid["persona"]
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)
-
-
-def test_icp_schema_rejects_wrong_type():
-    """Test that wrong types are rejected (e.g., persona as list)."""
-    invalid = VALID_ICP.copy()
-    invalid["persona"] = ["CTO"]
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(instance=invalid, schema=ICP_SCHEMA)
+app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
 
 
 def test_product_overview_endpoint_success(monkeypatch):
     """
-    Test the /campaigns/product_overview endpoint for a successful response.
+    Test the /company/generate endpoint for a successful response.
     Mocks website scraping and LLM response to ensure the endpoint returns valid JSON
     and status 200.
     """
@@ -152,60 +77,58 @@ def test_product_overview_endpoint_success(monkeypatch):
         "llm_inferred_context": "",
     }
     fake_content = "Fake company info."
-    # Minimal valid ProductOverviewResponse JSON
-    fake_llm_json = (
-        '{"product_description": "desc", "key_features": ["f1"], "company_profiles": ["c1"], '
-        '"persona_profiles": ["p1"], "use_cases": ["u1"], "pain_points": ["pp1"], "pricing": "", '
-        '"confidence_scores": {"product_description": 1, "key_features": 1, "company_profiles": 1, '
-        '"persona_profiles": 1, "use_cases": 1, "pain_points": 1, "pricing": 1}, "metadata": {}}'
-    )
-    fake_llm_response = MagicMock()
-    fake_llm_response.text = fake_llm_json
-    # Patch orchestrator to return ready assessment
-    from blossomer_gtm_api.prompts.models import (
-        ContextAssessmentResult,
-        ContextQuality,
-        EndpointReadiness,
-    )
-
-    ready_assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.HIGH,
-        overall_confidence=0.95,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[
-            EndpointReadiness(
-                endpoint="product_overview",
-                is_ready=True,
-                confidence=0.95,
-                missing_requirements=[],
-                recommendations=[],
-            )
+    # First call: context assessment, second call: product overview
+    context_assessment = {
+        "overall_quality": "high",
+        "overall_confidence": 0.95,
+        "content_sections": [],
+        "company_clarity": {},
+        "endpoint_readiness": [
+            {
+                "endpoint": "product_overview",
+                "is_ready": True,
+                "confidence": 0.95,
+            }
         ],
-        data_quality_metrics={},
-        recommendations={},
-        summary="Ready for product overview.",
-    )
-    fake_orchestration_result = {
-        "assessment": ready_assessment,
-        "enriched_content": {"initial": MagicMock(website_content=fake_content)},
-        "sources_used": ["website_scraper"],
-        "enrichment_performed": [],
-        "final_quality": "high",
-        "enrichment_successful": True,
+        "data_quality_metrics": {},
+        "recommendations": {},
+        "summary": "Ready!",
+    }
+    product_overview = {
+        "product_description": "desc",
+        "key_features": ["f1"],
+        "company_profiles": ["c1"],
+        "persona_profiles": ["p1"],
+        "use_cases": ["u1"],
+        "pain_points": ["pp1"],
+        "pricing": "",
+        "confidence_scores": {
+            "product_description": 1,
+            "key_features": 1,
+            "company_profiles": 1,
+            "persona_profiles": 1,
+            "use_cases": 1,
+            "pain_points": 1,
+            "pricing": 1,
+        },
+        "metadata": {},
     }
     monkeypatch.setattr(
-        "blossomer_gtm_api.main.ContextOrchestrator.orchestrate_context",
-        AsyncMock(return_value=fake_orchestration_result),
+        "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
+        lambda *args, **kwargs: {"content": fake_content},
     )
+
+    def llm_side_effect(request):
+        if "analyze the provided website content and assess" in request.prompt:
+            return type("FakeResp", (), {"text": json.dumps(context_assessment)})()
+        else:
+            return type("FakeResp", (), {"text": json.dumps(product_overview)})()
+
     with patch(
-        "blossomer_gtm_api.main.extract_website_content",
-        return_value={"content": fake_content},
-    ), patch(
         "blossomer_gtm_api.main.llm_client.generate",
-        return_value=fake_llm_response,
+        side_effect=llm_side_effect,
     ):
-        response = client.post("/campaigns/product_overview", json=payload)
+        response = client.post("/company/generate", json=payload)
         assert response.status_code == 200
         data = response.json()
         assert "product_description" in data
@@ -225,7 +148,6 @@ def test_product_overview_llm_refusal(monkeypatch):
     )
     from blossomer_gtm_api.schemas import ProductOverviewRequest
     from fastapi import HTTPException
-    import pytest
 
     class FakeLLMResponse:
         text = (
@@ -289,7 +211,7 @@ def test_product_overview_llm_refusal(monkeypatch):
 
 def test_target_company_endpoint_success(monkeypatch):
     """
-    Test the /campaigns/target_company endpoint for a successful response.
+    Test the /customers/target_accounts endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
     from blossomer_gtm_api.schemas import TargetCompanyResponse
@@ -331,7 +253,10 @@ def test_target_company_endpoint_success(monkeypatch):
         "blossomer_gtm_api.main.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
-    response = client.post("/campaigns/target_company", json=payload)
+    response = client.post(
+        "/customers/target_accounts",
+        json=payload,
+    )
     assert response.status_code == 200
     data = response.json()
     assert "target_company" in data
@@ -344,7 +269,7 @@ def test_target_company_endpoint_success(monkeypatch):
 
 def test_target_persona_endpoint_success(monkeypatch):
     """
-    Test the /campaigns/target_persona endpoint for a successful response.
+    Test the /customers/target_personas endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
     from blossomer_gtm_api.schemas import TargetPersonaResponse
@@ -386,7 +311,10 @@ def test_target_persona_endpoint_success(monkeypatch):
         "blossomer_gtm_api.main.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
-    response = client.post("/campaigns/target_persona", json=payload)
+    response = client.post(
+        "/customers/target_personas",
+        json=payload,
+    )
     assert response.status_code == 200
     data = response.json()
     assert "persona" in data

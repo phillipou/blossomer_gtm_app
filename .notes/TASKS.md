@@ -8,38 +8,6 @@
 
 ---
 
-## Neon Migration & Database Modernization (2024-06)
-- [x] Migrate all environments to Neon as the default Postgres provider
-- [x] Refactor codebase to use DATABASE_URL (no more SUPABASE_DB_URL)
-- [x] Set up Alembic for schema migrations (production and dev)
-- [x] Add Alembic migration scripts for initial schema and key_prefix fix
-- [x] Update Dockerfile and Docker documentation for Neon and .env handling
-- [x] Update .env.example for Neon connection string
-- [x] Update README.md, ARCHITECTURE.md, and AUTH_DB.md for Neon, Alembic, and Docker
-- [x] Add scripts/create_test_user.py for quick API key testing
-- [x] Document dotenv usage for scripts and migrations
-- [x] Commit all changes with pre-commit hook exceptions for Alembic
-
----
-
-## Docker Productionization & Render Deployment (2024-06)
-- [x] Productionize Dockerfile (multi-stage, non-root, Gunicorn/Uvicorn, .env.example)
-- [x] Document Docker environment variable handling for local and cloud
-- [x] Test Docker image locally with Neon
-- [x] Confirm Render as deployment target (see ARCHITECTURE.md)
-- [ ] Set up Render service with Docker deploy
-- [ ] Add Render environment variables (DATABASE_URL, API keys, etc.)
-- [ ] Add Render deploy hook for Alembic migrations
-- [ ] Verify health check and endpoint access on Render
-- [ ] Update documentation with Render deployment steps
-- [ ] Finalize Render service setup (Docker deploy, service type, build/start commands)
-- [ ] Configure Render environment variables and secrets (DATABASE_URL, API keys, etc.)
-- [ ] Set up Render deploy hook for Alembic migrations
-- [ ] Validate health check and endpoint access on Render
-- [ ] Update documentation with Render deployment and rollback steps
-
----
-
 ## Product Overview Endpoint ([Linear Project](https://linear.app/blossomer/project/product-overview-endpoint-4c2b752b91f1))
 - [x] [API-47](https://linear.app/blossomer/issue/API-47/implement-campaignsproduct-overview-endpoint-logic): Implement /campaigns/product_overview endpoint logic
 - [x] [API-48](https://linear.app/blossomer/issue/API-48/integrate-content-preprocessing-pipeline): Integrate content preprocessing pipeline (chunking, summarization, filtering)
@@ -116,35 +84,30 @@
 ---
 
 ## Core Utilities & Infrastructure ([Linear Project](https://linear.app/blossomer/project/core-utilities-and-infrastructure-5fc2e2836583))
-- [x] [API-86](https://linear.app/blossomer/issue/API-86/implement-provider-adapters-openai-anthropic-etc): Implement provider adapters (OpenAI, Anthropic, etc.)
-- [x] [API-87](https://linear.app/blossomer/issue/API-87/integrate-circuit-breaker-for-llm-providers): Integrate circuit breaker for LLM providers
-- [x] [API-88](https://linear.app/blossomer/issue/API-88/implement-failover-and-health-check-logic): Implement failover and health check logic
-- [x] [API-89](https://linear.app/blossomer/issue/API-89/implement-context-orchestrator-service): Implement context orchestrator service
-- [x] [API-90](https://linear.app/blossomer/issue/API-90/implement-chunking-summarization-and-filtering-modules): Implement chunking, summarization, and filtering modules
-- [x] [API-91](https://linear.app/blossomer/issue/API-91/integrate-with-website-scraper-and-content-preprocessing): Integrate with website scraper and content preprocessing
-- [x] [API-92](https://linear.app/blossomer/issue/API-92/implement-endpoint-readiness-checks): Implement endpoint readiness checks
-- [x] [API-93](https://linear.app/blossomer/issue/API-93/implement-global-error-handler-and-custom-exceptions): Implement global error handler and custom exceptions
-- [x] [API-94](https://linear.app/blossomer/issue/API-94/implement-monitoring-and-logging-structured-logging-prometheus-error): Implement monitoring and logging (structured logging, Prometheus, error tracking)
-- [x] [API-95](https://linear.app/blossomer/issue/API-95/implement-health-check-endpoints): Implement health check endpoints
-- [x] [API-96](https://linear.app/blossomer/issue/API-96/implement-quality-evaluation-system-llm-scoring-feedback): Implement quality evaluation system (LLM scoring, feedback)
-- [x] [API-97](https://linear.app/blossomer/issue/API-97/implement-performance-optimization-query-optimization-connection): Implement performance optimization (query optimization, connection pooling, parallel processing)
-- [x] [API-98](https://linear.app/blossomer/issue/API-98/implement-caching-in-memory-cache-hitsmisses-tracking): Implement caching (in-memory, cache hits/misses tracking)
-- [b] [API-99](https://linear.app/blossomer/issue/API-99/implement-redis-cache-and-distributed-caching): Implement Redis cache and distributed caching
-- [b] [API-100](https://linear.app/blossomer/issue/API-100/persistent-storage-and-vector-db-integration-chromadb-semantic-search): Persistent storage and vector DB integration (ChromaDB, semantic search)
-- [b] [API-101](https://linear.app/blossomer/issue/API-101/campaign-storageretrieval-logic): Campaign storage/retrieval logic
-- [ ] [API-112](https://linear.app/blossomer/issue/API-112/implement-api-key-authentication): Implement API key authentication (Bearer token middleware, secure storage, 401 handling, tests)
-- [ ] [API-113](https://linear.app/blossomer/issue/API-113/implement-rate-limiting): Implement rate limiting (per-key or per-IP, 429 handling, tests)
+- [x] [API-114](https://linear.app/blossomer/issue/API-114/migrate-all-environments-to-neon-as-the-default-postgres-provider-neon): Migrate all environments to Neon as the default Postgres provider (Neon)
+- [x] [API-115](https://linear.app/blossomer/issue/API-115/refactor-codebase-to-use-database-url-for-neon-neon): Refactor codebase to use DATABASE_URL for Neon (Neon)
+- [x] [API-116](https://linear.app/blossomer/issue/API-116/set-up-alembic-for-schema-migrations-alembic): Set up Alembic for schema migrations (Alembic)
+- [x] [API-117](https://linear.app/blossomer/issue/API-117/add-alembic-migration-scripts-for-initial-schema-and-key-prefix-fix): Add Alembic migration scripts for initial schema and key_prefix fix (Alembic)
+- [x] [API-118](https://linear.app/blossomer/issue/API-118/document-dotenv-usage-for-scripts-and-migrations-alembic): Document dotenv usage for scripts and migrations (Alembic)
+- [x] [API-119](https://linear.app/blossomer/issue/API-119/add-scriptscreate-test-userpy-for-quick-api-key-testing-alembicneon): Add scripts/create_test_user.py for quick API key testing (Alembic/Neon)
+- [x] [API-120](https://linear.app/blossomer/issue/API-120/update-envexample-for-neon-connection-string-neon): Update .env.example for Neon connection string (Neon)
+- [x] [API-121](https://linear.app/blossomer/issue/API-121/update-readmemd-architecturemd-and-auth-dbmd-for-neon-alembic-and): Update README.md, ARCHITECTURE.md, and AUTH_DB.md for Neon, Alembic, and Docker (Neon/Alembic)
+- [x] [API-122](https://linear.app/blossomer/issue/API-122/commit-all-changes-with-pre-commit-hook-exceptions-for-alembic-alembic): Commit all changes with pre-commit hook exceptions for Alembic (Alembic)
+- [ ] [API-133](https://linear.app/blossomer/issue/API-133/implement-and-enforce-api-rate-limiting-across-all-endpoints): Implement and enforce API rate limiting across all endpoints
 
 ---
 
 ## Platform/DevOps ([Linear Project](https://linear.app/blossomer/project/platform-and-devops-eef5ff88a3bf))
-- [x] [API-102](https://linear.app/blossomer/issue/API-102/set-up-project-repository-and-environment-python-fastapi-poetry-etc): Set up project repository and environment (Python, FastAPI, Poetry, etc.)
-- [x] [API-103](https://linear.app/blossomer/issue/API-103/set-up-pre-commit-hooks-black-flake8-etc): Set up pre-commit hooks (black, flake8, etc.)
-- [x] [API-104](https://linear.app/blossomer/issue/API-104/enforce-code-formatting-and-linting): Enforce code formatting and linting
-- [x] [API-105](https://linear.app/blossomer/issue/API-105/integrate-with-cicd-pipeline): Integrate with CI/CD pipeline
-- [x] [API-106](https://linear.app/blossomer/issue/API-106/implement-containerization-and-deployment-docker-docker-compose): Implement containerization and deployment (Docker, docker-compose)
-- [x] [API-107](https://linear.app/blossomer/issue/API-107/implement-environment-configuration-management): Implement environment configuration management
-- [x] [API-108](https://linear.app/blossomer/issue/API-108/implement-deployment-automation-scripts): Implement deployment automation scripts
+- [x] [API-123](https://linear.app/blossomer/issue/API-123/productionize-dockerfile-for-render-deployment-render): Productionize Dockerfile for Render deployment (Render)
+- [x] [API-124](https://linear.app/blossomer/issue/API-124/document-docker-environment-variable-handling-for-local-and-cloud): Document Docker environment variable handling for local and cloud (Render)
+- [x] [API-125](https://linear.app/blossomer/issue/API-125/test-docker-image-locally-with-neon-renderneon): Test Docker image locally with Neon (Render/Neon)
+- [x] [API-126](https://linear.app/blossomer/issue/API-126/set-up-render-service-with-docker-deploy-render): Set up Render service with Docker deploy (Render)
+- [x] [API-127](https://linear.app/blossomer/issue/API-127/configure-render-environment-variables-and-secrets-database-url-api): Configure Render environment variables and secrets (DATABASE_URL, API keys, etc.) (Render)
+- [x] [API-128](https://linear.app/blossomer/issue/API-128/finalize-render-service-setup-docker-deploy-service-type-buildstart): Finalize Render service setup (Docker deploy, service type, build/start commands) (Render)
+- [x] [API-129](https://linear.app/blossomer/issue/API-129/verify-health-check-and-endpoint-access-on-render-render): Verify health check and endpoint access on Render (Render)
+- [x] [API-130](https://linear.app/blossomer/issue/API-130/update-documentation-with-render-deployment-and-rollback-steps-render): Update documentation with Render deployment and rollback steps (Render)
+- [x] [API-131](https://linear.app/blossomer/issue/API-131/add-github-actions-workflow-for-alembic-migrations-to-production): Add GitHub Actions workflow for Alembic migrations to production (Alembic/Render)
+- [x] [API-132](https://linear.app/blossomer/issue/API-132/document-manual-alembic-migration-process-for-render-free-plan): Document manual Alembic migration process for Render free plan (Alembic/Render)
 
 ---
 

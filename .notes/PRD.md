@@ -106,9 +106,9 @@ Unlike traditional marketing automation tools that focus on campaign execution, 
 The API provides modular endpoints for generating specific campaign assets independently, enabling flexible integration and frontend development. Each asset can be requested separately or in combination based on user needs.
 
 **Core Endpoints:**
-- `/campaigns/product_overview`: Company product analysis and feature extraction
-- `/campaigns/target_company`: Target company profile and buying signals 
-- `/campaigns/target_persona`: Primary decision-maker persona analysis
+- `/company/generate`: Company overview and feature extraction
+- `/customers/target_accounts`: Target account profile and buying signals 
+- `/customers/target_personas`: Primary decision-maker persona analysis
 - `/campaigns/positioning`: Positioning canvas and value propositions
 - `/campaigns/email`: Email campaign sequences and personalization
 - `/campaigns/enrichment_sources`: Data source recommendations and implementation guidance
@@ -175,7 +175,7 @@ All campaign generation endpoints now use a unified, intelligent context assessm
   2. LLM-inferred context (if present and sufficient)
   3. Website content (scraped and processed only if above are insufficient)
 - **Sufficiency is endpoint-specific:**
-  - Each endpoint (e.g., product_overview, target_company, target_persona) defines its own required fields and minimum confidence/quality thresholds.
+  - Each endpoint (e.g., product_overview, target_accounts, target_personas) defines its own required fields and minimum confidence/quality thresholds.
   - The Context Orchestrator enforces these requirements using its readiness logic.
 - **Benefits:**
   - Reduces unnecessary scraping and LLM calls
@@ -223,22 +223,22 @@ As a B2B founder, I want to submit my website URL and have the system intelligen
 - Invalid URLs return 400 Bad Request with specific error details
 - Processed website data is available for all subsequent campaign generation requests
 
-**ST-104: Product overview generation**
-As a B2B founder, I want to generate a comprehensive product overview from my website so I can understand how my product is positioned.
+**ST-104: Company overview generation**
+As a B2B founder, I want to generate a comprehensive company overview from my website so I can understand how my product is positioned.
 
 *Acceptance criteria:*
-- Product overview can be generated via `/campaigns/product_overview` endpoint
+- Company overview can be generated via `/company/generate` endpoint
 - Output includes product description, key features, company profiles, persona profiles, use cases, pain points, and pricing
 - Customer profiles are extracted from testimonials and case studies
 - Use cases and pain points are extracted from explicit mentions on the website
 - Technology stack and competitive context are identified
 - Confidence scoring indicates data quality and gaps
 
-**ST-105: Target company analysis**
-As a B2B founder, I want to generate detailed target company profiles so I can identify ideal prospects.
+**ST-105: Target account analysis**
+As a B2B founder, I want to generate detailed target account profiles so I can identify ideal prospects.
 
 *Acceptance criteria:*
-- Target company analysis available via `/campaigns/target_company` endpoint
+- Target account analysis available via `/customers/target_accounts` endpoint
 - Output includes firmographic criteria, qualifying signals, and buying signals
 - Disqualifying criteria are clearly identified
 - Growth indicators and technology requirements are specified
@@ -248,7 +248,7 @@ As a B2B founder, I want to generate detailed target company profiles so I can i
 As a B2B founder, I want to create detailed buyer personas so I can tailor my messaging effectively.
 
 *Acceptance criteria:*
-- Primary persona analysis available via `/campaigns/target_persona` endpoint
+- Primary persona analysis available via `/customers/target_personas` endpoint
 - Output includes role characteristics, professional signals, and behavioral indicators
 - Buying journey stages and decision criteria are mapped
 - Pain points and motivations are clearly articulated
@@ -414,17 +414,17 @@ As a platform administrator, I want systematic output validation so users receiv
 ### Endpoint Architecture
 
 **Core Business Endpoints:**
-- `/campaigns/product_overview` - Foundation product analysis
-- `/campaigns/target_company` - Company targeting and signals
-- `/campaigns/target_persona` - Primary buyer persona
-- `/campaigns/positioning` - Positioning and value props
-- `/campaigns/email` - Email sequences and messaging
-- `/campaigns/enrichment_sources` - Implementation guidance
+- `/company/generate`: Company overview and feature extraction
+- `/customers/target_accounts`: Target account profile and buying signals
+- `/customers/target_personas`: Primary decision-maker persona
+- `/campaigns/positioning`: Positioning canvas and value props
+- `/campaigns/email`: Email sequences and messaging
+- `/campaigns/enrichment_sources`: Implementation guidance
 
 **System Endpoints:**
-- `/campaigns/correct` - Output correction and refinement
-- `/health` - System health and provider status
-- `/usage` - API usage and billing information
+- `/campaigns/correct`: Output correction and refinement
+- `/health`: System health and provider status
+- `/usage`: API usage and billing information
 
 ### Response Architecture
 
@@ -436,7 +436,7 @@ As a platform administrator, I want systematic output validation so users receiv
     // Endpoint-specific response data
   },
   "metadata": {
-    "endpoint": "target_company",
+    "endpoint": "target_accounts",
     "sources_used": ["website_scraper", "market_research"],
     "context_quality": "high",
     "processing_time": "12.3s",
@@ -462,7 +462,7 @@ As a platform administrator, I want systematic output validation so users receiv
     "suggestion": "Check website accessibility or provide additional context"
   },
   "metadata": {
-    "endpoint": "target_company",
+    "endpoint": "target_accounts",
     "processing_time": "5.2s"
   }
 }
@@ -542,11 +542,11 @@ To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforc
 
 | Endpoint                      | Required Context                        | Min. Confidence | Notes/Logic                                                                 |
 |-------------------------------|-----------------------------------------|-----------------|----------------------------------------------------------------------------|
-| `/campaigns/product_overview` | Basic product description + 2-3 features| 0.5             | Can work without clear value prop                                           |
-| `/campaigns/target_company`   | Any B2B indicator + problem space       | 0.4             | Will infer from features if targeting unclear                              |
-| `/campaigns/target_persona`   | Department/function + problems addressed| 0.4             | Will infer seniority from feature complexity                               |
-| `/campaigns/positioning`      | Comprehensive feature list + problems   | 0.5             | Creates positioning, doesn't just extract                                  |
-| `/campaigns/email`            | Features + basic problem/solution fit   | 0.5             | Transforms features → benefits automatically                               |
+| `/company/generate`            | Basic product description + 2-3 features| 0.5             | Can work without clear value prop                                           |
+| `/customers/target_accounts`   | Any B2B indicator + problem space       | 0.4             | Will infer from features if targeting unclear                              |
+| `/customers/target_personas`   | Department/function + problems addressed| 0.4             | Will infer seniority from feature complexity                               |
+| `/campaigns/positioning`       | Comprehensive feature list + problems   | 0.5             | Creates positioning, doesn't just extract                                  |
+| `/campaigns/email`             | Features + basic problem/solution fit   | 0.5             | Transforms features → benefits automatically                               |
 
 #### Example Error Response
 
@@ -572,8 +572,8 @@ To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforc
 
 #### 🎯 **New Features**
 - **Smart Context Orchestration**: Automatic context quality assessment and intelligent data fetching
-- **Product Overview Endpoint**: `/campaigns/product_overview` for comprehensive product analysis
-- **ICP Decomposition**: Separate endpoints for target company, persona, and buying committee analysis
+- **Product Overview Endpoint**: `/company/generate` for comprehensive product analysis
+- **ICP Decomposition**: Separate endpoints for target account, persona, and buying committee analysis
 - **Correction System**: `/campaigns/correct` for user-driven output refinement
 - **Enrichment Sources**: `/campaigns/enrichment_sources` for actionable implementation guidance
 
@@ -585,9 +585,9 @@ To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforc
 - **Reliability Enhancement**: Comprehensive error handling and monitoring
 
 #### 📊 **Endpoint Changes**
-- **Added**: `/campaigns/product_overview` - Product analysis and feature extraction
-- **Added**: `/campaigns/target_company` - Company profile and buying signals
-- **Added**: `/campaigns/target_persona` - Primary decision-maker analysis
+- **Added**: `/company/generate` - Product analysis and feature extraction
+- **Added**: `/customers/target_accounts` - Company profile and buying signals
+- **Added**: `/customers/target_personas` - Primary decision-maker analysis
 - **Added**: `/campaigns/correct` - Output correction and refinement
 - **Added**: `/campaigns/enrichment_sources` - Data source recommendations
 - **Modified**: All endpoints now support enhanced context orchestration

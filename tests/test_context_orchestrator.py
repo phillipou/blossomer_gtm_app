@@ -242,7 +242,9 @@ async def test_resolve_context_prefers_user_context(monkeypatch):
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
-    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    result = await resolve_context_for_endpoint(
+        request, "target_accounts", orchestrator
+    )
     assert result["source"] == "user_inputted_context"
     assert result["context"] == "User context"
 
@@ -279,7 +281,9 @@ async def test_resolve_context_uses_llm_context_if_user_insufficient(monkeypatch
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
-    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    result = await resolve_context_for_endpoint(
+        request, "target_accounts", orchestrator
+    )
     assert result["source"] == "llm_inferred_context"
     assert result["context"] == "LLM context"
 
@@ -306,7 +310,9 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
-    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    result = await resolve_context_for_endpoint(
+        request, "target_accounts", orchestrator
+    )
     assert result["source"] == "website"
     assert result["context"] == "https://site.com"
 
@@ -325,7 +331,7 @@ async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
             return MagicMock()
 
         def check_endpoint_readiness(self, assessment, endpoint):
-            return {"is_ready": endpoint == "target_company"}
+            return {"is_ready": endpoint == "target_accounts"}
 
     request = MagicMock(
         user_inputted_context="User context",
@@ -333,10 +339,12 @@ async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
-    # Should be ready for target_company, not for target_persona
-    result = await resolve_context_for_endpoint(request, "target_company", orchestrator)
+    # Should be ready for target_accounts, not for target_personas
+    result = await resolve_context_for_endpoint(
+        request, "target_accounts", orchestrator
+    )
     assert result["source"] == "user_inputted_context"
     result2 = await resolve_context_for_endpoint(
-        request, "target_persona", orchestrator
+        request, "target_personas", orchestrator
     )
     assert result2["source"] != "user_inputted_context" or not result2["context"]

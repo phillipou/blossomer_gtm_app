@@ -219,11 +219,11 @@ async def generate_positioning(
 
 
 @app.post(
-    "/campaigns/product_overview",
+    "/company/generate",
     response_model=ProductOverviewResponse,
-    summary="Generate Product Overview (features, company & persona profiles, pricing)",
-    tags=["Campaigns", "Product Overview", "AI"],
-    response_description="A structured product overview for the given company context.",
+    summary="Generate Company Overview (features, company & persona profiles, pricing)",
+    tags=["Company", "Overview", "AI"],
+    response_description="A structured company overview for the given company context.",
 )
 async def generate_product_overview(
     data: ProductOverviewRequest,
@@ -235,11 +235,11 @@ async def generate_product_overview(
 
 
 @app.post(
-    "/campaigns/target_company",
+    "/customers/target_accounts",
     response_model=TargetCompanyResponse,
-    summary="Generate Target Company Profile (firmographics, buying signals, rationale)",
-    tags=["Campaigns", "Target Company", "AI"],
-    response_description="A structured target company profile for the given company context.",
+    summary="Generate Target Account Profile (firmographics, buying signals, rationale)",
+    tags=["Customers", "Target Accounts", "AI"],
+    response_description="A structured target account profile for the given company context.",
 )
 async def generate_target_company(
     data: TargetCompanyRequest,
@@ -251,10 +251,10 @@ async def generate_target_company(
 
 
 @app.post(
-    "/campaigns/target_persona",
+    "/customers/target_personas",
     response_model=TargetPersonaResponse,
     summary="Generate Target Persona Profile (attributes, buying signals, rationale)",
-    tags=["Campaigns", "Target Persona", "AI"],
+    tags=["Customers", "Target Personas", "AI"],
     response_description="A structured target persona profile for the given company context.",
 )
 async def generate_target_persona(
