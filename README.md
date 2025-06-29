@@ -4,7 +4,7 @@
 > - [.notes/TASKS.md](.notes/TASKS.md) — Project tasks and status
 > - [.notes/PRD.md](.notes/PRD.md) — Product Requirements Document
 > - [.notes/ARCHITECTURE.md](.notes/ARCHITECTURE.md) — Architecture Blueprint
-> - [.notes/PROMPT_TEMPLATES.md](.notes/PROMPT_TEMPLATES.md) — Prompt Templating System
+> - [.notes/prompt_templates.md](.notes/prompt_templates.md) — Prompt Templating System
 
 ---
 
@@ -15,7 +15,7 @@
   - Each major feature (ICP inference, Positioning, Value Props, Email Campaign, Use Case Fit) is now a separate endpoint.
   - All endpoints require `website_url` as input, and accept optional `user_inputted_context` and `llm_inferred_context` fields.
   - This change improves composability, extensibility, and supports both atomic and orchestrated/agentic workflows.
-  - Rationale: Enables easier addition of new features, more flexible client integration, and better alignment with agentic/LLM-powered workflows. See PRD.md and ARCHITECTURE.md for details.
+  - Rationale: Enables easier addition of new features, more flexible client integration, and better alignment with agentic/LLM-powered workflows. See backend_prd.md and backend_architecture.md for details.
 
 **AI-powered go-to-market campaign generator for B2B founders.**
 
@@ -74,7 +74,7 @@ poetry install
 
 ### 4. Set up environment variables
 
-Create a `.env` file in the project root and fill in your secrets (see PRD.md for required variables):
+Create a `.env` file in the project root and fill in your secrets (see backend_prd.md for required variables):
 
 ```sh
 touch .env

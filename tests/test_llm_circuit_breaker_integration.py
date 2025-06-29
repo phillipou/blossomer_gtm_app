@@ -6,12 +6,12 @@ Integration tests for LLMClient and CircuitBreaker interaction.
 """
 
 import pytest
-from blossomer_gtm_api.services.llm_service import (
+from app.services.llm_service import (
     LLMClient,
     LLMRequest,
     BaseLLMProvider,
 )
-from blossomer_gtm_api.services.circuit_breaker import CircuitState
+from app.services.circuit_breaker import CircuitState
 
 
 class AlwaysFailProvider(BaseLLMProvider):

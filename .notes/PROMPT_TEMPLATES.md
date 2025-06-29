@@ -1,6 +1,6 @@
 # Prompt Templating System
 
-See the 'Prompt Templating System Architecture' section in ARCHITECTURE.md for a high-level overview and rationale.
+See the 'Prompt Templating System Architecture' section in backend_architecture.md for a high-level overview and rationale.
 
 ---
 
@@ -95,4 +95,4 @@ prompt = render_prompt(
 
 ---
 
-For high-level rationale and architecture, see the relevant section in [ARCHITECTURE.md](ARCHITECTURE.md). 
+For high-level rationale and architecture, see the relevant section in [backend_architecture.md](backend_architecture.md). 

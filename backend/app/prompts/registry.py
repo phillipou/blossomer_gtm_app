@@ -2,7 +2,7 @@
 registry.py - Template registry and selector logic for prompt templates.
 """
 
-from .models import (
+from backend.app.prompts.models import (
     ProductOverviewPromptVars,
     ContextAssessmentVars,
     TargetCompanyPromptVars,

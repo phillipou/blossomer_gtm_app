@@ -236,7 +236,7 @@ All campaign endpoints now follow a unified context assessment and orchestration
   - Provides a consistent, user-friendly, and robust experience
   - Makes the system extensible and future-proof
 
-This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See PRD.md for rationale and user impact.
+This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See backend_PRD.md for rationale and user impact.
 
 ## 4. AI Agent Architecture
 

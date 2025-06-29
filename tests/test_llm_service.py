@@ -4,7 +4,7 @@
 
 import pytest
 from unittest.mock import AsyncMock
-from blossomer_gtm_api.services.llm_service import (
+from app.services.llm_service import (
     GeminiProvider,
     LLMRequest,
     LLMResponse,

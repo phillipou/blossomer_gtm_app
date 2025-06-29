@@ -7,7 +7,7 @@ Unit tests for the CircuitBreaker class.
 import asyncio
 import time
 import pytest
-from blossomer_gtm_api.services.circuit_breaker import CircuitBreaker, CircuitState
+from app.services.circuit_breaker import CircuitBreaker, CircuitState
 
 
 @pytest.mark.asyncio

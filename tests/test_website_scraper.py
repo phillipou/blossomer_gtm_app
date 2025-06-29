@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from blossomer_gtm_api.services.website_scraper import (
+from app.services.website_scraper import (
     validate_url,
     firecrawl_scrape_url,
     extract_website_content,
@@ -139,7 +139,7 @@ def test_firecrawl_scrape_url_success(monkeypatch):
 
     monkeypatch.setenv("FIRECRAWL_API_KEY", "dummy-key")
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.website_scraper.FirecrawlApp",
+        "app.services.website_scraper.FirecrawlApp",
         DummyFirecrawlApp,
     )
     with patch("requests.post", mock_post):
@@ -158,7 +158,7 @@ def test_firecrawl_scrape_url_missing_api_key(monkeypatch):
         pass
 
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.website_scraper.FirecrawlApp",
+        "app.services.website_scraper.FirecrawlApp",
         DummyFirecrawlApp,
     )
     monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
@@ -189,12 +189,8 @@ def test_firecrawl_crawl_site_options(mocker):
                 dict=lambda: {"data": ["main content"], "metadata": {"pages": limit}}
             )
 
-    mocker.patch(
-        "blossomer_gtm_api.services.website_scraper.FirecrawlApp", MockFirecrawlApp
-    )
-    mocker.patch(
-        "blossomer_gtm_api.services.website_scraper.ScrapeOptions", MockScrapeOptions
-    )
+    mocker.patch("app.services.website_scraper.FirecrawlApp", MockFirecrawlApp)
+    mocker.patch("app.services.website_scraper.ScrapeOptions", MockScrapeOptions)
     mocker.patch("os.getenv", return_value="dummy-key")
 
     result = firecrawl_crawl_site(
@@ -213,12 +209,12 @@ def test_extract_website_content_crawl(mocker):
     test_url = "http://example.com"
     # Patch validate_url to always return valid
     mocker.patch(
-        "blossomer_gtm_api.services.website_scraper.validate_url",
+        "app.services.website_scraper.validate_url",
         lambda url: {"is_valid": True, "reachable": True},
     )
     # Patch firecrawl_crawl_site to return dummy crawl result
     mocker.patch(
-        "blossomer_gtm_api.services.website_scraper.firecrawl_crawl_site",
+        "app.services.website_scraper.firecrawl_crawl_site",
         lambda url, limit, formats, only_main_content, wait_for: {
             "data": ["main content"],
             "metadata": {

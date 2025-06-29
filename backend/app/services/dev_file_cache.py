@@ -5,7 +5,7 @@ This utility caches website scrape results as JSON files, keyed by a hash of the
 Intended for development use to avoid repeated API calls (e.g., Firecrawl credits).
 
 Usage:
-    from blossomer_gtm_api.services.dev_file_cache import load_cached_scrape, save_scrape_to_cache
+    from backend.app.services.dev_file_cache import load_cached_scrape, save_scrape_to_cache
 
     data = load_cached_scrape(url)
     if data is not None:

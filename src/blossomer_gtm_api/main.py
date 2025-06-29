@@ -4,8 +4,8 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from blossomer_gtm_api.services.llm_service import LLMClient, OpenAIProvider
-from blossomer_gtm_api.schemas import (
+from backend.app.services.llm_service import LLMClient, OpenAIProvider
+from backend.app.schemas import (
     ProductOverviewRequest,
     ProductOverviewResponse,
     TargetCompanyRequest,
@@ -13,19 +13,19 @@ from blossomer_gtm_api.schemas import (
     TargetPersonaRequest,
     TargetPersonaResponse,
 )
-from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
-from blossomer_gtm_api.services.product_overview_service import (
+from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.product_overview_service import (
     generate_product_overview_service,
 )
-from blossomer_gtm_api.services.target_company_service import (
+from backend.app.services.target_company_service import (
     generate_target_company_profile,
 )
-from blossomer_gtm_api.services.target_persona_service import (
+from backend.app.services.target_persona_service import (
     generate_target_persona_profile,
 )
-from blossomer_gtm_api.auth import rate_limit_dependency
-from blossomer_gtm_api.database import get_db
-from blossomer_gtm_api.models import APIKey
+from backend.app.core.auth import rate_limit_dependency
+from backend.app.core.database import get_db
+from backend.app.models import APIKey
 from sqlalchemy.orm import Session
 
 logging.basicConfig(level=logging.DEBUG)

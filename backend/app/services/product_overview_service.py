@@ -1,13 +1,13 @@
 import logging
 from fastapi import HTTPException
-from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
-from blossomer_gtm_api.services.llm_service import LLMClient, LLMRequest
-from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.prompts.models import ProductOverviewPromptVars
-from blossomer_gtm_api.schemas import ProductOverviewRequest, ProductOverviewResponse
+from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.llm_service import LLMClient, LLMRequest
+from backend.app.prompts.registry import render_prompt
+from backend.app.prompts.models import ProductOverviewPromptVars
+from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
 import json
 from pydantic import ValidationError
-from blossomer_gtm_api.services.content_preprocessing import (
+from backend.app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
     SectionChunker,
     LangChainSummarizer,

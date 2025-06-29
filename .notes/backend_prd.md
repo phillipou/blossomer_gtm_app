@@ -183,7 +183,7 @@ All campaign generation endpoints now use a unified, intelligent context assessm
   - Provides a consistent, user-friendly experience
   - Makes the system extensible and robust
 
-This design is now a core part of the smart context orchestration system and applies to all endpoints. See ARCHITECTURE.md for implementation details.
+This design is now a core part of the smart context orchestration system and applies to all endpoints. See backend_ARCHITECTURE.md for implementation details.
 
 ## 6. Enhanced user stories and acceptance criteria
 

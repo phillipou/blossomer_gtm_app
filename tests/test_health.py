@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from blossomer_gtm_api.main import app
+from app.api.main import app
 
 client = TestClient(app)
 

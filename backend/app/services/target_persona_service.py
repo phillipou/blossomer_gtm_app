@@ -1,8 +1,8 @@
 from typing import Any
-from blossomer_gtm_api.schemas import TargetPersonaRequest, TargetPersonaResponse
-from blossomer_gtm_api.prompts.models import TargetPersonaPromptVars
-from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.services.context_orchestrator import (
+from backend.app.schemas import TargetPersonaRequest, TargetPersonaResponse
+from backend.app.prompts.models import TargetPersonaPromptVars
+from backend.app.prompts.registry import render_prompt
+from backend.app.services.context_orchestrator import (
     ContextOrchestrator,
     resolve_context_for_endpoint,
 )

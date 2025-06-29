@@ -26,7 +26,7 @@ import os
 import logging
 import openai
 from dotenv import load_dotenv
-from blossomer_gtm_api.services.circuit_breaker import CircuitBreaker
+from backend.app.services.circuit_breaker import CircuitBreaker
 import json
 from pydantic import ValidationError
 

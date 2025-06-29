@@ -1,19 +1,19 @@
 from fastapi.testclient import TestClient
-from blossomer_gtm_api.main import app
+from app.api.main import app
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from blossomer_gtm_api.services.context_orchestrator import ContextOrchestrator
-from blossomer_gtm_api.prompts.models import ContextAssessmentResult, ContextQuality
-from blossomer_gtm_api.services.product_overview_service import (
+from app.services.context_orchestrator import ContextOrchestrator
+from app.prompts.models import ContextAssessmentResult, ContextQuality
+from app.services.product_overview_service import (
     generate_product_overview_service,
 )
-from blossomer_gtm_api.services.content_preprocessing import (
+from app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
     SectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,
 )
-from blossomer_gtm_api.schemas import ProductOverviewRequest
+from app.schemas import ProductOverviewRequest
 from fastapi import HTTPException
 import json
 
@@ -40,7 +40,7 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(return_value=fake_assessment)
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content"
+        "app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": "This is the website content."}
         result = await orchestrator.orchestrate_context(
@@ -74,7 +74,7 @@ async def test_orchestrator_handles_empty_content():
         )
     )
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content"
+        "app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": ""}
         result = await orchestrator.orchestrate_context(
@@ -90,7 +90,7 @@ async def test_orchestrator_readiness_logic():
     """
     The orchestrator should correctly reflect endpoint readiness based on the assessment object.
     """
-    from blossomer_gtm_api.prompts.models import EndpointReadiness
+    from app.prompts.models import EndpointReadiness
 
     assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.HIGH,
@@ -300,69 +300,75 @@ def test_api_happy_path(monkeypatch):
     The API should return a structured, non-empty product overview for a real website
     (happy path).
     """
+
+    # Patch llm_client.generate_structured_output in the actual endpoint module for company
+    async def fake_generate_structured_output(prompt, response_model):
+        assessment_dict = {
+            "overall_quality": "high",
+            "overall_confidence": 0.95,
+            "content_sections": [],
+            "company_clarity": {},
+            "endpoint_readiness": [
+                {
+                    "endpoint": "product_overview",
+                    "is_ready": True,
+                    "confidence": 0.95,
+                }
+            ],
+            "data_quality_metrics": {},
+            "recommendations": {},
+            "summary": "Ready!",
+        }
+        return assessment_dict
+
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
+        "app.api.routes.company.llm_client.generate_structured_output",
+        fake_generate_structured_output,
+    )
+
+    # Patch llm_client.generate in the actual endpoint module for company
+    async def fake_generate(request):
+        class FakeResp:
+            text = json.dumps(
+                {
+                    "product_description": "Blossom is fast and reliable.",
+                    "key_features": ["Fast", "Reliable", "Secure"],
+                    "company_profiles": ["Blossom Inc. is a SaaS company."],
+                    "persona_profiles": ["CTO: Tech decision maker"],
+                    "use_cases": ["Automated workflows", "Data analytics"],
+                    "pain_points": ["Manual processes", "Slow reporting"],
+                    "confidence_scores": {"product_description": 0.95},
+                    "metadata": {},
+                }
+            )
+
+        return FakeResp()
+
+    monkeypatch.setattr(
+        "app.api.routes.company.llm_client.generate",
+        fake_generate,
+    )
+
+    monkeypatch.setattr(
+        "app.services.context_orchestrator.extract_website_content",
         lambda *args, **kwargs: {
             "content": "Product: Blossom. Fast, Reliable, Secure."
         },
     )
 
-    def llm_side_effect(request):
-        if "analyze the provided website content and assess" in request.prompt:
-            assessment_dict = {
-                "overall_quality": "high",
-                "overall_confidence": 0.95,
-                "content_sections": [],
-                "company_clarity": {},
-                "endpoint_readiness": [
-                    {
-                        "endpoint": "product_overview",
-                        "is_ready": True,
-                        "confidence": 0.95,
-                    }
-                ],
-                "data_quality_metrics": {},
-                "recommendations": {},
-                "summary": "Ready!",
-            }
-            return type("FakeResp", (), {"text": json.dumps(assessment_dict)})()
-        else:
-            return type(
-                "FakeResp",
-                (),
-                {
-                    "text": json.dumps(
-                        {
-                            "product_description": "Blossom is fast and reliable.",
-                            "key_features": ["Fast", "Reliable", "Secure"],
-                            "company_profiles": ["Blossom Inc. is a SaaS company."],
-                            "persona_profiles": ["CTO: Tech decision maker"],
-                            "use_cases": ["Automated workflows", "Data analytics"],
-                            "pain_points": ["Manual processes", "Slow reporting"],
-                            "confidence_scores": {"product_description": 0.95},
-                            "metadata": {},
-                        }
-                    )
-                },
-            )()
-
-    with patch(
-        "blossomer_gtm_api.services.llm_service.LLMClient.generate",
-        side_effect=llm_side_effect,
-    ):
-        response = client.post(
-            "/company/generate",
-            json={"website_url": "https://blossom.com"},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["product_description"]
-        assert isinstance(data["key_features"], list)
-        assert isinstance(data["company_profiles"], list)
-        assert isinstance(data["persona_profiles"], list)
-        assert isinstance(data["use_cases"], list)
-        assert isinstance(data["pain_points"], list)
-        assert isinstance(data["confidence_scores"], dict)
+    response = client.post(
+        "/company/generate",
+        json={"website_url": "https://blossom.com"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["product_description"]
+    assert isinstance(data["key_features"], list)
+    assert isinstance(data["company_profiles"], list)
+    assert isinstance(data["persona_profiles"], list)
+    assert isinstance(data["use_cases"], list)
+    assert isinstance(data["pain_points"], list)
+    assert isinstance(data["confidence_scores"], dict)
 
 
 def test_api_insufficient_content(monkeypatch):
@@ -370,7 +376,7 @@ def test_api_insufficient_content(monkeypatch):
     The API should return a 422 error and a helpful message for insufficient website content.
     """
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content"
+        "app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": ""}
         response = client.post(

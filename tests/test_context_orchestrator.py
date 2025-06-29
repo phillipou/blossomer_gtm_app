@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from blossomer_gtm_api.services.context_orchestrator import (
+from app.services.context_orchestrator import (
     ContextOrchestrator,
     resolve_context_for_endpoint,
 )
-from blossomer_gtm_api.prompts.models import (
+from app.prompts.models import (
     ContextAssessmentResult,
     ContextQuality,
     EndpointReadiness,
@@ -17,7 +17,7 @@ async def test_assess_context_empty_content():
     mock_llm = MagicMock()
     orchestrator = ContextOrchestrator(mock_llm)
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.render_prompt",
+        "app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="   ")
@@ -31,7 +31,7 @@ async def test_assess_url_context_scrape_failure():
     """Test that a website scrape failure returns 'insufficient' result."""
     orchestrator = ContextOrchestrator(MagicMock())
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
+        "app.services.context_orchestrator.extract_website_content",
         side_effect=Exception("scrape failed"),
     ):
         result = await orchestrator.assess_url_context(
@@ -61,7 +61,7 @@ async def test_assess_context_happy_path():
     )
     orchestrator = ContextOrchestrator(mock_llm)
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.render_prompt",
+        "app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="Some real content.")
@@ -87,7 +87,7 @@ async def test_assess_url_context_happy_path():
         )
     )
     with patch(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
+        "app.services.context_orchestrator.extract_website_content",
         return_value={"content": "Some content"},
     ):
         result = await orchestrator.assess_url_context(
@@ -102,7 +102,7 @@ async def test_orchestrate_context_ready(monkeypatch):
     """Test orchestrate_context returns ready when assessment is ready for the endpoint."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.website_scraper.extract_website_content",
+        "app.services.website_scraper.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     mock_llm = MagicMock()
@@ -145,7 +145,7 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     """Test orchestrate_context returns not ready and includes enrichment steps when not ready."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.website_scraper.extract_website_content",
+        "app.services.website_scraper.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     mock_llm = MagicMock()

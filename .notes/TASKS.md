@@ -91,7 +91,7 @@
 - [x] [API-118](https://linear.app/blossomer/issue/API-118/document-dotenv-usage-for-scripts-and-migrations-alembic): Document dotenv usage for scripts and migrations (Alembic)
 - [x] [API-119](https://linear.app/blossomer/issue/API-119/add-scriptscreate-test-userpy-for-quick-api-key-testing-alembicneon): Add scripts/create_test_user.py for quick API key testing (Alembic/Neon)
 - [x] [API-120](https://linear.app/blossomer/issue/API-120/update-envexample-for-neon-connection-string-neon): Update .env.example for Neon connection string (Neon)
-- [x] [API-121](https://linear.app/blossomer/issue/API-121/update-readmemd-architecturemd-and-auth-dbmd-for-neon-alembic-and): Update README.md, ARCHITECTURE.md, and AUTH_DB.md for Neon, Alembic, and Docker (Neon/Alembic)
+- [x] [API-121](https://linear.app/blossomer/issue/API-121/update-readmemd-backend_architecturemd-and-auth_dbmd-for-neon-alembic-and): Update README.md, backend_architecture.md, and auth_db.md for Neon, Alembic, and Docker (Neon/Alembic)
 - [x] [API-122](https://linear.app/blossomer/issue/API-122/commit-all-changes-with-pre-commit-hook-exceptions-for-alembic-alembic): Commit all changes with pre-commit hook exceptions for Alembic (Alembic)
 - [ ] [API-133](https://linear.app/blossomer/issue/API-133/implement-and-enforce-api-rate-limiting-across-all-endpoints): Implement and enforce API rate limiting across all endpoints
 

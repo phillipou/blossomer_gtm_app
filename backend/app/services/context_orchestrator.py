@@ -6,14 +6,14 @@ assessing context quality for campaign generation endpoints.
 from typing import Optional, Dict, Any
 import logging
 
-from blossomer_gtm_api.prompts.models import (
+from backend.app.prompts.models import (
     ContextAssessmentResult,
     ContextAssessmentVars,
     ContextQuality,
 )
-from blossomer_gtm_api.prompts.registry import render_prompt
-from blossomer_gtm_api.services.llm_service import LLMClient
-from blossomer_gtm_api.services.website_scraper import extract_website_content
+from backend.app.prompts.registry import render_prompt
+from backend.app.services.llm_service import LLMClient
+from backend.app.services.website_scraper import extract_website_content
 
 
 async def resolve_context_for_endpoint(

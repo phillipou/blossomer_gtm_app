@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from .database import get_db
-from .models import User, APIKey, APIUsage
+from backend.app.core.database import get_db
+from backend.app.models import User, APIKey, APIUsage
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()

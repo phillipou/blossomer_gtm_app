@@ -6,7 +6,7 @@ import logging
 from urllib import robotparser
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
-from blossomer_gtm_api.services.dev_file_cache import (
+from backend.app.services.dev_file_cache import (
     load_cached_scrape,
     save_scrape_to_cache,
 )

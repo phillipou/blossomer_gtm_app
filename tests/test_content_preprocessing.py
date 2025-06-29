@@ -1,4 +1,4 @@
-from blossomer_gtm_api.services.content_preprocessing import (
+from app.services.content_preprocessing import (
     SectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,

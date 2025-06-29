@@ -1,9 +1,13 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-from blossomer_gtm_api.main import app, rate_limit_dependency
+from app.api.main import app
+from app.core.auth import rate_limit_dependency, authenticate_api_key
 import pytest
-from blossomer_gtm_api.auth import authenticate_api_key
 import json
+from app.prompts.models import (
+    ContextAssessmentResult,
+    ContextQuality,
+    EndpointReadiness,
+)
 
 client = TestClient(app)
 
@@ -77,83 +81,95 @@ def test_product_overview_endpoint_success(monkeypatch):
         "llm_inferred_context": "",
     }
     fake_content = "Fake company info."
-    # First call: context assessment, second call: product overview
-    context_assessment = {
-        "overall_quality": "high",
-        "overall_confidence": 0.95,
-        "content_sections": [],
-        "company_clarity": {},
-        "endpoint_readiness": [
-            {
-                "endpoint": "product_overview",
-                "is_ready": True,
-                "confidence": 0.95,
-            }
-        ],
-        "data_quality_metrics": {},
-        "recommendations": {},
-        "summary": "Ready!",
-    }
-    product_overview = {
-        "product_description": "desc",
-        "key_features": ["f1"],
-        "company_profiles": ["c1"],
-        "persona_profiles": ["p1"],
-        "use_cases": ["u1"],
-        "pain_points": ["pp1"],
-        "pricing": "",
-        "confidence_scores": {
-            "product_description": 1,
-            "key_features": 1,
-            "company_profiles": 1,
-            "persona_profiles": 1,
-            "use_cases": 1,
-            "pain_points": 1,
-            "pricing": 1,
-        },
-        "metadata": {},
-    }
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.context_orchestrator.extract_website_content",
+        "app.services.context_orchestrator.extract_website_content",
         lambda *args, **kwargs: {"content": fake_content},
     )
 
-    def llm_side_effect(request):
-        if "analyze the provided website content and assess" in request.prompt:
-            return type("FakeResp", (), {"text": json.dumps(context_assessment)})()
-        else:
-            return type("FakeResp", (), {"text": json.dumps(product_overview)})()
+    # Patch llm_client.generate_structured_output in the actual endpoint module
+    async def fake_generate_structured_output(prompt, response_model):
+        return ContextAssessmentResult(
+            overall_quality=ContextQuality.HIGH,
+            overall_confidence=0.95,
+            content_sections=[],
+            company_clarity={},
+            endpoint_readiness=[
+                EndpointReadiness(
+                    endpoint="product_overview",
+                    is_ready=True,
+                    confidence=0.95,
+                    missing_requirements=[],
+                    recommendations=[],
+                )
+            ],
+            data_quality_metrics={},
+            recommendations={},
+            summary="Ready!",
+        )
 
-    with patch(
-        "blossomer_gtm_api.main.llm_client.generate",
-        side_effect=llm_side_effect,
-    ):
-        response = client.post("/company/generate", json=payload)
-        assert response.status_code == 200
-        data = response.json()
-        assert "product_description" in data
-        assert "key_features" in data
-        assert "company_profiles" in data
-        assert "persona_profiles" in data
-        assert "use_cases" in data
-        assert "pain_points" in data
-        assert "confidence_scores" in data
-        assert "metadata" in data
+    monkeypatch.setattr(
+        "app.api.routes.company.llm_client.generate_structured_output",
+        fake_generate_structured_output,
+    )
+
+    # Patch llm_client.generate in the actual endpoint module
+    async def fake_generate(request):
+        class FakeResp:
+            text = json.dumps(
+                {
+                    "product_description": "desc",
+                    "key_features": ["f1"],
+                    "company_profiles": ["c1"],
+                    "persona_profiles": ["p1"],
+                    "use_cases": ["u1"],
+                    "pain_points": ["pp1"],
+                    "pricing": "",
+                    "confidence_scores": {
+                        "product_description": 1,
+                        "key_features": 1,
+                        "company_profiles": 1,
+                        "persona_profiles": 1,
+                        "use_cases": 1,
+                        "pain_points": 1,
+                        "pricing": 1,
+                    },
+                    "metadata": {},
+                }
+            )
+
+        return FakeResp()
+
+    monkeypatch.setattr(
+        "app.api.routes.company.llm_client.generate",
+        fake_generate,
+    )
+
+    response = client.post("/company/generate", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "product_description" in data
+    assert "key_features" in data
+    assert "company_profiles" in data
+    assert "persona_profiles" in data
+    assert "use_cases" in data
+    assert "pain_points" in data
+    assert "confidence_scores" in data
+    assert "metadata" in data
 
 
 def test_product_overview_llm_refusal(monkeypatch):
     """Test that the API returns a 422 error with a user-friendly message when the LLM refuses to answer."""
-    from blossomer_gtm_api.services.product_overview_service import (
+    from app.services.product_overview_service import (
         generate_product_overview_service,
     )
-    from blossomer_gtm_api.schemas import ProductOverviewRequest
+    from app.schemas import ProductOverviewRequest
     from fastapi import HTTPException
 
     class FakeLLMResponse:
         text = (
-            "I'm sorry, but I am unable to extract the required product overview information from the "
-            "provided content. If you can provide more explicit product details or additional context, "
-            "I can assist you further."
+            "I'm sorry, but I am unable to extract the required product overview "
+            "information from the provided content. If you can provide more explicit product "
+            "details or additional context, I can assist you further."
         )
 
     class FakeLLMClient:
@@ -214,14 +230,13 @@ def test_target_company_endpoint_success(monkeypatch):
     Test the /customers/target_accounts endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
-    from blossomer_gtm_api.schemas import TargetCompanyResponse
+    from app.schemas import TargetCompanyResponse
 
     payload = {
         "website_url": "https://example.com",
         "user_inputted_context": "",
         "llm_inferred_context": "",
     }
-    fake_content = "Fake company info."
     fake_response = TargetCompanyResponse(
         target_company="Tech-forward SaaS companies",
         company_attributes=["SaaS", "Tech-forward", "100-500 employees"],
@@ -231,28 +246,27 @@ def test_target_company_endpoint_success(monkeypatch):
         metadata={"source": "test"},
     )
 
+    # Patch llm_client.generate_structured_output in the actual endpoint module for customers
     async def fake_generate_structured_output(prompt, response_model):
         return fake_response
 
-    async def fake_resolve_context_for_endpoint(req, endpoint, orchestrator):
-        return {"context": fake_content, "source": "website"}
-
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_company_service.resolve_context_for_endpoint",
-        fake_resolve_context_for_endpoint,
-    )
-    monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_company_service.render_prompt",
-        lambda template, vars: "prompt",
-    )
-    monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_company_service.TargetCompanyPromptVars",
-        lambda **kwargs: kwargs,
-    )
-    monkeypatch.setattr(
-        "blossomer_gtm_api.main.llm_client.generate_structured_output",
+        "app.api.routes.customers.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
+
+    # Patch llm_client.generate in the actual endpoint module for customers (if used)
+    async def fake_generate(request):
+        class FakeResp:
+            text = fake_response.json()
+
+        return FakeResp()
+
+    monkeypatch.setattr(
+        "app.api.routes.customers.llm_client.generate",
+        fake_generate,
+    )
+
     response = client.post(
         "/customers/target_accounts",
         json=payload,
@@ -272,14 +286,13 @@ def test_target_persona_endpoint_success(monkeypatch):
     Test the /customers/target_personas endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
-    from blossomer_gtm_api.schemas import TargetPersonaResponse
+    from app.schemas import TargetPersonaResponse
 
     payload = {
         "website_url": "https://example.com",
         "user_inputted_context": "",
         "llm_inferred_context": "",
     }
-    fake_content = "Fake company info."
     fake_response = TargetPersonaResponse(
         persona="Head of Operations",
         persona_attributes=["Decision maker", "Process-oriented"],
@@ -293,24 +306,46 @@ def test_target_persona_endpoint_success(monkeypatch):
         return fake_response
 
     async def fake_resolve_context_for_endpoint(req, endpoint, orchestrator):
-        return {"context": fake_content, "source": "website"}
+        return {"context": "Fake content", "source": "website"}
 
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_persona_service.resolve_context_for_endpoint",
+        "app.services.target_persona_service.resolve_context_for_endpoint",
         fake_resolve_context_for_endpoint,
     )
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_persona_service.render_prompt",
+        "app.services.target_persona_service.render_prompt",
         lambda template, vars: "prompt",
     )
     monkeypatch.setattr(
-        "blossomer_gtm_api.services.target_persona_service.TargetPersonaPromptVars",
+        "app.services.target_persona_service.TargetPersonaPromptVars",
         lambda **kwargs: kwargs,
     )
     monkeypatch.setattr(
-        "blossomer_gtm_api.main.llm_client.generate_structured_output",
+        "app.api.main.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
+
+    # Patch llm_client.generate_structured_output in the actual endpoint module for customers
+    async def fake_generate_structured_output(prompt, response_model):
+        return fake_response
+
+    monkeypatch.setattr(
+        "app.api.routes.customers.llm_client.generate_structured_output",
+        fake_generate_structured_output,
+    )
+
+    # Patch llm_client.generate in the actual endpoint module for customers (if used)
+    async def fake_generate(request):
+        class FakeResp:
+            text = fake_response.json()
+
+        return FakeResp()
+
+    monkeypatch.setattr(
+        "app.api.routes.customers.llm_client.generate",
+        fake_generate,
+    )
+
     response = client.post(
         "/customers/target_personas",
         json=payload,
