@@ -126,10 +126,19 @@
     - TailwindCSS configured with design tokens from design-system v1.1.0.
 - [x] FE-3: Set up MSW with mock handlers for all major endpoints
     - MSW set up with handlers for all major endpoints, mock/live switching documented in README, and integrated into app entry.
-- [ ] FE-4: Implement API proxy for backend integration (dev only)
+- [x] FE-4: Implement API proxy for backend integration (dev only)
+    - Vite dev server proxy configured for API integration with FastAPI backend at http://localhost:8000.
 - [ ] FE-5: Scaffold main pages: Landing (`/`), Dashboard (`/dashboard`), Desktop-only splash
 - [ ] FE-6: Stub core components: `ContentBlock`, `AttributeBlock`, `UpdateBadge`, `DiffViewer`, `SkeletonCard`, `ErrorBanner`, `Toast`, `ApiKeyModal`
 - [ ] FE-7: Implement authentication modals and flows (Sign-up, Login)
 - [ ] FE-8: Wire up initial Company/Customers/Campaigns flows with mock data
 - [ ] FE-9: Add environment switch (mock/live backend)
-- [ ] FE-10: Document FE setup and dev workflow in `README.md` 
+- [ ] FE-10: Document FE setup and dev workflow in `README.md`
+
+---
+
+## Frontend Deployment
+- [ ] FE-DEPLOY-1: Build production assets with `npm run build`
+- [ ] FE-DEPLOY-2: Deploy frontend as a Render Static Site (build command: npm run build, publish dir: dist, root dir: frontend)
+- [ ] FE-DEPLOY-3: Set production environment variables (e.g., VITE_API_MOCK=0, API base URL)
+- [ ] FE-DEPLOY-4: Test production deployment and document the process in README.md 
