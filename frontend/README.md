@@ -67,3 +67,21 @@ export default tseslint.config([
   },
 ])
 ```
+
+## Mock API Development with MSW
+
+This project uses [Mock Service Worker (MSW)](https://mswjs.io/) to enable rapid frontend development against realistic API mocks.
+
+- **To enable mock API mode:**
+  - Set `VITE_API_MOCK=1` in your `.env` or `.env.local` file (default in this repo).
+  - When running `npm run dev`, MSW will intercept API requests and serve mock data from `src/mocks/handlers/`.
+- **To use the live backend:**
+  - Set `VITE_API_MOCK=0` (or remove the variable) in your `.env`.
+  - API requests will be sent to the real backend (ensure your proxy is configured if needed).
+
+**How it works:**
+- In development, the app checks `VITE_API_MOCK` and starts MSW if set to `1`.
+- All major endpoints are mocked in `src/mocks/handlers/` (auth, company, customers, campaigns, etc.).
+- You can develop the UI and flows before backend endpoints are ready, or switch to live backend as needed.
+
+See `src/main.tsx` and `src/mocks/` for details.

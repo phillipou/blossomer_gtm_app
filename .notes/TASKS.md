@@ -122,8 +122,10 @@
 - [x] FE-1: Scaffold `frontend/` app (React + TypeScript + Vite + TailwindCSS + MSW)
     - Scaffolded frontend app with React, TypeScript, Vite, and TailwindCSS. Tailwind manually configured due to npx/npm exec issues.
 - [x] FE-1.1: Add React, Vite, and Tailwind best practices rules to .cursor/rules and reference them in cursor_rules.mdc.
-- [ ] FE-2: Configure TailwindCSS with design tokens (add placeholder if not available)
-- [ ] FE-3: Set up MSW with mock handlers for all major endpoints
+- [x] FE-2: Configure TailwindCSS with design tokens (add placeholder if not available)
+    - TailwindCSS configured with design tokens from design-system v1.1.0.
+- [x] FE-3: Set up MSW with mock handlers for all major endpoints
+    - MSW set up with handlers for all major endpoints, mock/live switching documented in README, and integrated into app entry.
 - [ ] FE-4: Implement API proxy for backend integration (dev only)
 - [ ] FE-5: Scaffold main pages: Landing (`/`), Dashboard (`/dashboard`), Desktop-only splash
 - [ ] FE-6: Stub core components: `ContentBlock`, `AttributeBlock`, `UpdateBadge`, `DiffViewer`, `SkeletonCard`, `ErrorBanner`, `Toast`, `ApiKeyModal`
