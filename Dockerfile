@@ -21,7 +21,7 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
 # Copy app code
-COPY src/ ./src/
+COPY backend/ ./backend/
 # Use a heredoc to create the .env.example file
 RUN <<EOF cat > .env.example
 # Example environment variables for blossomer-gtm-api
@@ -43,7 +43,7 @@ WORKDIR /app
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /app/src ./src
+COPY --from=builder /app/backend ./backend
 COPY --from=builder /app/.env.example ./
 
 # Install Gunicorn as root
@@ -57,7 +57,7 @@ USER appuser
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENV=production \
-    PYTHONPATH=/app/src
+    PYTHONPATH=/app/backend
 
 EXPOSE 8000
 
@@ -66,4 +66,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 
 # Entrypoint: Gunicorn with Uvicorn workers
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "src.blossomer_gtm_api.main:app"] 
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "backend.blossomer_gtm_api.main:app"] 
