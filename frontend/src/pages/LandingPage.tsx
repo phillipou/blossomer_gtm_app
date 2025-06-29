@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -12,35 +12,14 @@ import { useNavigate } from "react-router-dom";
 export default function LandingPage() {
   const [url, setUrl] = useState("");
   const [icp, setIcp] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleAnalyze = async () => {
     if (!url.trim()) return;
-    setIsAnalyzing(true);
     setError(null);
-    try {
-      const response = await fetch("http://localhost:8000/company/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          website_url: url,
-          user_inputted_context: icp || undefined,
-        }),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to generate GTM analysis.");
-      }
-      const data = await response.json();
-      navigate("/dashboard", { state: { overview: data } });
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
-    } finally {
-      setIsAnalyzing(false);
-    }
+    navigate("/dashboard", { state: { url, icp } });
   };
 
   return (
@@ -155,20 +134,13 @@ export default function LandingPage() {
               </div>
               <Button
                 onClick={handleAnalyze}
-                disabled={!url.trim() || isAnalyzing}
+                disabled={!url.trim()}
                 className="w-full h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
               >
-                {isAnalyzing ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Analyzing website...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <span>Generate GTM Strategy</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-                )}
+                <div className="flex items-center space-x-2">
+                  <span>Generate GTM Strategy</span>
+                  <ArrowRight className="w-5 h-5" />
+                </div>
               </Button>
             </CardContent>
           </Card>

@@ -39,5 +39,9 @@ export default defineConfig({
         setupFiles: ['.storybook/vitest.setup.ts']
       }
     }]
-  }
+  },
+  server: {
+    host: 'localhost',
+    port: 5175,
+  },
 });
