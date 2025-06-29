@@ -1,0 +1,134 @@
+---
+description: Guidelines for creating and maintaining Cursor rules to ensure consistency and effectiveness.
+globs: .cursor/rules/*.mdc
+alwaysApply: true
+---
+- For current project tasks and status, see [.notes/TASKS.md](mdc:.notes/TASKS.md). Taskmaster is no longer used for project management.
+- For detailed requirements, user stories, and technical specifications, see [.notes/PRD.md](mdc:.notes/PRD.md).
+- For system architecture, service boundaries, and data flow, see [.notes/ARCHITECTURE.md](mdc:.notes/ARCHITECTURE.md).
+- For all project-related documentation, meeting notes, architectural diagrams, and AI interaction logs, see the [.notes directory](mdc:.notes). This is the project knowledge base.
+- For prompt system documentation and extension workflow, see [.notes/PROMPT_TEMPLATES.md](mdc:.notes/PROMPT_TEMPLATES.md).
+- **All LLM prompts must be constructed using Jinja2 templates via the prompt registry.**
+    - Do not use f-strings or string concatenation for prompts in production code.
+    - Define prompt variables as Pydantic models in `prompts/models.py`.
+    - Render prompts using `render_prompt(template_name, context_model)` from `prompts/registry.py`.
+    - Place all prompt templates in `prompts/templates/`.
+    - Handle context merging and formatting in the template, not in Python code.
+- **Rationale:** Ensures maintainability, testability, and consistent context resolution across all endpoints and agents. Makes prompt changes easy and safe.
+- **Example:**
+    ```python
+    from blossomer_gtm_api.prompts.registry import render_prompt
+    from blossomer_gtm_api.prompts.models import MyPromptVars
+
+    context = MyPromptVars(...)
+    prompt = render_prompt("my_template", context)
+    # Pass prompt to LLM
+    ```
+- **Enforcement:**
+    - All new endpoints, agents, and prompt construction logic must follow this pattern.
+    - Code reviews should reject direct string-based prompt construction for LLMs.
+    - Refactor legacy endpoints to use this system as they are updated.
+
+- **Required Rule Structure:**
+  ```markdown
+  ---
+  description: Clear, one-line description of what the rule enforces
+  globs: path/to/files/*.ext, other/path/**/*
+  alwaysApply: boolean
+  ---
+
+  - **Main Points in Bold**
+    - Sub-points with details
+    - Examples and explanations
+  ```
+
+- **File References:**
+  - Use `[filename](mdc:path/to/file)` ([filename](mdc:filename)) to reference files
+  - Example: [prisma.mdc](mdc:.cursor/rules/prisma.mdc) for rule references
+  - Example: [schema.prisma](mdc:prisma/schema.prisma) for code references
+
+- **Code Examples:**
+  - Use language-specific code blocks
+  ```typescript
+  // ✅ DO: Show good examples
+  const goodExample = true;
+  
+  // ❌ DON'T: Show anti-patterns
+  const badExample = false;
+  ```
+
+- **Rule Content Guidelines:**
+  - Start with high-level overview
+  - Include specific, actionable requirements
+  - Show examples of correct implementation
+  - Reference existing code when possible
+  - Keep rules DRY by referencing other rules
+
+- **Rule Maintenance:**
+  - Update rules when new patterns emerge
+  - Add examples from actual codebase
+  - Remove outdated patterns
+  - Cross-reference related rules
+
+- **Best Practices:**
+  - Use bullet points for clarity
+  - Keep descriptions concise
+  - Include both DO and DON'T examples
+  - Reference actual code over theoretical examples
+  - Use consistent formatting across rules 
+
+---
+description: Best practices and standards for using mypy type checking in Python projects, including gradual adoption, configuration, CI integration, and advanced usage.
+globs: src/**/*.py, tests/**/*.py
+alwaysApply: true
+---
+
+# Mypy Best Practices and Coding Standards
+
+- **Gradual Typing and Adoption**
+  - Start with a manageable subset of the codebase; annotate new/modified code first.
+  - Use `# type: ignore[error-code]` sparingly and always with a specific error code. Review these regularly.
+  - Prioritize annotating widely imported modules for maximum benefit.
+
+- **Consistent Configuration and Integration**
+  - Use a version-controlled `mypy.ini` or `pyproject.toml` for config. Pin the mypy version in dependencies.
+  - Integrate mypy into CI and optionally as a pre-commit hook.
+  - Encourage use of mypy editor plugins for real-time feedback.
+
+- **Leveraging Advanced Features**
+  - Enable strict mode (`--strict`) and stricter flags as coverage improves.
+  - Use `--warn-unused-ignores` to clean up unnecessary ignores.
+  - Use advanced typing features: Protocols, TypedDict, generics, etc., for flexible and robust code.
+
+- **Code Organization and Structure**
+  - Organize code in a clear directory structure (e.g., `src/`).
+  - Use consistent file/module naming and logical module boundaries.
+  - Split large modules for readability and maintainability.
+
+- **Common Patterns and Anti-patterns**
+  - Prefer dependency injection and clear interfaces for testability.
+  - Avoid excessive use of singletons, global state, and the `Any` type.
+  - Catch specific exceptions, not generic ones.
+
+- **Performance and Security**
+  - Use efficient data structures and avoid unnecessary copying.
+  - Use type hints to clarify and enforce input validation and security boundaries.
+
+- **Testing Approaches**
+  - Write unit, integration, and end-to-end tests. Organize tests clearly.
+  - Use mocking/stubbing in tests to isolate components.
+
+- **Common Pitfalls and Gotchas**
+  - Avoid inconsistent type annotations and circular dependencies.
+  - Do not ignore mypy errors without good reason; they often indicate real issues.
+
+- **Tooling and Environment**
+  - Use a linter (e.g., flake8, ruff) and formatter (e.g., black, ruff) alongside mypy.
+  - Integrate mypy into your CI/CD pipeline to catch type errors before deployment.
+
+- **Additional Best Practices**
+  - Use type hints for all function arguments and return values.
+  - Use type aliases and the `typing` module for complex types.
+  - Use `reveal_type()` for debugging type issues.
+  - Keep code clean, well-organized, and follow PEP 8.
+  - Use version control for all code and config changes. 
