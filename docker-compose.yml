@@ -4,11 +4,11 @@ services:
   app:
     build: .
     container_name: blossomer-gtm-api
-    command: gunicorn -k uvicorn.workers.UvicornWorker -c python:src.blossomer_gtm_api.main:app --bind 0.0.0.0:8000
+    command: gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app.api.main:app
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/app/src
+      - ./backend:/app/backend
     env_file:
       - .env
     restart: on-failure

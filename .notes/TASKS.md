@@ -128,12 +128,15 @@
     - MSW set up with handlers for all major endpoints, mock/live switching documented in README, and integrated into app entry.
 - [x] FE-4: Implement API proxy for backend integration (dev only)
     - Vite dev server proxy configured for API integration with FastAPI backend at http://localhost:8000.
-- [ ] FE-5: Scaffold main pages: Landing (`/`), Dashboard (`/dashboard`), Desktop-only splash
+- [x] FE-5: Scaffold main pages: Landing (`/`), Dashboard (`/dashboard`), Desktop-only splash
+    - Modernized landing page using shadcn/ui, Lucide React, and Tailwind. Routing set up with React Router. Layout and design tokens applied. All config and alias issues resolved. PostCSS config fixed for ESM.
 - [ ] FE-6: Stub core components: `ContentBlock`, `AttributeBlock`, `UpdateBadge`, `DiffViewer`, `SkeletonCard`, `ErrorBanner`, `Toast`, `ApiKeyModal`
 - [ ] FE-7: Implement authentication modals and flows (Sign-up, Login)
 - [ ] FE-8: Wire up initial Company/Customers/Campaigns flows with mock data
 - [ ] FE-9: Add environment switch (mock/live backend)
 - [ ] FE-10: Document FE setup and dev workflow in `README.md`
+- [~] FE-11: Refactor and modularize design system components for reuse across the frontend
+    - Begin extracting shared UI primitives (Button, Card, Input, etc.) and design tokens into a reusable, extensible component library for consistent styling and rapid development.
 
 ---
 
@@ -146,11 +149,11 @@
 ---
 
 ## Visual Design System Overhaul & Landing Page Redesign ([Planned])
-- [~] Audit and expand color palette (including accent, background, gradients)
-- [~] Update typography scale (headline, subheadline, body, accent)
-- [~] Standardize spacing, border radius, and shadow tokens
-- [~] Add new utility classes for backgrounds, accent text, badges, etc.
-- [~] Update Tailwind config and design-system.json with new tokens
-- [~] Refactor core components (Button, Input, Card, Badge) to use new tokens/utilities
-- [~] Redesign landing page to use new design system primitives
+- [x] Audit and expand color palette (including accent, background, gradients)
+- [x] Update typography scale (headline, subheadline, body, accent)
+- [x] Standardize spacing, border radius, and shadow tokens
+- [x] Add new utility classes for backgrounds, accent text, badges, etc.
+- [x] Update Tailwind config and design-system.json with new tokens
+- [x] Refactor core components (Button, Input, Card, Badge) to use new tokens/utilities
+- [x] Redesign landing page to use new design system primitives
 - [~] Polish, review, and iterate 
