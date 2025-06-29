@@ -1,24 +1,23 @@
-import React from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
-import Landing from './pages/Landing'
+import LandingPage from './pages/LandingPage'
 
-// MSW integration: start worker in dev if VITE_API_MOCK is set
-if (import.meta.env.DEV && import.meta.env.VITE_API_MOCK === '1') {
-  import('./mocks/browser').then(({ worker }) => {
-    worker.start();
-  });
+// Dummy auth check (replace with real logic later)
+const isAuthenticated = false
+
+function Dashboard() {
+  return <div className="flex min-h-screen items-center justify-center text-3xl">Dashboard (Authenticated)</div>
 }
 
 createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
-        {/* TODO: Add more routes for dashboard, splash, etc. */}
+        <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>,
+  </StrictMode>,
 )

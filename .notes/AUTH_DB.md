@@ -88,7 +88,7 @@ Components:
 
 ## Implementation Files
 
-### 1. Database Models (`src/blossomer_gtm_api/models.py`)
+### 1. Database Models (`backend/app/models.py`)
 
 ```python
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, ForeignKey
@@ -143,13 +143,13 @@ class APIUsage(Base):
     api_key = relationship("APIKey", back_populates="usage_records")
 ```
 
-### 2. Database Connection (`src/blossomer_gtm_api/database.py`)
+### 2. Database Connection (`backend/app/core/database.py`)
 
 ```python
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models import Base
+from backend.app.models import Base
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -181,7 +181,7 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 ```
 
-### 3. Authentication Service (`src/blossomer_gtm_api/auth.py`)
+### 3. Authentication Service (`backend/app/core/auth.py`)
 
 ```python
 import secrets
@@ -193,8 +193,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from .database import get_db
-from .models import User, APIKey, APIUsage
+from backend.app.core.database import get_db
+from backend.app.models import User, APIKey, APIUsage
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
@@ -407,16 +407,16 @@ async def check_rate_limits(
     return api_key_record
 ```
 
-### 4. API Endpoints for User Management (`src/blossomer_gtm_api/auth_endpoints.py`)
+### 4. API Endpoints for User Management (`backend/app/api/routes/auth.py`)
 
 ```python
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import List
-from .database import get_db
-from .auth import AuthService, authenticate_api_key
-from .models import User, APIKey
+from backend.app.core.database import get_db
+from backend.app.core.auth import AuthService, authenticate_api_key
+from backend.app.models import User, APIKey
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -605,7 +605,7 @@ RATE_LIMIT_PAID_DAILY=1000
 ### 2. Initialize Database
 ```python
 # Run once to create tables
-from blossomer_gtm_api.database import create_tables
+from backend.app.core.database import create_tables
 create_tables()
 ```
 

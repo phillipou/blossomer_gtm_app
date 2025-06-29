@@ -236,7 +236,7 @@ All campaign endpoints now follow a unified context assessment and orchestration
   - Provides a consistent, user-friendly, and robust experience
   - Makes the system extensible and future-proof
 
-This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See backend_PRD.md for rationale and user impact.
+This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See backend_prd.md for rationale and user impact.
 
 ## 4. AI Agent Architecture
 
@@ -571,7 +571,7 @@ circuit_breaker_config = {
 
 ### Enhanced Security Architecture
 
-For detailed authentication and database implementation, see [AUTH_DB.md](AUTH_DB.md).
+For detailed authentication and database implementation, see [auth_db.md](auth_db.md).
 
 #### API Security
 - **API key authentication** with rate limiting per tier

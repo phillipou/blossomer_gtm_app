@@ -1,19 +1,18 @@
 #root {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 0;
+  padding: 2rem;
   text-align: center;
-  background: none;
 }
 
 .logo {
   height: 6em;
-  padding: 24px;
+  padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #387FF5aa);
+  filter: drop-shadow(0 0 2em #646cffaa);
 }
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
@@ -35,14 +34,9 @@
 }
 
 .card {
-  padding: 32px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
-  border: 1px solid #E5E7EB;
+  padding: 2em;
 }
 
 .read-the-docs {
-  color: #6B7280;
-  font-size: 13px;
+  color: #888;
 }

@@ -141,4 +141,16 @@
 - [ ] FE-DEPLOY-1: Build production assets with `npm run build`
 - [ ] FE-DEPLOY-2: Deploy frontend as a Render Static Site (build command: npm run build, publish dir: dist, root dir: frontend)
 - [ ] FE-DEPLOY-3: Set production environment variables (e.g., VITE_API_MOCK=0, API base URL)
-- [ ] FE-DEPLOY-4: Test production deployment and document the process in README.md 
+- [ ] FE-DEPLOY-4: Test production deployment and document the process in README.md
+
+---
+
+## Visual Design System Overhaul & Landing Page Redesign ([Planned])
+- [~] Audit and expand color palette (including accent, background, gradients)
+- [~] Update typography scale (headline, subheadline, body, accent)
+- [~] Standardize spacing, border radius, and shadow tokens
+- [~] Add new utility classes for backgrounds, accent text, badges, etc.
+- [~] Update Tailwind config and design-system.json with new tokens
+- [~] Refactor core components (Button, Input, Card, Badge) to use new tokens/utilities
+- [~] Redesign landing page to use new design system primitives
+- [~] Polish, review, and iterate 
