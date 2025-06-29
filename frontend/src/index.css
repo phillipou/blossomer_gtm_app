@@ -3,70 +3,155 @@
 @tailwind utilities;
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color-scheme: light;
+  color: #1A1A1A;
+  background-color: #FAFAFA;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #FAFAFA;
+  color: #1A1A1A;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #387FF5;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #2968DD;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+h1, .typography-xl {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: #111827;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h2, .typography-lg {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1F2937;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+.typography-md {
+  font-size: 16px;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  line-height: 1.5;
+  color: #374151;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.typography-sm {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6B7280;
+}
+
+.typography-xs {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #9CA3AF;
+}
+
+/* Buttons */
+.btn-primary {
+  @apply bg-primary-base text-white font-semibold rounded-base px-4 py-2 hover:bg-primary-hover transition;
+}
+.btn-secondary {
+  @apply bg-neutral-gray200 text-primary-base font-semibold rounded-base border border-primary-base px-4 py-2 hover:bg-primary-light transition;
+}
+.btn-ghost {
+  @apply bg-transparent text-primary-base font-semibold rounded-base px-4 py-2 hover:bg-primary-light transition;
+}
+
+/* Card container */
+.card-container {
+  @apply w-full max-w-lg bg-white rounded-lg shadow p-8 grid gap-6 border border-neutral-gray200;
+}
+
+/* Input fields */
+.input {
+  @apply border border-neutral-gray300 rounded-base px-4 py-2 transition focus:outline-none focus:ring-2 focus:ring-primary-base;
+}
+.input-full {
+  @apply w-full;
+}
+.input-flex {
+  @apply flex-1;
+}
+
+/* Section (e.g., hero) */
+.section-hero {
+  @apply flex flex-col items-center mt-12 mb-8;
+}
+.section-title {
+  @apply text-xl font-bold text-neutral-gray800 mb-4 text-center;
+}
+.section-subtitle {
+  @apply text-md text-neutral-gray600 text-center max-w-xl;
+}
+
+/* Page background */
+.page-bg {
+  @apply min-h-screen bg-neutral-gray50 flex flex-col items-center;
+}
+
+/* Skeleton loader */
+.skeleton {
+  @apply bg-neutral-gray200 rounded-base animate-pulse;
+  height: 140px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Error banner */
+.error-banner {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  border-radius: 6px;
+  color: #B91C1C;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* Utility classes for spacing and layout */
+.spacing-xs { margin: 4px; }
+.spacing-sm { margin: 8px; }
+.spacing-md { margin: 12px; }
+.spacing-lg { margin: 16px; }
+.spacing-xl { margin: 20px; }
+.spacing-2xl { margin: 24px; }
+.spacing-3xl { margin: 32px; }
+.spacing-4xl { margin: 48px; }
+
+.rounded-base { border-radius: 6px; }
+
+/* Remove gradients, large radii, and shadows as per DO NOT rules */
+/* No gradients, no border-radius > 8px for cards, no scaling on hover, minimal shadow only */
+
+/* Focus state */
+:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 127, 245, 0.1);
 }

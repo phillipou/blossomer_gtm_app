@@ -81,7 +81,7 @@ When backend returns affected_sections, UI shows orange ! on those blocks. Click
 ---
 
 ## E. Design Tokens & Guidelines
-All colours, typography, spacing, banner and skeleton styles are defined in Design System JSON v1.1 (see separate file). New tokens:
+All colours, typography, spacing, banner and skeleton styles are defined in the canonical Design System JSON ([.notes/design-system.json](mdc:.notes/design-system.json)). New tokens:
 - banners.error.*
 - skeleton.background, @keyframes pulse
 
@@ -107,7 +107,7 @@ All colours, typography, spacing, banner and skeleton styles are defined in Desi
 ---
 
 ## H. Page Layout Descriptions (replaces ASCII diagrams)
-Each screen description references component names defined in Section D and styling tokens in Design System JSON v1.1.
+Each screen description references component names defined in Section D and styling tokens in the canonical Design System JSON ([.notes/design-system.json](mdc:.notes/design-system.json)).
 
 ### H.1 Landing Page (`/`)
 - Full-width container centred within a max-width 1200 px grid. Spacing uses spacing.3xl top and bottom.

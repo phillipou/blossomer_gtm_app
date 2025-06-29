@@ -37,7 +37,7 @@ frontend/
 ├── public/
 ├── tailwind.config.js
 ├── postcss.config.js
-├── design-system.json        # (Reference: design tokens)
+├── design-system.json        # (Reference: design tokens, see .notes/design-system.json for canonical source)
 └── ...
 
 ---
@@ -61,7 +61,7 @@ frontend/
 ## 6. Integration Strategy
 - **Incremental Backend Wiring**: UI is built against mocks first, then endpoints are wired up as backend is ready.
 - **API Contract**: All endpoints and payloads are defined in the PRD and mirrored in MSW handlers for consistency.
-- **Design System**: All colors, spacing, typography, and component tokens are mapped from `design-system.json` into `tailwind.config.js`.
+- **Design System**: All colors, spacing, typography, and component tokens are mapped from `design-system.json` (see .notes/design-system.json for canonical source) into `tailwind.config.js`.
 - **Testing**: Unit/integration tests for all components and flows; E2E tests for critical user journeys (planned).
 
 ---
@@ -74,4 +74,4 @@ frontend/
 
 ---
 
-For detailed requirements and user flows, see [frontend_prd.md](mdc:frontend_prd.md). For design tokens, see `design-system.json` and `tailwind.config.js`. 
+For detailed requirements and user flows, see [frontend_prd.md](mdc:frontend_prd.md). For design tokens, see `.notes/design-system.json` (canonical) and `tailwind.config.js`. 
