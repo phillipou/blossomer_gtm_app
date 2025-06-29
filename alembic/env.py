@@ -1,14 +1,18 @@
 import sys
 import os
-
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)  # noqa: E402
-from blossomer_gtm_api.models import Base  # noqa: E402
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Add backend directory to sys.path for model imports
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+)
+from backend.app.models import Base  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

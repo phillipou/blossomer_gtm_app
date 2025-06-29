@@ -1,6 +1,25 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
+
+/**
+ * Card component suite - provides Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter.
+ *
+ * @example
+ * <Card>
+ *   <CardHeader>
+ *     <CardTitle>Title</CardTitle>
+ *     <CardDescription>Description</CardDescription>
+ *   </CardHeader>
+ *   <CardContent>Content</CardContent>
+ *   <CardFooter>Footer</CardFooter>
+ * </Card>
+ *
+ * @remarks
+ * To add a new style, extend the className or use composition.
+ *
+ * @see https://ui.shadcn.com/docs/components/card
+ */
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -74,3 +93,5 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+// To extend Card, add custom className or wrap with additional components.

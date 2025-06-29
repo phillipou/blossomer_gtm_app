@@ -136,7 +136,17 @@
 - [ ] FE-9: Add environment switch (mock/live backend)
 - [ ] FE-10: Document FE setup and dev workflow in `README.md`
 - [~] FE-11: Refactor and modularize design system components for reuse across the frontend
-    - Begin extracting shared UI primitives (Button, Card, Input, etc.) and design tokens into a reusable, extensible component library for consistent styling and rapid development.
+    - Begin extracting shared UI primitives (Button, Card, Input, Textarea, Label, etc.) and design tokens into a reusable, extensible component library for consistent styling and rapid development.
+    - **All atomic UI primitives are now extracted to `src/components/ui/` and are the canonical source for all UI primitives.**
+    - **All new UI work should use these primitives.**
+    - Storybook is set up for live documentation and visual testing of UI primitives.
+    - Subtasks:
+        - [x] Extract Button to `src/components/ui/button.tsx`
+        - [x] Extract Card to `src/components/ui/card.tsx`
+        - [x] Extract Input to `src/components/ui/input.tsx`
+        - [x] Extract Textarea to `src/components/ui/textarea.tsx`
+        - [x] Extract Label to `src/components/ui/label.tsx`
+        - [~] Document usage and extension patterns in README and architecture docs (in progress)
 
 ---
 

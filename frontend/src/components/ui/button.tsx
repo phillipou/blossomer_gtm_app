@@ -2,7 +2,19 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
+
+/**
+ * Button component - a flexible, variant-driven button primitive using shadcn/ui conventions.
+ *
+ * @example
+ * <Button variant="destructive" size="lg">Delete</Button>
+ *
+ * @remarks
+ * To add a new variant, extend the `buttonVariants` object using CVA.
+ *
+ * @see https://ui.shadcn.com/docs/components/button
+ */
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -33,6 +45,13 @@ const buttonVariants = cva(
     },
   }
 )
+
+/**
+ * ButtonProps extends standard button props with variant and size options.
+ * @property variant - Visual style (default, destructive, outline, secondary, ghost, link)
+ * @property size - Size of the button (default, sm, lg, icon)
+ * @property asChild - Render as child component (for composition)
+ */
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,

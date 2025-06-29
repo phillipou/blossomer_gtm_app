@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { Card } from "../components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import { ArrowRight, Sparkles, Target, TrendingUp, Users } from "lucide-react";
+import { Label } from "../components/ui/label";
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
@@ -36,11 +37,11 @@ export default function LandingPage() {
                 <span className="text-xl font-semibold text-gray-900">Blossomer</span>
               </div>
               <div className="hidden md:flex items-center space-x-6">
-                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Playground</a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Templates</a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Docs</a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Blog</a>
+                <Button variant="ghost" className="text-gray-600">Playground</Button>
+                <Button variant="ghost" className="text-gray-600">Templates</Button>
+                <Button variant="ghost" className="text-gray-600">Docs</Button>
+                <Button variant="ghost" className="text-gray-600">Pricing</Button>
+                <Button variant="ghost" className="text-gray-600">Blog</Button>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -74,9 +75,9 @@ export default function LandingPage() {
           </p>
           {/* Sandbox Form */}
           <Card className="max-w-2xl mx-auto p-8 shadow-lg border-0 bg-gray-50">
-            <div className="space-y-6">
+            <CardContent className="space-y-6 p-0">
               <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2 text-left">Website URL *</label>
+                <Label htmlFor="url" className="mb-2 text-left block">Website URL *</Label>
                 <div className="relative">
                   <Input
                     id="url"
@@ -90,7 +91,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor="icp" className="block text-sm font-medium text-gray-700 mb-2 text-left">Ideal Customer Profile (Optional)</label>
+                <Label htmlFor="icp" className="mb-2 text-left block">Ideal Customer Profile (Optional)</Label>
                 <Textarea
                   id="icp"
                   placeholder="e.g., B2B SaaS companies with 50-200 employees in the fintech space..."
@@ -116,31 +117,37 @@ export default function LandingPage() {
                   </div>
                 )}
               </Button>
-            </div>
+            </CardContent>
           </Card>
           {/* Feature Cards */}
           <div className="grid md:grid-cols-3 gap-8 mt-20">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Target className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Company Analysis</h3>
-              <p className="text-gray-600">Deep insights into your business model, value proposition, and market positioning</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Target Customers</h3>
-              <p className="text-gray-600">Identify ideal customer profiles, personas, and prospecting sources</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Campaign Ideas</h3>
-              <p className="text-gray-600">AI-generated marketing campaigns and go-to-market strategies</p>
-            </div>
+            <Card className="text-center p-6">
+              <CardHeader className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-blue-600" />
+                </div>
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Company Analysis</CardTitle>
+                <CardDescription className="text-gray-600">Deep insights into your business model, value proposition, and market positioning</CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="text-center p-6">
+              <CardHeader className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Target Customers</CardTitle>
+                <CardDescription className="text-gray-600">Identify ideal customer profiles, personas, and prospecting sources</CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="text-center p-6">
+              <CardHeader className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Campaign Ideas</CardTitle>
+                <CardDescription className="text-gray-600">AI-generated marketing campaigns and go-to-market strategies</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </div>

@@ -77,6 +77,7 @@ When backend returns affected_sections, UI shows orange ! on those blocks. Click
 - SkeletonCard
 - ErrorBanner, Toast
 - ApiKeyModal
+- **All atomic UI primitives (Button, Card, Input, Textarea, Label, etc.) are now standardized in `src/components/ui/` and must be reused across all pages and components.**
 
 ---
 
@@ -84,6 +85,8 @@ When backend returns affected_sections, UI shows orange ! on those blocks. Click
 All colours, typography, spacing, banner and skeleton styles are defined in the canonical Design System JSON ([.notes/design-system.json](mdc:.notes/design-system.json)). New tokens:
 - banners.error.*
 - skeleton.background, @keyframes pulse
+
+**The design system is now implemented as code in `src/components/ui/` and `tailwind.config.js`. All new UI work should extend these primitives and reference design tokens from `.notes/design-system.json` via Tailwind config.**
 
 ---
 

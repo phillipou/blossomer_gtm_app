@@ -25,6 +25,7 @@ The Blossomer GTM Dashboard frontend is a modern, modular React (TypeScript) app
 frontend/
 ├── src/
 │   ├── components/           # Reusable UI components (atomic design)
+│   │   └── ui/               # All atomic UI primitives (Button, Card, Input, etc.)
 │   ├── pages/                # Route-level views (Landing, Dashboard, Splash)
 │   ├── mocks/                # MSW handlers and mock data
 │   ├── services/             # API clients, backend integration
@@ -45,7 +46,7 @@ frontend/
 ## 4. Service Boundaries & Data Flow
 - **API Layer**: All data fetching and mutations go through a typed API client in `services/`, which switches between MSW mocks and live backend based on environment.
 - **State Management**: Local state via React hooks; context for auth/session; (Redux/Zustand optional for future scale).
-- **Component Boundaries**: Atomic design (atoms, molecules, organisms, templates, pages). All UI blocks (ContentBlock, AttributeBlock, etc.) are self-contained and reusable.
+- **Component Boundaries**: Atomic design (atoms, molecules, organisms, templates, pages). All UI blocks (ContentBlock, AttributeBlock, etc.) are self-contained and reusable. **All atomic UI primitives (Button, Card, Input, etc.) are now standardized in `src/components/ui/` and should be reused across all pages and components.**
 - **Mock-First**: MSW intercepts API calls in dev, enabling rapid UI iteration and offline prototyping.
 - **Proxy Layer**: Vite dev server proxies `/api` calls to FastAPI backend for integration testing.
 
@@ -61,7 +62,7 @@ frontend/
 ## 6. Integration Strategy
 - **Incremental Backend Wiring**: UI is built against mocks first, then endpoints are wired up as backend is ready.
 - **API Contract**: All endpoints and payloads are defined in the PRD and mirrored in MSW handlers for consistency.
-- **Design System**: All colors, spacing, typography, and component tokens are mapped from `design-system.json` (see .notes/design-system.json for canonical source) into `tailwind.config.js`.
+- **Design System**: All colors, spacing, typography, and component tokens are mapped from `.notes/design-system.json` (canonical) into `tailwind.config.js` and referenced in component styles. **shadcn/ui-based primitives are the foundation for all new UI work.**
 - **Testing**: Unit/integration tests for all components and flows; E2E tests for critical user journeys (planned).
 
 ---

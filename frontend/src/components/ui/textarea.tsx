@@ -1,6 +1,18 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
+
+/**
+ * Textarea component - a styled textarea primitive using shadcn/ui conventions.
+ *
+ * @example
+ * <Textarea placeholder="Type your message..." />
+ *
+ * @remarks
+ * To add a new style, extend the className or wrap with composition.
+ *
+ * @see https://ui.shadcn.com/docs/components/textarea
+ */
 
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,

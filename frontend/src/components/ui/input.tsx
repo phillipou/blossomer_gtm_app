@@ -1,7 +1,18 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
+/**
+ * Input component - a styled input primitive using shadcn/ui conventions.
+ *
+ * @example
+ * <Input type="email" placeholder="Enter your email" />
+ *
+ * @remarks
+ * To add a new style, extend the className or wrap with composition.
+ *
+ * @see https://ui.shadcn.com/docs/components/input
+ */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (

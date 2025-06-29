@@ -47,6 +47,7 @@ pytest-mock = "^3.14.1"
 pytest-asyncio = "^1.0.0"
 mypy = "^1.16.1"
 alembic = "^1.16.2"
+python-dotenv = "^1.1.1"
 
 [tool.flake8]
 max-line-length = 120
