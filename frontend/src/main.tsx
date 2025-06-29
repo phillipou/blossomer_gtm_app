@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import LandingPage from './pages/LandingPage'
+// Stagewise import
+import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
 // Dummy auth check (replace with real logic later)
 const isAuthenticated = false
@@ -13,6 +15,7 @@ function Dashboard() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <StagewiseToolbar />
     <BrowserRouter>
       <Routes>
         <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />

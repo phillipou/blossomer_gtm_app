@@ -5,13 +5,14 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
-import { ArrowRight, Sparkles, Target, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "../components/ui/label";
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
   const [icp, setIcp] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   const handleAnalyze = async () => {
     if (!url.trim()) return;
@@ -90,15 +91,43 @@ export default function LandingPage() {
                   <ArrowRight className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </div>
               </div>
+              {/* Collapsible Add Context Section */}
               <div>
-                <Label htmlFor="icp" className="mb-2 text-left block">Ideal Customer Profile (Optional)</Label>
-                <Textarea
-                  id="icp"
-                  placeholder="e.g., B2B SaaS companies with 50-200 employees in the fintech space..."
-                  value={icp}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setIcp(e.target.value)}
-                  className="min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
+                <button
+                  type="button"
+                  className="flex items-center gap-1 px-0 py-0 text-left text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
+                  onClick={() => setShowOptions((v) => !v)}
+                  aria-expanded={showOptions}
+                  aria-controls="icp-options"
+                  style={{ boxShadow: "none" }}
+                >
+                  <span>Add context</span>
+                  {showOptions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+                <div
+                  id="icp-options"
+                  className={`transition-all duration-300 overflow-hidden ${showOptions ? 'max-h-40 py-4' : 'max-h-0 py-0'}`}
+                  aria-hidden={!showOptions}
+                >
+                  <Label htmlFor="icp" className="mb-2 text-left block">Ideal Customer Profile (Optional)</Label>
+                  <div className="relative">
+                    <Textarea
+                      id="icp"
+                      placeholder="e.g., B2B SaaS companies with 50-200 employees in the fintech space..."
+                      value={icp}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setIcp(e.target.value)}
+                      className="min-h-[100px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      className="absolute bottom-2 right-3 text-blue-600 hover:text-blue-700 bg-transparent border-none p-0 flex items-center gap-1 text-sm font-medium"
+                      onClick={() => {/* Enhance logic here */}}
+                      tabIndex={-1}
+                    >
+                      <span role="img" aria-label="sparkles">✨</span> Enhance
+                    </button>
+                  </div>
+                </div>
               </div>
               <Button
                 onClick={handleAnalyze}
