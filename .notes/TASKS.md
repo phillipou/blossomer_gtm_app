@@ -114,4 +114,20 @@
 ## Testing & QA ([Linear Project](https://linear.app/blossomer/project/testing-and-qa-3b123f14d108))
 - [b] [API-109](https://linear.app/blossomer/issue/API-109/set-up-coverage-reporting): Set up coverage reporting
 - [b] [API-110](https://linear.app/blossomer/issue/API-110/document-testing-strategy): Document testing strategy
-- [b] [API-111](https://linear.app/blossomer/issue/API-111/integrate-with-ci-for-automated-testing): Integrate with CI for automated testing 
+- [b] [API-111](https://linear.app/blossomer/issue/API-111/integrate-with-ci-for-automated-testing): Integrate with CI for automated testing
+
+---
+
+## Frontend Integration & Dashboard Prototype
+- [x] FE-1: Scaffold `frontend/` app (React + TypeScript + Vite + TailwindCSS + MSW)
+    - Scaffolded frontend app with React, TypeScript, Vite, and TailwindCSS. Tailwind manually configured due to npx/npm exec issues.
+- [x] FE-1.1: Add React, Vite, and Tailwind best practices rules to .cursor/rules and reference them in cursor_rules.mdc.
+- [ ] FE-2: Configure TailwindCSS with design tokens (add placeholder if not available)
+- [ ] FE-3: Set up MSW with mock handlers for all major endpoints
+- [ ] FE-4: Implement API proxy for backend integration (dev only)
+- [ ] FE-5: Scaffold main pages: Landing (`/`), Dashboard (`/dashboard`), Desktop-only splash
+- [ ] FE-6: Stub core components: `ContentBlock`, `AttributeBlock`, `UpdateBadge`, `DiffViewer`, `SkeletonCard`, `ErrorBanner`, `Toast`, `ApiKeyModal`
+- [ ] FE-7: Implement authentication modals and flows (Sign-up, Login)
+- [ ] FE-8: Wire up initial Company/Customers/Campaigns flows with mock data
+- [ ] FE-9: Add environment switch (mock/live backend)
+- [ ] FE-10: Document FE setup and dev workflow in `README.md` 
