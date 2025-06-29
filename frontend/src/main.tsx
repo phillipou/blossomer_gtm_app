@@ -1,17 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import './index.css'
 import LandingPage from './pages/LandingPage'
+import Dashboard from './pages/Dashboard'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
 // Dummy auth check (replace with real logic later)
 const isAuthenticated = false
-
-function Dashboard() {
-  return <div className="flex min-h-screen items-center justify-center text-3xl">Dashboard (Authenticated)</div>
-}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,7 +16,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
-        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

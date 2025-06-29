@@ -7,21 +7,40 @@ import { Textarea } from "../components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "../components/ui/label";
+import { useNavigate } from "react-router-dom";
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
   const [icp, setIcp] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleAnalyze = async () => {
     if (!url.trim()) return;
     setIsAnalyzing(true);
-    setTimeout(() => {
+    setError(null);
+    try {
+      const response = await fetch("http://localhost:8000/company/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          website_url: url,
+          user_inputted_context: icp || undefined,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || "Failed to generate GTM analysis.");
+      }
+      const data = await response.json();
+      navigate("/dashboard", { state: { overview: data } });
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
       setIsAnalyzing(false);
-      // In real implementation, redirect to dashboard
-      console.log("Analyzing:", { url, icp });
-    }, 2000);
+    }
   };
 
   return (
@@ -77,6 +96,11 @@ export default function LandingPage() {
           {/* Sandbox Form */}
           <Card className="max-w-2xl mx-auto p-8 shadow-lg border-0 bg-gray-50">
             <CardContent className="space-y-6 p-0">
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-200 text-left">
+                  {error}
+                </div>
+              )}
               <div>
                 <Label htmlFor="url" className="mb-2 text-left block">Website URL *</Label>
                 <div className="relative">
