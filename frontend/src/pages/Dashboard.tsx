@@ -10,6 +10,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Bell } from "lucide-react";
 import { Progress } from "../components/ui/progress";
+import Customers from "./Customers";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -162,35 +163,49 @@ export default function Dashboard() {
             Invite Team
           </Button>
         </HeaderBar>
-        <SubNav
-          activeSubTab={activeSubTab}
-          setActiveSubTab={setActiveSubTab}
-          subTabs={[
-            { label: "Company Overview", value: "overview" },
-            { label: "Market Overview", value: "market" },
-          ]}
-        />
-        <div className="flex-1 p-8 space-y-8">
-          {/* Overview Block */}
-          <OverviewBlock
-            description={overview.product_description}
-            editingBlock={editingBlock}
-            editContent={editContent}
-            onEdit={handleEdit}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            onEditContentChange={setEditContent}
-          />
-          {/* Two Column Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <InfoCard title="Key Features" items={overview.key_features || []} />
-            <InfoCard title="Persona Profiles" items={overview.persona_profiles || []} />
+        {activeTab === "company" && (
+          <>
+            <SubNav
+              activeSubTab={activeSubTab}
+              setActiveSubTab={setActiveSubTab}
+              subTabs={[
+                { label: "Company Overview", value: "overview" },
+                { label: "Market Overview", value: "market" },
+              ]}
+            />
+            <div className="flex-1 p-8 space-y-8">
+              {/* Overview Block */}
+              <OverviewBlock
+                description={overview.product_description}
+                editingBlock={editingBlock}
+                editContent={editContent}
+                onEdit={handleEdit}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                onEditContentChange={setEditContent}
+              />
+              {/* Two Column Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <InfoCard title="Key Features" items={overview.key_features || []} />
+                <InfoCard title="Persona Profiles" items={overview.persona_profiles || []} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <InfoCard title="Use Cases" items={overview.use_cases || []} />
+                <InfoCard title="Pain Points" items={overview.pain_points || []} />
+              </div>
+            </div>
+          </>
+        )}
+        {activeTab === "customers" && (
+          <div className="flex-1 p-8">
+            <Customers
+              companyName={companyName}
+              domain={domain}
+              description={overview.product_description}
+            />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <InfoCard title="Use Cases" items={overview.use_cases || []} />
-            <InfoCard title="Pain Points" items={overview.pain_points || []} />
-          </div>
-        </div>
+        )}
+        {/* TODO: Add campaigns tab content here */}
       </div>
     </div>
   );
