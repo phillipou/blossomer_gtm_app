@@ -121,6 +121,30 @@ export default function CustomerDetail() {
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
   const [hoveredFirmo, setHoveredFirmo] = useState(false);
 
+  // Mock personas data
+  const [personas, setPersonas] = useState([
+    {
+      id: "1",
+      name: "Startup Founder",
+      description:
+        "A visionary business leader who identifies market opportunities and builds innovative solutions. Typically...",
+      createdAt: "Jan 29, 2025",
+    },
+    {
+      id: "2",
+      name: "Marketing Director",
+      description:
+        "Senior marketing professional responsible for driving customer acquisition and brand growth. Work...",
+      createdAt: "Jan 29, 2025",
+    },
+  ]);
+  const [personaModalOpen, setPersonaModalOpen] = useState(false);
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
+
+  const handlePersonaClick = (personaId: string) => {
+    navigate(`/customers/${detailData.id}/persona/${personaId}`);
+  };
+
   const enabledCount = buyingSignals.filter(s => s.enabled).length;
   const totalCount = buyingSignals.length;
 
@@ -139,6 +163,20 @@ export default function CustomerDetail() {
   const handleCancel = () => {
     setEditingBlock(null);
     setEditContent("");
+  };
+
+  type Persona = {
+    id: string;
+    name: string;
+    description: string;
+    createdAt: string;
+  };
+  const handleEditPersona = (persona: Persona) => {
+    setEditingPersona(persona);
+    setPersonaModalOpen(true);
+  };
+  const handleDeletePersona = (id: string) => {
+    setPersonas((prev) => prev.filter((p) => p.id !== id));
   };
 
   return (
@@ -305,70 +343,50 @@ export default function CustomerDetail() {
                 </div>
               </CardContent>
             </Card>
-          </>
-        )}
-        {activeTab === "personas" && (
-          <div className="flex-1 p-8 space-y-8">
-            {/* Overview Block */}
-            <CompanyOverviewCard companyName={detailData.name} domain={"placeholder.com"} description={detailData.description} />
-            {/* Two Column Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {editingBlock === "personaProfiles" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Persona Profiles</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
+            {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Personas</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {personas.map((persona) => (
+                  <Card
+                    key={persona.id}
+                    className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                    onClick={() => handlePersonaClick(persona.id)}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <span className="inline-block mb-2">
+                          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                            {persona.name}
+                          </span>
+                        </span>
+                        <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                        <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                      </div>
+                      <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                          <Edit3 className="w-5 h-5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+                {/* Add New Persona Card */}
+                <Card
+                  className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+                  onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
+                >
+                  <div className="flex flex-col items-center">
+                    <Plus className="w-8 h-8 text-blue-500 mb-2" />
+                    <span className="text-blue-600 font-medium">Add New</span>
                   </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Persona Profiles"
-                  items={detailData.personaProfiles || ["No persona profiles available."]}
-                  onEdit={() => handleEdit("personaProfiles", detailData.personaProfiles?.join("\n") || "")}
-                  renderItem={(profile) => <span className="text-sm text-gray-700">{profile}</span>}
-                />
-              )}
-              {editingBlock === "painPoints" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Pain Points</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Pain Points"
-                  items={detailData.painPoints || ["No pain points available."]}
-                  onEdit={() => handleEdit("painPoints", detailData.painPoints?.join("\n") || "")}
-                  renderItem={(point) => <span className="text-sm text-gray-700">{point}</span>}
-                />
-              )}
+                </Card>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
       <EditBuyingSignalModal
