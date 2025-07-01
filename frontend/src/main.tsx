@@ -1,10 +1,11 @@
-import React, { StrictMode, useState } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
-import Customers from './pages/Customers'
+import CustomersList from './pages/CustomersList'
+import CustomerDetail from './pages/CustomerDetail'
 import MainLayout from './components/layout/MainLayout'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
@@ -29,8 +30,8 @@ createRoot(document.getElementById('root')!).render(
             <MainLayout>
               <Routes>
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="customers/:id" element={<Customers />} />
+                <Route path="customers" element={<CustomersList />} />
+                <Route path="customers/:id" element={<CustomerDetail />} />
                 {/* Add campaigns and other routes here */}
               </Routes>
             </MainLayout>
