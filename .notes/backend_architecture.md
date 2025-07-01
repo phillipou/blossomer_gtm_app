@@ -81,8 +81,8 @@ The Blossomer GTM API uses an enhanced modular monolith architecture with intell
 | Endpoint | Purpose | Context Dependencies | Output |
 |----------|---------|---------------------|---------|
 | `/company/generate` | Foundation company overview | `website_url` | Product features, company profiles, persona profiles, use cases, pain points, competitive context |
-| `/customers/target_accounts` | Account targeting strategy | `website_url`, `company_overview?` | Firmographics, buying signals, disqualifiers |
-| `/customers/target_personas` | Primary buyer persona | `website_url`, `target_accounts?` | Decision-maker profile, behaviors, pain points |
+| `/customers/target_accounts` | Account targeting strategy | `website_url`, `company_overview?` | Firmographics, buying signals, disqualifiers. **Customer profiles are linked to companies (1:many).** |
+| `/customers/target_personas` | Primary buyer persona | `website_url`, `target_accounts?` | Decision-maker profile, behaviors, pain points. **Customer profiles are linked to companies (1:many).** |
 | `/campaigns/positioning` | Positioning and value props | `website_url`, `target_accounts`, `target_personas` | Unique insight, value propositions |
 | `/campaigns/email` | Email campaign sequences | All above context | Subject lines, sequences, personalization |
 | `/campaigns/enrichment_sources` | Implementation guidance | Any targeting attributes | APIs, tools, costs, workflows |
@@ -453,6 +453,27 @@ CREATE TABLE api_usage_detailed (
     cost_estimate DECIMAL(10,4),
     quality_score FLOAT,
     created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Companies table
+CREATE TABLE companies (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    website_url TEXT NOT NULL,
+    -- other fields
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Customers table (1:many relationship to companies)
+CREATE TABLE customers (
+    id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    -- other customer fields
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 

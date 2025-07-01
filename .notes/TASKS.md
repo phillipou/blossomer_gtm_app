@@ -147,7 +147,8 @@
         - [x] Extract Textarea to `src/components/ui/textarea.tsx`
         - [x] Extract Label to `src/components/ui/label.tsx`
         - [~] Document usage and extension patterns in README and architecture docs (in progress)
-- [ ] FE-12: Polish landing page UI/UX and hook up to backend
+- [x] FE-11.1: Refactor dashboard loading: remove unused code, inline skeleton, clean up progress bar and UI for reliable, modern loading experience.
+- [x] FE-12: Polish landing page UI/UX and hook up to backend
     - Refine landing page design, interactions, and connect form to backend API for GTM analysis.
 - [ ] FE-12.1: Wire up landing page form to /company/generate endpoint
     - Implement API call in LandingPage.tsx to POST website_url and context to backend

@@ -1,13 +1,22 @@
 import { Building2, Users, TrendingUp, Home, Settings, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface SidebarNavProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   companyName?: string;
 }
 
-export default function SidebarNav({ activeTab, setActiveTab, companyName }: SidebarNavProps) {
+export default function SidebarNav({ companyName }: SidebarNavProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab =
+    location.pathname.startsWith("/dashboard")
+      ? "company"
+      : location.pathname.startsWith("/customers")
+      ? "customers"
+      : location.pathname.startsWith("/campaigns")
+      ? "campaigns"
+      : "";
   return (
     <div className="bg-white border-r border-gray-200 flex flex-col h-full min-h-screen">
       {/* Logo */}
@@ -25,7 +34,7 @@ export default function SidebarNav({ activeTab, setActiveTab, companyName }: Sid
           <Button
             variant={activeTab === "company" ? "secondary" : "ghost"}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors relative ${activeTab === "company" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => setActiveTab("company")}
+            onClick={() => navigate("/dashboard")}
           >
             <Building2 className="w-5 h-5" />
             <span>Company</span>
@@ -34,7 +43,7 @@ export default function SidebarNav({ activeTab, setActiveTab, companyName }: Sid
           <Button
             variant={activeTab === "customers" ? "secondary" : "ghost"}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "customers" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => setActiveTab("customers")}
+            onClick={() => navigate("/customers")}
           >
             <Users className="w-5 h-5" />
             <span>Customers</span>
@@ -42,7 +51,7 @@ export default function SidebarNav({ activeTab, setActiveTab, companyName }: Sid
           <Button
             variant={activeTab === "campaigns" ? "secondary" : "ghost"}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "campaigns" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => setActiveTab("campaigns")}
+            onClick={() => navigate("/campaigns")}
           >
             <TrendingUp className="w-5 h-5" />
             <span>Campaigns</span>

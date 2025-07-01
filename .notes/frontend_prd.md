@@ -30,7 +30,7 @@ This PRD merges product vision, UX flows, edge-case handling, and build plan int
 | Section    | Purpose                                                      | Primary Endpoints                                                                 |
 |-----------|--------------------------------------------------------------|-----------------------------------------------------------------------------------|
 | Company   | Auto-scraped overview, pricing, features, testimonials, differentiators | POST /company/generate, PATCH /company/<block>/refine, POST /company/<block>/regenerate |
-| Customers | Target Accounts, Personas, Prospecting sources                | POST /customers/target_accounts, POST /customers/target_personas, POST /customers/prospecting_sources, POST /customers/correct |
+| Customers | Target Accounts, Personas, Prospecting sources. **Each Company can have multiple Customer profiles (1:many).** | POST /customers/target_accounts, POST /customers/target_personas, POST /customers/prospecting_sources, POST /customers/correct |
 | Campaigns | Email-only sequences + A/B variants                           | POST /campaigns/generate, PATCH /campaigns/email/{stepId}/refine, POST /campaigns/email/variant |
 | Auth      | API-key issue & validation                                    | POST /auth/signup, POST /auth/validate_key                                        |
 
@@ -49,7 +49,8 @@ This PRD merges product vision, UX flows, edge-case handling, and build plan int
 1. Enter URL (+ ICP). Optional "✨ Enhance" hits POST /enhance-icp.
 2. Press Start → loading text sequence (7 s total) while UI calls /company/generate.
 3. On success store session_id and parallel-fetch Customers (3 calls) & Campaigns.
-4. Errors: unreachable URL → inline error card; 504 timeout → retry button.
+4. **Customers page maintains a `customerProfiles` array in state for now; backend/database persistence is planned.**
+5. Errors: unreachable URL → inline error card; 504 timeout → retry button.
 
 ### 3. Editing & AI Refine
 
@@ -143,6 +144,7 @@ Each screen description references component names defined in Section D and styl
     - Attribute list: each AttributeBlock row sits inside a Card.item (border-bottom #F3F4F6).
 - Personas – grid of PersonaCards. Each PersonaCard is a child Card.container: header row with title + Delete icon; body rows bullets; footer shows toggle chips.
 - Prospecting Sources – single Card.section containing Chip list.
+- **Each Company can have multiple Customer profiles (1:many).**
 
 #### H.2.3 Campaigns Tab
 - Entire tab body wrapped in a parent Card.container.

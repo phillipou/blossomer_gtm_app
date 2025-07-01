@@ -46,6 +46,7 @@ frontend/
 ## 4. Service Boundaries & Data Flow
 - **API Layer**: All data fetching and mutations go through a typed API client in `services/`, which switches between MSW mocks and live backend based on environment.
 - **State Management**: Local state via React hooks; context for auth/session; (Redux/Zustand optional for future scale).
+- **Company–Customer Relationship**: Each Company can have multiple Customer profiles (1:many). The Customers page manages a `customerProfiles` array in state for now; this will be persisted to the backend/database in a future release.
 - **Component Boundaries**: Atomic design (atoms, molecules, organisms, templates, pages). All UI blocks (ContentBlock, AttributeBlock, etc.) are self-contained and reusable. **All atomic UI primitives (Button, Card, Input, etc.) are now standardized in `src/components/ui/` and should be reused across all pages and components.**
 - **Mock-First**: MSW intercepts API calls in dev, enabling rapid UI iteration and offline prototyping.
 - **Proxy Layer**: Vite dev server proxies `/api` calls to FastAPI backend for integration testing.

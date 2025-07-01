@@ -122,6 +122,7 @@ All endpoints support:
 - **Required**: `website_url`
 - **Optional**: `user_inputted_context` (user-provided context)
 - **Optional**: `llm_inferred_context` (output from previous endpoints for chaining)
+- **Company–Customer relationship**: Endpoints that manage customer profiles (e.g., /customers/target_accounts, /customers/target_personas) operate on customer records associated with a specific company.
 
 **Smart Context Management:**
 - Automatic context quality assessment
@@ -154,6 +155,7 @@ All endpoints support:
 
 - **Vector storage**: ChromaDB integration for semantic search and RAG operations
 - **Relational database**: SQLite (development) / PostgreSQL (production) for structured data
+    - **Company–Customer relationship**: Each Company can have multiple Customer profiles (1:many). Customer profiles are stored in the database and associated with a company via a foreign key.
 - **Content caching**: Intelligent caching of website analysis and generated assets
 - **Data retention**: Configurable retention policies for user data and generated campaigns
 - **Context persistence**: Efficient cross-endpoint context storage and retrieval
@@ -183,7 +185,7 @@ All campaign generation endpoints now use a unified, intelligent context assessm
   - Provides a consistent, user-friendly experience
   - Makes the system extensible and robust
 
-This design is now a core part of the smart context orchestration system and applies to all endpoints. See backend_ARCHITECTURE.md for implementation details.
+This design is now a core part of the smart context orchestration system and applies to all endpoints. See backend_architecture.md for implementation details.
 
 ## 6. Enhanced user stories and acceptance criteria
 
@@ -243,6 +245,7 @@ As a B2B founder, I want to generate detailed target account profiles so I can i
 - Disqualifying criteria are clearly identified
 - Growth indicators and technology requirements are specified
 - Implementation guidance for prospect identification is provided
+- **Customer profiles are stored in the database and associated with a company (1:many).**
 
 **ST-106: Target persona development**
 As a B2B founder, I want to create detailed buyer personas so I can tailor my messaging effectively.
@@ -253,6 +256,7 @@ As a B2B founder, I want to create detailed buyer personas so I can tailor my me
 - Buying journey stages and decision criteria are mapped
 - Pain points and motivations are clearly articulated
 - Communication preferences and evaluation process are documented
+- **Persona profiles are stored in the database and associated with a company (1:many).**
 
 **ST-107: Buying committee mapping**
 As a B2B founder, I want to understand the complete buying committee so I can multi-thread my sales process.
@@ -543,8 +547,8 @@ To ensure high-quality, actionable campaign assets, the Blossomer GTM API enforc
 | Endpoint                      | Required Context                        | Min. Confidence | Notes/Logic                                                                 |
 |-------------------------------|-----------------------------------------|-----------------|----------------------------------------------------------------------------|
 | `/company/generate`            | Basic product description + 2-3 features| 0.5             | Can work without clear value prop                                           |
-| `/customers/target_accounts`   | Any B2B indicator + problem space       | 0.4             | Will infer from features if targeting unclear                              |
-| `/customers/target_personas`   | Department/function + problems addressed| 0.4             | Will infer seniority from feature complexity                               |
+| `/customers/target_accounts`   | Any B2B indicator + problem space       | 0.4             | Will infer from features if targeting unclear. **Customer profiles are linked to a company (1:many).** |
+| `/customers/target_personas`   | Department/function + problems addressed| 0.4             | Will infer seniority from feature complexity. **Customer profiles are linked to a company (1:many).** |
 | `/campaigns/positioning`       | Comprehensive feature list + problems   | 0.5             | Creates positioning, doesn't just extract                                  |
 | `/campaigns/email`             | Features + basic problem/solution fit   | 0.5             | Transforms features → benefits automatically                               |
 
