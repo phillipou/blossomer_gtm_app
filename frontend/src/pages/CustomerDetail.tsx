@@ -2,17 +2,20 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Edit3, Check, X, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { Edit3, Check, X, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { FirmographicsTable } from "../components/dashboard/FirmographicsTable";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
 import { EditBuyingSignalModal } from "../components/customers/EditBuyingSignalModal";
 import EditFirmographicsModal from "../components/dashboard/EditFirmographicsModal";
+import SubNav from "../components/dashboard/SubNav";
+import InfoCard from "../components/dashboard/InfoCard";
 
 // Import types and mock data from CustomersList
 import { MOCK_CUSTOMERS } from "./CustomersList";
 import type { CustomerProfile } from "./CustomersList";
+import CompanyOverviewCard from "../components/customers/CompanyOverviewCard";
 
 const MOCK_CUSTOMER_DETAILS = {
   id: "1",
@@ -61,11 +64,11 @@ export default function CustomerDetail() {
     ...customer,
     id: String(customer.id),
     firmographics: [
-      { label: "Revenue", values: [{ text: "$0-1M", color: "yellow" }] },
-      { label: "Industry", values: [{ text: "Software", color: "blue" }] },
-      { label: "Employees", values: [{ text: "0-10", color: "red" }] },
-      { label: "Geography", values: [{ text: "US", color: "gray" }] },
-      { label: "Business model", values: [{ text: "B2B", color: "yellow" }] },
+      { id: "revenue", label: "Revenue", values: [{ text: "$0-1M", color: "yellow" }] },
+      { id: "industry", label: "Industry", values: [{ text: "Software", color: "blue" }] },
+      { id: "employees", label: "Employees", values: [{ text: "0-10", color: "red" }] },
+      { id: "geography", label: "Geography", values: [{ text: "US", color: "gray" }] },
+      { id: "business_model", label: "Business model", values: [{ text: "B2B", color: "yellow" }] },
     ],
     buyingSignals: [
       "Recently raised seed or Series A funding",
@@ -83,6 +86,16 @@ export default function CustomerDetail() {
     title: customer.name,
     subtitle: customer.role,
     description: customer.description,
+    personaProfiles: [
+      "Technical Founder",
+      "Sales-Oriented Founder",
+      "Product Manager",
+    ],
+    painPoints: [
+      "Lack of sales expertise",
+      "Difficulty scaling outreach",
+      "Limited marketing budget",
+    ],
   };
 
   // --- CustomerDetailView logic below ---
@@ -106,6 +119,7 @@ export default function CustomerDetail() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalEditingSignal, setModalEditingSignal] = useState<BuyingSignal | null>(null);
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
+  const [hoveredFirmo, setHoveredFirmo] = useState(false);
 
   const enabledCount = buyingSignals.filter(s => s.enabled).length;
   const totalCount = buyingSignals.length;
@@ -130,37 +144,27 @@ export default function CustomerDetail() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Sub Navigation */}
-      <div className="bg-white border-b border-gray-200 px-8">
-        <div className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab("accounts")}
-            className={`py-4 border-b-2 font-medium ${activeTab === "accounts" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}
-          >
-            Accounts
-          </button>
-          <button
-            onClick={() => setActiveTab("personas")}
-            className={`py-4 border-b-2 font-medium ${activeTab === "personas" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}
-          >
-            Personas
-          </button>
-        </div>
-      </div>
+      <SubNav
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Customers", href: "/customers" },
+          { label: detailData.name }
+        ]}
+        activeSubTab={activeTab}
+        setActiveSubTab={setActiveTab}
+        subTabs={[
+          { label: "Accounts", value: "accounts" },
+          { label: "Personas", value: "personas" },
+        ]}
+      />
       {/* Content */}
       <div className="flex-1 p-8 space-y-8">
         {/* Description Block */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <span>Description</span>
-            </CardTitle>
-            <Button size="sm" variant="ghost" onClick={() => handleEdit("description", detailData.description)}>
-              <Edit3 className="w-4 h-4" />
-            </Button>
-          </CardHeader>
-          <CardContent>
+        {activeTab === "accounts" && (
+          <>
             {editingBlock === "description" ? (
               <div className="space-y-4">
+                <label className="font-semibold">Description</label>
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
@@ -178,117 +182,194 @@ export default function CustomerDetail() {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-700 leading-relaxed">{detailData.description}</p>
+              <InfoCard
+                title="Description"
+                items={[detailData.description]}
+                onEdit={() => handleEdit("description", detailData.description)}
+                renderItem={(desc) => <p className="text-gray-700 leading-relaxed">{desc}</p>}
+              />
             )}
-          </CardContent>
-        </Card>
-        {/* Firmographics Block */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Firmographics</CardTitle>
-            <Button size="sm" variant="ghost" onClick={() => setFirmoModalOpen(true)}>
-              <Edit3 className="w-4 h-4" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <FirmographicsTable data={firmographics} />
-          </CardContent>
-        </Card>
-        {/* Buying Signals Block */}
-        <Card className="relative">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center space-x-3">
-              <CardTitle className="flex items-center space-x-2">
-                <span>Buying Signals</span>
-                <Badge className="bg-blue-100 text-blue-800">{enabledCount}/{totalCount}</Badge>
-              </CardTitle>
-            </div>
-            {hovered && (
-              <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
-                <Edit3 className="w-4 h-4" />
-              </Button>
-            )}
-          </CardHeader>
-          <div className="px-6 pb-4 text-sm text-gray-500">
-            Indicators that suggest a prospect is ready to buy or engage with your solution
-          </div>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {buyingSignals.map(signal => {
-                const isExpanded = expandedSignals.has(signal.id);
-                return (
-                  <div
-                    key={signal.id}
-                    className={`flex flex-col border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden ${isExpanded ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                    onMouseEnter={() => setHoveredSignal(signal.id)}
-                    onMouseLeave={() => setHoveredSignal(null)}
-                    onClick={() => {
-                      setExpandedSignals(prev => {
-                        const next = new Set(prev);
-                        if (next.has(signal.id)) {
-                          next.delete(signal.id);
-                        } else {
-                          next.add(signal.id);
-                        }
-                        return next;
-                      });
-                    }}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="flex items-center justify-between p-3">
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-sm font-medium ${signal.enabled ? "text-gray-900" : "text-gray-500"}`}>{signal.label}</span>
-                          <div style={{ width: 32, display: "inline-block" }}>
+            {/* Firmographics Block */}
+            <Card
+              className="group relative"
+              onMouseEnter={() => setHoveredFirmo(true)}
+              onMouseLeave={() => setHoveredFirmo(false)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Firmographics</CardTitle>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setFirmoModalOpen(true)}
+                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
+                  tabIndex={-1}
+                  style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
+                >
+                  <Edit3 className="w-5 h-5" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <FirmographicsTable data={firmographics} />
+              </CardContent>
+            </Card>
+            {/* Buying Signals Block */}
+            <Card className="relative">
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div className="flex items-center space-x-3">
+                  <CardTitle className="flex items-center space-x-2">
+                    <span>Buying Signals</span>
+                    <Badge className="bg-blue-100 text-blue-800">{enabledCount}/{totalCount}</Badge>
+                  </CardTitle>
+                </div>
+                {hovered && (
+                  <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                    <Edit3 className="w-4 h-4" />
+                  </Button>
+                )}
+              </CardHeader>
+              <div className="px-6 pb-4 text-sm text-gray-500">
+                Indicators that suggest a prospect is ready to buy or engage with your solution
+              </div>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {buyingSignals.map(signal => {
+                    const isExpanded = expandedSignals.has(signal.id);
+                    return (
+                      <div
+                        key={signal.id}
+                        className={`group flex flex-col border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden ${isExpanded ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                        onMouseEnter={() => setHoveredSignal(signal.id)}
+                        onMouseLeave={() => setHoveredSignal(null)}
+                        onClick={() => {
+                          setExpandedSignals(prev => {
+                            const next = new Set(prev);
+                            if (next.has(signal.id)) {
+                              next.delete(signal.id);
+                            } else {
+                              next.add(signal.id);
+                            }
+                            return next;
+                          });
+                        }}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <div className="flex items-center justify-between p-3 gap-2">
+                          <div className="flex-1 min-w-0 pr-4">
+                            <span className="text-sm font-medium text-gray-900">{signal.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="icon"
                               variant="ghost"
-                              className={`ml-2 transition-opacity duration-150 ${hoveredSignal === signal.id ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                               onClick={e => { e.stopPropagation(); setModalEditingSignal(signal); setModalOpen(true); }}
-                              tabIndex={-1}
+                              className="text-blue-600"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="w-5 h-5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={e => { e.stopPropagation(); setBuyingSignals(signals => signals.filter(s => s.id !== signal.id)); }}
+                              className="text-red-500"
+                            >
+                              <Trash2 className="w-5 h-5" />
                             </Button>
                           </div>
+                          <span className="ml-2 pointer-events-none">
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4 text-gray-500" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-gray-500" />
+                            )}
+                          </span>
                         </div>
+                        {isExpanded && signal.description && (
+                          <div className="px-6 pb-3 text-sm text-gray-600">
+                            {signal.description}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={signal.enabled}
-                        onChange={e => { e.stopPropagation(); handleToggleSignal(signal.id); }}
-                        aria-label={`Toggle ${signal.label}`}
-                      />
-                        <span className="ml-2 pointer-events-none">
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-gray-500" />
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    {isExpanded && signal.description && (
-                      <div className="px-6 pb-3 text-sm text-gray-600">
-                        {signal.description}
-                      </div>
-                    )}
+                    );
+                  })}
+                  <div className="pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
+                      onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Buying Signal
+                    </Button>
                   </div>
-                );
-              })}
-              <div className="pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
-                  onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Buying Signal
-                </Button>
-              </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+        {activeTab === "personas" && (
+          <div className="flex-1 p-8 space-y-8">
+            {/* Overview Block */}
+            <CompanyOverviewCard companyName={detailData.name} domain={"placeholder.com"} description={detailData.description} />
+            {/* Two Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {editingBlock === "personaProfiles" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Persona Profiles</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Persona Profiles"
+                  items={detailData.personaProfiles || ["No persona profiles available."]}
+                  onEdit={() => handleEdit("personaProfiles", detailData.personaProfiles?.join("\n") || "")}
+                  renderItem={(profile) => <span className="text-sm text-gray-700">{profile}</span>}
+                />
+              )}
+              {editingBlock === "painPoints" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Pain Points</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Pain Points"
+                  items={detailData.painPoints || ["No pain points available."]}
+                  onEdit={() => handleEdit("painPoints", detailData.painPoints?.join("\n") || "")}
+                  renderItem={(point) => <span className="text-sm text-gray-700">{point}</span>}
+                />
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
       <EditBuyingSignalModal
         isOpen={modalOpen}

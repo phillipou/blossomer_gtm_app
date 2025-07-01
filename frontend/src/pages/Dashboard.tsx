@@ -8,10 +8,11 @@ import OverviewBlock from "../components/dashboard/OverviewBlock";
 import InfoCard from "../components/dashboard/InfoCard";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Bell } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { Progress } from "../components/ui/progress";
 import CustomersList from "./CustomersList";
 import CompanyOverviewCard from "../components/customers/CompanyOverviewCard";
+import { Textarea } from "../components/ui/textarea";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -157,36 +158,158 @@ export default function Dashboard() {
     setEditContent("");
   };
 
+  // Define subTabs for company section
+  const subTabs = [
+    { label: "Company Overview", value: "overview" },
+    { label: "Market Overview", value: "market" },
+  ];
+
   return (
     <div className="flex flex-col">
       {/* Remove SidebarNav and HeaderBar, only render main content */}
       {activeTab === "company" && (
         <>
           <SubNav
+            breadcrumbs={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Company", href: "/dashboard" },
+              { label: subTabs.find(tab => tab.value === activeSubTab)?.label || "" }
+            ]}
             activeSubTab={activeSubTab}
             setActiveSubTab={setActiveSubTab}
-            subTabs={[
-              { label: "Company Overview", value: "overview" },
-              { label: "Market Overview", value: "market" },
-            ]}
+            subTabs={subTabs}
           />
           <div className="flex-1 p-8 space-y-8">
             {/* Overview Block */}
             <CompanyOverviewCard companyName={companyName} domain={domain} description={overview.product_description} />
             {/* Two Column Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <InfoCard title="Key Features" items={overview.key_features || []} />
-              <InfoCard title="Persona Profiles" items={overview.persona_profiles || []} />
+              {editingBlock === "keyFeatures" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Key Features</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Key Features"
+                  items={overview.key_features || []}
+                  onEdit={() => handleEdit("keyFeatures", (overview.key_features || []).join("\n"))}
+                  renderItem={(feature) => <span className="text-sm text-gray-700">{feature}</span>}
+                />
+              )}
+              {editingBlock === "personaProfiles" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Persona Profiles</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Persona Profiles"
+                  items={overview.persona_profiles || []}
+                  onEdit={() => handleEdit("personaProfiles", (overview.persona_profiles || []).join("\n"))}
+                  renderItem={(profile) => <span className="text-sm text-gray-700">{profile}</span>}
+                />
+              )}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <InfoCard title="Use Cases" items={overview.use_cases || []} />
-              <InfoCard title="Pain Points" items={overview.pain_points || []} />
+              {editingBlock === "useCases" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Use Cases</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Use Cases"
+                  items={overview.use_cases || []}
+                  onEdit={() => handleEdit("useCases", (overview.use_cases || []).join("\n"))}
+                  renderItem={(useCase) => <span className="text-sm text-gray-700">{useCase}</span>}
+                />
+              )}
+              {editingBlock === "painPoints" ? (
+                <div className="space-y-4">
+                  <label className="font-semibold">Pain Points</label>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleSave}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <InfoCard
+                  title="Pain Points"
+                  items={overview.pain_points || []}
+                  onEdit={() => handleEdit("painPoints", (overview.pain_points || []).join("\n"))}
+                  renderItem={(point) => <span className="text-sm text-gray-700">{point}</span>}
+                />
+              )}
             </div>
           </div>
         </>
       )}
       {activeTab === "customers" && (
         <div className="flex-1 p-8">
+          {/* Add SubNav for Customers */}
+          <SubNav
+            breadcrumbs={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Customers", href: "/customers" }
+            ]}
+            activeSubTab={"list"}
+            setActiveSubTab={() => {}}
+            subTabs={[]}
+          />
           <CustomersList
             companyName={companyName}
             domain={domain}

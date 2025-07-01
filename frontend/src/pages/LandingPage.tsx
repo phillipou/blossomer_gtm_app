@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
+import './LandingPage.css';
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
@@ -23,7 +24,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="landing-root">
       {/* Navigation */}
       <nav className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

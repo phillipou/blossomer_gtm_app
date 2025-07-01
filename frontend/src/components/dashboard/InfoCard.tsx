@@ -1,7 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
 import { Edit3 } from "lucide-react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
+import { useState } from "react";
 
 interface InfoCardProps {
   title: string;
@@ -11,13 +12,27 @@ interface InfoCardProps {
 }
 
 export default function InfoCard({ title, items, onEdit, renderItem }: InfoCardProps) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <Card>
+    <Card
+      className="group relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{title}</CardTitle>
         {onEdit && (
-          <Button size="sm" variant="ghost" onClick={onEdit}>
-            <Edit3 className="w-4 h-4" />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onEdit}
+            className={
+              "absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
+            }
+            tabIndex={-1}
+            style={{ pointerEvents: hovered ? "auto" : "none" }}
+          >
+            <Edit3 className="w-5 h-5" />
           </Button>
         )}
       </CardHeader>
