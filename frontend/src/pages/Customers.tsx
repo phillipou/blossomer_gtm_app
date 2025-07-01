@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Plus, Edit3, Trash2, Building2, ArrowLeft, Check, X } from "lucide-react";
+import { Plus, Edit3, Trash2, Building2, ArrowLeft, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { FirmographicsTable } from "../components/dashboard/FirmographicsTable";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import HeaderBar from "../components/dashboard/HeaderBar";
+import { Switch } from "../components/ui/switch";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  EditDialog,
+  EditDialogContent,
+  EditDialogDescription,
+  EditDialogFooter,
+  EditDialogHeader,
+  EditDialogTitle,
+} from "../components/ui/dialog";
 
 // TODO: Move to backend integration
 const MOCK_CUSTOMERS = [
@@ -150,11 +161,197 @@ function AddCustomerModal({ isOpen, onClose, onSave, editingProfile }: any) {
   );
 }
 
+interface BuyingSignal {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+interface EditDialogField {
+  name: string;
+  label: string;
+  type: "input" | "textarea" | "switch";
+  placeholder?: string;
+  required?: boolean;
+}
+
+interface EditDialogModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (values: Record<string, any>) => void;
+  title: string;
+  description?: string;
+  fields: EditDialogField[];
+  initialValues?: Record<string, any>;
+  isLoading?: boolean;
+  saveLabel?: string;
+  editLabel?: string;
+  editing?: boolean;
+}
+
+function EditDialogModal({
+  isOpen,
+  onClose,
+  onSave,
+  title,
+  description,
+  fields,
+  initialValues = {},
+  isLoading = false,
+  saveLabel = "Save",
+  editLabel = "Update",
+  editing = false,
+}: EditDialogModalProps) {
+  const [form, setForm] = useState<Record<string, any>>(initialValues);
+
+  useEffect(() => {
+    setForm(initialValues);
+  }, [initialValues, isOpen]);
+
+  const handleChange = (name: string, value: any) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    // Validate required fields
+    for (const field of fields) {
+      if (field.required && !form[field.name]?.toString().trim()) return;
+    }
+    onSave(form);
+  };
+
+  const handleClose = () => {
+    setForm(initialValues);
+    onClose();
+  };
+
+  return (
+    <EditDialog open={isOpen} onOpenChange={handleClose}>
+      <EditDialogContent className="sm:max-w-[500px]">
+        <EditDialogHeader>
+          <EditDialogTitle>{title}</EditDialogTitle>
+          {description && <EditDialogDescription>{description}</EditDialogDescription>}
+        </EditDialogHeader>
+        <div className="space-y-4 py-4 px-6">
+          {fields.map((field) => (
+            <div className="space-y-2" key={field.name}>
+              <Label htmlFor={field.name}>{field.label}</Label>
+              {field.type === "input" && (
+                <Input
+                  id={field.name}
+                  placeholder={field.placeholder}
+                  value={form[field.name] || ""}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  className="focus:border-blue-500 focus:ring-blue-500"
+                />
+              )}
+              {field.type === "textarea" && (
+                <Textarea
+                  id={field.name}
+                  placeholder={field.placeholder}
+                  value={form[field.name] || ""}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
+                />
+              )}
+              {field.type === "switch" && (
+                <Switch
+                  checked={!!form[field.name]}
+                  onChange={(e) => handleChange(field.name, e.target.checked)}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        <EditDialogFooter>
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={fields.some(f => f.required && !form[f.name]?.toString().trim()) || isLoading}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            {isLoading ? "Saving..." : editing ? editLabel : saveLabel}
+          </Button>
+        </EditDialogFooter>
+      </EditDialogContent>
+    </EditDialog>
+  );
+}
+
+// Move and update EditBuyingSignalModalProps
+type EditBuyingSignalModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (values: Record<string, any>) => void;
+  editingSignal?: BuyingSignal | null;
+};
+
+function EditBuyingSignalModal({ isOpen, onClose, onSave, editingSignal }: EditBuyingSignalModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const editing = !!editingSignal;
+  const initialValues = editingSignal
+    ? { label: editingSignal.label, description: editingSignal.description }
+    : { label: "", description: "" };
+
+  const handleSave = (values: Record<string, any>) => {
+    setIsLoading(true);
+    onSave({
+      label: values.label.trim(),
+      description: values.description.trim(),
+    });
+    setIsLoading(false);
+    onClose();
+  };
+
+  return (
+    <EditDialogModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSave={handleSave}
+      title={editing ? "Edit Buying Signal" : "Add Buying Signal"}
+      description="Define indicators that suggest a prospect is ready to engage with your solution."
+      fields={[
+        { name: "label", label: "Signal", type: "input", placeholder: "e.g., Recently raised funding, Hiring sales roles...", required: true },
+        { name: "description", label: "Description", type: "textarea", placeholder: "Provide context about when this signal indicates buying intent..." },
+      ]}
+      initialValues={initialValues}
+      isLoading={isLoading}
+      saveLabel="Add Signal"
+      editLabel="Update Signal"
+      editing={editing}
+    />
+  );
+}
+
 function CustomerDetailView({ customer }: { customer: typeof MOCK_CUSTOMER_DETAILS }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("accounts");
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  // Buying signals state
+  const [buyingSignals, setBuyingSignals] = useState(
+    customer.buyingSignals.map((label, i) => ({
+      id: String(i),
+      label,
+      description: "",
+      enabled: true,
+    }))
+  );
+  const [hovered, setHovered] = useState(false);
+  const [hoveredSignal, setHoveredSignal] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalEditingSignal, setModalEditingSignal] = useState<BuyingSignal | null>(null);
+  const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
+
+  const enabledCount = buyingSignals.filter(s => s.enabled).length;
+  const totalCount = buyingSignals.length;
+
+  const handleToggleSignal = (id: string) => {
+    setBuyingSignals(signals => signals.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+  };
 
   const handleEdit = (blockId: string, currentContent: string) => {
     setEditingBlock(blockId);
@@ -236,26 +433,120 @@ function CustomerDetailView({ customer }: { customer: typeof MOCK_CUSTOMER_DETAI
             <FirmographicsTable data={customer.firmographics} />
           </CardContent>
         </Card>
-        {/* Buying Signals Block */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Buying Signals</CardTitle>
-            <Button size="sm" variant="ghost">
-              <Edit3 className="w-4 h-4" />
-            </Button>
+        {/* Buying Signals Block (refined) */}
+        <Card className="relative">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div className="flex items-center space-x-3">
+              <CardTitle className="flex items-center space-x-2">
+                <span>Buying Signals</span>
+                <Badge className="bg-blue-100 text-blue-800">{enabledCount}/{totalCount}</Badge>
+              </CardTitle>
+            </div>
+            {hovered && (
+              <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                <Edit3 className="w-4 h-4" />
+              </Button>
+            )}
           </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {customer.buyingSignals.map((signal, index) => (
-                <li key={index} className="flex items-start space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">{signal}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="px-6 pb-4 text-sm text-gray-500">
+            Indicators that suggest a prospect is ready to buy or engage with your solution
+          </div>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {buyingSignals.map(signal => {
+                const isExpanded = expandedSignals.has(signal.id);
+                return (
+                  <div
+                    key={signal.id}
+                    className={`flex flex-col border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden ${isExpanded ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                    onMouseEnter={() => setHoveredSignal(signal.id)}
+                    onMouseLeave={() => setHoveredSignal(null)}
+                    onClick={() => {
+                      setExpandedSignals(prev => {
+                        const next = new Set(prev);
+                        if (next.has(signal.id)) {
+                          next.delete(signal.id);
+                        } else {
+                          next.add(signal.id);
+                        }
+                        return next;
+                      });
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="flex items-center justify-between p-3">
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex items-center space-x-2">
+                          <span className={`text-sm font-medium ${signal.enabled ? "text-gray-900" : "text-gray-500"}`}>{signal.label}</span>
+                          <div style={{ width: 32, display: "inline-block" }}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className={`ml-2 transition-opacity duration-150 ${hoveredSignal === signal.id ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                              onClick={e => { e.stopPropagation(); setModalEditingSignal(signal); setModalOpen(true); }}
+                              tabIndex={-1}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={signal.enabled}
+                          onChange={e => { e.stopPropagation(); handleToggleSignal(signal.id); }}
+                          aria-label={`Toggle ${signal.label}`}
+                        />
+                        <span className="ml-2 pointer-events-none">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && signal.description && (
+                      <div className="px-6 pb-3 text-sm text-gray-600">
+                        {signal.description}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
+                  onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Buying Signal
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+      <EditBuyingSignalModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        editingSignal={modalEditingSignal}
+        onSave={(values: Record<string, any>) => {
+          const { label, description } = values;
+          if (modalEditingSignal) {
+            // Edit
+            setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));
+          } else {
+            // Add
+            setBuyingSignals(signals => [
+              ...signals,
+              { id: String(Date.now()), label, description, enabled: true },
+            ]);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -267,7 +558,6 @@ export default function Customers({ companyName = "blossomer.io", domain = "http
   const { id } = useParams();
 
   const handleAddProfile = () => {
-    // TODO: Implement add logic (and backend integration)
     setIsAddModalOpen(false);
   };
   const handleEditProfile = (profile: any) => {
@@ -275,14 +565,44 @@ export default function Customers({ companyName = "blossomer.io", domain = "http
     setIsAddModalOpen(true);
   };
   const handleDeleteProfile = (id: number) => {
-    // TODO: Implement delete logic (and backend integration)
     setCustomerProfiles((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // If a customer id is present in the route, show the detail view
+  // If a customer id is present in the route, show the detail view for that customer
   if (id) {
-    // TODO: Replace with real data lookup
-    return <CustomerDetailView customer={MOCK_CUSTOMER_DETAILS} />;
+    const customer = customerProfiles.find((c) => String(c.id) === String(id));
+    if (!customer) {
+      return <div className="p-8 text-center text-gray-500">Customer not found.</div>;
+    }
+    // Adapt the mock customer to the CustomerDetailView shape
+    const detailData = {
+      ...customer,
+      id: String(customer.id),
+      firmographics: [
+        { label: "Revenue", values: [{ text: "$0-1M", color: "yellow" }] },
+        { label: "Industry", values: [{ text: "Software", color: "blue" }] },
+        { label: "Employees", values: [{ text: "0-10", color: "red" }] },
+        { label: "Geography", values: [{ text: "US", color: "gray" }] },
+        { label: "Business model", values: [{ text: "B2B", color: "yellow" }] },
+      ],
+      buyingSignals: [
+        "Recently raised seed or Series A funding",
+        "Hiring for sales or marketing roles",
+        "Posting about customer acquisition challenges on social media",
+        "Attending sales and marketing conferences",
+        "Implementing new CRM or sales tools",
+        "Founder actively networking and seeking sales advice",
+        "Company showing rapid user growth but struggling with monetization",
+        "Recent product launches or feature announcements",
+      ],
+      createdAt: "Jul 1, 2025",
+      updatedAt: "Jul 1, 2025",
+      creator: "Phil Ou",
+      title: customer.name,
+      subtitle: customer.role,
+      description: customer.description,
+    };
+    return <CustomerDetailView customer={detailData} />;
   }
 
   return (
