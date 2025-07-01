@@ -8,6 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
 import { EditBuyingSignalModal } from "../components/customers/EditBuyingSignalModal";
+import EditFirmographicsModal from "../components/dashboard/EditFirmographicsModal";
 
 // Import types and mock data from CustomersList
 import { MOCK_CUSTOMERS } from "./CustomersList";
@@ -97,6 +98,9 @@ export default function CustomerDetail() {
       enabled: true,
     }))
   );
+  // Firmographics state
+  const [firmographics, setFirmographics] = useState(detailData.firmographics);
+  const [firmoModalOpen, setFirmoModalOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hoveredSignal, setHoveredSignal] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -182,12 +186,12 @@ export default function CustomerDetail() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Firmographics</CardTitle>
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="ghost" onClick={() => setFirmoModalOpen(true)}>
               <Edit3 className="w-4 h-4" />
             </Button>
           </CardHeader>
           <CardContent>
-            <FirmographicsTable data={detailData.firmographics} />
+            <FirmographicsTable data={firmographics} />
           </CardContent>
         </Card>
         {/* Buying Signals Block */}
@@ -303,6 +307,12 @@ export default function CustomerDetail() {
             ]);
           }
         }}
+      />
+      <EditFirmographicsModal
+        isOpen={firmoModalOpen}
+        onClose={() => setFirmoModalOpen(false)}
+        initialRows={firmographics}
+        onSave={setFirmographics}
       />
     </div>
   );
