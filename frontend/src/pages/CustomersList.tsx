@@ -4,7 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Building2 } from "lucide-react";
 import { AddCustomerModal } from "../components/customers/AddCustomerModal";
-import CompanyOverviewCard from "../components/customers/CompanyOverviewCard";
+import OverviewCard from "../components/customers/OverviewCard";
 
 // Mock data and types (move to shared file if needed)
 export const MOCK_CUSTOMERS = [
@@ -94,7 +94,7 @@ export default function CustomersList({ companyName = "blossomer.io", domain = "
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto space-y-8">
-        <CompanyOverviewCard companyName={companyName} domain={domain} description={description} />
+        <OverviewCard companyName={companyName} domain={domain} description={description} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {customerProfiles.map((profile) => (
             <CustomerProfileCard

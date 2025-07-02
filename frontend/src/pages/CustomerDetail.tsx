@@ -15,7 +15,7 @@ import InfoCard from "../components/dashboard/InfoCard";
 // Import types and mock data from CustomersList
 import { MOCK_CUSTOMERS } from "./CustomersList";
 import type { CustomerProfile } from "./CustomersList";
-import CompanyOverviewCard from "../components/customers/CompanyOverviewCard";
+import OverviewCard from "../components/customers/OverviewCard";
 
 const MOCK_CUSTOMER_DETAILS = {
   id: "1",

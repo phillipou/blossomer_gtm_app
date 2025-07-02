@@ -2,13 +2,13 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Building2 } from "lucide-react";
 
-interface CompanyOverviewCardProps {
+interface OverviewCardProps {
   companyName: string;
   domain: string;
   description: string;
 }
 
-export default function CompanyOverviewCard({ companyName, domain, description }: CompanyOverviewCardProps) {
+export default function OverviewCard({ companyName, domain, description }: OverviewCardProps) {
   return (
     <Card className="mb-6">
       <CardContent className="p-6">

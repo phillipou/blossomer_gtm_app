@@ -11,7 +11,7 @@ import { Button } from "../components/ui/button";
 import { Bell, Check, X } from "lucide-react";
 import { Progress } from "../components/ui/progress";
 import CustomersList from "./CustomersList";
-import CompanyOverviewCard from "../components/customers/CompanyOverviewCard";
+import OverviewCard from "../components/customers/OverviewCard";
 import { Textarea } from "../components/ui/textarea";
 
 const STATUS_STAGES = [
@@ -260,7 +260,7 @@ export default function Dashboard() {
             />
             <div className="flex-1 p-8 space-y-8">
               {/* Overview Block */}
-              <CompanyOverviewCard companyName={companyName} domain={"blossomer.io"} description={overview.product_description} />
+              <OverviewCard companyName={companyName} domain={"blossomer.io"} description={overview.product_description} />
               {/* New Info Cards Row 1 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {cardConfigs.map(({ key, title, label, bulleted }) =>
