@@ -22,11 +22,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <span className="text-xl font-semibold text-gray-900">Blossomer</span>
               </div>
               <div className="hidden md:flex items-center space-x-6">
-                <Button variant="ghost" className="text-gray-600">Playground</Button>
-                <Button variant="ghost" className="text-gray-600">Templates</Button>
-                <Button variant="ghost" className="text-gray-600">Docs</Button>
-                <Button variant="ghost" className="text-gray-600">Pricing</Button>
-                <Button variant="ghost" className="text-gray-600">Blog</Button>
               </div>
             </div>
             <div className="flex items-center space-x-4">

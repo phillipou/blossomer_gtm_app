@@ -19,7 +19,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       ? "campaigns"
       : "";
   return (
-    <div className="bg-white border-r border-gray-200 flex flex-col h-full min-h-screen">
+    <div className="bg-white border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-2">
@@ -34,7 +34,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
         <div className="space-y-2">
           <Button
             variant={activeTab === "company" ? "secondary" : "ghost"}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors relative ${activeTab === "company" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors relative ${activeTab === "company" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
             onClick={() => navigate("/dashboard")}
           >
             <Building2 className="w-5 h-5" />
@@ -43,7 +43,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
           </Button>
           <Button
             variant={activeTab === "customers" ? "secondary" : "ghost"}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "customers" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "customers" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
             onClick={() => navigate("/customers")}
           >
             <Users className="w-5 h-5" />
@@ -51,7 +51,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
           </Button>
           <Button
             variant={activeTab === "campaigns" ? "secondary" : "ghost"}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "campaigns" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "campaigns" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
             onClick={() => navigate("/campaigns")}
           >
             <TrendingUp className="w-5 h-5" />
@@ -60,13 +60,13 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
         </div>
       </nav>
       {/* Bottom navigation */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="space-y-2">
-          <Button variant="ghost" className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
+      <div className="p-2 border-t border-gray-200">
+        <div className="space-y-1">
+          <Button variant="ghost" className="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
             <Home className="w-5 h-5" />
             <span>Home</span>
           </Button>
-          <Button variant="ghost" className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
+          <Button variant="ghost" className="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
             <Settings className="w-5 h-5" />
             <span>Settings</span>
           </Button>

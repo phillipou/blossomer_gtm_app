@@ -68,7 +68,9 @@ export default function LandingPage() {
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             AI-powered GTM
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-600">for startups & founders</span>
+            <span className="font-bold text-blue-600">
+              for startups & founders
+            </span>
           </h1>
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
             Transform your website URL into a complete Go-to-Market strategy. Get company insights, target customers, and campaign ideas powered by AI.
