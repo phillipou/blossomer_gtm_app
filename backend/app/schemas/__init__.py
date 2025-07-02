@@ -27,11 +27,16 @@ class ProductOverviewResponse(BaseModel):
     company_name: str = Field(
         ...,
         description=(
-            "The official name of the company as found on the website or in the provided context."
+            "The official name of the company as found on the website or in the provided "
+            "context."
         ),
     )
     company_url: str = Field(
-        ..., description="The canonical website URL for the company."
+        ...,
+        description=(
+            "The canonical website URL for the company (should match the input or be extracted "
+            "from the website if different)."
+        ),
     )
     company_overview: str = Field(
         ...,
@@ -83,35 +88,27 @@ class ProductOverviewResponse(BaseModel):
     )
     product_description: str = Field(..., description="Main product summary")
     key_features: List[str] = Field(
-        ...,
-        description="List of product features/benefits",
+        ..., description="List of product features/benefits"
     )
     company_profiles: List[str] = Field(
-        ...,
-        description="Company/firmographic segments (e.g., industry, size, region)",
+        ..., description="Company/firmographic segments (e.g., industry, size, region)"
     )
     persona_profiles: List[str] = Field(
         ...,
         description="Persona/job role segments (e.g., job title, seniority, department)",
     )
     use_cases: List[str] = Field(
-        ...,
-        description="Use cases explicitly listed on the website",
+        ..., description="Use cases explicitly listed on the website"
     )
     pain_points: List[str] = Field(
-        ...,
-        description="Pain points explicitly listed on the website",
+        ..., description="Pain points explicitly listed on the website"
     )
-    pricing: Optional[str] = Field(
-        None,
-        description="Pricing information if available",
-    )
+    pricing: str = Field(..., description="Pricing information if available")
     confidence_scores: Dict[str, float] = Field(
-        ...,
-        description="Confidence/quality scores for each section (0-1)",
+        ..., description="Confidence/quality scores for each section (0-1)"
     )
-    metadata: Optional[Dict[str, Any]] = Field(
-        None,
+    metadata: Dict[str, Any] = Field(
+        ...,
         description="Additional metadata (sources, context quality, processing time, etc.)",
     )
 

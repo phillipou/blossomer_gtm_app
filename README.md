@@ -135,25 +135,71 @@ Generate a Company Overview (features, company & persona profiles, pricing) for 
 **Response:**
 ```json
 {
-  "product_description": "desc",
-  "key_features": ["f1"],
-  "company_profiles": ["c1"],
-  "persona_profiles": ["p1"],
-  "use_cases": ["u1"],
-  "pain_points": ["pp1"],
-  "pricing": "",
+  "company_name": "...",
+  "company_url": "...",
+  "company_overview": "...",
+  "capabilities": ["...", ...],
+  "business_model": ["...", ...],
+  "differentiated_value": ["...", ...],
+  "customer_benefits": ["...", ...],
+  "alternatives": ["...", ...],
+  "testimonials": ["...", ...],
+  "product_description": "...",
+  "key_features": ["...", ...],
+  "company_profiles": ["...", ...],
+  "persona_profiles": ["...", ...],
+  "use_cases": ["...", ...],
+  "pain_points": ["...", ...],
+  "pricing": "...",
   "confidence_scores": {
-    "product_description": 1,
-    "key_features": 1,
-    "company_profiles": 1,
-    "persona_profiles": 1,
-    "use_cases": 1,
-    "pain_points": 1,
-    "pricing": 1
+    "company_name": 0.0,
+    "company_url": 0.0,
+    "company_overview": 0.0,
+    "capabilities": 0.0,
+    "business_model": 0.0,
+    "differentiated_value": 0.0,
+    "customer_benefits": 0.0,
+    "alternatives": 0.0,
+    "testimonials": 0.0,
+    "product_description": 0.0,
+    "key_features": 0.0,
+    "company_profiles": 0.0,
+    "persona_profiles": 0.0,
+    "use_cases": 0.0,
+    "pain_points": 0.0,
+    "pricing": 0.0
   },
-  "metadata": {}
+  "metadata": {
+    "sources_used": ["website"],
+    "context_quality": "...",
+    "assessment_summary": "..."
+  }
 }
 ```
+
+- All fields are required unless otherwise noted.
+- If information is not available, fields may be empty strings or empty lists.
+- See `backend/app/schemas/__init__.py` for the authoritative schema.
+
+Product Overview Output Example (fields):
+- company_name: The official name of the company as found on the website or in the provided context.
+- company_url: The canonical website URL for the company (should match the input or be extracted from the website if different).
+- company_overview: 2-3 sentence summary of what the company does, their mission, and primary focus area.
+- capabilities: Technical capabilities, core product features, platform abilities, and key functionalities.
+- business_model: How they make money, pricing approach, target market size, sales model, and revenue streams.
+- differentiated_value: What sets them apart from competitors, unique approaches, proprietary technology, or market positioning.
+- customer_benefits: Expected outcomes, ROI, efficiency gains, problem resolution, or value delivery for customers.
+- alternatives: Similar services/competitors with brief comparison of similarities and key differences.
+- testimonials: Up to 5 direct customer quotes found on the website, including attribution when available.
+- product_description: Main product summary
+- key_features: List of product features/benefits
+- company_profiles: Company/firmographic segments (e.g., industry, size, region)
+- persona_profiles: Persona/job role segments (e.g., job title, seniority, department)
+- use_cases: Use cases explicitly listed on the website
+- pain_points: Pain points explicitly listed on the website
+- pricing: Pricing information if available
+- confidence_scores: Confidence/quality scores for each section (0-1)
+- metadata: Additional metadata (sources, context quality, processing time, etc.)
 
 ### POST /customers/target_accounts
 

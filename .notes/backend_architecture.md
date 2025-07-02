@@ -692,12 +692,15 @@ The updated architecture focuses on the core architectural decisions, patterns, 
 *Aligned with: PRD v2.0*
 
 **ProductOverviewResponse fields:**
-- product_description: Main product summary
-- key_features: List of product features/benefits
-- company_profiles: Company/firmographic segments (e.g., industry, size, region)
-- persona_profiles: Persona/job role segments (e.g., job title, seniority, department)
-- use_cases: Use cases explicitly listed on the website
-- pain_points: Pain points explicitly listed on the website
+- company_name: The official name of the company as found on the website or in the provided context.
+- company_url: The canonical website URL for the company (should match the input or be extracted from the website if different).
+- company_overview: 2-3 sentence summary of what the company does, their mission, and primary focus area.
+- capabilities: Technical capabilities, core product features, platform abilities, and key functionalities.
+- business_model: How they make money, pricing approach, target market size, sales model, and revenue streams.
+- differentiated_value: What sets them apart from competitors, unique approaches, proprietary technology, or market positioning.
+- customer_benefits: Expected outcomes, ROI, efficiency gains, problem resolution, or value delivery for customers.
+- alternatives: Similar services/competitors with brief comparison of similarities and key differences.
+- testimonials: Up to 5 direct customer quotes found on the website, including attribution when available.
 - pricing: Pricing information if available
 - confidence_scores: Confidence/quality scores for each section (0-1)
 - metadata: Additional metadata (sources, context quality, processing time, etc.)

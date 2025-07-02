@@ -40,22 +40,13 @@ class DataPresence(str, Enum):
 class ProductOverviewPromptVars(BaseModel):
     """Variables for the product_overview.jinja2 prompt template."""
 
-    website_content: str = Field(
-        ..., description="The preprocessed content from the company's website."
-    )
-    user_inputted_context: Optional[str] = Field(
-        None, description="Optional user-provided context for campaign generation."
-    )
-    llm_inferred_context: Optional[str] = Field(
-        None,
-        description="Optional context inferred from previous endpoints for chaining.",
-    )
-    context_quality: Optional[str] = Field(
-        None, description="Context quality assessment from orchestrator."
-    )
-    assessment_summary: Optional[str] = Field(
-        None, description="Summary of context assessment."
-    )
+    website_content: str
+    user_inputted_context: Optional[str] = None
+    llm_inferred_context: Optional[str] = None
+    context_quality: Optional[str] = None
+    assessment_summary: Optional[str] = None
+    company_name: Optional[str] = None
+    company_url: Optional[str] = None
 
 
 # ==============================================================================
