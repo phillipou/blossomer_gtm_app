@@ -35,7 +35,7 @@ interface EditDialogModalProps {
   editing?: boolean;
 }
 
-export function EditDialogModal({
+export default function EditDialogModal({
   isOpen,
   onClose,
   onSave,

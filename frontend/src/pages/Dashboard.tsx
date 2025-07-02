@@ -1,17 +1,17 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import SidebarNav from "../components/dashboard/SidebarNav";
-import HeaderBar from "../components/dashboard/HeaderBar";
-import SubNav from "../components/dashboard/SubNav";
-import InfoCard from "../components/dashboard/InfoCard";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import SidebarNav from "@/components/navigation/SidebarNav";
+import HeaderBar from "@/components/headers/HeaderBar";
+import SubNav from "@/components/navigation/SubNav";
+import InfoCard from "@/components/cards/InfoCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Bell, Check, X } from "lucide-react";
-import { Progress } from "../components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 import CustomersList from "./CustomersList";
-import OverviewCard from "../components/customers/OverviewCard";
-import { Textarea } from "../components/ui/textarea";
+import OverviewCard from "@/components/cards/OverviewCard";
+import { Textarea } from "@/components/ui/textarea";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Plus, Edit3, Trash2, Building2 } from "lucide-react";
-import { AddCustomerModal } from "../components/customers/AddCustomerModal";
-import OverviewCard from "../components/customers/OverviewCard";
+import AddCustomerModal from "@/components/modals/AddCustomerModal";
+import OverviewCard from "@/components/cards/OverviewCard";
 
 // Mock data and types (move to shared file if needed)
 export const MOCK_CUSTOMERS = [
@@ -94,7 +94,14 @@ export default function CustomersList({ companyName = "blossomer.io", domain = "
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto space-y-8">
-        <OverviewCard companyName={companyName} domain={domain} description={description} />
+        <OverviewCard 
+          title={companyName}
+          subtitle={domain}
+          bodyTitle="Company Description"
+          bodyText={description}
+          showButton={true}
+          buttonTitle="View Details"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {customerProfiles.map((profile) => (
             <CustomerProfileCard

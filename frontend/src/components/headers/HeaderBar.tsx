@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { ReactNode } from "react";
+import { Badge } from "../ui/badge";
+import type { ReactNode } from "react";
 
 interface HeaderBarProps {
   companyName: string;

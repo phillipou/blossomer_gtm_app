@@ -1,21 +1,18 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Edit3, Check, X, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import { FirmographicsTable } from "../components/dashboard/FirmographicsTable";
-import { Badge } from "../components/ui/badge";
-import { Textarea } from "../components/ui/textarea";
-import { Switch } from "../components/ui/switch";
-import { EditBuyingSignalModal } from "../components/customers/EditBuyingSignalModal";
-import EditFirmographicsModal from "../components/dashboard/EditFirmographicsModal";
-import SubNav from "../components/dashboard/SubNav";
-import InfoCard from "../components/dashboard/InfoCard";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Edit3, Check, X, Plus, Trash2 } from "lucide-react";
+import { FirmographicsTable } from "@/components/tables/FirmographicsTable";
+import { Textarea } from "@/components/ui/textarea";
+import EditBuyingSignalModal from "@/components/modals/EditBuyingSignalModal";
+import EditFirmographicsModal from "@/components/modals/EditFirmographicsModal";
+import SubNav from "@/components/navigation/SubNav";
+import BuyingSignalsCard from "@/components/cards/BuyingSignalsCard";
+import OverviewCard from "@/components/cards/OverviewCard";
 
 // Import types and mock data from CustomersList
 import { MOCK_CUSTOMERS } from "./CustomersList";
-import type { CustomerProfile } from "./CustomersList";
-import OverviewCard from "../components/customers/OverviewCard";
 
 const MOCK_CUSTOMER_DETAILS = {
   id: "1",
@@ -30,14 +27,14 @@ const MOCK_CUSTOMER_DETAILS = {
     { label: "Business model", values: [ { text: "B2B", color: "yellow" }, { text: "SaaS", color: "blue" } ] },
   ],
   buyingSignals: [
-    "Recently raised seed or Series A funding",
-    "Hiring for sales or marketing roles",
-    "Posting about customer acquisition challenges on social media",
-    "Attending sales and marketing conferences",
-    "Implementing new CRM or sales tools",
-    "Founder actively networking and seeking sales advice",
-    "Company showing rapid user growth but struggling with monetization",
-    "Recent product launches or feature announcements",
+    { id: "0", label: "Recently raised seed or Series A funding", description: "", enabled: true },
+    { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
+    { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
+    { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
+    { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
+    { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
+    { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
+    { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
   ],
   createdAt: "Jul 1, 2025",
   updatedAt: "Jul 1, 2025",
@@ -71,14 +68,14 @@ export default function CustomerDetail() {
       { id: "business_model", label: "Business model", values: [{ text: "B2B", color: "yellow" }] },
     ],
     buyingSignals: [
-      "Recently raised seed or Series A funding",
-      "Hiring for sales or marketing roles",
-      "Posting about customer acquisition challenges on social media",
-      "Attending sales and marketing conferences",
-      "Implementing new CRM or sales tools",
-      "Founder actively networking and seeking sales advice",
-      "Company showing rapid user growth but struggling with monetization",
-      "Recent product launches or feature announcements",
+      { id: "0", label: "Recently raised seed or Series A funding", description: "test description", enabled: true },
+      { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
+      { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
+      { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
+      { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
+      { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
+      { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
+      { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
     ],
     createdAt: "Jul 1, 2025",
     updatedAt: "Jul 1, 2025",
@@ -103,14 +100,7 @@ export default function CustomerDetail() {
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   // Buying signals state
-  const [buyingSignals, setBuyingSignals] = useState(
-    detailData.buyingSignals.map((label, i) => ({
-      id: String(i),
-      label,
-      description: "",
-      enabled: true,
-    }))
-  );
+  const [buyingSignals, setBuyingSignals] = useState<BuyingSignal[]>(detailData.buyingSignals);
   // Firmographics state
   const [firmographics, setFirmographics] = useState(detailData.firmographics);
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
@@ -145,11 +135,15 @@ export default function CustomerDetail() {
     navigate(`/customers/${detailData.id}/persona/${personaId}`);
   };
 
-  const enabledCount = buyingSignals.filter(s => s.enabled).length;
-  const totalCount = buyingSignals.length;
+  const enabledCount = Array.isArray(buyingSignals) && buyingSignals.length > 0 && typeof buyingSignals[0] === 'object'
+    ? buyingSignals.filter((s: any) => s.enabled).length
+    : 0;
+  const totalCount = Array.isArray(buyingSignals) && buyingSignals.length > 0 && typeof buyingSignals[0] === 'object'
+    ? buyingSignals.length
+    : 0;
 
   const handleToggleSignal = (id: string) => {
-    setBuyingSignals(signals => signals.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+    setBuyingSignals(signals => signals.map((s: BuyingSignal) => s.id === id ? { ...s, enabled: !s.enabled } : s));
   };
 
   const handleEdit = (blockId: string, currentContent: string) => {
@@ -220,11 +214,14 @@ export default function CustomerDetail() {
                 </div>
               </div>
             ) : (
-              <InfoCard
-                title="Description"
-                items={[detailData.description]}
-                onEdit={() => handleEdit("description", detailData.description)}
-                renderItem={(desc) => <p className="text-gray-700 leading-relaxed">{desc}</p>}
+              <OverviewCard
+                title={"Title"}
+                subtitle={"Subtitle"}
+                bodyTitle="Description"
+                bodyText={detailData.description}
+                showButton={true}
+                buttonTitle="Edit"
+                onButtonClick={() => handleEdit("description", detailData.description)}
               />
             )}
             {/* Firmographics Block */}
@@ -251,98 +248,12 @@ export default function CustomerDetail() {
               </CardContent>
             </Card>
             {/* Buying Signals Block */}
-            <Card className="relative">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <div className="flex items-center space-x-3">
-                  <CardTitle className="flex items-center space-x-2">
-                    <span>Buying Signals</span>
-                    <Badge className="bg-blue-100 text-blue-800">{enabledCount}/{totalCount}</Badge>
-                  </CardTitle>
-                </div>
-                {hovered && (
-                  <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
-                    <Edit3 className="w-4 h-4" />
-                  </Button>
-                )}
-              </CardHeader>
-              <div className="px-6 pb-4 text-sm text-gray-500">
-                Indicators that suggest a prospect is ready to buy or engage with your solution
-              </div>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {buyingSignals.map(signal => {
-                    const isExpanded = expandedSignals.has(signal.id);
-                    return (
-                      <div
-                        key={signal.id}
-                        className={`group flex flex-col border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden ${isExpanded ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                        onMouseEnter={() => setHoveredSignal(signal.id)}
-                        onMouseLeave={() => setHoveredSignal(null)}
-                        onClick={() => {
-                          setExpandedSignals(prev => {
-                            const next = new Set(prev);
-                            if (next.has(signal.id)) {
-                              next.delete(signal.id);
-                            } else {
-                              next.add(signal.id);
-                            }
-                            return next;
-                          });
-                        }}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <div className="flex items-center justify-between p-3 gap-2">
-                          <div className="flex-1 min-w-0 pr-4">
-                            <span className="text-sm font-medium text-gray-900">{signal.label}</span>
-                          </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={e => { e.stopPropagation(); setModalEditingSignal(signal); setModalOpen(true); }}
-                              className="text-blue-600"
-                            >
-                              <Edit3 className="w-5 h-5" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={e => { e.stopPropagation(); setBuyingSignals(signals => signals.filter(s => s.id !== signal.id)); }}
-                              className="text-red-500"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </Button>
-                          </div>
-                          <span className="ml-2 pointer-events-none">
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4 text-gray-500" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-gray-500" />
-                            )}
-                          </span>
-                        </div>
-                        {isExpanded && signal.description && (
-                          <div className="px-6 pb-3 text-sm text-gray-600">
-                            {signal.description}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <div className="pt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
-                      onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Buying Signal
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <BuyingSignalsCard
+              signals={buyingSignals}
+              onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+              onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+              onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
+            />
             {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Personas</h2>

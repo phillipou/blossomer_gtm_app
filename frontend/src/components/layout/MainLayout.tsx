@@ -1,4 +1,4 @@
-import SidebarNav from "../dashboard/SidebarNav";
+import SidebarNav from "../navigation/SidebarNav";
 import { Button } from "../ui/button";
 import { Sparkles } from "lucide-react";
 import React from "react";

@@ -1,6 +1,7 @@
-import { Building2, Users, TrendingUp, Home, Settings, Sparkles } from "lucide-react";
-import { Button } from "../ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "../ui/button";
+import { Building2, Users, TrendingUp, Home, Settings } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 interface SidebarNavProps {
   companyName?: string;

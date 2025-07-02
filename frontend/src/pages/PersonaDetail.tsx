@@ -1,12 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import SubNav from "../components/dashboard/SubNav";
-import InfoCard from "../components/dashboard/InfoCard";
-import { Textarea } from "../components/ui/textarea";
-import { Button } from "../components/ui/button";
-import { Check, X } from "lucide-react";
+import SubNav from "@/components/navigation/SubNav";
+import InfoCard from "@/components/cards/InfoCard";
 import React from "react";
+import OverviewCard from "@/components/cards/OverviewCard";
+import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 
 // Mock persona data (in real app, fetch by accountId/personaId)
 const MOCK_PERSONAS = [
@@ -26,6 +23,57 @@ const MOCK_PERSONAS = [
       "Sales-Oriented Founder",
       "Product Manager",
     ],
+    overview: "Startup founders are driven, resourceful, and constantly seeking ways to bring their vision to life. They balance product innovation with the realities of market fit, often wearing multiple hats to push their company forward.",
+    likelyJobTitles: [
+      "Founder & CEO",
+      "Co-Founder",
+      "Chief Technology Officer (CTO)",
+      "Head of Product",
+      "Managing Director"
+    ],
+    primaryResponsibilities: [
+      "Set company vision and strategy",
+      "Build and iterate on the core product",
+      "Drive early customer acquisition and validate product-market fit"
+    ],
+    statusQuo: [
+      "Manual outreach via email and LinkedIn",
+      "Ad-hoc sales processes managed in spreadsheets",
+      "Relying on founder's personal network for leads"
+    ],
+    useCases: [
+      "Automate outbound prospecting to save time",
+      "Identify high-potential customer segments",
+      "Test new messaging and campaigns quickly",
+      "Track outreach performance in one dashboard"
+    ],
+    desiredOutcomes: [
+      "Consistent pipeline of qualified leads",
+      "Faster validation of product-market fit",
+      "More meetings with ideal customers"
+    ],
+    keyConcerns: [
+      "Will this tool actually save me time?",
+      "Is onboarding complex or disruptive?",
+      "Will it integrate with my existing tools?",
+      "How accurate is the targeting?"
+    ],
+    whyWeMatter: [
+      "Purpose-built for founder-led sales",
+      "Fast setup and minimal learning curve",
+      "Combines AI with human personalization",
+      "Transparent pricing, no long-term contracts"
+    ],
+    buyingSignals: [
+        { id: "0", label: "Recently raised seed or Series A funding", description: "boop", enabled: true },
+        { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
+        { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
+        { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
+        { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
+        { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
+        { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
+        { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
+      ],
   },
   {
     id: "2",
@@ -90,74 +138,90 @@ export default function PersonaDetail() {
         subTabs={[]}
       />
       <div className="flex-1 p-8 space-y-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>
-              <Badge className="bg-blue-100 text-blue-800 font-semibold text-base px-3 py-1 w-fit">
-                {persona.name}
-              </Badge>
-            </CardTitle>
-            <div className="text-xs text-gray-400">Created: {persona.createdAt}</div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-gray-800 text-base mb-4">{persona.description}</div>
-          </CardContent>
-        </Card>
+        {/* Overview Card */}
+        <OverviewCard
+          title={persona.name}
+          subtitle={persona.createdAt}
+          bodyTitle="Persona Overview"
+          bodyText={persona.overview}
+          showButton={false}
+        />
+        {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {editingBlock === "profile" ? (
-            <div className="space-y-4">
-              <label className="font-semibold">Persona Profiles</label>
-              <Textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <div className="flex space-x-2">
-                <Button size="sm" onClick={handleSave}>
-                  <Check className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel}>
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <InfoCard
-              title="Persona Profiles"
-              items={persona.profile || ["No persona profiles available."]}
-              onEdit={() => handleEdit("profile", (persona.profile || []).join("\n"))}
-              renderItem={(profile) => <span className="text-sm text-gray-700">{profile}</span>}
-            />
-          )}
-          {editingBlock === "painPoints" ? (
-            <div className="space-y-4">
-              <label className="font-semibold">Pain Points</label>
-              <Textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <div className="flex space-x-2">
-                <Button size="sm" onClick={handleSave}>
-                  <Check className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel}>
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <InfoCard
-              title="Pain Points"
-              items={persona.painPoints || ["No pain points available."]}
-              onEdit={() => handleEdit("painPoints", (persona.painPoints || []).join("\n"))}
-              renderItem={(point) => <span className="text-sm text-gray-700">{point}</span>}
-            />
-          )}
+          <InfoCard
+            title="Likely Job Titles"
+            items={persona.likelyJobTitles || []}
+            onEdit={() => handleEdit("likelyJobTitles", (persona.likelyJobTitles || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Primary Responsibilities"
+            items={persona.primaryResponsibilities || []}
+            onEdit={() => handleEdit("primaryResponsibilities", (persona.primaryResponsibilities || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Status Quo"
+            items={persona.statusQuo || []}
+            onEdit={() => handleEdit("statusQuo", (persona.statusQuo || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Use Cases"
+            items={persona.useCases || []}
+            onEdit={() => handleEdit("useCases", (persona.useCases || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Pain Points"
+            items={persona.painPoints || []}
+            onEdit={() => handleEdit("painPoints", (persona.painPoints || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Desired Outcomes"
+            items={persona.desiredOutcomes || []}
+            onEdit={() => handleEdit("desiredOutcomes", (persona.desiredOutcomes || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Key Concerns"
+            items={persona.keyConcerns || []}
+            onEdit={() => handleEdit("keyConcerns", (persona.keyConcerns || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+          <InfoCard
+            title="Why We Matter to Them"
+            items={persona.whyWeMatter || []}
+            onEdit={() => handleEdit("whyWeMatter", (persona.whyWeMatter || []).join("\n"))}
+            renderItem={(item: string, idx: number) => (
+              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            )}
+          />
+        </div>
+        <div className="mt-8">
+          <BuyingSignalsCard
+            signals={persona.buyingSignals || []}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            onAdd={() => {}}
+            title="Buying Signals"
+            description="Indicators that suggest a prospect is ready to buy or engage with your solution"
+          />
         </div>
       </div>
     </div>
