@@ -28,6 +28,8 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     for a valid URL.
     """
     fake_assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="A great company.",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -42,7 +44,11 @@ async def test_orchestrator_returns_assessment_and_raw_content():
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={"company_overview": 0.95},
+        confidence_scores={
+            "company_name": 0.95,
+            "company_url": 0.95,
+            "company_overview": 0.95,
+        },
         metadata={"context_quality": "high"},
     )
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
@@ -55,6 +61,8 @@ async def test_orchestrator_returns_assessment_and_raw_content():
             website_url="https://example.com",
             target_endpoint="company_overview",
         )
+        assert result["assessment"].company_name == "Example Inc."
+        assert result["assessment"].company_url == "https://example.com"
         assert result["assessment"].company_overview == "A great company."
         assert (
             result["enriched_content"]["raw_website_content"]
@@ -71,6 +79,8 @@ async def test_orchestrator_handles_empty_content():
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(
         return_value=CompanyOverviewResult(
+            company_name="Example Inc.",
+            company_url="https://example.com",
             company_overview="",
             capabilities=[],
             business_model=[],
@@ -97,6 +107,8 @@ async def test_orchestrator_handles_empty_content():
             website_url="https://empty.com",
             target_endpoint="company_overview",
         )
+        assert result["assessment"].company_name == "Example Inc."
+        assert result["assessment"].company_url == "https://example.com"
         assert result["assessment"].company_overview == ""
         assert result["enriched_content"]["raw_website_content"] == ""
 
@@ -109,6 +121,8 @@ async def test_orchestrator_readiness_logic():
     """
     # Not ready: missing capabilities confidence
     assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="Ready!",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -123,7 +137,11 @@ async def test_orchestrator_readiness_logic():
         use_cases=["Automated workflows", "Data analytics"],
         pain_points=["Manual processes", "Slow reporting"],
         pricing="Contact us",
-        confidence_scores={"company_overview": 0.9},
+        confidence_scores={
+            "company_name": 0.9,
+            "company_url": 0.9,
+            "company_overview": 0.9,
+        },
         metadata={},
     )
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
@@ -132,6 +150,8 @@ async def test_orchestrator_readiness_logic():
     assert "capabilities" in readiness["missing_requirements"]
     # Ready: both required fields present and confident
     assessment2 = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="Ready!",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -146,7 +166,12 @@ async def test_orchestrator_readiness_logic():
         use_cases=["Automated workflows", "Data analytics"],
         pain_points=["Manual processes", "Slow reporting"],
         pricing="Contact us",
-        confidence_scores={"company_overview": 0.9, "capabilities": 0.9},
+        confidence_scores={
+            "company_name": 0.9,
+            "company_url": 0.9,
+            "company_overview": 0.9,
+            "capabilities": 0.9,
+        },
         metadata={},
     )
     readiness2 = orchestrator.check_endpoint_readiness(assessment2, "company_overview")
@@ -166,6 +191,8 @@ async def test_service_uses_raw_website_content(monkeypatch):
         async def orchestrate_context(self, *args, **kwargs):
             return {
                 "assessment": CompanyOverviewResult(
+                    company_name="Example Inc.",
+                    company_url="https://example.com",
                     company_overview="Ready!",
                     capabilities=["AI", "Automation"],
                     business_model=["SaaS"],
@@ -180,7 +207,11 @@ async def test_service_uses_raw_website_content(monkeypatch):
                     use_cases=["Automated workflows", "Data analytics"],
                     pain_points=["Manual processes", "Slow reporting"],
                     pricing="Contact us",
-                    confidence_scores={"company_overview": 0.9},
+                    confidence_scores={
+                        "company_name": 0.9,
+                        "company_url": 0.9,
+                        "company_overview": 0.9,
+                    },
                     metadata={},
                 ),
                 "enriched_content": {
@@ -193,6 +224,8 @@ async def test_service_uses_raw_website_content(monkeypatch):
         async def generate(self, request):
             class FakeResp:
                 text = """{
+                    \"company_name\": \"Example Inc.\",
+                    \"company_url\": \"https://example.com\",
                     \"company_overview\": \"A great company.\",
                     \"capabilities\": [\"AI\", \"Automation\"],
                     \"business_model\": [\"SaaS\"],
@@ -224,6 +257,8 @@ async def test_service_uses_raw_website_content(monkeypatch):
         llm_client=FakeLLMClient(),  # type: ignore[arg-type]
     )
     assert "This is the real web" in result.product_description
+    assert result.company_name == "Example Inc."
+    assert result.company_url == "https://example.com"
 
 
 @pytest.mark.asyncio
@@ -237,6 +272,8 @@ async def test_service_handles_missing_website_content(monkeypatch):
         async def orchestrate_context(self, *args, **kwargs):
             return {
                 "assessment": CompanyOverviewResult(
+                    company_name="Example Inc.",
+                    company_url="https://example.com",
                     company_overview="",
                     capabilities=[],
                     business_model=[],
@@ -292,6 +329,8 @@ async def test_service_handles_llm_refusal(monkeypatch):
         async def orchestrate_context(self, *args, **kwargs):
             return {
                 "assessment": CompanyOverviewResult(
+                    company_name="Example Inc.",
+                    company_url="https://example.com",
                     company_overview="Ready!",
                     capabilities=["AI", "Automation"],
                     business_model=["SaaS"],
@@ -306,7 +345,11 @@ async def test_service_handles_llm_refusal(monkeypatch):
                     use_cases=["Automated workflows", "Data analytics"],
                     pain_points=["Manual processes", "Slow reporting"],
                     pricing="Contact us",
-                    confidence_scores={"company_overview": 0.9},
+                    confidence_scores={
+                        "company_name": 0.9,
+                        "company_url": 0.9,
+                        "company_overview": 0.9,
+                    },
                     metadata={},
                 ),
                 "enriched_content": {"raw_website_content": "Some content"},
@@ -371,6 +414,8 @@ def test_api_happy_path(monkeypatch):
     # Patch llm_client.generate_structured_output in the actual endpoint module for company
     async def fake_generate_structured_output(prompt, response_model):
         assessment_dict = {
+            "company_name": "Example Inc.",
+            "company_url": "https://example.com",
             "company_overview": "Ready!",
             "capabilities": ["AI", "Automation"],
             "business_model": ["SaaS"],
@@ -400,6 +445,8 @@ def test_api_happy_path(monkeypatch):
         class FakeResp:
             text = json.dumps(
                 {
+                    "company_name": "Example Inc.",
+                    "company_url": "https://example.com",
                     "company_overview": "Ready!",
                     "capabilities": ["AI", "Automation"],
                     "business_model": ["SaaS"],
@@ -450,6 +497,8 @@ def test_api_happy_path(monkeypatch):
     assert isinstance(data["use_cases"], list)
     assert isinstance(data["pain_points"], list)
     assert isinstance(data["confidence_scores"], dict)
+    assert data["company_name"] == "Example Inc."
+    assert data["company_url"] == "https://example.com"
 
 
 def test_api_insufficient_content(monkeypatch):

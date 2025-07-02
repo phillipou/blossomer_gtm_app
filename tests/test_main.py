@@ -100,6 +100,8 @@ def test_product_overview_endpoint_success(monkeypatch):
     # Patch llm_client.generate_structured_output in the actual endpoint module
     async def fake_generate_structured_output(prompt, response_model):
         return CompanyOverviewResult(
+            company_name="Example Inc.",
+            company_url="https://example.com",
             company_overview="A great company.",
             capabilities=["AI", "Automation"],
             business_model=["SaaS"],
@@ -115,6 +117,8 @@ def test_product_overview_endpoint_success(monkeypatch):
             pain_points=["Manual work"],
             pricing="Contact us",
             confidence_scores={
+                "company_name": 0.95,
+                "company_url": 0.95,
                 "company_overview": 0.95,
                 "capabilities": 0.95,
                 "business_model": 0.95,
@@ -143,6 +147,8 @@ def test_product_overview_endpoint_success(monkeypatch):
         class FakeResp:
             text = json.dumps(
                 {
+                    "company_name": "Example Inc.",
+                    "company_url": "https://example.com",
                     "company_overview": "A great company.",
                     "capabilities": ["AI", "Automation"],
                     "business_model": ["SaaS"],
@@ -158,6 +164,8 @@ def test_product_overview_endpoint_success(monkeypatch):
                     "pain_points": ["Manual work"],
                     "pricing": "Contact us",
                     "confidence_scores": {
+                        "company_name": 0.95,
+                        "company_url": 0.95,
                         "company_overview": 0.95,
                         "capabilities": 0.95,
                         "business_model": 0.95,
@@ -187,6 +195,8 @@ def test_product_overview_endpoint_success(monkeypatch):
     response = client.post("/api/company/generate", json=payload)
     assert response.status_code == 200
     data = response.json()
+    assert data["company_name"] == "Example Inc."
+    assert data["company_url"] == "https://example.com"
     assert data["company_overview"] == "A great company."
     assert data["capabilities"] == ["AI", "Automation"]
     assert data["confidence_scores"]["company_overview"] == 0.95

@@ -114,7 +114,14 @@ async def generate_product_overview_service(
     try:
         llm_request = LLMRequest(prompt=prompt)
         llm_response = await llm_client.generate(llm_request)
-        return ProductOverviewResponse.model_validate_json(llm_response.text)
+        response_obj = ProductOverviewResponse.model_validate_json(llm_response.text)
+        # Patch in company_url from the request (if not set by LLM)
+        if not response_obj.company_url:
+            response_obj.company_url = data.website_url
+        # Patch in company_name as empty string if not set by LLM
+        if not response_obj.company_name:
+            response_obj.company_name = ""
+        return response_obj
     except (ValidationError, json.JSONDecodeError) as e:
         logger.error(
             f"Failed to generate or parse product overview: {e}\n"

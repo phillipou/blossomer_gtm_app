@@ -180,6 +180,8 @@ class TargetPersonaPromptVars(BaseModel):
 class CompanyOverviewResult(BaseModel):
     """Structured product/company overview result from the LLM (context_assessment prompt)."""
 
+    company_name: str
+    company_url: str
     company_overview: str
     capabilities: List[str]
     business_model: List[str]

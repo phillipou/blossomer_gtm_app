@@ -24,6 +24,15 @@ class ProductOverviewRequest(BaseModel):
 
 
 class ProductOverviewResponse(BaseModel):
+    company_name: str = Field(
+        ...,
+        description=(
+            "The official name of the company as found on the website or in the provided context."
+        ),
+    )
+    company_url: str = Field(
+        ..., description="The canonical website URL for the company."
+    )
     company_overview: str = Field(
         ...,
         description=(
@@ -33,37 +42,43 @@ class ProductOverviewResponse(BaseModel):
     capabilities: List[str] = Field(
         ...,
         description=(
-            "Technical capabilities, core product features, platform abilities, and key functionalities."
+            "Technical capabilities, core product features, platform abilities, and key "
+            "functionalities."
         ),
     )
     business_model: List[str] = Field(
         ...,
         description=(
-            "How they make money, pricing approach, target market size, sales model, and revenue streams."
+            "How they make money, pricing approach, target market size, sales model, and "
+            "revenue streams."
         ),
     )
     differentiated_value: List[str] = Field(
         ...,
         description=(
-            "What sets them apart from competitors, unique approaches, proprietary technology, or market positioning."
+            "What sets them apart from competitors, unique approaches, proprietary technology, "
+            "or market positioning."
         ),
     )
     customer_benefits: List[str] = Field(
         ...,
         description=(
-            "Expected outcomes, ROI, efficiency gains, problem resolution, or value delivery for customers."
+            "Expected outcomes, ROI, efficiency gains, problem resolution, or value delivery "
+            "for customers."
         ),
     )
     alternatives: List[str] = Field(
         ...,
         description=(
-            "Similar services/competitors with brief comparison of similarities and key differences."
+            "Similar services/competitors with brief comparison of similarities and key "
+            "differences."
         ),
     )
     testimonials: List[str] = Field(
         ...,
         description=(
-            "Up to 5 direct customer quotes found on the website, including attribution when available."
+            "Up to 5 direct customer quotes found on the website, including attribution when "
+            "available."
         ),
     )
     product_description: str = Field(..., description="Main product summary")

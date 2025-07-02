@@ -102,6 +102,8 @@ class ContextOrchestrator:
         if not website_content or not website_content.strip():
             # Return an empty product overview structure if no content
             return CompanyOverviewResult(
+                company_name="",
+                company_url="",
                 company_overview="",
                 capabilities=[],
                 business_model=[],
@@ -117,6 +119,8 @@ class ContextOrchestrator:
                 pain_points=[],
                 pricing="",
                 confidence_scores={
+                    "company_name": 0.0,
+                    "company_url": 0.0,
                     "company_overview": 0.0,
                     "capabilities": 0.0,
                     "business_model": 0.0,
@@ -136,7 +140,8 @@ class ContextOrchestrator:
                     "sources_used": [],
                     "context_quality": "insufficient",
                     "assessment_summary": (
-                        "No website content available. Unable to assess context quality."
+                        "No website content available. "
+                        "Unable to assess context quality."
                     ),
                 },
             )

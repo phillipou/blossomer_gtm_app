@@ -19,6 +19,8 @@ async def test_assess_context_empty_content():
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="   ")
+    assert result.company_name == ""
+    assert result.company_url == ""
     assert result.company_overview == ""
     assert result.capabilities == []
     assert result.confidence_scores["company_overview"] == 0.0
@@ -48,6 +50,8 @@ async def test_assess_context_happy_path():
     llm_client = AsyncMock()
     llm_client.generate_structured_output = AsyncMock(
         return_value=CompanyOverviewResult(
+            company_name="Example Inc.",
+            company_url="https://example.com",
             company_overview="A great company.",
             capabilities=["AI", "Automation"],
             business_model=["SaaS"],
@@ -62,7 +66,11 @@ async def test_assess_context_happy_path():
             use_cases=["Automate workflows"],
             pain_points=["Manual work"],
             pricing="Contact us",
-            confidence_scores={"company_overview": 0.95},
+            confidence_scores={
+                "company_name": 0.95,
+                "company_url": 0.95,
+                "company_overview": 0.95,
+            },
             metadata={"context_quality": "high"},
         )
     )
@@ -72,6 +80,8 @@ async def test_assess_context_happy_path():
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="Some real content.")
+    assert result.company_name == "Example Inc."
+    assert result.company_url == "https://example.com"
     assert result.company_overview == "A great company."
     assert result.capabilities == ["AI", "Automation"]
     assert result.confidence_scores["company_overview"] == 0.95
@@ -84,6 +94,8 @@ async def test_assess_url_context_happy_path():
     orchestrator = ContextOrchestrator(AsyncMock())
     orchestrator.assess_context = AsyncMock(
         return_value=CompanyOverviewResult(
+            company_name="Example Inc.",
+            company_url="https://example.com",
             company_overview="A great company.",
             capabilities=["AI", "Automation"],
             business_model=["SaaS"],
@@ -98,7 +110,11 @@ async def test_assess_url_context_happy_path():
             use_cases=["Automate workflows"],
             pain_points=["Manual work"],
             pricing="Contact us",
-            confidence_scores={"company_overview": 0.9},
+            confidence_scores={
+                "company_name": 0.9,
+                "company_url": 0.9,
+                "company_overview": 0.9,
+            },
             metadata={"context_quality": "high"},
         )
     )
@@ -109,6 +125,8 @@ async def test_assess_url_context_happy_path():
         result = await orchestrator.assess_url_context(
             url="https://good.com",
         )
+    assert result.company_name == "Example Inc."
+    assert result.company_url == "https://example.com"
     assert result.company_overview == "A great company."
     assert result.capabilities == ["AI", "Automation"]
     assert result.confidence_scores["company_overview"] == 0.9
@@ -126,6 +144,8 @@ async def test_orchestrate_context_ready(monkeypatch):
     orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a ready assessment
     ready_assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="A great company.",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -140,7 +160,11 @@ async def test_orchestrate_context_ready(monkeypatch):
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={"company_overview": 0.95},
+        confidence_scores={
+            "company_name": 0.95,
+            "company_url": 0.95,
+            "company_overview": 0.95,
+        },
         metadata={"context_quality": "high"},
     )
     monkeypatch.setattr(
@@ -154,6 +178,8 @@ async def test_orchestrate_context_ready(monkeypatch):
         target_endpoint="product_overview",
         auto_enrich=False,
     )
+    assert result["assessment"].company_name == "Example Inc."
+    assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == "A great company."
     assert result["assessment"].confidence_scores["company_overview"] == 0.95
     assert result["assessment"].metadata["context_quality"] == "high"
@@ -170,6 +196,8 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a not ready assessment
     not_ready_assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="A great company.",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -184,7 +212,11 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={"company_overview": 0.3},
+        confidence_scores={
+            "company_name": 0.3,
+            "company_url": 0.3,
+            "company_overview": 0.3,
+        },
         metadata={"context_quality": "low"},
     )
     monkeypatch.setattr(
@@ -207,6 +239,8 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         auto_enrich=True,
         max_steps=1,
     )
+    assert result["assessment"].company_name == "Example Inc."
+    assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == "A great company."
     assert result["assessment"].confidence_scores["company_overview"] == 0.3
     assert result["assessment"].metadata["context_quality"] == "low"
@@ -218,6 +252,8 @@ async def test_orchestrate_context_no_content(monkeypatch):
     llm_client = AsyncMock()
     llm_client.generate_structured_output = AsyncMock(
         return_value=CompanyOverviewResult(
+            company_name="Example Inc.",
+            company_url="https://example.com",
             company_overview="",
             capabilities=[],
             business_model=[],
@@ -232,7 +268,11 @@ async def test_orchestrate_context_no_content(monkeypatch):
             use_cases=[],
             pain_points=[],
             pricing="",
-            confidence_scores={"company_overview": 0.0},
+            confidence_scores={
+                "company_name": 0.0,
+                "company_url": 0.0,
+                "company_overview": 0.0,
+            },
             metadata={"context_quality": "insufficient"},
         )
     )
@@ -243,6 +283,8 @@ async def test_orchestrate_context_no_content(monkeypatch):
         "assess_url_context",
         AsyncMock(
             return_value=CompanyOverviewResult(
+                company_name="Example Inc.",
+                company_url="https://example.com",
                 company_overview="",
                 capabilities=[],
                 business_model=[],
@@ -257,7 +299,11 @@ async def test_orchestrate_context_no_content(monkeypatch):
                 use_cases=[],
                 pain_points=[],
                 pricing="",
-                confidence_scores={"company_overview": 0.0},
+                confidence_scores={
+                    "company_name": 0.0,
+                    "company_url": 0.0,
+                    "company_overview": 0.0,
+                },
                 metadata={"context_quality": "insufficient"},
             )
         ),
@@ -267,6 +313,8 @@ async def test_orchestrate_context_no_content(monkeypatch):
         target_endpoint="product_overview",
         auto_enrich=False,
     )
+    assert result["assessment"].company_name == "Example Inc."
+    assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == ""
     assert result["assessment"].confidence_scores["company_overview"] == 0.0
     assert result["assessment"].metadata["context_quality"] == "insufficient"
@@ -404,6 +452,8 @@ async def test_check_endpoint_readiness_ready():
     """Ready if company_overview and capabilities are present and confident (>0.5)."""
     orchestrator = ContextOrchestrator(AsyncMock())
     assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="A great company.",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -419,6 +469,8 @@ async def test_check_endpoint_readiness_ready():
         pain_points=["Manual work"],
         pricing="Contact us",
         confidence_scores={
+            "company_name": 0.95,
+            "company_url": 0.95,
             "company_overview": 0.95,
             "capabilities": 0.9,
             "pricing": 0.0,  # Should not block readiness
@@ -438,6 +490,8 @@ async def test_check_endpoint_readiness_not_ready_missing_company_overview():
     """Not ready if company_overview is missing or low confidence."""
     orchestrator = ContextOrchestrator(AsyncMock())
     assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="",
         capabilities=["AI", "Automation"],
         business_model=["SaaS"],
@@ -453,6 +507,8 @@ async def test_check_endpoint_readiness_not_ready_missing_company_overview():
         pain_points=["Manual work"],
         pricing="Contact us",
         confidence_scores={
+            "company_name": 0.0,
+            "company_url": 0.0,
             "company_overview": 0.0,
             "capabilities": 0.9,
         },
@@ -469,6 +525,8 @@ async def test_check_endpoint_readiness_not_ready_missing_capabilities():
     """Not ready if capabilities is missing or low confidence."""
     orchestrator = ContextOrchestrator(AsyncMock())
     assessment = CompanyOverviewResult(
+        company_name="Example Inc.",
+        company_url="https://example.com",
         company_overview="A great company.",
         capabilities=[],
         business_model=["SaaS"],
@@ -484,6 +542,8 @@ async def test_check_endpoint_readiness_not_ready_missing_capabilities():
         pain_points=["Manual work"],
         pricing="Contact us",
         confidence_scores={
+            "company_name": 0.95,
+            "company_url": 0.95,
             "company_overview": 0.95,
             "capabilities": 0.0,
         },
