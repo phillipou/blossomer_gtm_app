@@ -170,3 +170,29 @@ class TargetPersonaPromptVars(BaseModel):
         None,
         description="Optional context inferred from previous endpoints for chaining.",
     )
+
+
+# ======================================================================
+# Company Overview Output Model (matches context_assessment.jinja2 template)
+# ======================================================================
+
+
+class CompanyOverviewResult(BaseModel):
+    """Structured product/company overview result from the LLM (context_assessment prompt)."""
+
+    company_overview: str
+    capabilities: List[str]
+    business_model: List[str]
+    differentiated_value: List[str]
+    customer_benefits: List[str]
+    alternatives: List[str]
+    testimonials: List[str]
+    product_description: str
+    key_features: List[str]
+    company_profiles: List[str]
+    persona_profiles: List[str]
+    use_cases: List[str]
+    pain_points: List[str]
+    pricing: str
+    confidence_scores: Dict[str, float]
+    metadata: Dict[str, Any]

@@ -3,7 +3,7 @@ from backend.app.api.main import app
 import pytest
 from unittest.mock import AsyncMock, patch
 from backend.app.services.context_orchestrator import ContextOrchestrator
-from backend.app.prompts.models import ContextAssessmentResult, ContextQuality
+from backend.app.prompts.models import CompanyOverviewResult
 from backend.app.services.product_overview_service import (
     generate_product_overview_service,
 )
@@ -16,7 +16,6 @@ from backend.app.services.content_preprocessing import (
 from backend.app.schemas import ProductOverviewRequest
 from fastapi import HTTPException
 import json
-from backend.app.prompts.models import EndpointReadiness
 
 client = TestClient(app)
 
@@ -28,15 +27,23 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     The orchestrator should return both a populated assessment and the raw website content
     for a valid URL.
     """
-    fake_assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.HIGH,
-        overall_confidence=0.95,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[],
-        data_quality_metrics={},
-        recommendations={},
-        summary="Looks good!",
+    fake_assessment = CompanyOverviewResult(
+        company_overview="A great company.",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={"company_overview": 0.95},
+        metadata={"context_quality": "high"},
     )
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(return_value=fake_assessment)
@@ -48,7 +55,7 @@ async def test_orchestrator_returns_assessment_and_raw_content():
             website_url="https://example.com",
             target_endpoint="company_overview",
         )
-        assert result["assessment"].overall_quality == ContextQuality.HIGH
+        assert result["assessment"].company_overview == "A great company."
         assert (
             result["enriched_content"]["raw_website_content"]
             == "This is the website content."
@@ -63,15 +70,23 @@ async def test_orchestrator_handles_empty_content():
     """
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(
-        return_value=ContextAssessmentResult(
-            overall_quality=ContextQuality.INSUFFICIENT,
-            overall_confidence=0.0,
-            content_sections=[],
-            company_clarity={},
-            endpoint_readiness=[],
-            data_quality_metrics={},
-            recommendations={},
-            summary="No content",
+        return_value=CompanyOverviewResult(
+            company_overview="",
+            capabilities=[],
+            business_model=[],
+            differentiated_value=[],
+            customer_benefits=[],
+            alternatives=[],
+            testimonials=[],
+            product_description="",
+            key_features=[],
+            company_profiles=[],
+            persona_profiles=[],
+            use_cases=[],
+            pain_points=[],
+            pricing="",
+            confidence_scores={},
+            metadata={},
         )
     )
     with patch(
@@ -82,7 +97,7 @@ async def test_orchestrator_handles_empty_content():
             website_url="https://empty.com",
             target_endpoint="company_overview",
         )
-        assert result["assessment"].overall_quality == ContextQuality.INSUFFICIENT
+        assert result["assessment"].company_overview == ""
         assert result["enriched_content"]["raw_website_content"] == ""
 
 
@@ -90,29 +105,53 @@ async def test_orchestrator_handles_empty_content():
 async def test_orchestrator_readiness_logic():
     """
     The orchestrator should correctly reflect endpoint readiness based on the assessment object.
+    Ready if both company_overview and capabilities are present and confident (>0.5).
     """
-    assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.HIGH,
-        overall_confidence=0.9,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[
-            EndpointReadiness(
-                endpoint="company_overview",
-                is_ready=True,
-                confidence=0.9,
-                missing_requirements=[],
-                recommendations=[],
-            )
-        ],
-        data_quality_metrics={},
-        recommendations={},
-        summary="Ready!",
+    # Not ready: missing capabilities confidence
+    assessment = CompanyOverviewResult(
+        company_overview="Ready!",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="Blossom is fast and reliable.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Blossom Inc. is a SaaS company."],
+        persona_profiles=["CTO: Tech decision maker"],
+        use_cases=["Automated workflows", "Data analytics"],
+        pain_points=["Manual processes", "Slow reporting"],
+        pricing="Contact us",
+        confidence_scores={"company_overview": 0.9},
+        metadata={},
     )
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     readiness = orchestrator.check_endpoint_readiness(assessment, "company_overview")
-    assert readiness["is_ready"] is True
-    assert readiness["confidence"] == 0.9
+    assert readiness["is_ready"] is False
+    assert "capabilities" in readiness["missing_requirements"]
+    # Ready: both required fields present and confident
+    assessment2 = CompanyOverviewResult(
+        company_overview="Ready!",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="Blossom is fast and reliable.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Blossom Inc. is a SaaS company."],
+        persona_profiles=["CTO: Tech decision maker"],
+        use_cases=["Automated workflows", "Data analytics"],
+        pain_points=["Manual processes", "Slow reporting"],
+        pricing="Contact us",
+        confidence_scores={"company_overview": 0.9, "capabilities": 0.9},
+        metadata={},
+    )
+    readiness2 = orchestrator.check_endpoint_readiness(assessment2, "company_overview")
+    assert readiness2["is_ready"] is True
+    assert readiness2["confidence"] == 0.9
 
 
 # --- Service Layer Tests ---
@@ -126,15 +165,23 @@ async def test_service_uses_raw_website_content(monkeypatch):
     class FakeOrchestrator:
         async def orchestrate_context(self, *args, **kwargs):
             return {
-                "assessment": ContextAssessmentResult(
-                    overall_quality=ContextQuality.HIGH,
-                    overall_confidence=0.9,
-                    content_sections=[],
-                    company_clarity={},
-                    endpoint_readiness=[],
-                    data_quality_metrics={},
-                    recommendations={},
-                    summary="Ready!",
+                "assessment": CompanyOverviewResult(
+                    company_overview="Ready!",
+                    capabilities=["AI", "Automation"],
+                    business_model=["SaaS"],
+                    differentiated_value=["Unique AI"],
+                    customer_benefits=["Saves time"],
+                    alternatives=["CompetitorX"],
+                    testimonials=["Great product!"],
+                    product_description="Blossom is fast and reliable.",
+                    key_features=["Fast", "Reliable"],
+                    company_profiles=["Blossom Inc. is a SaaS company."],
+                    persona_profiles=["CTO"],
+                    use_cases=["Automated workflows", "Data analytics"],
+                    pain_points=["Manual processes", "Slow reporting"],
+                    pricing="Contact us",
+                    confidence_scores={"company_overview": 0.9},
+                    metadata={},
                 ),
                 "enriched_content": {
                     "raw_website_content": "This is the real website content!"
@@ -146,18 +193,23 @@ async def test_service_uses_raw_website_content(monkeypatch):
         async def generate(self, request):
             class FakeResp:
                 text = """{
-                        "product_description": "This is the real website content!",
-                        "key_features": ["Feature1", "Feature2"],
-                        "company_profiles": [
-                            "Company profile string."
-                        ],
-                        "persona_profiles": [
-                            "Persona profile string."
-                        ],
-                        "use_cases": ["Use case 1"],
-                        "pain_points": ["Pain point 1"],
-                        "confidence_scores": {"product_description": 0.95}
-                    }"""
+                    \"company_overview\": \"A great company.\",
+                    \"capabilities\": [\"AI\", \"Automation\"],
+                    \"business_model\": [\"SaaS\"],
+                    \"differentiated_value\": [\"Unique AI\"],
+                    \"customer_benefits\": [\"Saves time\"],
+                    \"alternatives\": [\"CompetitorX\"],
+                    \"testimonials\": [\"Great product!\"],
+                    \"product_description\": \"This is the real website content!\",
+                    \"key_features\": [\"Feature1\", \"Feature2\"],
+                    \"company_profiles\": [\"Company profile string.\"],
+                    \"persona_profiles\": [\"Persona profile string.\"],
+                    \"use_cases\": [\"Use case 1\"],
+                    \"pain_points\": [\"Pain point 1\"],
+                    \"pricing\": \"Contact us\",
+                    \"confidence_scores\": {\"product_description\": 0.95},
+                    \"metadata\": {}
+                }"""
 
             return FakeResp()
 
@@ -184,15 +236,23 @@ async def test_service_handles_missing_website_content(monkeypatch):
     class FakeOrchestrator:
         async def orchestrate_context(self, *args, **kwargs):
             return {
-                "assessment": ContextAssessmentResult(
-                    overall_quality=ContextQuality.INSUFFICIENT,
-                    overall_confidence=0.0,
-                    content_sections=[],
-                    company_clarity={},
-                    endpoint_readiness=[],
-                    data_quality_metrics={},
-                    recommendations={},
-                    summary="No content",
+                "assessment": CompanyOverviewResult(
+                    company_overview="",
+                    capabilities=[],
+                    business_model=[],
+                    differentiated_value=[],
+                    customer_benefits=[],
+                    alternatives=[],
+                    testimonials=[],
+                    product_description="",
+                    key_features=[],
+                    company_profiles=[],
+                    persona_profiles=[],
+                    use_cases=[],
+                    pain_points=[],
+                    pricing="",
+                    confidence_scores={},
+                    metadata={},
                 ),
                 "enriched_content": {"raw_website_content": ""},
                 "enrichment_successful": False,
@@ -231,15 +291,23 @@ async def test_service_handles_llm_refusal(monkeypatch):
     class FakeOrchestrator:
         async def orchestrate_context(self, *args, **kwargs):
             return {
-                "assessment": ContextAssessmentResult(
-                    overall_quality=ContextQuality.HIGH,
-                    overall_confidence=0.9,
-                    content_sections=[],
-                    company_clarity={},
-                    endpoint_readiness=[],
-                    data_quality_metrics={},
-                    recommendations={},
-                    summary="Ready!",
+                "assessment": CompanyOverviewResult(
+                    company_overview="Ready!",
+                    capabilities=["AI", "Automation"],
+                    business_model=["SaaS"],
+                    differentiated_value=["Unique AI"],
+                    customer_benefits=["Saves time"],
+                    alternatives=["CompetitorX"],
+                    testimonials=["Great product!"],
+                    product_description="Blossom is fast and reliable.",
+                    key_features=["Fast", "Reliable"],
+                    company_profiles=["Blossom Inc. is a SaaS company."],
+                    persona_profiles=["CTO"],
+                    use_cases=["Automated workflows", "Data analytics"],
+                    pain_points=["Manual processes", "Slow reporting"],
+                    pricing="Contact us",
+                    confidence_scores={"company_overview": 0.9},
+                    metadata={},
                 ),
                 "enriched_content": {"raw_website_content": "Some content"},
                 "enrichment_successful": True,
@@ -303,20 +371,22 @@ def test_api_happy_path(monkeypatch):
     # Patch llm_client.generate_structured_output in the actual endpoint module for company
     async def fake_generate_structured_output(prompt, response_model):
         assessment_dict = {
-            "overall_quality": "high",
-            "overall_confidence": 0.95,
-            "content_sections": [],
-            "company_clarity": {},
-            "endpoint_readiness": [
-                {
-                    "endpoint": "product_overview",
-                    "is_ready": True,
-                    "confidence": 0.95,
-                }
-            ],
-            "data_quality_metrics": {},
-            "recommendations": {},
-            "summary": "Ready!",
+            "company_overview": "Ready!",
+            "capabilities": ["AI", "Automation"],
+            "business_model": ["SaaS"],
+            "differentiated_value": ["Unique AI"],
+            "customer_benefits": ["Saves time"],
+            "alternatives": ["CompetitorX"],
+            "testimonials": ["Great product!"],
+            "product_description": "Blossom is fast and reliable.",
+            "key_features": ["Fast", "Reliable"],
+            "company_profiles": ["Blossom Inc. is a SaaS company."],
+            "persona_profiles": ["CTO"],
+            "use_cases": ["Automated workflows", "Data analytics"],
+            "pain_points": ["Manual processes", "Slow reporting"],
+            "pricing": "Contact us",
+            "confidence_scores": {"company_overview": 0.9, "capabilities": 0.9},
+            "metadata": {},
         }
         return assessment_dict
 
@@ -330,13 +400,25 @@ def test_api_happy_path(monkeypatch):
         class FakeResp:
             text = json.dumps(
                 {
+                    "company_overview": "Ready!",
+                    "capabilities": ["AI", "Automation"],
+                    "business_model": ["SaaS"],
+                    "differentiated_value": ["Unique AI"],
+                    "customer_benefits": ["Saves time"],
+                    "alternatives": ["CompetitorX"],
+                    "testimonials": ["Great product!"],
                     "product_description": "Blossom is fast and reliable.",
                     "key_features": ["Fast", "Reliable", "Secure"],
                     "company_profiles": ["Blossom Inc. is a SaaS company."],
                     "persona_profiles": ["CTO: Tech decision maker"],
                     "use_cases": ["Automated workflows", "Data analytics"],
                     "pain_points": ["Manual processes", "Slow reporting"],
-                    "confidence_scores": {"product_description": 0.95},
+                    "pricing": "Contact us",
+                    "confidence_scores": {
+                        "product_description": 0.95,
+                        "company_overview": 0.9,
+                        "capabilities": 0.9,
+                    },
                     "metadata": {},
                 }
             )

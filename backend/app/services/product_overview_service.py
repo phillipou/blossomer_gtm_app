@@ -56,11 +56,11 @@ async def generate_product_overview_service(
             status_code=422,
             detail={
                 "error": "Insufficient content quality for product overview",
-                "quality_assessment": assessment.overall_quality.value,
+                "quality_assessment": assessment.metadata.get("context_quality", ""),
                 "confidence": readiness["confidence"],
                 "missing_requirements": readiness["missing_requirements"],
                 "recommendations": readiness["recommendations"],
-                "assessment_summary": assessment.summary,
+                "assessment_summary": assessment.metadata.get("assessment_summary", ""),
             },
         )
 
@@ -103,8 +103,8 @@ async def generate_product_overview_service(
         website_content=cleaned_content,
         user_inputted_context=data.user_inputted_context,
         llm_inferred_context=data.llm_inferred_context,
-        context_quality=result["assessment"].overall_quality.value,
-        assessment_summary=result["assessment"].summary,
+        context_quality=result["assessment"].metadata.get("context_quality", ""),
+        assessment_summary=result["assessment"].metadata.get("assessment_summary", ""),
     )
 
     prompt = render_prompt("product_overview", prompt_vars)

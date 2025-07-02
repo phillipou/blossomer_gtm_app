@@ -3,11 +3,7 @@ from backend.app.api.main import app
 from backend.app.core.auth import rate_limit_dependency, authenticate_api_key
 import pytest
 import json
-from backend.app.prompts.models import (
-    ContextAssessmentResult,
-    ContextQuality,
-    EndpointReadiness,
-)
+from backend.app.prompts.models import CompanyOverviewResult
 
 client = TestClient(app)
 
@@ -103,23 +99,38 @@ def test_product_overview_endpoint_success(monkeypatch):
 
     # Patch llm_client.generate_structured_output in the actual endpoint module
     async def fake_generate_structured_output(prompt, response_model):
-        return ContextAssessmentResult(
-            overall_quality=ContextQuality.HIGH,
-            overall_confidence=0.95,
-            content_sections=[],
-            company_clarity={},
-            endpoint_readiness=[
-                EndpointReadiness(
-                    endpoint="product_overview",
-                    is_ready=True,
-                    confidence=0.95,
-                    missing_requirements=[],
-                    recommendations=[],
-                )
-            ],
-            data_quality_metrics={},
-            recommendations={},
-            summary="Ready!",
+        return CompanyOverviewResult(
+            company_overview="A great company.",
+            capabilities=["AI", "Automation"],
+            business_model=["SaaS"],
+            differentiated_value=["Unique AI"],
+            customer_benefits=["Saves time"],
+            alternatives=["CompetitorX"],
+            testimonials=["Great product!"],
+            product_description="A SaaS platform for automation.",
+            key_features=["Fast", "Reliable"],
+            company_profiles=["Tech companies"],
+            persona_profiles=["CTO"],
+            use_cases=["Automate workflows"],
+            pain_points=["Manual work"],
+            pricing="Contact us",
+            confidence_scores={
+                "company_overview": 0.95,
+                "capabilities": 0.95,
+                "business_model": 0.95,
+                "differentiated_value": 0.95,
+                "customer_benefits": 0.95,
+                "alternatives": 0.95,
+                "testimonials": 0.95,
+                "product_description": 0.95,
+                "key_features": 0.95,
+                "company_profiles": 0.95,
+                "persona_profiles": 0.95,
+                "use_cases": 0.95,
+                "pain_points": 0.95,
+                "pricing": 0.95,
+            },
+            metadata={"context_quality": "high"},
         )
 
     monkeypatch.setattr(
@@ -132,23 +143,37 @@ def test_product_overview_endpoint_success(monkeypatch):
         class FakeResp:
             text = json.dumps(
                 {
-                    "product_description": "desc",
-                    "key_features": ["f1"],
-                    "company_profiles": ["c1"],
-                    "persona_profiles": ["p1"],
-                    "use_cases": ["u1"],
-                    "pain_points": ["pp1"],
-                    "pricing": "",
+                    "company_overview": "A great company.",
+                    "capabilities": ["AI", "Automation"],
+                    "business_model": ["SaaS"],
+                    "differentiated_value": ["Unique AI"],
+                    "customer_benefits": ["Saves time"],
+                    "alternatives": ["CompetitorX"],
+                    "testimonials": ["Great product!"],
+                    "product_description": "A SaaS platform for automation.",
+                    "key_features": ["Fast", "Reliable"],
+                    "company_profiles": ["Tech companies"],
+                    "persona_profiles": ["CTO"],
+                    "use_cases": ["Automate workflows"],
+                    "pain_points": ["Manual work"],
+                    "pricing": "Contact us",
                     "confidence_scores": {
-                        "product_description": 1,
-                        "key_features": 1,
-                        "company_profiles": 1,
-                        "persona_profiles": 1,
-                        "use_cases": 1,
-                        "pain_points": 1,
-                        "pricing": 1,
+                        "company_overview": 0.95,
+                        "capabilities": 0.95,
+                        "business_model": 0.95,
+                        "differentiated_value": 0.95,
+                        "customer_benefits": 0.95,
+                        "alternatives": 0.95,
+                        "testimonials": 0.95,
+                        "product_description": 0.95,
+                        "key_features": 0.95,
+                        "company_profiles": 0.95,
+                        "persona_profiles": 0.95,
+                        "use_cases": 0.95,
+                        "pain_points": 0.95,
+                        "pricing": 0.95,
                     },
-                    "metadata": {},
+                    "metadata": {"context_quality": "high"},
                 }
             )
 
@@ -162,14 +187,10 @@ def test_product_overview_endpoint_success(monkeypatch):
     response = client.post("/api/company/generate", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert "product_description" in data
-    assert "key_features" in data
-    assert "company_profiles" in data
-    assert "persona_profiles" in data
-    assert "use_cases" in data
-    assert "pain_points" in data
-    assert "confidence_scores" in data
-    assert "metadata" in data
+    assert data["company_overview"] == "A great company."
+    assert data["capabilities"] == ["AI", "Automation"]
+    assert data["confidence_scores"]["company_overview"] == 0.95
+    assert data["metadata"]["context_quality"] == "high"
 
 
 @pytest.mark.skip(reason="type: ignore for test mocks")

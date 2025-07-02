@@ -4,7 +4,6 @@ registry.py - Template registry and selector logic for prompt templates.
 
 from backend.app.prompts.models import (
     ProductOverviewPromptVars,
-    ContextAssessmentVars,
     TargetCompanyPromptVars,
     TargetPersonaPromptVars,
 )
@@ -23,10 +22,6 @@ TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
     "product_overview": {
         "model": ProductOverviewPromptVars,
         "template": "product_overview",
-    },
-    "context_assessment": {
-        "model": ContextAssessmentVars,
-        "template": "context_assessment",
     },
     "target_company": {"model": TargetCompanyPromptVars, "template": "target_company"},
     "target_persona": {"model": TargetPersonaPromptVars, "template": "target_persona"},

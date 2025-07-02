@@ -4,12 +4,12 @@ assessing context quality for campaign generation endpoints.
 """
 
 from typing import Optional, Dict, Any
-import logging
 
 from backend.app.prompts.models import (
     ContextAssessmentResult,
     ContextAssessmentVars,
     ContextQuality,
+    CompanyOverviewResult,
 )
 from backend.app.prompts.registry import render_prompt
 from backend.app.services.llm_service import LLMClient
@@ -86,7 +86,7 @@ class ContextOrchestrator:
         website_content: str,
         target_endpoint: Optional[str] = None,
         user_context: Optional[Dict[str, Any]] = None,
-    ) -> ContextAssessmentResult:
+    ) -> CompanyOverviewResult:
         """
         Uses an LLM to assess the quality of the provided website content for GTM endpoints.
 
@@ -96,19 +96,49 @@ class ContextOrchestrator:
             user_context (Optional[dict]): Optional user-provided context for campaign generation.
 
         Returns:
-            ContextAssessmentResult: A Pydantic model containing the structured,
+            CompanyOverviewResult: A Pydantic model containing the structured,
                 rich assessment from the LLM.
         """
         if not website_content or not website_content.strip():
-            return ContextAssessmentResult(
-                overall_quality=ContextQuality.INSUFFICIENT,
-                overall_confidence=0.0,
-                content_sections=[],
-                company_clarity={},
-                endpoint_readiness=[],
-                data_quality_metrics={},
-                recommendations={},
-                summary="No website content available. Unable to assess context quality.",
+            # Return an empty product overview structure if no content
+            return CompanyOverviewResult(
+                company_overview="",
+                capabilities=[],
+                business_model=[],
+                differentiated_value=[],
+                customer_benefits=[],
+                alternatives=[],
+                testimonials=[],
+                product_description="",
+                key_features=[],
+                company_profiles=[],
+                persona_profiles=[],
+                use_cases=[],
+                pain_points=[],
+                pricing="",
+                confidence_scores={
+                    "company_overview": 0.0,
+                    "capabilities": 0.0,
+                    "business_model": 0.0,
+                    "differentiated_value": 0.0,
+                    "customer_benefits": 0.0,
+                    "alternatives": 0.0,
+                    "testimonials": 0.0,
+                    "product_description": 0.0,
+                    "key_features": 0.0,
+                    "company_profiles": 0.0,
+                    "persona_profiles": 0.0,
+                    "use_cases": 0.0,
+                    "pain_points": 0.0,
+                    "pricing": 0.0,
+                },
+                metadata={
+                    "sources_used": [],
+                    "context_quality": "insufficient",
+                    "assessment_summary": (
+                        "No website content available. Unable to assess context quality."
+                    ),
+                },
             )
 
         prompt_vars = ContextAssessmentVars(
@@ -116,12 +146,12 @@ class ContextOrchestrator:
             target_endpoint=target_endpoint,
             user_context=user_context,
         )
-        prompt = render_prompt("context_assessment", prompt_vars)
+        prompt = render_prompt("product_overview", prompt_vars)
 
         response_model = await self.llm_client.generate_structured_output(
-            prompt=prompt, response_model=ContextAssessmentResult
+            prompt=prompt, response_model=CompanyOverviewResult
         )
-        return ContextAssessmentResult.model_validate(response_model)
+        return CompanyOverviewResult.model_validate(response_model)
 
     async def assess_url_context(
         self,
@@ -142,40 +172,21 @@ class ContextOrchestrator:
         Returns:
             ContextAssessmentResult: The structured context assessment result.
         """
-        logger = logging.getLogger(__name__)
         website_content = ""
         try:
-            logger.debug(f"Attempting to scrape website: {url} (crawl={crawl})")
             scrape_result = extract_website_content(url, crawl=crawl)
             website_content = scrape_result.get("content", "")
-            logger.debug("[DEBUG] Raw website content for %s:", url)
-            logger.debug("%s", website_content[:100])
-        except Exception as e:
-            logger.warning(
-                "Website scrape failed for %s: %s",
-                url,
-                e,
-            )
+        except Exception:
+            pass
 
         if not website_content:
             if not crawl:
-                logger.debug(
-                    f"No content found from initial scrape. Retrying with full crawl: {url}"
-                )
                 try:
                     scrape_result = extract_website_content(url, crawl=True)
                     website_content = scrape_result.get("content", "")
-                except Exception as e:
-                    logger.warning(
-                        "Website crawl failed for %s: %s",
-                        url,
-                        e,
-                    )
+                except Exception:
+                    pass
             if not website_content:
-                logger.debug(
-                    "No content found after full crawl for %s. Returning insufficient result.",
-                    url,
-                )
                 return ContextAssessmentResult(
                     overall_quality=ContextQuality.INSUFFICIENT,
                     overall_confidence=0.0,
@@ -211,45 +222,60 @@ class ContextOrchestrator:
 
     def check_endpoint_readiness(
         self,
-        assessment: ContextAssessmentResult,
+        assessment: "CompanyOverviewResult",
         endpoint: str,
     ) -> Dict[str, Any]:
         """
         Check if the assessment meets readiness criteria for the given endpoint.
 
-        Args:
-            assessment (ContextAssessmentResult): The assessment result from LLM.
-            endpoint (str): The endpoint to check readiness for.
+        Readiness now only requires:
+        - company_overview: non-empty and confidence > 0.5
+        - capabilities: non-empty and confidence > 0.5
+        All other fields are reported if low-confidence or missing, but do not block readiness.
 
         Returns:
             Dict[str, Any]: Dict with keys: is_ready, confidence, missing_requirements, recommendations.
         """
-        logger = logging.getLogger(__name__)
-        for readiness in assessment.endpoint_readiness:
-            if readiness.endpoint == endpoint:
-                logger.debug(
-                    f"Endpoint readiness found for '{endpoint}': "
-                    f"is_ready={readiness.is_ready}, confidence={readiness.confidence}, "
-                    f"missing_requirements={readiness.missing_requirements}, "
-                    f"recommendations={readiness.recommendations}"
-                )
-                return {
-                    "is_ready": readiness.is_ready,
-                    "confidence": readiness.confidence,
-                    "missing_requirements": readiness.missing_requirements,
-                    "recommendations": readiness.recommendations,
-                }
-        logger.debug(
-            f"No endpoint readiness found for '{endpoint}'. "
-            f"Returning not ready with overall_confidence={assessment.overall_confidence}"
+        # Main required fields
+        company_overview_ok = (
+            bool(assessment.company_overview.strip())
+            and assessment.confidence_scores.get("company_overview", 0.0) > 0.5
         )
+        capabilities_ok = (
+            bool(getattr(assessment, "capabilities", []))
+            and assessment.confidence_scores.get("capabilities", 0.0) > 0.5
+        )
+
+        is_ready = company_overview_ok and capabilities_ok
+
+        missing_requirements = []
+        recommendations = []
+
+        if not company_overview_ok:
+            missing_requirements.append("company_overview")
+            recommendations.append("Add a company overview with higher confidence.")
+
+        if not capabilities_ok:
+            missing_requirements.append("capabilities")
+            recommendations.append("Add capabilities with higher confidence.")
+
+        # Report (but do not block on) other low-confidence fields
+        for k, v in assessment.confidence_scores.items():
+            if k not in ("company_overview", "capabilities") and v <= 0.5:
+                missing_requirements.append(k)
+                recommendations.append(f"Improve confidence in {k}.")
+
+        # Confidence: minimum of required fields, or 0 if missing
+        confidence = min(
+            assessment.confidence_scores.get("company_overview", 0.0),
+            assessment.confidence_scores.get("capabilities", 0.0),
+        )
+
         return {
-            "is_ready": False,
-            "confidence": assessment.overall_confidence,
-            "missing_requirements": [
-                "Assessment did not return endpoint readiness for this endpoint."
-            ],
-            "recommendations": [],
+            "is_ready": is_ready,
+            "confidence": confidence,
+            "missing_requirements": missing_requirements,
+            "recommendations": recommendations,
         }
 
     async def orchestrate_context(
@@ -263,31 +289,24 @@ class ContextOrchestrator:
         """
         Main orchestration method: assess → plan → enrich → reassess (iterative improvement).
         """
-        logger = logging.getLogger(__name__)
         all_content: Dict[str, Any] = {}
         sources_used = []
         enrichment_performed = []
         step = 0
         # Initial fetch (scrape/crawl)
-        logger.debug(f"[Orchestrator] Step 1: Initial content fetch for {website_url}")
-        # Scrape website content directly here
         website_content = ""
         try:
             scrape_result = extract_website_content(website_url, crawl=False)
             website_content = scrape_result.get("content", "")
-        except Exception as e:
-            logger.warning(f"Website scrape failed for {website_url}: {e}")
+        except Exception:
+            pass
         # If no content, try crawling
         if not website_content:
             try:
                 scrape_result = extract_website_content(website_url, crawl=True)
                 website_content = scrape_result.get("content", "")
-            except Exception as e:
-                logger.warning(
-                    "Website crawl failed for %s: %s",
-                    website_url,
-                    e,
-                )
+            except Exception:
+                pass
         # Assess context
         assessment = await self.assess_context(
             website_content=website_content,
@@ -299,18 +318,14 @@ class ContextOrchestrator:
         sources_used.append("website_scraper")
         # Check readiness
         readiness = self.check_endpoint_readiness(assessment, target_endpoint)
-        logger.debug(f"[Orchestrator] Initial readiness: {readiness}")
         # Iterative enrichment loop (scaffold)
         while auto_enrich and not readiness["is_ready"] and step < max_steps:
-            logger.debug(
-                f"[Orchestrator] Enrichment iteration {step+1} for {website_url}"
-            )
             enrichment_plan = self._create_enrichment_plan(assessment, target_endpoint)
             enrichment_result = self._execute_enrichment(enrichment_plan, website_url)
             enrichment_performed.append(enrichment_result)
             step += 1
             break
-        final_quality = assessment.overall_quality.value
+        final_quality = assessment.metadata.get("context_quality", "")
         enrichment_successful = readiness["is_ready"] if readiness else False
         return {
             "assessment": assessment,
@@ -323,14 +338,10 @@ class ContextOrchestrator:
 
     def _create_enrichment_plan(self, assessment, target_endpoint):
         """TODO: Plan enrichment steps based on assessment and endpoint requirements."""
-        logger = logging.getLogger(__name__)
-        logger.debug(f"[Orchestrator] Planning enrichment for {target_endpoint}")
         # Placeholder: return empty plan
         return {}
 
     def _execute_enrichment(self, enrichment_plan, website_url):
         """TODO: Execute enrichment plan (fetch more data, crawl specific pages, etc.)."""
-        logger = logging.getLogger(__name__)
-        logger.debug(f"[Orchestrator] Executing enrichment plan for {website_url}")
         # Placeholder: return empty result
         return {}

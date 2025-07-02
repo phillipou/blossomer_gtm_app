@@ -5,24 +5,24 @@ from backend.app.services.context_orchestrator import (
     resolve_context_for_endpoint,
 )
 from backend.app.prompts.models import (
-    ContextAssessmentResult,
+    CompanyOverviewResult,
     ContextQuality,
-    EndpointReadiness,
 )
 
 
 @pytest.mark.asyncio
 async def test_assess_context_empty_content():
-    """Test that empty website content returns 'insufficient' result without LLM call."""
+    """Test that empty website content returns an empty product overview result."""
     orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
         "backend.app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="   ")
-    assert result.overall_quality == ContextQuality.INSUFFICIENT
-    assert result.overall_confidence == 0.0
-    assert result.summary.startswith("No website content")
+    assert result.company_overview == ""
+    assert result.capabilities == []
+    assert result.confidence_scores["company_overview"] == 0.0
+    assert result.metadata["context_quality"] == "insufficient"
 
 
 @pytest.mark.asyncio
@@ -44,18 +44,26 @@ async def test_assess_url_context_scrape_failure():
 
 @pytest.mark.asyncio
 async def test_assess_context_happy_path():
-    """Test that valid content and LLM response returns a valid ContextAssessmentResult."""
+    """Test that valid content and LLM response returns a valid CompanyOverviewResult."""
     llm_client = AsyncMock()
     llm_client.generate_structured_output = AsyncMock(
-        return_value=ContextAssessmentResult(
-            overall_quality=ContextQuality.HIGH,
-            overall_confidence=0.95,
-            content_sections=[],
-            company_clarity={},
-            endpoint_readiness=[],
-            data_quality_metrics={},
-            recommendations={},
-            summary="All good.",
+        return_value=CompanyOverviewResult(
+            company_overview="A great company.",
+            capabilities=["AI", "Automation"],
+            business_model=["SaaS"],
+            differentiated_value=["Unique AI"],
+            customer_benefits=["Saves time"],
+            alternatives=["CompetitorX"],
+            testimonials=["Great product!"],
+            product_description="A SaaS platform for automation.",
+            key_features=["Fast", "Reliable"],
+            company_profiles=["Tech companies"],
+            persona_profiles=["CTO"],
+            use_cases=["Automate workflows"],
+            pain_points=["Manual work"],
+            pricing="Contact us",
+            confidence_scores={"company_overview": 0.95},
+            metadata={"context_quality": "high"},
         )
     )
     orchestrator = ContextOrchestrator(llm_client)
@@ -64,9 +72,10 @@ async def test_assess_context_happy_path():
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="Some real content.")
-    assert result.overall_quality == ContextQuality.HIGH
-    assert result.overall_confidence == 0.95
-    assert result.summary == "All good."
+    assert result.company_overview == "A great company."
+    assert result.capabilities == ["AI", "Automation"]
+    assert result.confidence_scores["company_overview"] == 0.95
+    assert result.metadata["context_quality"] == "high"
 
 
 @pytest.mark.asyncio
@@ -74,15 +83,23 @@ async def test_assess_url_context_happy_path():
     """Test the full orchestration: scrape returns content, LLM returns valid assessment."""
     orchestrator = ContextOrchestrator(AsyncMock())
     orchestrator.assess_context = AsyncMock(
-        return_value=ContextAssessmentResult(
-            overall_quality=ContextQuality.HIGH,
-            overall_confidence=0.9,
-            content_sections=[],
-            company_clarity={},
-            endpoint_readiness=[],
-            data_quality_metrics={},
-            recommendations={},
-            summary="Looks great.",
+        return_value=CompanyOverviewResult(
+            company_overview="A great company.",
+            capabilities=["AI", "Automation"],
+            business_model=["SaaS"],
+            differentiated_value=["Unique AI"],
+            customer_benefits=["Saves time"],
+            alternatives=["CompetitorX"],
+            testimonials=["Great product!"],
+            product_description="A SaaS platform for automation.",
+            key_features=["Fast", "Reliable"],
+            company_profiles=["Tech companies"],
+            persona_profiles=["CTO"],
+            use_cases=["Automate workflows"],
+            pain_points=["Manual work"],
+            pricing="Contact us",
+            confidence_scores={"company_overview": 0.9},
+            metadata={"context_quality": "high"},
         )
     )
     with patch(
@@ -92,8 +109,10 @@ async def test_assess_url_context_happy_path():
         result = await orchestrator.assess_url_context(
             url="https://good.com",
         )
-    assert result.overall_quality == ContextQuality.HIGH
-    assert result.summary == "Looks great."
+    assert result.company_overview == "A great company."
+    assert result.capabilities == ["AI", "Automation"]
+    assert result.confidence_scores["company_overview"] == 0.9
+    assert result.metadata["context_quality"] == "high"
 
 
 @pytest.mark.asyncio
@@ -106,23 +125,23 @@ async def test_orchestrate_context_ready(monkeypatch):
     )
     orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a ready assessment
-    ready_assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.HIGH,
-        overall_confidence=0.95,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[
-            EndpointReadiness(
-                endpoint="product_overview",
-                is_ready=True,
-                confidence=0.95,
-                missing_requirements=[],
-                recommendations=[],
-            )
-        ],
-        data_quality_metrics={},
-        recommendations={},
-        summary="Ready for product overview.",
+    ready_assessment = CompanyOverviewResult(
+        company_overview="A great company.",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={"company_overview": 0.95},
+        metadata={"context_quality": "high"},
     )
     monkeypatch.setattr(
         orchestrator, "assess_url_context", AsyncMock(return_value=ready_assessment)
@@ -135,7 +154,9 @@ async def test_orchestrate_context_ready(monkeypatch):
         target_endpoint="product_overview",
         auto_enrich=False,
     )
-    assert result["assessment"].overall_quality == ContextQuality.HIGH
+    assert result["assessment"].company_overview == "A great company."
+    assert result["assessment"].confidence_scores["company_overview"] == 0.95
+    assert result["assessment"].metadata["context_quality"] == "high"
 
 
 @pytest.mark.asyncio
@@ -148,23 +169,23 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     )
     orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a not ready assessment
-    not_ready_assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.LOW,
-        overall_confidence=0.3,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[
-            EndpointReadiness(
-                endpoint="product_overview",
-                is_ready=False,
-                confidence=0.3,
-                missing_requirements=["Product features"],
-                recommendations=["Add product features section"],
-            )
-        ],
-        data_quality_metrics={},
-        recommendations={},
-        summary="Not ready for product overview.",
+    not_ready_assessment = CompanyOverviewResult(
+        company_overview="A great company.",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={"company_overview": 0.3},
+        metadata={"context_quality": "low"},
     )
     monkeypatch.setattr(
         orchestrator, "assess_url_context", AsyncMock(return_value=not_ready_assessment)
@@ -186,7 +207,9 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         auto_enrich=True,
         max_steps=1,
     )
-    assert result["assessment"].overall_quality == ContextQuality.LOW
+    assert result["assessment"].company_overview == "A great company."
+    assert result["assessment"].confidence_scores["company_overview"] == 0.3
+    assert result["assessment"].metadata["context_quality"] == "low"
 
 
 @pytest.mark.asyncio
@@ -194,15 +217,23 @@ async def test_orchestrate_context_no_content(monkeypatch):
     """Test orchestrate_context returns insufficient if no content is found after scrape and crawl."""
     llm_client = AsyncMock()
     llm_client.generate_structured_output = AsyncMock(
-        return_value=ContextAssessmentResult(
-            overall_quality=ContextQuality.INSUFFICIENT,
-            overall_confidence=0.0,
-            content_sections=[],
-            company_clarity={},
-            endpoint_readiness=[],
-            data_quality_metrics={},
-            recommendations={},
-            summary="No website content available. Unable to assess context quality.",
+        return_value=CompanyOverviewResult(
+            company_overview="",
+            capabilities=[],
+            business_model=[],
+            differentiated_value=[],
+            customer_benefits=[],
+            alternatives=[],
+            testimonials=[],
+            product_description="",
+            key_features=[],
+            company_profiles=[],
+            persona_profiles=[],
+            use_cases=[],
+            pain_points=[],
+            pricing="",
+            confidence_scores={"company_overview": 0.0},
+            metadata={"context_quality": "insufficient"},
         )
     )
     orchestrator = ContextOrchestrator(llm_client)
@@ -211,15 +242,23 @@ async def test_orchestrate_context_no_content(monkeypatch):
         orchestrator,
         "assess_url_context",
         AsyncMock(
-            return_value=ContextAssessmentResult(
-                overall_quality=ContextQuality.INSUFFICIENT,
-                overall_confidence=0.0,
-                content_sections=[],
-                company_clarity={},
-                endpoint_readiness=[],
-                data_quality_metrics={},
-                recommendations={},
-                summary="No website content available. Unable to assess context quality.",
+            return_value=CompanyOverviewResult(
+                company_overview="",
+                capabilities=[],
+                business_model=[],
+                differentiated_value=[],
+                customer_benefits=[],
+                alternatives=[],
+                testimonials=[],
+                product_description="",
+                key_features=[],
+                company_profiles=[],
+                persona_profiles=[],
+                use_cases=[],
+                pain_points=[],
+                pricing="",
+                confidence_scores={"company_overview": 0.0},
+                metadata={"context_quality": "insufficient"},
             )
         ),
     )
@@ -228,9 +267,9 @@ async def test_orchestrate_context_no_content(monkeypatch):
         target_endpoint="product_overview",
         auto_enrich=False,
     )
-    assert result["assessment"].overall_quality == ContextQuality.INSUFFICIENT
-    assert result["final_quality"] == "insufficient"
-    assert not result["enrichment_performed"]
+    assert result["assessment"].company_overview == ""
+    assert result["assessment"].confidence_scores["company_overview"] == 0.0
+    assert result["assessment"].metadata["context_quality"] == "insufficient"
 
 
 @pytest.mark.asyncio
@@ -358,3 +397,99 @@ async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
         request, "target_personas", orchestrator
     )
     assert result2["source"] != "user_inputted_context" or not result2["context"]
+
+
+@pytest.mark.asyncio
+async def test_check_endpoint_readiness_ready():
+    """Ready if company_overview and capabilities are present and confident (>0.5)."""
+    orchestrator = ContextOrchestrator(AsyncMock())
+    assessment = CompanyOverviewResult(
+        company_overview="A great company.",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={
+            "company_overview": 0.95,
+            "capabilities": 0.9,
+            "pricing": 0.0,  # Should not block readiness
+        },
+        metadata={"context_quality": "high"},
+    )
+    readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
+    assert readiness["is_ready"] is True
+    assert readiness["confidence"] == 0.9
+    assert "pricing" in readiness["missing_requirements"]
+    assert "company_overview" not in readiness["missing_requirements"]
+    assert "capabilities" not in readiness["missing_requirements"]
+
+
+@pytest.mark.asyncio
+async def test_check_endpoint_readiness_not_ready_missing_company_overview():
+    """Not ready if company_overview is missing or low confidence."""
+    orchestrator = ContextOrchestrator(AsyncMock())
+    assessment = CompanyOverviewResult(
+        company_overview="",
+        capabilities=["AI", "Automation"],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={
+            "company_overview": 0.0,
+            "capabilities": 0.9,
+        },
+        metadata={"context_quality": "low"},
+    )
+    readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
+    assert readiness["is_ready"] is False
+    assert "company_overview" in readiness["missing_requirements"]
+    assert "capabilities" not in readiness["missing_requirements"]
+
+
+@pytest.mark.asyncio
+async def test_check_endpoint_readiness_not_ready_missing_capabilities():
+    """Not ready if capabilities is missing or low confidence."""
+    orchestrator = ContextOrchestrator(AsyncMock())
+    assessment = CompanyOverviewResult(
+        company_overview="A great company.",
+        capabilities=[],
+        business_model=["SaaS"],
+        differentiated_value=["Unique AI"],
+        customer_benefits=["Saves time"],
+        alternatives=["CompetitorX"],
+        testimonials=["Great product!"],
+        product_description="A SaaS platform for automation.",
+        key_features=["Fast", "Reliable"],
+        company_profiles=["Tech companies"],
+        persona_profiles=["CTO"],
+        use_cases=["Automate workflows"],
+        pain_points=["Manual work"],
+        pricing="Contact us",
+        confidence_scores={
+            "company_overview": 0.95,
+            "capabilities": 0.0,
+        },
+        metadata={"context_quality": "low"},
+    )
+    readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
+    assert readiness["is_ready"] is False
+    assert "capabilities" in readiness["missing_requirements"]
+    assert "company_overview" not in readiness["missing_requirements"]
