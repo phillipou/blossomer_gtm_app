@@ -21,6 +21,14 @@ const STATUS_STAGES = [
   { label: "Finalizing...", percent: 90 },
 ];
 
+type CardKey =
+  | "capabilities"
+  | "businessModel"
+  | "alternatives"
+  | "differentiatedValue"
+  | "testimonials"
+  | "customerBenefits";
+
 export default function Dashboard() {
   const location = useLocation();
   const [overview, setOverview] = useState<any>(() => {
@@ -34,6 +42,49 @@ export default function Dashboard() {
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [progressStage, setProgressStage] = useState(0);
+  const [mockCards, setMockCards] = useState<Record<CardKey, string[]>>({
+    capabilities: [
+      "Real-time data analytics across multiple sources",
+      "Seamless integration with major CRMs and ERPs",
+      "Customizable dashboards and reporting tools",
+      "AI-powered forecasting and insights",
+      "Enterprise-grade security and compliance"
+    ],
+    businessModel: [
+      "SaaS subscription with tiered pricing",
+      "Free trial available for 14 days",
+      "Annual and monthly billing options",
+      "Custom enterprise plans for large clients",
+      "Add-on modules for advanced features"
+    ],
+    alternatives: [
+      "Acme Analytics: Similar dashboard features, but lacks AI forecasting.",
+      "DataPro Suite: Broader integrations, but higher cost.",
+      "Insightly: Strong in reporting, but less customizable.",
+      "MarketGenius: Focused on SMBs, fewer enterprise features."
+    ],
+    differentiatedValue: [
+      "Faster onboarding and time-to-value than competitors.",
+      "Proprietary AI models for industry-specific insights.",
+      "Superior customer support with 24/7 live chat.",
+      "Highly customizable to unique business needs.",
+      "Transparent, usage-based pricing."
+    ],
+    testimonials: [
+      '"Blossomer transformed our go-to-market strategy!" – CMO, TechCorp',
+      '"The insights are actionable and easy to understand." – VP Sales, FinServe',
+      '"Onboarding was a breeze and support is top-notch." – CEO, HealthPlus',
+      '"We saw ROI within the first quarter." – COO, RetailX',
+      '"The best analytics platform we have used." – Head of Ops, EduStart'
+    ],
+    customerBenefits: [
+      "Accelerated go-to-market execution and revenue growth",
+      "Improved sales team productivity and targeting",
+      "Faster identification of high-potential customer segments",
+      "Clearer product-market fit and messaging",
+      "Reduced time spent on manual research and analysis"
+    ]
+  });
 
   // If url/icp are passed, fetch the data (only if not in localStorage)
   useEffect(() => {
@@ -150,6 +201,19 @@ export default function Dashboard() {
     setEditContent(currentContent);
   };
   const handleSave = () => {
+    if (editingBlock && [
+      "capabilities",
+      "businessModel",
+      "alternatives",
+      "differentiatedValue",
+      "testimonials",
+      "customerBenefits"
+    ].includes(editingBlock)) {
+      setMockCards((prev) => ({
+        ...prev,
+        [editingBlock as CardKey]: editContent.split("\n").filter((line) => line.trim() !== "")
+      }));
+    }
     setEditingBlock(null);
     setEditContent("");
   };
@@ -164,160 +228,103 @@ export default function Dashboard() {
     { label: "Market Overview", value: "market" },
   ];
 
+  const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: boolean }[] = [
+    { key: "capabilities", title: "Capabilities", label: "Capabilities", bulleted: true },
+    { key: "businessModel", title: "Business Model", label: "Business Model", bulleted: true },
+    { key: "alternatives", title: "Alternatives", label: "Alternatives", bulleted: true },
+    { key: "differentiatedValue", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
+    { key: "testimonials", title: "Testimonials", label: "Testimonials", bulleted: true },
+    { key: "customerBenefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
+  ];
+
   return (
-    <div className="flex flex-col">
-      {/* Remove SidebarNav and HeaderBar, only render main content */}
-      {activeTab === "company" && (
-        <>
-          <SubNav
-            breadcrumbs={[
-              { label: "Dashboard", href: "/dashboard" },
-              { label: "Company", href: "/dashboard" },
-              { label: subTabs.find(tab => tab.value === activeSubTab)?.label || "" }
-            ]}
-            activeSubTab={activeSubTab}
-            setActiveSubTab={setActiveSubTab}
-            subTabs={subTabs}
-          />
-          <div className="flex-1 p-8 space-y-8">
-            {/* Overview Block */}
-            <CompanyOverviewCard companyName={companyName} domain={domain} description={overview.product_description} />
-            {/* Two Column Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {editingBlock === "keyFeatures" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Key Features</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Key Features"
-                  items={overview.key_features || []}
-                  onEdit={() => handleEdit("keyFeatures", (overview.key_features || []).join("\n"))}
-                  renderItem={(feature) => <span className="text-sm text-gray-700">{feature}</span>}
-                />
-              )}
-              {editingBlock === "personaProfiles" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Persona Profiles</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Persona Profiles"
-                  items={overview.persona_profiles || []}
-                  onEdit={() => handleEdit("personaProfiles", (overview.persona_profiles || []).join("\n"))}
-                  renderItem={(profile) => <span className="text-sm text-gray-700">{profile}</span>}
-                />
-              )}
+    <>
+      <style>{`
+        .blue-bullet::marker {
+          color: #2563eb;
+        }
+      `}</style>
+      <div className="flex flex-col">
+        {/* Remove SidebarNav and HeaderBar, only render main content */}
+        {activeTab === "company" && (
+          <>
+            <SubNav
+              breadcrumbs={[
+                { label: "Dashboard", href: "/dashboard" },
+                { label: "Company", href: "/dashboard" },
+                { label: subTabs.find(tab => tab.value === activeSubTab)?.label || "" }
+              ]}
+              activeSubTab={activeSubTab}
+              setActiveSubTab={setActiveSubTab}
+              subTabs={subTabs}
+            />
+            <div className="flex-1 p-8 space-y-8">
+              {/* Overview Block */}
+              <CompanyOverviewCard companyName={companyName} domain={domain} description={overview.product_description} />
+              {/* New Info Cards Row 1 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {cardConfigs.map(({ key, title, label, bulleted }) =>
+                  editingBlock === key ? (
+                    <div className="space-y-4" key={key}>
+                      <label className="font-semibold">{label}</label>
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="min-h-[120px]"
+                      />
+                      <div className="flex space-x-2">
+                        <Button size="sm" onClick={handleSave}>
+                          <Check className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancel}>
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <InfoCard
+                      key={key}
+                      title={title}
+                      items={mockCards[key as CardKey]}
+                      onEdit={() => handleEdit(key, mockCards[key as CardKey].join("\n"))}
+                      renderItem={(item, idx) => (
+                        <li
+                          key={idx}
+                          className="list-disc list-inside text-sm text-gray-700 blue-bullet"
+                        >
+                          {item}
+                        </li>
+                      )}
+                    />
+                  )
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {editingBlock === "useCases" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Use Cases</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Use Cases"
-                  items={overview.use_cases || []}
-                  onEdit={() => handleEdit("useCases", (overview.use_cases || []).join("\n"))}
-                  renderItem={(useCase) => <span className="text-sm text-gray-700">{useCase}</span>}
-                />
-              )}
-              {editingBlock === "painPoints" ? (
-                <div className="space-y-4">
-                  <label className="font-semibold">Pain Points</label>
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex space-x-2">
-                    <Button size="sm" onClick={handleSave}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancel}>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <InfoCard
-                  title="Pain Points"
-                  items={overview.pain_points || []}
-                  onEdit={() => handleEdit("painPoints", (overview.pain_points || []).join("\n"))}
-                  renderItem={(point) => <span className="text-sm text-gray-700">{point}</span>}
-                />
-              )}
-            </div>
+          </>
+        )}
+        {activeTab === "customers" && (
+          <div className="flex-1 p-8">
+            {/* Add SubNav for Customers */}
+            <SubNav
+              breadcrumbs={[
+                { label: "Dashboard", href: "/dashboard" },
+                { label: "Customers", href: "/customers" }
+              ]}
+              activeSubTab={"list"}
+              setActiveSubTab={() => {}}
+              subTabs={[]}
+            />
+            <CustomersList
+              companyName={companyName}
+              domain={domain}
+              description={overview.product_description}
+            />
           </div>
-        </>
-      )}
-      {activeTab === "customers" && (
-        <div className="flex-1 p-8">
-          {/* Add SubNav for Customers */}
-          <SubNav
-            breadcrumbs={[
-              { label: "Dashboard", href: "/dashboard" },
-              { label: "Customers", href: "/customers" }
-            ]}
-            activeSubTab={"list"}
-            setActiveSubTab={() => {}}
-            subTabs={[]}
-          />
-          <CustomersList
-            companyName={companyName}
-            domain={domain}
-            description={overview.product_description}
-          />
-        </div>
-      )}
-      {/* TODO: Add campaigns tab content here */}
-    </div>
+        )}
+        {/* TODO: Add campaigns tab content here */}
+      </div>
+    </>
   );
 } 
