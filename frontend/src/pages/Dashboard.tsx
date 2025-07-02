@@ -4,7 +4,6 @@ import { useLocation } from "react-router-dom";
 import SidebarNav from "../components/dashboard/SidebarNav";
 import HeaderBar from "../components/dashboard/HeaderBar";
 import SubNav from "../components/dashboard/SubNav";
-import OverviewBlock from "../components/dashboard/OverviewBlock";
 import InfoCard from "../components/dashboard/InfoCard";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -260,7 +259,14 @@ export default function Dashboard() {
             />
             <div className="flex-1 p-8 space-y-8">
               {/* Overview Block */}
-              <OverviewCard companyName={companyName} domain={"blossomer.io"} description={overview.product_description} />
+              <OverviewCard 
+                title={companyName}
+                subtitle={"blossomer.io"}
+                bodyTitle="Company Description"
+                bodyText={overview.product_description}
+                showButton={true}
+                buttonTitle="View Details"
+              />
               {/* New Info Cards Row 1 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {cardConfigs.map(({ key, title, label, bulleted }) =>
