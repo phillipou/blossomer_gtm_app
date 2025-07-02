@@ -260,7 +260,7 @@ export default function Dashboard() {
             />
             <div className="flex-1 p-8 space-y-8">
               {/* Overview Block */}
-              <CompanyOverviewCard companyName={companyName} domain={domain} description={overview.product_description} />
+              <CompanyOverviewCard companyName={companyName} domain={"blossomer.io"} description={overview.product_description} />
               {/* New Info Cards Row 1 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {cardConfigs.map(({ key, title, label, bulleted }) =>
