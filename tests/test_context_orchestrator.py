@@ -45,7 +45,20 @@ async def test_assess_url_context_scrape_failure():
 @pytest.mark.asyncio
 async def test_assess_context_happy_path():
     """Test that valid content and LLM response returns a valid ContextAssessmentResult."""
-    orchestrator = ContextOrchestrator(AsyncMock())
+    llm_client = AsyncMock()
+    llm_client.generate_structured_output = AsyncMock(
+        return_value=ContextAssessmentResult(
+            overall_quality=ContextQuality.HIGH,
+            overall_confidence=0.95,
+            content_sections=[],
+            company_clarity={},
+            endpoint_readiness=[],
+            data_quality_metrics={},
+            recommendations={},
+            summary="All good.",
+        )
+    )
+    orchestrator = ContextOrchestrator(llm_client)
     with patch(
         "backend.app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
@@ -179,7 +192,20 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
 @pytest.mark.asyncio
 async def test_orchestrate_context_no_content(monkeypatch):
     """Test orchestrate_context returns insufficient if no content is found after scrape and crawl."""
-    orchestrator = ContextOrchestrator(AsyncMock())
+    llm_client = AsyncMock()
+    llm_client.generate_structured_output = AsyncMock(
+        return_value=ContextAssessmentResult(
+            overall_quality=ContextQuality.INSUFFICIENT,
+            overall_confidence=0.0,
+            content_sections=[],
+            company_clarity={},
+            endpoint_readiness=[],
+            data_quality_metrics={},
+            recommendations={},
+            summary="No website content available. Unable to assess context quality.",
+        )
+    )
+    orchestrator = ContextOrchestrator(llm_client)
     # Patch assess_url_context to simulate no content found
     monkeypatch.setattr(
         orchestrator,
@@ -193,7 +219,7 @@ async def test_orchestrate_context_no_content(monkeypatch):
                 endpoint_readiness=[],
                 data_quality_metrics={},
                 recommendations={},
-                summary="No website content could be extracted after scraping and crawling.",
+                summary="No website content available. Unable to assess context quality.",
             )
         ),
     )
