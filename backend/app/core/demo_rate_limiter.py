@@ -18,13 +18,14 @@ class DemoRateLimiter:
     Configurable per-endpoint and total request limits.
     """
 
+    # TODO: Update Limits before production
     # Default limits (can be overridden per endpoint)
     DEFAULT_LIMITS: Dict[str, Dict[str, int]] = {
         "company_generate": {
-            "limit": 5,
+            "limit": 5000,
             "window": 3600,
         },  # 5/hr/IP for /company/generate
-        "total": {"limit": 10, "window": 3600},  # 10/hr/IP for all demo endpoints
+        "total": {"limit": 10000, "window": 3600},  # 10/hr/IP for all demo endpoints
     }
 
     def __init__(self, redis_url: Optional[str] = None) -> None:

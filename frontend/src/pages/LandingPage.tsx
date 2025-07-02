@@ -15,11 +15,13 @@ export default function LandingPage() {
   const [icp, setIcp] = useState("");
   const [showOptions, setShowOptions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const navigate = useNavigate();
 
   const handleAnalyze = async () => {
     if (!url.trim()) return;
     setError(null);
+    setIsNavigating(true);
     navigate("/dashboard", { state: { url, icp } });
   };
 
@@ -137,11 +139,11 @@ export default function LandingPage() {
               </div>
               <Button
                 onClick={handleAnalyze}
-                disabled={!url.trim()}
+                disabled={!url.trim() || isNavigating}
                 className="w-full h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
               >
                 <div className="flex items-center space-x-2">
-                  <span>Generate GTM Strategy</span>
+                  <span>{isNavigating ? "Redirecting..." : "Generate GTM Strategy"}</span>
                   <ArrowRight className="w-5 h-5" />
                 </div>
               </Button>

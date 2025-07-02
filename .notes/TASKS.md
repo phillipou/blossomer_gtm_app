@@ -164,6 +164,7 @@
 - [ ] FE-DEPLOY-2: Deploy frontend as a Render Static Site (build command: npm run build, publish dir: dist, root dir: frontend)
 - [ ] FE-DEPLOY-3: Set production environment variables (e.g., VITE_API_MOCK=0, API base URL)
 - [ ] FE-DEPLOY-4: Test production deployment and document the process in README.md
+- [ ] **TODO: When productionizing the frontend, ensure you create and configure `frontend/.env.production` (or update `frontend/.env`) with the correct `VITE_API_BASE_URL` and any other frontend environment variables.**
 
 ---
 

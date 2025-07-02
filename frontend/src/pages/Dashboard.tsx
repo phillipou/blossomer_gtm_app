@@ -1,17 +1,15 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import SidebarNav from "@/components/navigation/SidebarNav";
-import HeaderBar from "@/components/headers/HeaderBar";
+import { useLocation, useNavigate } from "react-router-dom";
 import SubNav from "@/components/navigation/SubNav";
 import InfoCard from "@/components/cards/InfoCard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Check, X } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Check, X } from "lucide-react";
 import CustomersList from "./CustomersList";
 import OverviewCard from "@/components/cards/OverviewCard";
 import { Textarea } from "@/components/ui/textarea";
+import DashboardLoading from "@/components/dashboard/DashboardLoading";
+import { apiFetch } from "@/lib/apiClient";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -22,94 +20,109 @@ const STATUS_STAGES = [
 
 type CardKey =
   | "capabilities"
-  | "businessModel"
+  | "business_model"
   | "alternatives"
-  | "differentiatedValue"
+  | "differentiated_value"
   | "testimonials"
-  | "customerBenefits";
+  | "customer_benefits";
+
+const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: boolean }[] = [
+  { key: "capabilities", title: "Capabilities", label: "Capabilities", bulleted: true },
+  { key: "business_model", title: "Business Model", label: "Business Model", bulleted: true },
+  { key: "alternatives", title: "Alternatives", label: "Alternatives", bulleted: true },
+  { key: "differentiated_value", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
+  { key: "testimonials", title: "Testimonials", label: "Testimonials", bulleted: true },
+  { key: "customer_benefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
+];
 
 export default function Dashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<any>(() => {
-    // Try to load from localStorage first
     const stored = localStorage.getItem("dashboard_overview");
-    return stored ? JSON.parse(stored) : (location.state?.overview || null);
+    return stored ? JSON.parse(stored) : null;
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [progressStage, setProgressStage] = useState(0);
+  const [analysisKey, setAnalysisKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("company");
   const [activeSubTab, setActiveSubTab] = useState("overview");
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [progressStage, setProgressStage] = useState(0);
-  const [mockCards, setMockCards] = useState<Record<CardKey, string[]>>({
-    capabilities: [
-      "Real-time data analytics across multiple sources",
-      "Seamless integration with major CRMs and ERPs",
-      "Customizable dashboards and reporting tools",
-      "AI-powered forecasting and insights",
-      "Enterprise-grade security and compliance"
-    ],
-    businessModel: [
-      "SaaS subscription with tiered pricing",
-      "Free trial available for 14 days",
-      "Annual and monthly billing options",
-      "Custom enterprise plans for large clients",
-      "Add-on modules for advanced features"
-    ],
-    alternatives: [
-      "Acme Analytics: Similar dashboard features, but lacks AI forecasting.",
-      "DataPro Suite: Broader integrations, but higher cost.",
-      "Insightly: Strong in reporting, but less customizable.",
-      "MarketGenius: Focused on SMBs, fewer enterprise features."
-    ],
-    differentiatedValue: [
-      "Faster onboarding and time-to-value than competitors.",
-      "Proprietary AI models for industry-specific insights.",
-      "Superior customer support with 24/7 live chat.",
-      "Highly customizable to unique business needs.",
-      "Transparent, usage-based pricing."
-    ],
-    testimonials: [
-      '"Blossomer transformed our go-to-market strategy!" – CMO, TechCorp',
-      '"The insights are actionable and easy to understand." – VP Sales, FinServe',
-      '"Onboarding was a breeze and support is top-notch." – CEO, HealthPlus',
-      '"We saw ROI within the first quarter." – COO, RetailX',
-      '"The best analytics platform we have used." – Head of Ops, EduStart'
-    ],
-    customerBenefits: [
-      "Accelerated go-to-market execution and revenue growth",
-      "Improved sales team productivity and targeting",
-      "Faster identification of high-potential customer segments",
-      "Clearer product-market fit and messaging",
-      "Reduced time spent on manual research and analysis"
-    ]
-  });
 
-  // If url/icp are passed, fetch the data (only if not in localStorage)
   useEffect(() => {
-    if (!overview && location.state?.url) {
+    const url = location.state?.url;
+    const icp = location.state?.icp;
+    const currentAnalysisKey = url ? `${url}-${icp || ''}` : null;
+    // Check if we have meaningful data for this URL
+    const hasMeaningfulData = overview && 
+      overview.company_url === url && 
+      overview.company_name && 
+      overview.company_name.trim() !== "" &&
+      overview.capabilities && 
+      overview.capabilities.length > 0;
+    // Only trigger if:
+    // 1. We have a URL from navigation state
+    // 2. We haven't already processed this exact request (analysisKey check)
+    // 3. We're not currently loading
+    // 4. We don't already have meaningful data for this URL
+    if (url && currentAnalysisKey !== analysisKey && !loading && !hasMeaningfulData) {
+      setAnalysisKey(currentAnalysisKey);
       setLoading(true);
       setProgressStage(0);
-      fetch("http://localhost:8000/company/generate", {
+      setError(null);
+      apiFetch("/demo/company/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          website_url: location.state.url,
-          user_inputted_context: location.state.icp || undefined,
+          website_url: url,
+          user_inputted_context: icp || "",
         }),
       })
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Failed to generate GTM analysis");
-          return res.json();
-        })
         .then((data) => {
-          setOverview(data);
-          localStorage.setItem("dashboard_overview", JSON.stringify(data));
+          console.log("API response:", data);
+          // Check if the response has meaningful data
+          if (data.company_name && data.company_name.trim() !== "" && 
+              data.capabilities && data.capabilities.length > 0) {
+            setOverview(data);
+            localStorage.setItem("dashboard_overview", JSON.stringify(data));
+          } else {
+            // If response is empty/meaningless, treat as error
+            console.warn("Received empty response, will retry");
+            setError("Unable to analyze website. Please try again.");
+            setOverview(null);
+          }
         })
-        .catch(() => setOverview(null))
-        .finally(() => setLoading(false));
+        .catch(() => {
+          setError("Failed to generate analysis. Please try again.");
+          setOverview(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
-  }, [location.state, overview]);
+  }, [location.state?.url, location.state?.icp, analysisKey, loading]);
+
+  // Animate progress stages during loading
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setInterval(() => {
+      setProgressStage(prev => {
+        if (prev < STATUS_STAGES.length - 1) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [loading]);
+
+  // Reset progress when loading starts
+  useEffect(() => {
+    if (loading) {
+      setProgressStage(0);
+    }
+  }, [loading]);
 
   // When overview changes (e.g., after edits), update localStorage
   useEffect(() => {
@@ -118,81 +131,85 @@ export default function Dashboard() {
     }
   }, [overview]);
 
-  // Animate progress bar and status messages
-  useEffect(() => {
-    if (!loading) return;
-    if (progressStage < STATUS_STAGES.length - 1) {
-      const timer = setTimeout(() => {
-        setProgressStage((s) => s + 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [progressStage, loading]);
-
-  if (loading || !overview) {
-    // Inline skeleton UI here
+  if (loading) {
     return (
-      <div className="flex flex-col relative">
-        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <div>
-            <div className="h-6 w-40 bg-gray-200 rounded mb-2 shimmer" />
-            <div className="h-4 w-24 bg-gray-100 rounded shimmer" />
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="h-8 w-24 bg-gray-200 rounded shimmer" />
-            <div className="h-8 w-28 bg-gray-100 rounded shimmer" />
-          </div>
+      <DashboardLoading
+        loading={true}
+        progressPercent={STATUS_STAGES[progressStage]?.percent || 0}
+        statusMessage={STATUS_STAGES[progressStage]?.label || "Processing..."}
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center border border-red-200">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Rate Limit Reached</h2>
+          <p className="text-gray-700 mb-8">
+            You've hit your free usage limit for AI-powered GTM analysis.<br />
+            <b>Sign up for a free account</b> to unlock higher limits and more features!
+          </p>
+          <Button
+            asChild
+            className="w-full mb-3 bg-blue-600 hover:bg-blue-700 !text-white"
+            variant="default"
+          >
+            <a href="/signup">Sign up for an account</a>
+          </Button>
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={() => navigate("/")}
+          >
+            Back to Home
+          </Button>
         </div>
-        <div className="bg-white border-b border-gray-200 px-8 h-14 flex items-center">
-          <div className="h-6 w-32 bg-gray-200 rounded shimmer" />
-        </div>
-        <div className="flex-1 p-8 space-y-8">
-          {/* Loading card with progress bar and status */}
-          <div className="max-w-md w-full mx-auto mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center border-0">
-              <Progress
-                value={STATUS_STAGES[progressStage].percent}
-                className="mb-6 [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:via-blue-400 [&>div]:to-blue-600 [&>div]:rounded-l-full"
-              />
-              <div className="text-lg font-medium text-blue-700 flex items-center gap-2 min-h-[2.5rem]">
-                <span className="animate-pulse">{STATUS_STAGES[progressStage].label}</span>
-              </div>
-            </div>
-          </div>
-          <div className="h-32 w-full bg-gray-200 rounded-xl shimmer" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="h-24 bg-gray-100 rounded-xl shimmer" />
-            <div className="h-24 bg-gray-100 rounded-xl shimmer" />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="h-24 bg-gray-100 rounded-xl shimmer" />
-            <div className="h-24 bg-gray-100 rounded-xl shimmer" />
-          </div>
-        </div>
-        <style>{`
-          .shimmer {
-            position: relative;
-            overflow: hidden;
-          }
-          .shimmer::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; height: 100%; width: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transform: translateX(-100%);
-            animation: shimmer-move 1.5s infinite;
-          }
-          @keyframes shimmer-move {
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
       </div>
     );
   }
 
-  // Example: companyName and domain from overview (customize as needed)
-  const companyName = overview.company_profiles?.[0] || "Company";
-  const domain = overview.metadata?.domain || "";
+  // Add fallback for no analysis input
+  if (!overview && !loading && !location.state?.url) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">No Analysis Found</h2>
+          <p className="text-gray-600 mb-6">Start by analyzing a website from the home page.</p>
+          <Button onClick={() => navigate("/")}>Analyze a Website</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Add fallback for empty/failed analysis
+  if (overview && (!overview.company_name || overview.company_name.trim() === "")) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center border border-yellow-200">
+          <h2 className="text-2xl font-bold text-yellow-600 mb-4">Unable to Analyze Website</h2>
+          <p className="text-gray-700 mb-8">
+            We couldn't extract meaningful information from this website. 
+            This might be due to the site being unavailable or having limited content.
+          </p>
+          <Button
+            className="w-full"
+            onClick={() => {
+              setOverview(null);
+              localStorage.removeItem("dashboard_overview");
+              navigate("/");
+            }}
+          >
+            Try Another Website
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Use real API data for company info
+  const companyName = overview?.company_name || "Company";
+  const domain = overview?.company_url || "";
 
   // Edit logic for OverviewBlock
   const handleEdit = (blockId: string, currentContent: string) => {
@@ -200,18 +217,25 @@ export default function Dashboard() {
     setEditContent(currentContent);
   };
   const handleSave = () => {
-    if (editingBlock && [
-      "capabilities",
-      "businessModel",
-      "alternatives",
-      "differentiatedValue",
-      "testimonials",
-      "customerBenefits"
-    ].includes(editingBlock)) {
-      setMockCards((prev) => ({
-        ...prev,
-        [editingBlock as CardKey]: editContent.split("\n").filter((line) => line.trim() !== "")
-      }));
+    if (
+      editingBlock &&
+      [
+        "capabilities",
+        "business_model",
+        "alternatives",
+        "differentiated_value",
+        "testimonials",
+        "customer_benefits",
+      ].includes(editingBlock)
+    ) {
+      setOverview((prev: any) => {
+        const updated = {
+          ...prev,
+          [editingBlock]: editContent.split("\n").filter((line) => line.trim() !== ""),
+        };
+        localStorage.setItem("dashboard_overview", JSON.stringify(updated));
+        return updated;
+      });
     }
     setEditingBlock(null);
     setEditContent("");
@@ -225,15 +249,6 @@ export default function Dashboard() {
   const subTabs = [
     { label: "Company Overview", value: "overview" },
     { label: "Market Overview", value: "market" },
-  ];
-
-  const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: boolean }[] = [
-    { key: "capabilities", title: "Capabilities", label: "Capabilities", bulleted: true },
-    { key: "businessModel", title: "Business Model", label: "Business Model", bulleted: true },
-    { key: "alternatives", title: "Alternatives", label: "Alternatives", bulleted: true },
-    { key: "differentiatedValue", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
-    { key: "testimonials", title: "Testimonials", label: "Testimonials", bulleted: true },
-    { key: "customerBenefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
   ];
 
   return (
@@ -251,7 +266,7 @@ export default function Dashboard() {
               breadcrumbs={[
                 { label: "Dashboard", href: "/dashboard" },
                 { label: "Company", href: "/dashboard" },
-                { label: subTabs.find(tab => tab.value === activeSubTab)?.label || "" }
+                { label: subTabs.find((tab) => tab.value === activeSubTab)?.label || "" },
               ]}
               activeSubTab={activeSubTab}
               setActiveSubTab={setActiveSubTab}
@@ -259,11 +274,11 @@ export default function Dashboard() {
             />
             <div className="flex-1 p-8 space-y-8">
               {/* Overview Block */}
-              <OverviewCard 
+              <OverviewCard
                 title={companyName}
-                subtitle={"blossomer.io"}
-                bodyTitle="Company Description"
-                bodyText={overview.product_description}
+                subtitle={domain}
+                bodyTitle="Company Overview"
+                bodyText={overview?.company_overview || overview?.product_description}
                 showButton={true}
                 buttonTitle="View Details"
               />
@@ -293,9 +308,9 @@ export default function Dashboard() {
                     <InfoCard
                       key={key}
                       title={title}
-                      items={mockCards[key as CardKey]}
-                      onEdit={() => handleEdit(key, mockCards[key as CardKey].join("\n"))}
-                      renderItem={(item, idx) => (
+                      items={overview?.[key] || []}
+                      onEdit={() => handleEdit(key, (overview?.[key] || []).join("\n"))}
+                      renderItem={(item: string, idx: number) => (
                         <li
                           key={idx}
                           className="list-disc list-inside text-sm text-gray-700 blue-bullet"
@@ -316,7 +331,7 @@ export default function Dashboard() {
             <SubNav
               breadcrumbs={[
                 { label: "Dashboard", href: "/dashboard" },
-                { label: "Customers", href: "/customers" }
+                { label: "Customers", href: "/customers" },
               ]}
               activeSubTab={"list"}
               setActiveSubTab={() => {}}
@@ -325,7 +340,7 @@ export default function Dashboard() {
             <CustomersList
               companyName={companyName}
               domain={domain}
-              description={overview.product_description}
+              description={overview?.product_description}
             />
           </div>
         )}
@@ -333,4 +348,4 @@ export default function Dashboard() {
       </div>
     </>
   );
-} 
+}
