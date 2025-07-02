@@ -1,41 +1,35 @@
-from typing import Any
 from backend.app.schemas import TargetPersonaRequest, TargetPersonaResponse
 from backend.app.prompts.models import TargetPersonaPromptVars
-from backend.app.prompts.registry import render_prompt
-from backend.app.services.context_orchestrator import (
-    ContextOrchestrator,
-    resolve_context_for_endpoint,
-)
+from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.llm_service import LLMClient
+from backend.app.services.company_analysis_service import CompanyAnalysisService
 
 
 async def generate_target_persona_profile(
     request: TargetPersonaRequest,
     orchestrator: ContextOrchestrator,
-    llm_client: Any,
+    llm_client: LLMClient,
 ) -> TargetPersonaResponse:
     """
-    Generate a target persona profile using unified context assessment and LLM prompt rendering.
+    Generate a target persona profile using the shared analysis service.
 
     Args:
         request (TargetPersonaRequest): The validated request object.
         orchestrator (ContextOrchestrator): The context orchestrator agent.
-        llm_client (Any): The LLM client for prompt completion.
+        llm_client (LLMClient): The LLM client for prompt completion.
 
     Returns:
         TargetPersonaResponse: The structured response model.
     """
-    context_result = await resolve_context_for_endpoint(
-        request, "target_persona", orchestrator
+    service = CompanyAnalysisService(
+        orchestrator=orchestrator,
+        llm_client=llm_client,
     )
-    prompt_vars = TargetPersonaPromptVars(
-        website_content=(
-            context_result["context"] if context_result["source"] == "website" else None
-        ),
-        user_inputted_context=request.user_inputted_context,
-        llm_inferred_context=request.llm_inferred_context,
+    return await service.analyze(
+        request_data=request,
+        analysis_type="target_persona",
+        prompt_template="target_persona",
+        prompt_vars_class=TargetPersonaPromptVars,
+        response_model=TargetPersonaResponse,
+        use_preprocessing=False,
     )
-    prompt = render_prompt("target_persona", prompt_vars)
-    llm_output = await llm_client.generate_structured_output(
-        prompt=prompt, response_model=TargetPersonaResponse
-    )
-    return TargetPersonaResponse.model_validate(llm_output)

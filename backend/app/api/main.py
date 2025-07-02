@@ -19,10 +19,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register non-demo endpoints with /api prefix
 app.include_router(company.router, prefix="/api/company", tags=["Company"])
 app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+
+# Register demo endpoints at root (no /api prefix)
+app.include_router(company.router, tags=["Demo"], include_in_schema=True)
+app.include_router(customers.router, tags=["Demo"], include_in_schema=True)
 
 
 @app.get("/health")

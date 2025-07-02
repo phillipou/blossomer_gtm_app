@@ -1,7 +1,8 @@
 import time
 import asyncio
 import logging
-from typing import Optional, Dict, Tuple, Any
+from typing import Optional, Dict, Tuple, Any, Callable
+from fastapi import Request, Response, HTTPException, status
 
 try:
     import redis.asyncio as aioredis  # noqa: E402
@@ -143,3 +144,46 @@ class DemoRateLimiter:
             "remaining": min_remaining,
             "reset": min_reset,
         }
+
+
+def get_client_ip(request: Request) -> str:
+    """
+    Extract the client IP address from the request, respecting X-Forwarded-For if present.
+    """
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def demo_ip_rate_limit_dependency(endpoint: str) -> Callable:
+    """
+    FastAPI dependency for IP-based rate limiting for demo endpoints.
+    Usage: Depends(demo_ip_rate_limit_dependency("company_generate"))
+    """
+    limiter = DemoRateLimiter()
+
+    async def dependency(request: Request, response: Response):
+        ip = get_client_ip(request)
+        allowed, info = await limiter.check_limit(ip, endpoint)
+        response.headers["X-RateLimit-Limit"] = str(info["limit"])
+        response.headers["X-RateLimit-Remaining"] = str(info["remaining"])
+        response.headers["X-RateLimit-Reset"] = str(info["reset"])
+        if not allowed:
+            retry_after = max(1, info["reset"] - int(time.time()))
+            response.headers["Retry-After"] = str(retry_after)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Rate limit exceeded for demo usage. "
+                    "Sign up for higher limits and API access."
+                ),
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(info["limit"]),
+                    "X-RateLimit-Remaining": str(info["remaining"]),
+                    "X-RateLimit-Reset": str(info["reset"]),
+                },
+            )
+
+    return dependency

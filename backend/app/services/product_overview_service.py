@@ -1,18 +1,16 @@
 import logging
-from fastapi import HTTPException
 from backend.app.services.context_orchestrator import ContextOrchestrator
-from backend.app.services.llm_service import LLMClient, LLMRequest
-from backend.app.prompts.registry import render_prompt
+from backend.app.services.llm_service import LLMClient
 from backend.app.prompts.models import ProductOverviewPromptVars
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
-import json
-from pydantic import ValidationError
 from backend.app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
     SectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,
 )
+from backend.app.services.company_analysis_service import CompanyAnalysisService
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -29,124 +27,34 @@ async def generate_product_overview_service(
     llm_client: LLMClient,
 ) -> ProductOverviewResponse:
     """
-    Orchestrates the generation of a comprehensive product overview.
+    Orchestrates the generation of a comprehensive product overview using the shared analysis service.
     """
-    logger.debug(
-        f"[SERVICE] Orchestrating context for product_overview: {data.website_url}"
+    service = CompanyAnalysisService(
+        orchestrator=orchestrator,
+        llm_client=llm_client,
+        preprocessing_pipeline=preprocessing_pipeline,
     )
-
-    user_context = {
-        "user_inputted_context": data.user_inputted_context,
-        "llm_inferred_context": data.llm_inferred_context,
-    }
-
-    result = await orchestrator.orchestrate_context(
-        website_url=data.website_url,
-        target_endpoint="product_overview",
-        user_context=user_context,
-        auto_enrich=True,
+    result = await service.analyze(
+        request_data=data,
+        analysis_type="product_overview",
+        prompt_template="product_overview",
+        prompt_vars_class=ProductOverviewPromptVars,
+        response_model=ProductOverviewResponse,
+        use_preprocessing=True,
     )
-
-    if not result["enrichment_successful"]:
-        assessment = result["assessment"]
-        readiness = orchestrator.check_endpoint_readiness(
-            assessment, "product_overview"
-        )
+    # Check for insufficient content
+    if (
+        hasattr(result, "metadata")
+        and result.metadata.get("context_quality") == "insufficient"
+    ):
         raise HTTPException(
             status_code=422,
             detail={
-                "error": "Insufficient content quality for product overview",
-                "quality_assessment": assessment.metadata.get("context_quality", ""),
-                "confidence": readiness["confidence"],
-                "missing_requirements": readiness["missing_requirements"],
-                "recommendations": readiness["recommendations"],
-                "assessment_summary": assessment.metadata.get("assessment_summary", ""),
+                "error": (
+                    "Insufficient website content for valid output. "
+                    "Please provide a richer website or more context."
+                ),
+                "analysis_type": "product_overview",
             },
         )
-
-    all_content = result["enriched_content"]
-    content_val = all_content.get("raw_website_content", "")
-    logger.debug("[DEBUG] content_val (first 500 chars):\n%s", content_val[:500])
-    # Use the raw website content directly
-    content_for_processing = content_val
-    logger.debug(
-        "[DEBUG] Raw website content for preprocessing (first 500 chars):\n%s",
-        content_for_processing[:500],
-    )
-
-    # 2. After chunking
-    processed_chunks = chunker.chunk(content_for_processing)
-    logger.debug(f"[DEBUG] After chunking: {len(processed_chunks)} chunks")
-    for i, chunk in enumerate(processed_chunks):
-        logger.debug(f"[DEBUG] Chunk {i} (first 500 chars):\n{chunk[:500]}")
-
-    # 3. After summarizer
-    summarized_chunks = [summarizer.summarize(chunk) for chunk in processed_chunks]
-    logger.debug(f"[DEBUG] After summarizer: {len(summarized_chunks)} chunks")
-    for i, chunk in enumerate(summarized_chunks):
-        logger.debug(f"[DEBUG] Summarized Chunk {i} (first 500 chars):\n{chunk[:500]}")
-
-    # 4. After boilerplate filter
-    filtered_chunks = filter_.filter(summarized_chunks)
-    logger.debug(f"[DEBUG] After boilerplate filter: {len(filtered_chunks)} chunks")
-    for i, chunk in enumerate(filtered_chunks):
-        logger.debug(f"[DEBUG] Filtered Chunk {i} (first 500 chars):\n{chunk[:500]}")
-
-    cleaned_content = "\n\n".join(filtered_chunks)
-    cleaned_preview = cleaned_content[:500]
-    logger.debug(
-        "[DEBUG] Cleaned website content for prompt (first 500 chars):\n%s",
-        cleaned_preview,
-    )
-
-    prompt_vars = ProductOverviewPromptVars(
-        website_content=cleaned_content,
-        user_inputted_context=data.user_inputted_context,
-        llm_inferred_context=data.llm_inferred_context,
-        context_quality=result["assessment"].metadata.get("context_quality", ""),
-        assessment_summary=result["assessment"].metadata.get("assessment_summary", ""),
-    )
-
-    prompt = render_prompt("product_overview", prompt_vars)
-
-    logger.debug(f"[DEBUG] Rendered product_overview prompt:\n{prompt}")
-
-    try:
-        llm_request = LLMRequest(prompt=prompt)
-        llm_response = await llm_client.generate(llm_request)
-        response_obj = ProductOverviewResponse.model_validate_json(llm_response.text)
-        # Patch in company_url from the request (if not set by LLM)
-        if not response_obj.company_url:
-            response_obj.company_url = data.website_url
-        # Patch in company_name as empty string if not set by LLM
-        if not response_obj.company_name:
-            response_obj.company_name = ""
-        return response_obj
-    except (ValidationError, json.JSONDecodeError) as e:
-        logger.error(
-            f"Failed to generate or parse product overview: {e}\n"
-            f"LLM raw output: {llm_response.text}"
-        )
-        refusal_phrases = [
-            "i'm sorry",
-            "unable to extract",
-            "cannot",
-            "need more information",
-            "insufficient",
-            "not enough information",
-        ]
-        if any(phrase in llm_response.text.lower() for phrase in refusal_phrases):
-            user_message = (
-                "The AI could not extract a product overview from the website content. "
-                "Please provide more explicit product details or additional context."
-            )
-        else:
-            user_message = "LLM did not return valid JSON."
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": user_message,
-                "llm_output": llm_response.text,
-                "exception": str(e),
-            },
-        )
+    return result

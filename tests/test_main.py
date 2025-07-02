@@ -62,7 +62,7 @@ async def fake_generate_structured_output(prompt, response_model):
         rationale="These companies are ideal due to their innovation focus.",
         confidence_scores={"target_company": 0.95},
         metadata={"source": "test"},
-    )
+    ).model_dump()
 
 
 # Patch rate_limit_dependency globally for all tests
@@ -135,7 +135,7 @@ def test_product_overview_endpoint_success(monkeypatch):
                 "pricing": 0.95,
             },
             metadata={"context_quality": "high"},
-        )
+        ).model_dump()
 
     monkeypatch.setattr(
         "backend.app.api.routes.company.llm_client.generate_structured_output",
@@ -291,7 +291,7 @@ def test_target_company_endpoint_success(monkeypatch):
         rationale="These companies are ideal due to their innovation focus.",
         confidence_scores={"target_company": 0.95},
         metadata={"source": "test"},
-    )
+    ).model_dump()
 
     # Patch ContextOrchestrator to always return is_ready True
     class MockOrchestrator:
@@ -346,7 +346,7 @@ def test_target_company_endpoint_success(monkeypatch):
 
     async def fake_generate(request):
         class FakeResp:
-            text = fake_response.json()
+            text = fake_response
 
         return FakeResp()
 
@@ -374,21 +374,19 @@ def test_target_persona_endpoint_success(monkeypatch):
     Test the /customers/target_personas endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
-    from backend.app.schemas import TargetPersonaResponse
-
     payload = {
         "website_url": "https://example.com",
         "user_inputted_context": "",
         "llm_inferred_context": "",
     }
-    fake_response = TargetPersonaResponse(
-        persona="Head of Operations",
-        persona_attributes=["Decision maker", "Process-oriented"],
-        persona_buying_signals=["Seeking efficiency", "Evaluating automation"],
-        rationale="This persona drives operational improvements.",
-        confidence_scores={"persona": 0.92},
-        metadata={"source": "test"},
-    )
+    fake_response = {
+        "persona": "Head of Operations",
+        "persona_attributes": ["Decision maker", "Process-oriented"],
+        "persona_buying_signals": ["Seeking efficiency", "Evaluating automation"],
+        "rationale": "This persona drives operational improvements.",
+        "confidence_scores": {"persona": 0.92},
+        "metadata": {"source": "test"},
+    }
 
     async def fake_generate_structured_output(prompt, response_model):
         return fake_response
@@ -413,10 +411,17 @@ def test_target_persona_endpoint_success(monkeypatch):
         fake_generate_structured_output,
     )
 
-    # Patch llm_client.generate_structured_output in the actual endpoint module for customers
-    async def fake_generate_structured_output(prompt, response_model):
+    # Patch CompanyAnalysisService.analyze to return the correct response model for persona
+
+    async def fake_analyze(self, **kwargs):
         return fake_response
 
+    monkeypatch.setattr(
+        "backend.app.services.company_analysis_service.CompanyAnalysisService.analyze",
+        fake_analyze,
+    )
+
+    # Patch llm_client.generate_structured_output in the actual endpoint module for customers
     monkeypatch.setattr(
         "backend.app.api.routes.customers.llm_client.generate_structured_output",
         fake_generate_structured_output,
@@ -425,7 +430,7 @@ def test_target_persona_endpoint_success(monkeypatch):
     # Patch llm_client.generate in the actual endpoint module for customers (if used)
     async def fake_generate(request):
         class FakeResp:
-            text = fake_response.json()
+            text = fake_response
 
         return FakeResp()
 
@@ -440,9 +445,15 @@ def test_target_persona_endpoint_success(monkeypatch):
     )
     assert response.status_code == 200
     data = response.json()
-    assert "persona" in data
-    assert "persona_attributes" in data
-    assert "persona_buying_signals" in data
-    assert "rationale" in data
-    assert "confidence_scores" in data
-    assert "metadata" in data
+    assert data["persona"] == "Head of Operations"
+    assert data["persona_attributes"] == ["Decision maker", "Process-oriented"]
+    assert data["persona_buying_signals"] == [
+        "Seeking efficiency",
+        "Evaluating automation",
+    ]
+    assert data["rationale"] == "This persona drives operational improvements."
+    assert data["confidence_scores"]["persona"] == 0.92
+    assert data["metadata"]["source"] == "test"
+
+    error_msg = response.json().get("detail", {}).get("error", "")
+    assert "LLM did not return valid output for target_persona" in error_msg
