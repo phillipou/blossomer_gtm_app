@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from app.services.website_scraper import (
+from backend.app.services.website_scraper import (
     validate_url,
     firecrawl_scrape_url,
     extract_website_content,
@@ -127,11 +127,13 @@ def test_firecrawl_scrape_url_success(monkeypatch):
             pass
 
         class DummyResult:
-
             def __init__(self, data):
                 self._data = data
 
             def dict(self):
+                return self._data
+
+            def model_dump(self):
                 return self._data
 
         def scrape_url(self, *args, **kwargs):
@@ -139,7 +141,7 @@ def test_firecrawl_scrape_url_success(monkeypatch):
 
     monkeypatch.setenv("FIRECRAWL_API_KEY", "dummy-key")
     monkeypatch.setattr(
-        "app.services.website_scraper.FirecrawlApp",
+        "backend.app.services.website_scraper.FirecrawlApp",
         DummyFirecrawlApp,
     )
     with patch("requests.post", mock_post):
@@ -158,7 +160,7 @@ def test_firecrawl_scrape_url_missing_api_key(monkeypatch):
         pass
 
     monkeypatch.setattr(
-        "app.services.website_scraper.FirecrawlApp",
+        "backend.app.services.website_scraper.FirecrawlApp",
         DummyFirecrawlApp,
     )
     monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
@@ -186,11 +188,17 @@ def test_firecrawl_crawl_site_options(mocker):
 
         def crawl_url(self, url, limit, scrape_options):
             return MagicMock(
-                dict=lambda: {"data": ["main content"], "metadata": {"pages": limit}}
+                dict=lambda: {"data": ["main content"], "metadata": {"pages": limit}},
+                model_dump=lambda: {
+                    "data": ["main content"],
+                    "metadata": {"pages": limit},
+                },
             )
 
-    mocker.patch("app.services.website_scraper.FirecrawlApp", MockFirecrawlApp)
-    mocker.patch("app.services.website_scraper.ScrapeOptions", MockScrapeOptions)
+    mocker.patch("backend.app.services.website_scraper.FirecrawlApp", MockFirecrawlApp)
+    mocker.patch(
+        "backend.app.services.website_scraper.ScrapeOptions", MockScrapeOptions
+    )
     mocker.patch("os.getenv", return_value="dummy-key")
 
     result = firecrawl_crawl_site(
@@ -209,12 +217,12 @@ def test_extract_website_content_crawl(mocker):
     test_url = "http://example.com"
     # Patch validate_url to always return valid
     mocker.patch(
-        "app.services.website_scraper.validate_url",
+        "backend.app.services.website_scraper.validate_url",
         lambda url: {"is_valid": True, "reachable": True},
     )
     # Patch firecrawl_crawl_site to return dummy crawl result
     mocker.patch(
-        "app.services.website_scraper.firecrawl_crawl_site",
+        "backend.app.services.website_scraper.firecrawl_crawl_site",
         lambda url, limit, formats, only_main_content, wait_for: {
             "data": ["main content"],
             "metadata": {

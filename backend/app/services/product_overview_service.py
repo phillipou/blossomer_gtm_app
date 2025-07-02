@@ -114,7 +114,7 @@ async def generate_product_overview_service(
     try:
         llm_request = LLMRequest(prompt=prompt)
         llm_response = await llm_client.generate(llm_request)
-        return ProductOverviewResponse.parse_raw(llm_response.text)
+        return ProductOverviewResponse.model_validate_json(llm_response.text)
     except (ValidationError, json.JSONDecodeError) as e:
         logger.error(
             f"Failed to generate or parse product overview: {e}\n"

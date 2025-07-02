@@ -121,7 +121,7 @@ def firecrawl_scrape_url(
         formats = ["markdown", "html"]
     try:
         scrape_result = app.scrape_url(url, formats=formats)
-        return scrape_result.dict()
+        return scrape_result.model_dump()
     except Exception as e:
         logger.error(f"Firecrawl scrape_url failed: {e}")
         raise ValueError(f"Firecrawl scrape_url failed: {e}")
@@ -163,7 +163,7 @@ def firecrawl_crawl_site(
             waitFor=wait_for,
         )
         crawl_result = app.crawl_url(url, limit=limit, scrape_options=scrape_options)
-        return crawl_result.dict()
+        return crawl_result.model_dump()
     except Exception as e:
         logger.error(f"Firecrawl crawl_url failed: {e}")
         raise ValueError(f"Firecrawl crawl_url failed: {e}")

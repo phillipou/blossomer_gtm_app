@@ -40,4 +40,4 @@ def render_prompt(template_name: str, variables: BaseModel) -> str:
         raise TypeError(
             f"variables must be a Pydantic BaseModel instance, got {type(variables)}"
         )
-    return render_template(entry["template"], variables.dict())
+    return render_template(entry["template"], variables.model_dump())

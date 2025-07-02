@@ -19,7 +19,7 @@ description = "AI-powered go-to-market campaign generator API for B2B founders"
 authors = ["Phillip Ou"]
 
 packages = [
-    { include = "blossomer_gtm_api", from = "src" }
+    { include = "backend" }
 ]
 
 [tool.poetry.dependencies]

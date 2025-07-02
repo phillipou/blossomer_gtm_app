@@ -7,7 +7,7 @@ Unit tests for the CircuitBreaker class.
 import asyncio
 import time
 import pytest
-from app.services.circuit_breaker import CircuitBreaker, CircuitState
+from backend.app.services.circuit_breaker import CircuitBreaker, CircuitState
 
 
 @pytest.mark.asyncio

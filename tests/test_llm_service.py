@@ -4,7 +4,7 @@
 
 import pytest
 from unittest.mock import AsyncMock
-from app.services.llm_service import (
+from backend.app.services.llm_service import (
     GeminiProvider,
     LLMRequest,
     LLMResponse,

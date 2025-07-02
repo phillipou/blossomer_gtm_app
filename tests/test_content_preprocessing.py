@@ -1,4 +1,4 @@
-from app.services.content_preprocessing import (
+from backend.app.services.content_preprocessing import (
     SectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,

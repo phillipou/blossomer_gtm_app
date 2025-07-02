@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from app.services.context_orchestrator import (
+from backend.app.services.context_orchestrator import (
     ContextOrchestrator,
     resolve_context_for_endpoint,
 )
-from app.prompts.models import (
+from backend.app.prompts.models import (
     ContextAssessmentResult,
     ContextQuality,
     EndpointReadiness,
@@ -14,10 +14,9 @@ from app.prompts.models import (
 @pytest.mark.asyncio
 async def test_assess_context_empty_content():
     """Test that empty website content returns 'insufficient' result without LLM call."""
-    mock_llm = MagicMock()
-    orchestrator = ContextOrchestrator(mock_llm)
+    orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
-        "app.services.context_orchestrator.render_prompt",
+        "backend.app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="   ")
@@ -29,9 +28,9 @@ async def test_assess_context_empty_content():
 @pytest.mark.asyncio
 async def test_assess_url_context_scrape_failure():
     """Test that a website scrape failure returns 'insufficient' result."""
-    orchestrator = ContextOrchestrator(MagicMock())
+    orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
-        "app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator.extract_website_content",
         side_effect=Exception("scrape failed"),
     ):
         result = await orchestrator.assess_url_context(
@@ -46,22 +45,9 @@ async def test_assess_url_context_scrape_failure():
 @pytest.mark.asyncio
 async def test_assess_context_happy_path():
     """Test that valid content and LLM response returns a valid ContextAssessmentResult."""
-    mock_llm = MagicMock()
-    mock_llm.generate_structured_output = AsyncMock(
-        return_value={
-            "overall_quality": "high",
-            "overall_confidence": 0.95,
-            "content_sections": [],
-            "company_clarity": {},
-            "endpoint_readiness": [],
-            "data_quality_metrics": {},
-            "recommendations": {},
-            "summary": "All good.",
-        }
-    )
-    orchestrator = ContextOrchestrator(mock_llm)
+    orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
-        "app.services.context_orchestrator.render_prompt",
+        "backend.app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="Some real content.")
@@ -73,7 +59,7 @@ async def test_assess_context_happy_path():
 @pytest.mark.asyncio
 async def test_assess_url_context_happy_path():
     """Test the full orchestration: scrape returns content, LLM returns valid assessment."""
-    orchestrator = ContextOrchestrator(MagicMock())
+    orchestrator = ContextOrchestrator(AsyncMock())
     orchestrator.assess_context = AsyncMock(
         return_value=ContextAssessmentResult(
             overall_quality=ContextQuality.HIGH,
@@ -87,7 +73,7 @@ async def test_assess_url_context_happy_path():
         )
     )
     with patch(
-        "app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator.extract_website_content",
         return_value={"content": "Some content"},
     ):
         result = await orchestrator.assess_url_context(
@@ -102,11 +88,10 @@ async def test_orchestrate_context_ready(monkeypatch):
     """Test orchestrate_context returns ready when assessment is ready for the endpoint."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "app.services.website_scraper.extract_website_content",
+        "backend.app.services.website_scraper.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
-    mock_llm = MagicMock()
-    orchestrator = ContextOrchestrator(mock_llm)
+    orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a ready assessment
     ready_assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.HIGH,
@@ -145,11 +130,10 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     """Test orchestrate_context returns not ready and includes enrichment steps when not ready."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "app.services.website_scraper.extract_website_content",
+        "backend.app.services.website_scraper.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
-    mock_llm = MagicMock()
-    orchestrator = ContextOrchestrator(mock_llm)
+    orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context and assess_context to return a not ready assessment
     not_ready_assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.LOW,
@@ -195,23 +179,23 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
 @pytest.mark.asyncio
 async def test_orchestrate_context_no_content(monkeypatch):
     """Test orchestrate_context returns insufficient if no content is found after scrape and crawl."""
-    mock_llm = MagicMock()
-    orchestrator = ContextOrchestrator(mock_llm)
+    orchestrator = ContextOrchestrator(AsyncMock())
     # Patch assess_url_context to simulate no content found
-    insufficient_assessment = ContextAssessmentResult(
-        overall_quality=ContextQuality.INSUFFICIENT,
-        overall_confidence=0.0,
-        content_sections=[],
-        company_clarity={},
-        endpoint_readiness=[],
-        data_quality_metrics={},
-        recommendations={},
-        summary="No website content could be extracted after scraping and crawling.",
-    )
     monkeypatch.setattr(
         orchestrator,
         "assess_url_context",
-        AsyncMock(return_value=insufficient_assessment),
+        AsyncMock(
+            return_value=ContextAssessmentResult(
+                overall_quality=ContextQuality.INSUFFICIENT,
+                overall_confidence=0.0,
+                content_sections=[],
+                company_clarity={},
+                endpoint_readiness=[],
+                data_quality_metrics={},
+                recommendations={},
+                summary="No website content could be extracted after scraping and crawling.",
+            )
+        ),
     )
     result = await orchestrator.orchestrate_context(
         website_url="https://empty.com",
@@ -231,7 +215,7 @@ async def test_resolve_context_prefers_user_context(monkeypatch):
         async def assess_context(
             self, website_content, target_endpoint, user_context=None
         ):
-            return MagicMock()
+            return AsyncMock()
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": True}
@@ -260,10 +244,10 @@ async def test_resolve_context_uses_llm_context_if_user_insufficient(monkeypatch
         async def assess_context(
             self, website_content, target_endpoint, user_context=None
         ):
-            return MagicMock()
+            return AsyncMock()
 
         async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return MagicMock()
+            return AsyncMock()
 
         def check_endpoint_readiness(self, assessment, endpoint):
             # First call (user) returns not ready, second call (llm) returns ready
@@ -296,10 +280,10 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
         async def assess_context(
             self, website_content, target_endpoint, user_context=None
         ):
-            return MagicMock()
+            return AsyncMock()
 
         async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return MagicMock()
+            return AsyncMock()
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": False}
@@ -325,10 +309,10 @@ async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
         async def assess_context(
             self, website_content, target_endpoint, user_context=None
         ):
-            return MagicMock()
+            return AsyncMock()
 
         async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return MagicMock()
+            return AsyncMock()
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": endpoint == "target_accounts"}

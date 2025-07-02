@@ -1,21 +1,22 @@
 from fastapi.testclient import TestClient
-from app.api.main import app
+from backend.app.api.main import app
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from app.services.context_orchestrator import ContextOrchestrator
-from app.prompts.models import ContextAssessmentResult, ContextQuality
-from app.services.product_overview_service import (
+from unittest.mock import AsyncMock, patch
+from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.prompts.models import ContextAssessmentResult, ContextQuality
+from backend.app.services.product_overview_service import (
     generate_product_overview_service,
 )
-from app.services.content_preprocessing import (
+from backend.app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
     SectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,
 )
-from app.schemas import ProductOverviewRequest
+from backend.app.schemas import ProductOverviewRequest
 from fastapi import HTTPException
 import json
+from backend.app.prompts.models import EndpointReadiness
 
 client = TestClient(app)
 
@@ -40,7 +41,7 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(return_value=fake_assessment)
     with patch(
-        "app.services.context_orchestrator.extract_website_content"
+        "backend.app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": "This is the website content."}
         result = await orchestrator.orchestrate_context(
@@ -74,7 +75,7 @@ async def test_orchestrator_handles_empty_content():
         )
     )
     with patch(
-        "app.services.context_orchestrator.extract_website_content"
+        "backend.app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": ""}
         result = await orchestrator.orchestrate_context(
@@ -90,8 +91,6 @@ async def test_orchestrator_readiness_logic():
     """
     The orchestrator should correctly reflect endpoint readiness based on the assessment object.
     """
-    from app.prompts.models import EndpointReadiness
-
     assessment = ContextAssessmentResult(
         overall_quality=ContextQuality.HIGH,
         overall_confidence=0.9,
@@ -216,7 +215,7 @@ async def test_service_handles_missing_website_content(monkeypatch):
         await generate_product_overview_service(
             data=data,
             orchestrator=FakeOrchestrator(),  # type: ignore[arg-type]
-            llm_client=MagicMock(),  # type: ignore[arg-type]
+            llm_client=AsyncMock(),  # type: ignore[arg-type]
         )
     assert exc.value.status_code == 422
     assert "Insufficient content quality" in str(exc.value.detail)
@@ -322,7 +321,7 @@ def test_api_happy_path(monkeypatch):
         return assessment_dict
 
     monkeypatch.setattr(
-        "app.api.routes.company.llm_client.generate_structured_output",
+        "backend.app.api.routes.company.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
 
@@ -345,19 +344,19 @@ def test_api_happy_path(monkeypatch):
         return FakeResp()
 
     monkeypatch.setattr(
-        "app.api.routes.company.llm_client.generate",
+        "backend.app.api.routes.company.llm_client.generate",
         fake_generate,
     )
 
     monkeypatch.setattr(
-        "app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator.extract_website_content",
         lambda *args, **kwargs: {
             "content": "Product: Blossom. Fast, Reliable, Secure."
         },
     )
 
     response = client.post(
-        "/company/generate",
+        "/api/company/generate",
         json={"website_url": "https://blossom.com"},
     )
     assert response.status_code == 200
@@ -376,11 +375,11 @@ def test_api_insufficient_content(monkeypatch):
     The API should return a 422 error and a helpful message for insufficient website content.
     """
     with patch(
-        "app.services.context_orchestrator.extract_website_content"
+        "backend.app.services.context_orchestrator.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": ""}
         response = client.post(
-            "/company/generate",
+            "/api/company/generate",
             json={"website_url": "https://empty.com"},
         )
         assert response.status_code == 422

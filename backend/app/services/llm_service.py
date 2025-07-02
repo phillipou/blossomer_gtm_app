@@ -422,7 +422,7 @@ class LLMClient:
                         val = 0.0
                     parsed_json["data_quality_metrics"][key] = float(val)
 
-            return response_model.parse_obj(parsed_json)
+            return response_model.model_validate(parsed_json)
         except (json.JSONDecodeError, ValidationError) as e:
             logging.error(
                 f"Failed to parse LLM output into {response_model.__name__}: {e}"

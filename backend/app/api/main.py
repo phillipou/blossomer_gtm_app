@@ -19,10 +19,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(company.router, prefix="/company", tags=["Company"])
-app.include_router(customers.router, prefix="/customers", tags=["Customers"])
-app.include_router(campaigns.router, prefix="/campaigns", tags=["Campaigns"])
-app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+app.include_router(company.router, prefix="/api/company", tags=["Company"])
+app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
+app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 
 
 @app.get("/health")

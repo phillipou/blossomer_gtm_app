@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from app.api.main import app
+from backend.app.api.main import app
 
 client = TestClient(app)
 
@@ -14,7 +14,7 @@ def test_positioning_endpoint():
         "description": "AI-powered marketing automation for SMBs",
         "icp": "B2B SaaS startups",
     }
-    response = client.post("/campaigns/positioning", json=payload)
+    response = client.post("/api/campaigns/positioning", json=payload)
     assert response.status_code == 200
     data = response.json()
     # Check for required fields and types in the response
