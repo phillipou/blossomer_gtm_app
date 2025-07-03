@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Type, Optional
 from fastapi import HTTPException
-from backend.app.services.context_orchestrator import (
+from backend.app.services.context_orchestrator_agent import (
     ContextOrchestrator,
     resolve_context_for_endpoint,
 )
@@ -15,11 +15,18 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class CompanyAnalysisService:
+class ContextOrchestratorService:
     """
-    Shared service for company analysis endpoints (overview, target company, target persona).
+    Main service for orchestrating context analysis for all endpoints (company, target account, persona).
     Handles context resolution, prompt rendering, LLM call, and response parsing.
     Preprocessing is optional and can be enabled per analysis type.
+
+    For the 'product_overview' (i.e., /company/generate) endpoint:
+    - Website scraping is always required and used as the only context source.
+    - User-provided and LLM-inferred context are ignored for sufficiency.
+    - No LLM-based or deterministic context assessment is performed.
+    - The scraped website content is passed directly to the LLM for generation.
+    - This is intentional for performance and simplicity (see optimization plan).
     """
 
     def __init__(
@@ -148,7 +155,7 @@ class CompanyAnalysisService:
             print(f"[{analysis_type}] Total analyze() time: {t7 - total_start:.2f}s")
             return response_model.model_validate(llm_output)
         except (ValidationError, json.JSONDecodeError, ValueError) as e:
-            logger.error(f"[{analysis_type}] Failed to parse LLM output: {e}")
+            print(f"[{analysis_type}] Failed to parse LLM output: {e}")
             raise HTTPException(
                 status_code=422,
                 detail={
@@ -158,7 +165,7 @@ class CompanyAnalysisService:
                 },
             )
         except Exception as e:
-            logger.error(f"[{analysis_type}] Analysis failed: {e}")
+            print(f"[{analysis_type}] Analysis failed: {e}")
             raise HTTPException(
                 status_code=500,
                 detail={

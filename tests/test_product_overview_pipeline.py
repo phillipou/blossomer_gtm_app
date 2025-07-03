@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from backend.app.api.main import app
 import pytest
 from unittest.mock import AsyncMock, patch
-from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.prompts.models import CompanyOverviewResult
 from backend.app.services.product_overview_service import (
     generate_product_overview_service,
@@ -54,7 +54,7 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     orchestrator = ContextOrchestrator(llm_client=AsyncMock())
     orchestrator.assess_context = AsyncMock(return_value=fake_assessment)
     with patch(
-        "backend.app.services.context_orchestrator.extract_website_content"
+        "backend.app.services.context_orchestrator_agent.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": "This is the website content."}
         result = await orchestrator.orchestrate_context(
@@ -100,7 +100,7 @@ async def test_orchestrator_handles_empty_content():
         )
     )
     with patch(
-        "backend.app.services.context_orchestrator.extract_website_content"
+        "backend.app.services.context_orchestrator_agent.extract_website_content"
     ) as mock_scrape:
         mock_scrape.return_value = {"content": ""}
         result = await orchestrator.orchestrate_context(
@@ -584,7 +584,7 @@ def test_api_happy_path(monkeypatch):
     )
 
     monkeypatch.setattr(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         lambda *args, **kwargs: {
             "content": "Product: Blossom. Fast, Reliable, Secure.",
             "html": "<html>Product: Blossom. Fast, Reliable, Secure.</html>",
@@ -650,7 +650,7 @@ def test_api_insufficient_content(monkeypatch):
         return make_insufficient_response()
 
     monkeypatch.setattr(
-        "backend.app.services.company_analysis_service.CompanyAnalysisService.analyze",
+        "backend.app.services.context_orchestrator_service.ContextOrchestratorService.analyze",
         fake_analyze,
     )
 

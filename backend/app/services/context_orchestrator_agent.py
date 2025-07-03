@@ -3,8 +3,9 @@ This module defines the ContextOrchestrator agent, which is responsible for
 assessing context quality for campaign generation endpoints.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import HTTPException
+import logging
 
 from backend.app.prompts.models import (
     ContextAssessmentResult,
@@ -17,13 +18,185 @@ from backend.app.services.llm_service import LLMClient
 from backend.app.services.website_scraper import extract_website_content
 
 
+def is_company_context_sufficient(context: dict) -> bool:
+    """
+    Checks if context has sufficient company/product information for downstream endpoints.
+    Requires:
+    - company_name or target_company_name (non-empty)
+    - company_overview (non-empty)
+    - At least one of: use_cases or capabilities (non-empty)
+    """
+    name = context.get("company_name", "") or context.get("target_company_name", "")
+    overview = context.get("company_overview", "")
+    use_cases = context.get("use_cases", [])
+    capabilities = context.get("capabilities", [])
+    return (
+        bool(name.strip())
+        and bool(overview.strip())
+        and (bool(use_cases) or bool(capabilities))
+    )
+
+
+def is_target_account_context_sufficient(context: dict) -> bool:
+    """
+    Checks if context has sufficient target account information (requires company context).
+    Requires:
+    - Sufficient company context (see is_company_context_sufficient)
+    - industry (non-empty)
+    - target_company_description (non-empty)
+    - target_company_name (non-empty)
+    - At least one of: employees, department_size, revenue (non-empty)
+    """
+    if not is_company_context_sufficient(context):
+        return False
+    industry = context.get("industry", "")
+    target_company_desc = context.get("target_company_description", "")
+    target_company_name = context.get("target_company_name", "")
+    employees = context.get("employees", None)
+    department_size = context.get("department_size", None)
+    revenue = context.get("revenue", None)
+    size_ok = any(
+        [
+            employees not in (None, "", []),
+            department_size not in (None, "", []),
+            revenue not in (None, "", []),
+        ]
+    )
+    return (
+        bool(industry.strip())
+        and bool(target_company_desc.strip())
+        and bool(target_company_name.strip())
+        and size_ok
+    )
+
+
+def is_target_persona_context_sufficient(context: dict) -> bool:
+    """
+    Checks if context has sufficient information for target persona (requires company and target account context).
+    """
+    return is_company_context_sufficient(
+        context
+    ) and is_target_account_context_sufficient(context)
+
+
 async def resolve_context_for_endpoint(
     request, endpoint_name: str, orchestrator
 ) -> Dict[str, Any]:
     """
     Resolve the best context for a given endpoint, preferring user, then LLM, then website scraping.
+    Uses modular, daisy-chained sufficiency checks for company, target account, and target persona.
     Returns a dict with keys: 'source', 'context', 'is_ready'.
     """
+    user_ctx = getattr(request, "user_inputted_context", None)
+    llm_ctx = getattr(request, "llm_inferred_context", None)
+    website_url = getattr(request, "website_url", None)
+
+    if endpoint_name == "target_company":
+        # Target account requires sufficient company context
+        for ctx, label in [(user_ctx, "user-provided"), (llm_ctx, "LLM-inferred")]:
+            if ctx:
+                try:
+                    ctx_dict = ctx if isinstance(ctx, dict) else {}
+                    if is_target_account_context_sufficient(ctx_dict):
+                        logging.info(
+                            f"[target_company] Using {label} context: "
+                            "sufficient for generation."
+                        )
+                        return {
+                            "source": f"{label}_context",
+                            "context": ctx,
+                            "is_ready": True,
+                        }
+                    elif not is_company_context_sufficient(ctx_dict):
+                        logging.info(
+                            f"[target_company] {label} context: "
+                            "insufficient company context."
+                        )
+                    else:
+                        logging.info(
+                            f"[target_company] {label} context: "
+                            "insufficient target account context."
+                        )
+                except Exception:
+                    logging.warning(
+                        f"[target_company] Exception while checking {label} context sufficiency."
+                    )
+        if website_url:
+            logging.info("[target_company] Resorting to website scraping for context.")
+            scrape_result = extract_website_content(website_url)
+            content = scrape_result.get("content", "")
+            html = scrape_result.get("html", None)
+            # Pass through cache status for accurate logging downstream
+            from_cache = scrape_result.get("from_cache", False)
+            return {
+                "source": "website",
+                "context": content,
+                "content": content,
+                "html": html,
+                "is_ready": True,
+                "from_cache": from_cache,
+            }
+        logging.warning(
+            "[target_company] No sufficient context found and no website_url provided."
+        )
+        return {"source": None, "context": None, "is_ready": False}
+
+    if endpoint_name == "target_persona":
+        # Target persona requires sufficient company and target account context
+        for ctx, label in [(user_ctx, "user-provided"), (llm_ctx, "LLM-inferred")]:
+            if ctx:
+                try:
+                    ctx_dict = ctx if isinstance(ctx, dict) else {}
+                    if is_target_persona_context_sufficient(ctx_dict):
+                        logging.info(
+                            f"[target_persona] Using {label} context: "
+                            "sufficient for generation."
+                        )
+                        return {
+                            "source": f"{label}_context",
+                            "context": ctx,
+                            "is_ready": True,
+                        }
+                    elif not is_company_context_sufficient(ctx_dict):
+                        logging.info(
+                            f"[target_persona] {label} context: "
+                            "insufficient company context."
+                        )
+                    elif not is_target_account_context_sufficient(ctx_dict):
+                        logging.info(
+                            f"[target_persona] {label} context: "
+                            "insufficient target account context."
+                        )
+                    else:
+                        logging.info(
+                            f"[target_persona] {label} context: "
+                            "insufficient persona context."
+                        )
+                except Exception:
+                    logging.warning(
+                        f"[target_persona] Exception while checking {label} context sufficiency."
+                    )
+        if website_url:
+            logging.info("[target_persona] Resorting to website scraping for context.")
+            scrape_result = extract_website_content(website_url)
+            content = scrape_result.get("content", "")
+            html = scrape_result.get("html", None)
+            # Pass through cache status for accurate logging downstream
+            from_cache = scrape_result.get("from_cache", False)
+            return {
+                "source": "website",
+                "context": content,
+                "content": content,
+                "html": html,
+                "is_ready": True,
+                "from_cache": from_cache,
+            }
+        logging.warning(
+            "[target_persona] No sufficient context found and no website_url provided."
+        )
+        return {"source": None, "context": None, "is_ready": False}
+
+    # Default: legacy logic for other endpoints
     # 1. User-provided context
     user_ctx = getattr(request, "user_inputted_context", None)
     if user_ctx:
@@ -84,7 +257,7 @@ class ContextOrchestrator:
     Uses a rich, structured output model for granular feedback and recommendations.
     """
 
-    def __init__(self, llm_client: LLMClient):
+    def __init__(self, llm_client: LLMClient) -> None:
         self.llm_client = llm_client
 
     async def assess_context(
@@ -213,8 +386,8 @@ class ContextOrchestrator:
 
         is_ready = company_overview_ok and capabilities_ok
 
-        missing_requirements = []
-        recommendations = []
+        missing_requirements: List[str] = []
+        recommendations: List[str] = []
 
         if not company_overview_ok:
             missing_requirements.append("company_overview")
@@ -246,8 +419,8 @@ class ContextOrchestrator:
         Main orchestration method: assess → plan → enrich → reassess (iterative improvement).
         """
         all_content: Dict[str, Any] = {}
-        sources_used = []
-        enrichment_performed = []
+        sources_used: List[str] = []
+        enrichment_performed: List[Dict[str, Any]] = []
         step = 0
         # Initial fetch (scrape/crawl)
         website_content = ""
@@ -292,12 +465,16 @@ class ContextOrchestrator:
             "enrichment_successful": enrichment_successful,
         }
 
-    def _create_enrichment_plan(self, assessment, target_endpoint):
+    def _create_enrichment_plan(
+        self, assessment: "CompanyOverviewResult", target_endpoint: str
+    ) -> Dict[str, Any]:
         """TODO: Plan enrichment steps based on assessment and endpoint requirements."""
         # Placeholder: return empty plan
         return {}
 
-    def _execute_enrichment(self, enrichment_plan, website_url):
+    def _execute_enrichment(
+        self, enrichment_plan: Dict[str, Any], website_url: str
+    ) -> Dict[str, Any]:
         """TODO: Execute enrichment plan (fetch more data, crawl specific pages, etc.)."""
         # Placeholder: return empty result
         return {}

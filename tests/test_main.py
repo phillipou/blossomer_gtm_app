@@ -111,7 +111,7 @@ def test_product_overview_endpoint_success(monkeypatch):
     }
     fake_content = "Fake company info."
     monkeypatch.setattr(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         lambda *args, **kwargs: {"content": fake_content},
     )
 
@@ -223,7 +223,7 @@ def test_product_overview_endpoint_success(monkeypatch):
 @pytest.mark.skip(reason="type: ignore for test mocks")
 def test_product_overview_llm_refusal(monkeypatch):
     """Test that the API returns a 422 error with a user-friendly message when the LLM refuses to answer."""
-    from backend.app.services.product_overview_service import (
+    from backend.app.services.context_orchestrator_service import (
         generate_product_overview_service,
     )
     from backend.app.schemas import ProductOverviewRequest
@@ -540,7 +540,7 @@ def test_target_persona_endpoint_success(monkeypatch):
         return {"context": "Fake content", "source": "website", "is_ready": True}
 
     monkeypatch.setattr(
-        "backend.app.services.company_analysis_service.resolve_context_for_endpoint",
+        "backend.app.services.context_orchestrator_service.resolve_context_for_endpoint",
         fake_resolve_context_for_endpoint,
     )
     monkeypatch.setattr(
@@ -556,7 +556,7 @@ def test_target_persona_endpoint_success(monkeypatch):
         return fake_response
 
     monkeypatch.setattr(
-        "backend.app.services.company_analysis_service.CompanyAnalysisService.analyze",
+        "backend.app.services.context_orchestrator_service.ContextOrchestratorService.analyze",
         fake_analyze,
     )
     monkeypatch.setattr(

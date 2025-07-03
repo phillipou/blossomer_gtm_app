@@ -5,7 +5,7 @@ from backend.app.schemas import (
     TargetPersonaRequest,
     TargetPersonaResponse,
 )
-from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.target_company_service import generate_target_company_profile
 from backend.app.services.target_persona_service import generate_target_persona_profile
 from backend.app.core.auth import rate_limit_dependency

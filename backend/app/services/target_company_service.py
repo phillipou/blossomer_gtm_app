@@ -1,8 +1,8 @@
 from backend.app.schemas import TargetCompanyRequest, TargetCompanyResponse
 from backend.app.prompts.models import TargetCompanyPromptVars
-from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
+from backend.app.services.context_orchestrator_service import ContextOrchestratorService
 from backend.app.services.llm_service import LLMClient
-from backend.app.services.company_analysis_service import CompanyAnalysisService
 
 
 async def generate_target_company_profile(
@@ -21,7 +21,7 @@ async def generate_target_company_profile(
     Returns:
         TargetCompanyResponse: The structured response model.
     """
-    service = CompanyAnalysisService(
+    service = ContextOrchestratorService(
         orchestrator=orchestrator,
         llm_client=llm_client,
     )

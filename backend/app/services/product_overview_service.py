@@ -1,5 +1,6 @@
 import logging
-from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
+from backend.app.services.context_orchestrator_service import ContextOrchestratorService
 from backend.app.services.llm_service import LLMClient
 from backend.app.prompts.models import ProductOverviewPromptVars
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
@@ -9,7 +10,6 @@ from backend.app.services.content_preprocessing import (
     LangChainSummarizer,
     BoilerplateFilter,
 )
-from backend.app.services.company_analysis_service import CompanyAnalysisService
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ async def generate_product_overview_service(
     """
     Orchestrates the generation of a comprehensive product overview using the shared analysis service.
     """
-    service = CompanyAnalysisService(
+    service = ContextOrchestratorService(
         orchestrator=orchestrator,
         llm_client=llm_client,
         preprocessing_pipeline=preprocessing_pipeline,

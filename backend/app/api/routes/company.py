@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
-from backend.app.services.context_orchestrator import ContextOrchestrator
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.product_overview_service import (
     generate_product_overview_service,
 )

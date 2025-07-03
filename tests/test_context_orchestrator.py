@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from backend.app.services.context_orchestrator import (
+from backend.app.services.context_orchestrator_agent import (
     ContextOrchestrator,
     resolve_context_for_endpoint,
 )
@@ -15,7 +15,7 @@ async def test_assess_context_empty_content():
     """Test that empty website content raises HTTPException 422 for insufficient content."""
     orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
-        "backend.app.services.context_orchestrator.render_prompt",
+        "backend.app.services.context_orchestrator_agent.render_prompt",
         return_value="dummy prompt",
     ):
         with pytest.raises(Exception) as exc_info:
@@ -30,7 +30,7 @@ async def test_assess_url_context_scrape_failure():
     """Test that a website scrape failure returns 'insufficient' result."""
     orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         side_effect=Exception("scrape failed"),
     ):
         result = await orchestrator.assess_url_context(
@@ -69,7 +69,7 @@ async def test_assess_context_happy_path():
     )
     orchestrator = ContextOrchestrator(llm_client)
     with patch(
-        "backend.app.services.context_orchestrator.render_prompt",
+        "backend.app.services.context_orchestrator_agent.render_prompt",
         return_value="dummy prompt",
     ):
         result = await orchestrator.assess_context(website_content="Some real content.")
@@ -106,7 +106,7 @@ async def test_assess_url_context_happy_path():
         )
     )
     with patch(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         return_value={"content": "Some content"},
     ):
         result = await orchestrator.assess_url_context(
@@ -124,7 +124,7 @@ async def test_orchestrate_context_ready(monkeypatch):
     """Test orchestrate_context returns ready when assessment is ready for the endpoint."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     orchestrator = ContextOrchestrator(AsyncMock())
@@ -170,7 +170,7 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     """Test orchestrate_context returns not ready and includes enrichment steps when not ready."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     orchestrator = ContextOrchestrator(AsyncMock())
@@ -373,7 +373,7 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
     # Simulate scraped content
     scraped_content = "<html>Website content for https://site.com</html>"
     monkeypatch.setattr(
-        "backend.app.services.context_orchestrator.extract_website_content",
+        "backend.app.services.context_orchestrator_agent.extract_website_content",
         lambda url, crawl=False: {"content": scraped_content},
     )
     result = await resolve_context_for_endpoint(
