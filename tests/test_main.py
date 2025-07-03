@@ -56,11 +56,29 @@ async def fake_generate_structured_output(prompt, response_model):
     from backend.app.schemas import TargetCompanyResponse
 
     return TargetCompanyResponse(
-        target_company="Tech-forward SaaS companies",
-        company_attributes=["SaaS", "Tech-forward", "100-500 employees"],
-        buying_signals=["Hiring AI engineers", "Investing in automation"],
+        target_company_name="SaaS Innovators",
+        target_company_description="Tech-forward SaaS companies",
+        firmographics={
+            "industry": ["SaaS", "Tech"],
+            "company_size": {"employees": "100-500", "revenue": "$10M-$50M"},
+            "geography": ["US", "EU"],
+            "business_model": ["Subscription"],
+            "funding_stage": ["Series A"],
+        },
+        buying_signals={
+            "growth_indicators": ["Hiring AI engineers", "Investing in automation"],
+            "technology_signals": ["Adopting cloud"],
+            "organizational_signals": ["New CTO"],
+            "market_signals": ["Industry expansion"],
+        },
         rationale="These companies are ideal due to their innovation focus.",
-        confidence_scores={"target_company": 0.95},
+        confidence_scores={
+            "target_company_name": 0.9,
+            "target_company_description": 0.95,
+            "firmographics": 0.9,
+            "buying_signals": 0.9,
+            "rationale": 0.95,
+        },
         metadata={"source": "test"},
     ).model_dump()
 
@@ -281,15 +299,35 @@ def test_target_company_endpoint_success(monkeypatch):
 
     payload = {
         "website_url": "https://example.com",
-        "user_inputted_context": "",
-        "llm_inferred_context": "",
+        "user_inputted_context": "Test context",
+        "llm_inferred_context": "Test inferred context",
+        "context_quality": "high",
+        "assessment_summary": "Summary of context assessment.",
     }
     fake_response = TargetCompanyResponse(
-        target_company="Tech-forward SaaS companies",
-        company_attributes=["SaaS", "Tech-forward", "100-500 employees"],
-        buying_signals=["Hiring AI engineers", "Investing in automation"],
+        target_company_name="SaaS Innovators",
+        target_company_description="Tech-forward SaaS companies",
+        firmographics={
+            "industry": ["SaaS", "Tech"],
+            "company_size": {"employees": "100-500", "revenue": "$10M-$50M"},
+            "geography": ["US", "EU"],
+            "business_model": ["Subscription"],
+            "funding_stage": ["Series A"],
+        },
+        buying_signals={
+            "growth_indicators": ["Hiring AI engineers", "Investing in automation"],
+            "technology_signals": ["Adopting cloud"],
+            "organizational_signals": ["New CTO"],
+            "market_signals": ["Industry expansion"],
+        },
         rationale="These companies are ideal due to their innovation focus.",
-        confidence_scores={"target_company": 0.95},
+        confidence_scores={
+            "target_company_name": 0.9,
+            "target_company_description": 0.95,
+            "firmographics": 0.9,
+            "buying_signals": 0.9,
+            "rationale": 0.95,
+        },
         metadata={"source": "test"},
     ).model_dump()
 
@@ -361,12 +399,55 @@ def test_target_company_endpoint_success(monkeypatch):
     )
     assert response.status_code == 200
     data = response.json()
-    assert "target_company" in data
-    assert "company_attributes" in data
+    assert "target_company_name" in data
+    assert "target_company_description" in data
+    assert "firmographics" in data
     assert "buying_signals" in data
     assert "rationale" in data
     assert "confidence_scores" in data
     assert "metadata" in data
+
+
+def test_target_company_prompt_vars_render(monkeypatch):
+    """
+    Test that TargetCompanyPromptVars can be instantiated and rendered
+    with all fields, including context_quality and assessment_summary.
+    Also test that the correct context is rendered depending on which
+    context is provided.
+    """
+    from backend.app.prompts.models import TargetCompanyPromptVars
+    from backend.app.prompts.registry import render_prompt
+
+    # Case 1: Both user_inputted_context and llm_inferred_context provided
+    vars = TargetCompanyPromptVars(
+        website_content="Website content here.",
+        user_inputted_context="User context here.",
+        llm_inferred_context="LLM context here.",
+        context_quality="high",
+        assessment_summary="Assessment summary here.",
+    )
+    prompt = render_prompt("target_company", vars)
+    assert "Website content here." in prompt
+    assert "User context here." in prompt
+    # Only user context should appear if both are provided
+    assert "LLM context here." not in prompt
+    assert "high" in prompt or "context_quality" in prompt
+    assert "Assessment summary here." in prompt or "assessment_summary" in prompt
+
+    # Case 2: Only llm_inferred_context provided
+    vars2 = TargetCompanyPromptVars(
+        website_content="Website content here.",
+        user_inputted_context=None,
+        llm_inferred_context="LLM context here.",
+        context_quality="high",
+        assessment_summary="Assessment summary here.",
+    )
+    prompt2 = render_prompt("target_company", vars2)
+    assert "Website content here." in prompt2
+    assert "LLM context here." in prompt2
+    assert "User context here." not in prompt2
+    assert "context_quality" in prompt2
+    assert "Assessment summary here." in prompt2
 
 
 def test_target_persona_endpoint_success(monkeypatch):

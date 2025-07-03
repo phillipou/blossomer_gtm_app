@@ -141,6 +141,12 @@ class TargetCompanyPromptVars(BaseModel):
         None,
         description="Optional context inferred from previous endpoints for chaining.",
     )
+    context_quality: Optional[str] = Field(
+        None, description="Optional context quality assessment for the prompt."
+    )
+    assessment_summary: Optional[str] = Field(
+        None, description="Optional summary of the context assessment."
+    )
 
 
 # ==============================================================================

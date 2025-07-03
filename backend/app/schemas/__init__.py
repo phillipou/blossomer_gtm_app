@@ -125,31 +125,32 @@ class TargetCompanyRequest(BaseModel):
 
 class TargetCompanyResponse(BaseModel):
     """
-    Response model for the /campaigns/target_company endpoint.
+    Response model for the /campaigns/target_company endpoint (matches new prompt output).
     """
 
-    target_company: str = Field(
+    target_company_name: str = Field(
         ...,
-        description="Ideal company type and why they need this solution",
+        description="Short name for the target company (5 words max, from user context or inferred)",
     )
-    company_attributes: List[str] = Field(
-        ...,
-        description="Key company/firmographic attributes",
+    target_company_description: str = Field(
+        ..., description="Ideal company type and why they need this solution"
     )
-    buying_signals: List[str] = Field(
+    firmographics: Dict[str, Any] = Field(
         ...,
-        description="Observable buying signals for this company type",
+        description="Firmographic attributes: industry, company_size, geography, business_model, funding_stage",
+    )
+    buying_signals: Dict[str, Any] = Field(
+        ...,
+        description="Buying signals: growth_indicators, technology_signals, organizational_signals, market_signals",
     )
     rationale: str = Field(
+        ..., description="Explanation of why these companies are ideal customers"
+    )
+    confidence_scores: Dict[str, float] = Field(
+        ..., description="Confidence/quality scores for each section (0-1)"
+    )
+    metadata: Dict[str, Any] = Field(
         ...,
-        description="Explanation of why these companies are ideal customers",
-    )
-    confidence_scores: Optional[Dict[str, float]] = Field(
-        None,
-        description="Confidence/quality scores for each section (0-1)",
-    )
-    metadata: Optional[Dict[str, Any]] = Field(
-        None,
         description="Additional metadata (sources, context quality, processing time, etc.)",
     )
 
