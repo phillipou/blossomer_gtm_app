@@ -12,19 +12,17 @@ from backend.app.prompts.models import (
 
 @pytest.mark.asyncio
 async def test_assess_context_empty_content():
-    """Test that empty website content returns an empty product overview result."""
+    """Test that empty website content raises HTTPException 422 for insufficient content."""
     orchestrator = ContextOrchestrator(AsyncMock())
     with patch(
         "backend.app.services.context_orchestrator.render_prompt",
         return_value="dummy prompt",
     ):
-        result = await orchestrator.assess_context(website_content="   ")
-    assert result.company_name == ""
-    assert result.company_url == ""
-    assert result.company_overview == ""
-    assert result.capabilities == []
-    assert result.confidence_scores["company_overview"] == 0.0
-    assert result.metadata["context_quality"] == "insufficient"
+        with pytest.raises(Exception) as exc_info:
+            await orchestrator.assess_context(website_content="   ")
+        assert hasattr(exc_info.value, "status_code")
+        assert exc_info.value.status_code == 422
+        assert "Unable to access website content for analysis" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -138,7 +136,7 @@ async def test_orchestrate_context_ready(monkeypatch):
     """Test orchestrate_context returns ready when assessment is ready for the endpoint."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "backend.app.services.website_scraper.extract_website_content",
+        "backend.app.services.context_orchestrator.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     orchestrator = ContextOrchestrator(AsyncMock())
@@ -190,7 +188,7 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     """Test orchestrate_context returns not ready and includes enrichment steps when not ready."""
     # Patch extract_website_content to avoid real scraping
     monkeypatch.setattr(
-        "backend.app.services.website_scraper.extract_website_content",
+        "backend.app.services.context_orchestrator.extract_website_content",
         lambda url, crawl=False: {"content": "dummy content"},
     )
     orchestrator = ContextOrchestrator(AsyncMock())
@@ -393,10 +391,10 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
         async def assess_context(
             self, website_content, target_endpoint, user_context=None
         ):
-            return AsyncMock()
+            return scraped_content
 
         async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return AsyncMock()
+            return scraped_content
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": False}
@@ -407,11 +405,17 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
+    # Simulate scraped content
+    scraped_content = "<html>Website content for https://site.com</html>"
+    monkeypatch.setattr(
+        "backend.app.services.context_orchestrator.extract_website_content",
+        lambda url, crawl=False: {"content": scraped_content},
+    )
     result = await resolve_context_for_endpoint(
         request, "target_accounts", orchestrator
     )
     assert result["source"] == "website"
-    assert result["context"] == "https://site.com"
+    assert result["context"] == scraped_content
 
 
 @pytest.mark.asyncio

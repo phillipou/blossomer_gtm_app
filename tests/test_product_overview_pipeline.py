@@ -220,12 +220,34 @@ async def test_service_uses_raw_website_content(monkeypatch):
                 "enrichment_successful": True,
             }
 
-        async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return {
-                "context": "This is the real website content!",
-                "source": "website",
-                "is_ready": True,
-            }
+        async def assess_context(
+            self, website_content, target_endpoint=None, user_context=None
+        ):
+            # Return a dummy CompanyOverviewResult for compatibility
+            return CompanyOverviewResult(
+                company_name="Example Inc.",
+                company_url="https://example.com",
+                company_overview="A great company.",
+                capabilities=["AI", "Automation"],
+                business_model=["SaaS"],
+                differentiated_value=["Unique AI"],
+                customer_benefits=["Saves time"],
+                alternatives=["CompetitorX"],
+                testimonials=["Great product!"],
+                product_description="A SaaS platform for automation.",
+                key_features=["Fast", "Reliable"],
+                company_profiles=["Tech companies"],
+                persona_profiles=["CTO"],
+                use_cases=["Automate workflows"],
+                pain_points=["Manual work"],
+                pricing="Contact us",
+                confidence_scores={
+                    "company_name": 0.95,
+                    "company_url": 0.95,
+                    "company_overview": 0.95,
+                },
+                metadata={"context_quality": "high"},
+            )
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": True}
@@ -332,12 +354,29 @@ async def test_service_handles_missing_website_content(monkeypatch):
                 "enrichment_successful": False,
             }
 
-        async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return {
-                "context": "",
-                "source": "website",
-                "is_ready": False,
-            }
+        async def assess_context(
+            self, website_content, target_endpoint=None, user_context=None
+        ):
+            return CompanyOverviewResult(
+                company_name="Example Inc.",
+                company_url="https://example.com",
+                company_overview="",
+                capabilities=[],
+                business_model=[],
+                differentiated_value=[],
+                customer_benefits=[],
+                alternatives=[],
+                testimonials=[],
+                product_description="",
+                key_features=[],
+                company_profiles=[],
+                persona_profiles=[],
+                use_cases=[],
+                pain_points=[],
+                pricing="",
+                confidence_scores={},
+                metadata={},
+            )
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": False}
@@ -395,12 +434,33 @@ async def test_service_handles_llm_refusal(monkeypatch):
                 "enrichment_successful": True,
             }
 
-        async def assess_url_context(self, url, target_endpoint, user_context=None):
-            return {
-                "context": "Some content",
-                "source": "website",
-                "is_ready": True,
-            }
+        async def assess_context(
+            self, website_content, target_endpoint=None, user_context=None
+        ):
+            return CompanyOverviewResult(
+                company_name="Example Inc.",
+                company_url="https://example.com",
+                company_overview="Ready!",
+                capabilities=["AI", "Automation"],
+                business_model=["SaaS"],
+                differentiated_value=["Unique AI"],
+                customer_benefits=["Saves time"],
+                alternatives=["CompetitorX"],
+                testimonials=["Great product!"],
+                product_description="Blossom is fast and reliable.",
+                key_features=["Fast", "Reliable"],
+                company_profiles=["Blossom Inc. is a SaaS company."],
+                persona_profiles=["CTO"],
+                use_cases=["Automated workflows", "Data analytics"],
+                pain_points=["Manual processes", "Slow reporting"],
+                pricing="Contact us",
+                confidence_scores={
+                    "company_name": 0.9,
+                    "company_url": 0.9,
+                    "company_overview": 0.9,
+                },
+                metadata={},
+            )
 
         def check_endpoint_readiness(self, assessment, endpoint):
             return {"is_ready": True}

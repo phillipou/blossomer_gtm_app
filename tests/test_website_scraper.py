@@ -224,7 +224,7 @@ def test_extract_website_content_crawl(mocker):
     mocker.patch(
         "backend.app.services.website_scraper.firecrawl_crawl_site",
         lambda url, limit, formats, only_main_content, wait_for: {
-            "data": ["main content"],
+            "data": [{"markdown": "main content"}],
             "metadata": {
                 "pages": limit,
                 "main": only_main_content,
@@ -237,7 +237,7 @@ def test_extract_website_content_crawl(mocker):
     )
     assert result["url"] == test_url
     assert result["validation"]["is_valid"] is True
-    assert result["content"] == ["main content"]
+    assert result["content"] == "main content"
     assert result["metadata"]["pages"] == 2
     assert result["metadata"]["main"] is True
     assert result["metadata"]["wait"] == 1500

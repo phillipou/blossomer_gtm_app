@@ -395,12 +395,8 @@ def test_target_persona_endpoint_success(monkeypatch):
         return {"context": "Fake content", "source": "website", "is_ready": True}
 
     monkeypatch.setattr(
-        "backend.app.services.target_persona_service.resolve_context_for_endpoint",
+        "backend.app.services.company_analysis_service.resolve_context_for_endpoint",
         fake_resolve_context_for_endpoint,
-    )
-    monkeypatch.setattr(
-        "backend.app.services.target_persona_service.render_prompt",
-        lambda template, vars: "prompt",
     )
     monkeypatch.setattr(
         "backend.app.services.target_persona_service.TargetPersonaPromptVars",
@@ -454,6 +450,3 @@ def test_target_persona_endpoint_success(monkeypatch):
     assert data["rationale"] == "This persona drives operational improvements."
     assert data["confidence_scores"]["persona"] == 0.92
     assert data["metadata"]["source"] == "test"
-
-    error_msg = response.json().get("detail", {}).get("error", "")
-    assert "LLM did not return valid output for target_persona" in error_msg
