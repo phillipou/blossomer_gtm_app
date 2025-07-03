@@ -238,6 +238,120 @@ All campaign endpoints now follow a unified context assessment and orchestration
 
 This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See backend_prd.md for rationale and user impact.
 
+### 3.1 Deterministic Context Sufficiency & Daisy-Chained Validation (2024 Refactor)
+
+#### Overview
+
+In 2024, the context orchestration system was refactored to eliminate LLM-based context quality assessment in favor of fast, deterministic sufficiency checks. This change dramatically improved performance, reliability, and transparency. Instead of scoring context with the LLM, the system now uses simple field existence and non-emptiness checks, with endpoint-specific requirements and a daisy-chained dependency structure.
+
+#### Sufficiency Logic by Endpoint
+
+- **Company (product overview):**
+  - Always requires website scraping. User/LLM context is ignored for sufficiency.
+  - No sufficiency check is performed; scraped content is always trusted.
+
+- **Target Account:**
+  - Requires:
+    - `company_name` (or `target_company_name`): non-empty
+    - `company_overview`: non-empty
+    - At least one of: `use_cases` or `capabilities`: non-empty
+  - If user or LLM context is insufficient, falls back to website scraping.
+
+- **Target Persona:**
+  - Requires:
+    - Sufficient company context (see above)
+    - Sufficient target account context (see above)
+    - `industry`: non-empty
+    - `target_company_description`: non-empty
+    - `target_company_name`: non-empty
+    - At least one of: `employees`, `department_size`, or `revenue`: non-empty
+  - If any prerequisite context is insufficient, falls back to website scraping.
+
+#### Daisy-Chained Validation
+
+- **Target account** sufficiency requires sufficient company context.
+- **Target persona** sufficiency requires both sufficient company and target account context, plus persona-specific fields.
+- This ensures that each endpoint only proceeds if all upstream context is present and valid.
+
+#### Fallback Order
+
+1. User-provided context (if sufficient)
+2. LLM-inferred context (if sufficient)
+3. Website scraping (always trusted if reached)
+
+#### Logging
+
+- Logs are emitted at each decision point:
+  - When user or LLM context is sufficient and used
+  - When context is insufficient and the system falls back to website scraping
+  - When prerequisites for persona/account are missing
+- This provides transparency for debugging and monitoring.
+
+#### Rationale
+
+- **Performance:** Eliminates slow LLM calls for context assessment
+- **Reliability:** Deterministic, testable, and easy to reason about
+- **Transparency:** Clear logs and explicit fallback logic
+- **Extensibility:** Easy to update field requirements per endpoint
+
+#### Example: Sufficiency Check Functions and Orchestration Flow
+
+```python
+# Company context sufficiency
+def is_company_context_sufficient(context: dict) -> bool:
+    name = context.get("company_name", "") or context.get("target_company_name", "")
+    overview = context.get("company_overview", "")
+    use_cases = context.get("use_cases", [])
+    capabilities = context.get("capabilities", [])
+    return bool(name.strip()) and bool(overview.strip()) and (
+        bool(use_cases) or bool(capabilities)
+    )
+
+# Target account context sufficiency (requires company context)
+def is_target_account_context_sufficient(context: dict) -> bool:
+    if not is_company_context_sufficient(context):
+        return False
+    # ... add any additional account-specific checks here ...
+    return True
+
+# Target persona context sufficiency (requires company and account context)
+def is_target_persona_context_sufficient(context: dict) -> bool:
+    if not is_company_context_sufficient(context):
+        return False
+    if not is_target_account_context_sufficient(context):
+        return False
+    industry = context.get("industry", "")
+    target_company_desc = context.get("target_company_description", "")
+    target_company_name = context.get("target_company_name", "")
+    employees = context.get("employees", None)
+    department_size = context.get("department_size", None)
+    revenue = context.get("revenue", None)
+    size_ok = any([
+        employees not in (None, "", []),
+        department_size not in (None, "", []),
+        revenue not in (None, "", []),
+    ])
+    return (
+        bool(industry.strip())
+        and bool(target_company_desc.strip())
+        and bool(target_company_name.strip())
+        and size_ok
+    )
+
+# Orchestration flow (simplified)
+if is_target_persona_context_sufficient(user_context):
+    # Use user context
+    ...
+elif is_target_persona_context_sufficient(llm_context):
+    # Use LLM-inferred context
+    ...
+else:
+    # Fallback to website scraping
+    ...
+```
+
+This logic is now enforced across all campaign endpoints, replacing the previous LLM-based context assessment system.
+
 ### Smart Context Orchestration System
 
 #### Website Content Resolution Flow
