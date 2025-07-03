@@ -167,30 +167,89 @@ class TargetPersonaRequest(BaseModel):
 
 class TargetPersonaResponse(BaseModel):
     """
-    Response model for the /campaigns/target_persona endpoint.
+    Response model for the /campaigns/target_persona endpoint (matches new prompt output).
     """
 
-    persona: str = Field(
+    persona_name: str = Field(
         ...,
-        description="Primary decision maker/influencer persona",
+        description=(
+            "A short, descriptive name for the persona (5 words max). "
+            "Can be inferred from context if not explicitly provided."
+        ),
     )
-    persona_attributes: List[str] = Field(
+    persona_description: str = Field(
         ...,
-        description="Key attributes of the persona",
+        description=(
+            "2-3 sentences describing who this person is, their role scope, "
+            "and primary responsibilities within their organization."
+        ),
+    )
+    likely_job_titles: List[str] = Field(
+        ...,
+        description=(
+            "3-5 specific job titles this persona might have, including various seniority levels."
+        ),
+    )
+    status_quo: str = Field(
+        ...,
+        description=(
+            "Current processes, workflows, tools, and methods this persona uses that your "
+            "product would impact or replace."
+        ),
+    )
+    use_cases: List[str] = Field(
+        ...,
+        description=(
+            "3-5 specific, exciting use cases this persona would want to implement with your product."
+        ),
+    )
+    pain_points: List[str] = Field(
+        ...,
+        description=(
+            "3-5 specific inefficiencies, challenges, and frustrations that prevent this persona "
+            "from achieving their desired outcomes in their current role."
+        ),
+    )
+    desired_outcomes: List[str] = Field(
+        ...,
+        description=(
+            "3-5 measurable results or improvements this persona wants to achieve, focusing on "
+            "business impact and personal success metrics."
+        ),
+    )
+    key_concerns: List[str] = Field(
+        ...,
+        description=(
+            "3-5 reservations, objections, or hesitations this persona typically has about "
+            "solutions in your product category."
+        ),
+    )
+    why_we_matter: List[str] = Field(
+        ...,
+        description=(
+            "3-5 compelling reasons why your specific product stands out to this persona "
+            "compared to alternatives or status quo."
+        ),
     )
     persona_buying_signals: List[str] = Field(
         ...,
-        description="Observable buying signals for this persona",
+        description=(
+            "Observable behaviors, triggers, or situations that indicate this persona is "
+            "actively looking for a solution like yours."
+        ),
     )
     rationale: str = Field(
         ...,
-        description="Explanation of why this persona is the ideal buyer",
+        description=(
+            "Evidence-based explanation for why this is the primary persona, referencing "
+            "specific elements from the provided context."
+        ),
     )
-    confidence_scores: Optional[Dict[str, float]] = Field(
-        None,
+    confidence_scores: Dict[str, float] = Field(
+        ...,
         description="Confidence/quality scores for each section (0-1)",
     )
-    metadata: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Additional metadata (sources, context quality, processing time, etc.)",
+    metadata: Dict[str, Any] = Field(
+        ...,
+        description="Additional metadata (sources, context quality, assessment summary, etc.)",
     )

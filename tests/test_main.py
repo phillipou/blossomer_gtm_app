@@ -461,12 +461,72 @@ def test_target_persona_endpoint_success(monkeypatch):
         "llm_inferred_context": "",
     }
     fake_response = {
-        "persona": "Head of Operations",
-        "persona_attributes": ["Decision maker", "Process-oriented"],
-        "persona_buying_signals": ["Seeking efficiency", "Evaluating automation"],
-        "rationale": "This persona drives operational improvements.",
-        "confidence_scores": {"persona": 0.92},
-        "metadata": {"source": "test"},
+        "persona_name": "Growth Marketing Manager",
+        "persona_description": (
+            "Responsible for driving pipeline and revenue growth through digital channels."
+        ),
+        "likely_job_titles": [
+            "Marketing Manager",
+            "Senior Marketing Manager",
+            "Director of Marketing",
+        ],
+        "status_quo": (
+            "Currently uses spreadsheets and basic analytics tools to track campaigns."
+        ),
+        "use_cases": [
+            "Automate lead scoring",
+            "Personalize outreach",
+            "Analyze campaign ROI",
+        ],
+        "pain_points": [
+            "Manual data entry",
+            "Lack of attribution",
+            "Slow reporting",
+        ],
+        "desired_outcomes": [
+            "Increase qualified leads",
+            "Shorten sales cycle",
+            "Improve ROI",
+        ],
+        "key_concerns": [
+            "Implementation time",
+            "Cost",
+            "Learning curve",
+        ],
+        "why_we_matter": [
+            "Faster onboarding",
+            "Deeper analytics",
+            "Better integrations",
+        ],
+        "persona_buying_signals": [
+            "Evaluating new tools",
+            "Attending marketing webinars",
+            "Requesting demos",
+        ],
+        "rationale": (
+            "This persona is the primary decision maker for marketing technology purchases, "
+            "as evidenced by the website's focus on digital growth."
+        ),
+        "confidence_scores": {
+            "persona_name": 0.95,
+            "persona_description": 0.9,
+            "likely_job_titles": 0.9,
+            "status_quo": 0.85,
+            "use_cases": 0.9,
+            "pain_points": 0.9,
+            "desired_outcomes": 0.9,
+            "key_concerns": 0.85,
+            "why_we_matter": 0.9,
+            "persona_buying_signals": 0.9,
+            "rationale": 0.9,
+        },
+        "metadata": {
+            "sources_used": ["website"],
+            "context_quality": "high",
+            "assessment_summary": (
+                "Context is strong; persona is well-supported by evidence."
+            ),
+        },
     }
 
     async def fake_generate_structured_output(prompt, response_model):
@@ -488,8 +548,6 @@ def test_target_persona_endpoint_success(monkeypatch):
         fake_generate_structured_output,
     )
 
-    # Patch CompanyAnalysisService.analyze to return the correct response model for persona
-
     async def fake_analyze(self, **kwargs):
         return fake_response
 
@@ -497,14 +555,11 @@ def test_target_persona_endpoint_success(monkeypatch):
         "backend.app.services.company_analysis_service.CompanyAnalysisService.analyze",
         fake_analyze,
     )
-
-    # Patch llm_client.generate_structured_output in the actual endpoint module for customers
     monkeypatch.setattr(
         "backend.app.api.routes.customers.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
 
-    # Patch llm_client.generate in the actual endpoint module for customers (if used)
     async def fake_generate(request):
         class FakeResp:
             text = fake_response
@@ -522,12 +577,54 @@ def test_target_persona_endpoint_success(monkeypatch):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["persona"] == "Head of Operations"
-    assert data["persona_attributes"] == ["Decision maker", "Process-oriented"]
-    assert data["persona_buying_signals"] == [
-        "Seeking efficiency",
-        "Evaluating automation",
+    assert data["persona_name"] == "Growth Marketing Manager"
+    assert (
+        data["persona_description"]
+        == "Responsible for driving pipeline and revenue growth through digital channels."
+    )
+    assert data["likely_job_titles"] == [
+        "Marketing Manager",
+        "Senior Marketing Manager",
+        "Director of Marketing",
     ]
-    assert data["rationale"] == "This persona drives operational improvements."
-    assert data["confidence_scores"]["persona"] == 0.92
-    assert data["metadata"]["source"] == "test"
+    assert (
+        data["status_quo"]
+        == "Currently uses spreadsheets and basic analytics tools to track campaigns."
+    )
+    assert data["use_cases"] == [
+        "Automate lead scoring",
+        "Personalize outreach",
+        "Analyze campaign ROI",
+    ]
+    assert data["pain_points"] == [
+        "Manual data entry",
+        "Lack of attribution",
+        "Slow reporting",
+    ]
+    assert data["desired_outcomes"] == [
+        "Increase qualified leads",
+        "Shorten sales cycle",
+        "Improve ROI",
+    ]
+    assert data["key_concerns"] == [
+        "Implementation time",
+        "Cost",
+        "Learning curve",
+    ]
+    assert data["why_we_matter"] == [
+        "Faster onboarding",
+        "Deeper analytics",
+        "Better integrations",
+    ]
+    assert data["persona_buying_signals"] == [
+        "Evaluating new tools",
+        "Attending marketing webinars",
+        "Requesting demos",
+    ]
+    assert (
+        data["rationale"]
+        == "This persona is the primary decision maker for marketing technology purchases, "
+        "as evidenced by the website's focus on digital growth."
+    )
+    assert data["confidence_scores"]["persona_name"] == 0.95
+    assert data["metadata"]["sources_used"] == ["website"]
