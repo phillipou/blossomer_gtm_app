@@ -10,6 +10,7 @@ from backend.app.services.dev_file_cache import (
     load_cached_scrape,
     save_scrape_to_cache,
 )
+import time
 
 load_dotenv()
 
@@ -191,7 +192,9 @@ def extract_website_content(
     """
     # Use file-based cache in development (not in production)
     if os.getenv("ENV") != "production":
+        t_cache0 = time.monotonic()
         cached = load_cached_scrape(url)
+        t_cache1 = time.monotonic()
         if cached is not None:
             # Validate cache structure
             if "content" not in cached or "html" not in cached:
@@ -207,11 +210,16 @@ def extract_website_content(
                 )
                 cached = None
             else:
-                logger.info(f"[DEV CACHE] Cache hit for URL: {url}")
+                print(
+                    f"[DEV CACHE] Cache hit for URL: {url} (retrieval took {t_cache1 - t_cache0:.2f}s)"
+                )
                 return cached
         else:
-            logger.info(f"[DEV CACHE] Cache miss for URL: {url}")
+            print(
+                f"[DEV CACHE] Cache miss for URL: {url} (check took {t_cache1 - t_cache0:.2f}s)"
+            )
 
+    t_scrape0 = time.monotonic()
     validation = validate_url(url)
     if not validation["is_valid"] or not validation["reachable"]:
         logger.warning(f"URL validation failed: {validation}")
@@ -241,6 +249,11 @@ def extract_website_content(
         content = scrape_result.get("markdown", "")
         html = scrape_result.get("html", "")
         metadata = scrape_result.get("metadata", {})
+
+    t_scrape1 = time.monotonic()
+    print(
+        f"[DEV CACHE] Fresh scrape/crawl for URL: {url} took {t_scrape1 - t_scrape0:.2f}s"
+    )
 
     result = {
         "url": url,
