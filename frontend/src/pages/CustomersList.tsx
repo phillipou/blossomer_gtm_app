@@ -27,7 +27,7 @@ function CustomerProfileCard({ profile, onEdit, onDelete }: any) {
         <div>
           <span className="inline-block mb-2">
             <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
-              {profile.role}
+              {profile.name}
             </span>
           </span>
           <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{profile.description}</p>
@@ -148,14 +148,17 @@ export default function CustomersList() {
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {customerProfiles.map((profile) => (
-            <CustomerProfileCard
-              key={profile.id}
-              profile={profile}
-              onEdit={handleEditProfile}
-              onDelete={handleDeleteProfile}
-            />
-          ))}
+          {customerProfiles.map((profile) => {
+            console.log("Rendering profile card:", profile);
+            return (
+              <CustomerProfileCard
+                key={profile.id}
+                profile={profile}
+                onEdit={handleEditProfile}
+                onDelete={handleDeleteProfile}
+              />
+            );
+          })}
           <AddCustomerCard onClick={() => { setIsAddModalOpen(true); setEditingProfile(null); }} />
         </div>
       </div>

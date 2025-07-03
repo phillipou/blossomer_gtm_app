@@ -42,6 +42,9 @@ export default function CustomerDetail() {
   const [editRationaleContent, setEditRationaleContent] = useState("");
   const [hoveredRationale, setHoveredRationale] = useState(false);
 
+  // Tab state for sub navigation
+  const [activeTab, setActiveTab] = useState<string>("accounts");
+
   const [personas, setPersonas] = useState<Persona[]>([
     {
       id: "1",
@@ -120,173 +123,205 @@ export default function CustomerDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen">
+      {/* Sub Navigation */}
       <SubNav
-        title="Target Account Details"
         breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
           { label: "Customers", href: "/customers" },
           { label: customerDetail?.title || "Target Account" }
         ]}
-        subTabs={[]}
+        activeSubTab={activeTab}
+        setActiveSubTab={setActiveTab}
+        subTabs={[
+          { label: "Accounts", value: "accounts" },
+          { label: "Personas", value: "personas" },
+        ]}
       />
-      
-      <div className="max-w-6xl mx-auto p-8 space-y-8">
-        {/* Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl">{customerDetail.title}</CardTitle>
-                <p className="text-gray-600 mt-2">{customerDetail.subtitle}</p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Created: {customerDetail.createdAt}
-                </p>
-              </div>
-              <Button variant="outline" onClick={() => navigate('/customers')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Customers
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Target Description */}
-        <OverviewCard
-          title="Target Account Description"
-          bodyText={customerDetail.description}
-          showButton={false}
-        />
-
-        {/* Why they're a good fit InfoCard with edit affordance */}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Firmographics Card with edit affordance */}
-          <Card
-            className="group relative flex-1"
-            onMouseEnter={() => setHoveredFirmo(true)}
-            onMouseLeave={() => setHoveredFirmo(false)}
-          >
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Firmographics</CardTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setFirmoModalOpen(true)}
-                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
-                tabIndex={-1}
-                style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
-              >
-                <Edit3 className="w-5 h-5" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <FirmographicsTable data={firmographics} />
-            </CardContent>
-          </Card>
-          {/* Why they're a good fit InfoCard with edit affordance */}
-          <div className="flex-1">
-            {editingRationale ? (
-              <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
-                <label className="font-semibold">Why they're a good fit</label>
-                <textarea
-                  value={editRationaleContent}
-                  onChange={e => setEditRationaleContent(e.target.value)}
-                  className="min-h-[120px] w-full border rounded p-2"
-                />
-                <div className="flex space-x-2">
-                  <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
-                    <Check className="w-4 h-4 mr-2" />Save
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
-                    <X className="w-4 h-4 mr-2" />Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="group relative h-full"
-                onMouseEnter={() => setHoveredRationale(true)}
-                onMouseLeave={() => setHoveredRationale(false)}
-              >
-                <InfoCard
-                  title={"Why they're a good fit"}
-                  items={[rationale]}
-                  onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Buying Signals */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between mb-2">
-              <CardTitle>Buying Signals</CardTitle>
-              <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> Add
-              </Button>
-            </div>
-            <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
-          </CardHeader>
-          <CardContent>
-            {buyingSignals.length > 0 ? (
-              <BuyingSignalsCard
-                signals={buyingSignals}
-                onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
-                onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-                onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
-              />
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No buying signals identified
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Personas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {personas.map((persona) => (
+      {/* Content */}
+      <div className="flex-1 p-8 space-y-8">
+        {activeTab === "accounts" && (
+          <>
+            {/* Target Description */}
+            <OverviewCard
+              title={customerDetail.title}
+              bodyText={customerDetail.description}
+              showButton={false}
+            />
+            {/* Firmographics and Why Good Fit Row */}
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Firmographics Card with edit affordance */}
               <Card
-                key={persona.id}
-                className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
-                onClick={() => handlePersonaClick(persona.id)}
+                className="group relative flex-1"
+                onMouseEnter={() => setHoveredFirmo(true)}
+                onMouseLeave={() => setHoveredFirmo(false)}
               >
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <span className="inline-block mb-2">
-                      <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
-                        {persona.name}
-                      </span>
-                    </span>
-                    <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                    <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
-                  </div>
-                  <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                      <Edit3 className="w-5 h-5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  </div>
+                  <CardTitle>Firmographics</CardTitle>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setFirmoModalOpen(true)}
+                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
+                    tabIndex={-1}
+                    style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
+                  >
+                    <Edit3 className="w-5 h-5" />
+                  </Button>
                 </CardHeader>
+                <CardContent>
+                  <FirmographicsTable data={firmographics} />
+                </CardContent>
               </Card>
-            ))}
-            {/* Add New Persona Card */}
-            <Card
-              className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
-              onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
-            >
-              <div className="flex flex-col items-center">
-                <Plus className="w-8 h-8 text-blue-500 mb-2" />
-                <span className="text-blue-600 font-medium">Add New</span>
+              {/* Why they're a good fit InfoCard with edit affordance */}
+              <div className="flex-1">
+                {editingRationale ? (
+                  <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
+                    <label className="font-semibold">Why they're a good fit</label>
+                    <textarea
+                      value={editRationaleContent}
+                      onChange={e => setEditRationaleContent(e.target.value)}
+                      className="min-h-[120px] w-full border rounded p-2"
+                    />
+                    <div className="flex space-x-2">
+                      <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
+                        <Check className="w-4 h-4 mr-2" />Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
+                        <X className="w-4 h-4 mr-2" />Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="group relative h-full"
+                    onMouseEnter={() => setHoveredRationale(true)}
+                    onMouseLeave={() => setHoveredRationale(false)}
+                  >
+                    <InfoCard
+                      title={"Why they're a good fit"}
+                      items={[rationale]}
+                      onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
+                    />
+                  </div>
+                )}
               </div>
+            </div>
+            {/* Buying Signals Block */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle>Buying Signals</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                    <Plus className="w-4 h-4 mr-2" /> Add
+                  </Button>
+                </div>
+                <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+              </CardHeader>
+              <CardContent>
+                {buyingSignals.length > 0 ? (
+                  <BuyingSignalsCard
+                    signals={buyingSignals}
+                    onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+                    onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+                    onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No buying signals identified
+                  </div>
+                )}
+              </CardContent>
             </Card>
+            {/* Personas Section (also shown in accounts tab) */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Personas</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {personas.map((persona) => (
+                  <Card
+                    key={persona.id}
+                    className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                    onClick={() => handlePersonaClick(persona.id)}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <span className="inline-block mb-2">
+                          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                            {persona.name}
+                          </span>
+                        </span>
+                        <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                        <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                      </div>
+                      <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                          <Edit3 className="w-5 h-5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+                {/* Add New Persona Card */}
+                <Card
+                  className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+                  onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
+                >
+                  <div className="flex flex-col items-center">
+                    <Plus className="w-8 h-8 text-blue-500 mb-2" />
+                    <span className="text-blue-600 font-medium">Add New</span>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
+        {activeTab === "personas" && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Personas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {personas.map((persona) => (
+                <Card
+                  key={persona.id}
+                  className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                  onClick={() => handlePersonaClick(persona.id)}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <span className="inline-block mb-2">
+                        <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                          {persona.name}
+                        </span>
+                      </span>
+                      <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                      <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                    </div>
+                    <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                        <Edit3 className="w-5 h-5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+              {/* Add New Persona Card */}
+              <Card
+                className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+                onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
+              >
+                <div className="flex flex-col items-center">
+                  <Plus className="w-8 h-8 text-blue-500 mb-2" />
+                  <span className="text-blue-600 font-medium">Add New</span>
+                </div>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {/* Buying Signal Modal */}
       <EditBuyingSignalModal
