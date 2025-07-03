@@ -308,7 +308,7 @@ async def test_service_uses_raw_website_content(monkeypatch):
     data = ProductOverviewRequest(
         website_url="https://example.com",
         user_inputted_context=None,
-        llm_inferred_context=None,
+        company_context=None,
     )
     result = await generate_product_overview_service(
         data=data,
@@ -384,7 +384,7 @@ async def test_service_handles_missing_website_content(monkeypatch):
     data = ProductOverviewRequest(
         website_url="https://empty.com",
         user_inputted_context=None,
-        llm_inferred_context=None,
+        company_context=None,
     )
     with pytest.raises(HTTPException) as exc:
         await generate_product_overview_service(
@@ -478,7 +478,7 @@ async def test_service_handles_llm_refusal(monkeypatch):
     data = ProductOverviewRequest(
         website_url="https://example.com",
         user_inputted_context=None,
-        llm_inferred_context=None,
+        company_context=None,
     )
     with pytest.raises(HTTPException) as exc:
         await generate_product_overview_service(

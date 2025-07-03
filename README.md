@@ -13,7 +13,7 @@
 ### [Unreleased]
 - **Modular API Redesign:**
   - Each major feature (ICP inference, Positioning, Value Props, Email Campaign, Use Case Fit) is now a separate endpoint.
-  - All endpoints require `website_url` as input, and accept optional `user_inputted_context` and `llm_inferred_context` fields.
+  - All endpoints require `website_url` as input, and accept optional `user_inputted_context` and `company_context` fields.
   - This change improves composability, extensibility, and supports both atomic and orchestrated/agentic workflows.
   - Rationale: Enables easier addition of new features, more flexible client integration, and better alignment with agentic/LLM-powered workflows. See backend_prd.md and backend_architecture.md for details.
 
@@ -128,7 +128,7 @@ Generate a Company Overview (features, company & persona profiles, pricing) for 
 {
   "website_url": "https://example.com",
   "user_inputted_context": "",
-  "llm_inferred_context": ""
+  "company_context": ""
 }
 ```
 
@@ -211,7 +211,7 @@ Generate a Target Account Profile (firmographics, buying signals, rationale) for
 {
   "website_url": "https://example.com",
   "user_inputted_context": "",
-  "llm_inferred_context": ""
+  "company_context": ""
 }
 ```
 
@@ -237,7 +237,7 @@ Generate a Target Persona Profile (attributes, buying signals, rationale) for a 
 {
   "website_url": "https://example.com",
   "user_inputted_context": "",
-  "llm_inferred_context": ""
+  "company_context": ""
 }
 ```
 

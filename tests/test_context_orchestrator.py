@@ -298,7 +298,7 @@ async def test_resolve_context_prefers_user_context(monkeypatch):
 
     request = MagicMock(
         user_inputted_context="User context",
-        llm_inferred_context="LLM context",
+        company_context="LLM context",
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
@@ -336,16 +336,27 @@ async def test_resolve_context_uses_llm_context_if_user_insufficient(monkeypatch
             assert False, "Should not fall through to website context"
 
     request = MagicMock(
-        user_inputted_context="User context",
-        llm_inferred_context="LLM context",
+        user_inputted_context={},
+        company_context={
+            "company_name": "Test Company",
+            "company_overview": "A test company overview.",
+            "industry": ["LLM context"],
+            "use_cases": ["Test use case"],
+            "capabilities": ["Test capability"],
+        },
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
-    result = await resolve_context_for_endpoint(
-        request, "target_accounts", orchestrator
-    )
-    assert result["source"] == "llm_inferred_context"
-    assert result["context"] == "LLM context"
+    result = await resolve_context_for_endpoint(request, "target_account", orchestrator)
+    # Only 'company_context' is valid after refactor
+    assert result["source"] == "company_context"
+    assert result["context"] == {
+        "company_name": "Test Company",
+        "company_overview": "A test company overview.",
+        "industry": ["LLM context"],
+        "use_cases": ["Test use case"],
+        "capabilities": ["Test capability"],
+    }
 
 
 @pytest.mark.asyncio
@@ -366,7 +377,7 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
 
     request = MagicMock(
         user_inputted_context=None,
-        llm_inferred_context=None,
+        company_context=None,
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
@@ -401,7 +412,7 @@ async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
 
     request = MagicMock(
         user_inputted_context="User context",
-        llm_inferred_context="LLM context",
+        company_context="LLM context",
         website_url="https://site.com",
     )
     orchestrator = DummyOrchestrator()
@@ -501,4 +512,6 @@ async def test_check_endpoint_readiness_not_ready_missing_capabilities():
     readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
     assert readiness["is_ready"] is False
     assert "capabilities" in readiness["missing_requirements"]
+    assert "company_overview" not in readiness["missing_requirements"]
+
     assert "company_overview" not in readiness["missing_requirements"]

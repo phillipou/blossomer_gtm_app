@@ -105,7 +105,7 @@ def test_product_overview_endpoint_success(monkeypatch):
     payload = {
         "website_url": "https://example.com",
         "user_inputted_context": "",
-        "llm_inferred_context": "",
+        "company_context": "",
     }
     fake_content = "Fake company info."
     monkeypatch.setattr(
@@ -296,8 +296,8 @@ def test_target_account_endpoint_success(monkeypatch):
 
     payload = {
         "website_url": "https://example.com",
-        "user_inputted_context": "Test context",
-        "llm_inferred_context": "Test inferred context",
+        "user_inputted_context": {"target_company_name": "SaaS Innovators"},
+        "company_context": {"industry": ["SaaS", "Tech"]},
         "context_quality": "high",
         "assessment_summary": "Summary of context assessment.",
     }
@@ -412,11 +412,11 @@ def test_target_account_prompt_vars_render(monkeypatch):
     from backend.app.prompts.models import TargetAccountPromptVars
     from backend.app.prompts.registry import render_prompt
 
-    # Case 1: Both user_inputted_context and llm_inferred_context provided
+    # Case 1: Both user_inputted_context and company_context provided
     vars = TargetAccountPromptVars(
         website_content="Website content here.",
-        user_inputted_context="User context here.",
-        llm_inferred_context="LLM context here.",
+        user_inputted_context={"context": "User context here."},
+        company_context={"context": "LLM context here."},
         context_quality="high",
         assessment_summary="Assessment summary here.",
     )
@@ -427,11 +427,11 @@ def test_target_account_prompt_vars_render(monkeypatch):
     assert "high" in prompt or "context_quality" in prompt
     assert "assessment_summary" in prompt or "Assessment summary" in prompt
 
-    # Case 2: Only llm_inferred_context provided
+    # Case 2: Only company_context provided
     vars2 = TargetAccountPromptVars(
         website_content="Website content here.",
         user_inputted_context=None,
-        llm_inferred_context="LLM context here.",
+        company_context={"industry": ["LLM context here."]},
         context_quality="high",
         assessment_summary="Assessment summary here.",
     )
@@ -450,8 +450,9 @@ def test_target_persona_endpoint_success(monkeypatch):
     """
     payload = {
         "website_url": "https://example.com",
-        "user_inputted_context": "",
-        "llm_inferred_context": "",
+        "user_inputted_context": {"persona_name": "Growth Marketing Manager"},
+        "company_context": {"company_name": "ExampleCo", "product": "SaaS Platform"},
+        "target_account_context": {"industry": ["Software"]},
     }
     fake_response = {
         "persona_name": "Growth Marketing Manager",
@@ -520,11 +521,20 @@ def test_target_persona_endpoint_success(monkeypatch):
             "rationale": 0.9,
         },
         "metadata": {
-            "sources_used": ["website"],
+            "parsed_website_content": True,
+            "primary_context_source": "website",
+            "inference_level": "high",
             "context_quality": "high",
             "assessment_summary": (
                 "Context is strong; persona is well-supported by evidence."
             ),
+            "sources_used": [
+                "website",
+                "user input",
+                "llm provided context",
+                "company context",
+                "target account context",
+            ],
         },
     }
 
@@ -647,6 +657,12 @@ def test_target_persona_endpoint_success(monkeypatch):
     ]:
         assert field in data["confidence_scores"]
         assert 0.0 <= data["confidence_scores"][field] <= 1.0
-    assert data["metadata"]["sources_used"] == ["website"]
+    assert data["metadata"]["sources_used"] == [
+        "website",
+        "user input",
+        "llm provided context",
+        "company context",
+        "target account context",
+    ]
     assert data["metadata"]["context_quality"] == "high"
     assert "assessment_summary" in data["metadata"]

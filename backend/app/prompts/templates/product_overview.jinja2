@@ -4,9 +4,9 @@ You are a world-class B2B go-to-market analyst specializing in extracting action
 {% if user_inputted_context %}
 **User-provided context:**
 {{ user_inputted_context }}
-{% elif llm_inferred_context %}
-**LLM-inferred context:**
-{{ llm_inferred_context }}
+{% elif company_context %}
+**Company context:**
+{{ company_context }}
 {% endif %}
 
 {% if website_content %}

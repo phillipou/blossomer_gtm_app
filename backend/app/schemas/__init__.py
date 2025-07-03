@@ -17,9 +17,9 @@ class ProductOverviewRequest(BaseModel):
         None,
         description="Optional user-provided context for campaign generation",
     )
-    llm_inferred_context: Optional[str] = Field(
+    company_context: Optional[str] = Field(
         None,
-        description="Optional context inferred from previous endpoints",
+        description="Optional company context inferred from previous endpoints",
     )
 
 
@@ -119,9 +119,9 @@ class TargetAccountRequest(BaseModel):
         None,
         description="Flexible user-provided context for target account generation (JSON object)",
     )
-    llm_inferred_context: Optional[Dict[str, Any]] = Field(
+    company_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Flexible LLM-inferred context for target account generation (JSON object)",
+        description="Flexible company context for target account generation (JSON object)",
     )
 
 
@@ -169,11 +169,17 @@ class TargetAccountResponse(BaseModel):
 
 class TargetPersonaRequest(BaseModel):
     website_url: str = Field(..., description="Company website or landing page URL")
-    user_inputted_context: Optional[str] = Field(
-        None, description="Optional user-provided context for campaign generation"
+    user_inputted_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible user-provided context for persona generation (JSON object)",
     )
-    llm_inferred_context: Optional[str] = Field(
-        None, description="Optional context inferred from previous endpoints"
+    company_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Structured context about the analyzed company/product (JSON object)",
+    )
+    target_account_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Structured context about the ideal customer/company type (JSON object)",
     )
 
 

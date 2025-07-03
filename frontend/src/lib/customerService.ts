@@ -4,18 +4,19 @@ import type {
   TargetCompanyResponse,
   CustomerProfile,
   TargetPersonaResponse,
+  TargetPersonaRequest,
 } from '../types/api';
 
 // API service functions
 export async function generateTargetCompany(
   website_url: string,
   user_inputted_context: Record<string, any>,
-  llm_inferred_context?: Record<string, any>
+  company_context?: Record<string, any>
 ): Promise<TargetCompanyResponse> {
   const request: TargetCompanyRequest = {
     website_url,
     user_inputted_context,
-    ...(llm_inferred_context ? { llm_inferred_context } : {}),
+    ...(company_context ? { company_context } : {}),
   };
 
   // Use demo endpoint for now (no API key required)
@@ -27,11 +28,15 @@ export async function generateTargetCompany(
 
 export async function generateTargetPersona(
   website_url: string,
-  user_inputted_context: string
+  user_inputted_context: Record<string, any>,
+  company_context?: Record<string, any>,
+  target_account_context?: Record<string, any>
 ): Promise<any> {
-  const request = {
+  const request: TargetPersonaRequest = {
     website_url,
     user_inputted_context,
+    ...(company_context ? { company_context } : {}),
+    ...(target_account_context ? { target_account_context } : {}),
   };
   // Use demo endpoint for now (no API key required)
   return apiFetch('/demo/customers/target_personas', {

@@ -19,7 +19,7 @@ export interface AnalysisState {
 export interface TargetCompanyRequest {
   website_url: string;
   user_inputted_context?: Record<string, any>;
-  llm_inferred_context?: Record<string, any>;
+  company_context?: Record<string, any>;
 }
 
 export interface TargetCompanyResponse {
@@ -30,6 +30,13 @@ export interface TargetCompanyResponse {
   rationale: string;
   confidence_scores: Record<string, number>;
   metadata: Record<string, any>;
+}
+
+export interface TargetPersonaRequest {
+  website_url: string;
+  user_inputted_context?: Record<string, any>;
+  company_context?: Record<string, any>;
+  target_account_context?: Record<string, any>;
 }
 
 export interface TargetPersonaResponse {

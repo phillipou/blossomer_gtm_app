@@ -123,7 +123,7 @@ The API provides modular endpoints for generating specific campaign assets indep
 All endpoints support:
 - **Required**: `website_url`
 - **Optional**: `user_inputted_context` (user-provided context)
-- **Optional**: `llm_inferred_context` (output from previous endpoints for chaining)
+- **Optional**: `company_context` (output from previous endpoints for chaining)
 - **Company–Customer relationship**: Endpoints that manage customer profiles (e.g., /customers/target_accounts, /customers/target_personas) operate on customer records associated with a specific company.
 
 **Smart Context Management:**

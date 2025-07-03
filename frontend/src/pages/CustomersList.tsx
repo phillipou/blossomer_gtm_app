@@ -86,8 +86,8 @@ export default function CustomersList() {
         target_company_name: name,
         target_company_description: description,
       };
-      // Build llm_inferred_context as an object
-      const llm_inferred_context = {
+      // Build company_context as an object
+      const company_context = {
         company_name: overview.company_name || '',
         company_url: overview.company_url || '',
         ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
@@ -99,17 +99,17 @@ export default function CustomersList() {
       };
       // Debug: log the context variables
       console.log("[AddProfile] user_inputted_context:", user_inputted_context);
-      console.log("[AddProfile] llm_inferred_context:", llm_inferred_context);
+      console.log("[AddProfile] company_context:", company_context);
       const requestPayload = {
         website_url: overview.company_url.trim(),
         user_inputted_context,
-        llm_inferred_context,
+        company_context,
       };
       console.log("[AddProfile] API request payload:", requestPayload);
       const response = await generateTargetCompany(
         requestPayload.website_url,
         requestPayload.user_inputted_context,
-        requestPayload.llm_inferred_context
+        requestPayload.company_context
       );
       console.log("[AddProfile] API response:", response);
       const newProfile: CustomerProfile = {

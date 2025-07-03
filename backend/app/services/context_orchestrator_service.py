@@ -130,13 +130,17 @@ class ContextOrchestratorService:
                 user_inputted_context=getattr(
                     request_data, "user_inputted_context", None
                 ),
-                llm_inferred_context=getattr(
-                    request_data, "llm_inferred_context", None
-                ),
             )
             if analysis_type == "product_overview":
                 prompt_vars_kwargs["input_website_url"] = getattr(
                     request_data, "website_url", None
+                )
+            if analysis_type == "target_persona":
+                prompt_vars_kwargs["company_context"] = getattr(
+                    request_data, "company_context", None
+                )
+                prompt_vars_kwargs["target_account_context"] = getattr(
+                    request_data, "target_account_context", None
                 )
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
             prompt = render_prompt(prompt_template, prompt_vars)

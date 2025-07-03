@@ -103,31 +103,29 @@ async def resolve_context_for_endpoint(
 ) -> Dict[str, Any]:
     """
     Resolve the best context for a given endpoint, preferring LLM-inferred, then website scraping.
-    For target_account, only check company context sufficiency on llm_inferred_context.
+    For target_account, only check company context sufficiency on company_context.
     user_inputted_context is used as a steer, not for sufficiency.
     Returns a dict with keys: 'source', 'context', 'is_ready'.
     """
     user_ctx = ensure_dict(getattr(request, "user_inputted_context", None))
-    llm_ctx = ensure_dict(getattr(request, "llm_inferred_context", None))
+    company_ctx = ensure_dict(getattr(request, "company_context", None))
     website_url = getattr(request, "website_url", None)
 
     if endpoint_name == "target_account":
-        # Only check company context sufficiency on llm_inferred_context
-        if llm_ctx:
+        # Only check company context sufficiency on company_context
+        if company_ctx:
             print(
-                "[ContextOrchestrator] Checking LLM-inferred context for company sufficiency..."
+                "[ContextOrchestrator] Checking company context for company sufficiency..."
             )
-            sufficient = is_company_context_sufficient(llm_ctx)
+            sufficient = is_company_context_sufficient(company_ctx)
             print(
-                f"[ContextOrchestrator] LLM-inferred context company sufficiency: {sufficient}"
+                f"[ContextOrchestrator] Company context company sufficiency: {sufficient}"
             )
             if sufficient:
-                print(
-                    "[ContextOrchestrator] Using LLM-inferred context for generation."
-                )
+                print("[ContextOrchestrator] Using company context for generation.")
                 return {
-                    "source": "llm_context",
-                    "context": llm_ctx,
+                    "source": "company_context",
+                    "context": company_ctx,
                     "is_ready": True,
                 }
         if website_url:
@@ -151,7 +149,10 @@ async def resolve_context_for_endpoint(
 
     if endpoint_name == "target_persona":
         # Target persona requires sufficient company and target account context
-        for ctx, label in [(user_ctx, "user-provided"), (llm_ctx, "LLM-inferred")]:
+        for ctx, label in [
+            (user_ctx, "user-provided"),
+            (company_ctx, "Company-context"),
+        ]:
             if ctx:
                 try:
                     ctx_dict = ctx if isinstance(ctx, dict) else {}
@@ -220,19 +221,19 @@ async def resolve_context_for_endpoint(
                 "context": user_ctx,
                 "is_ready": True,
             }
-    # 2. LLM-inferred context
-    llm_ctx = getattr(request, "llm_inferred_context", None)
-    if llm_ctx:
+    # 2. Company context
+    company_ctx = getattr(request, "company_context", None)
+    if company_ctx:
         assessment = await orchestrator.assess_context(
-            website_content=llm_ctx,
+            website_content=company_ctx,
             target_endpoint=endpoint_name,
             user_context=None,
         )
         readiness = orchestrator.check_endpoint_readiness(assessment, endpoint_name)
         if readiness.get("is_ready"):
             return {
-                "source": "llm_inferred_context",
-                "context": llm_ctx,
+                "source": "company_context",
+                "context": company_ctx,
                 "is_ready": True,
             }
     # 3. Website scraping
