@@ -18,8 +18,8 @@ export interface AnalysisState {
 
 export interface TargetCompanyRequest {
   website_url: string;
-  user_inputted_context?: string;
-  llm_inferred_context?: string;
+  user_inputted_context?: Record<string, any>;
+  llm_inferred_context?: Record<string, any>;
 }
 
 export interface TargetCompanyResponse {

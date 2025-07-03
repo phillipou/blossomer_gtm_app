@@ -81,28 +81,36 @@ export default function CustomersList() {
     }
     setIsGenerating(true);
     try {
-      const user_inputted_context = `target_company_name: ${name}\ntarget_company_description: ${description}`;
-      // Construct llm_context string from overview
-      const llm_context = [
-        `company_name: ${overview.company_name || ''}`,
-        `company_url: ${overview.company_url || ''}`,
-        overview.company_overview ? `company_overview: ${overview.company_overview}` : '',
-        overview.product_description ? `product_description: ${overview.product_description}` : '',
-        overview.capabilities && overview.capabilities.length ? `capabilities: ${overview.capabilities.join('; ')}` : '',
-        overview.business_model && overview.business_model.length ? `business_model: ${overview.business_model.join('; ')}` : '',
-        overview.differentiated_value && overview.differentiated_value.length ? `differentiated_value: ${overview.differentiated_value.join('; ')}` : '',
-        overview.customer_benefits && overview.customer_benefits.length ? `customer_benefits: ${overview.customer_benefits.join('; ')}` : '',
-      ].filter(Boolean).join('\n');
+      // Build user_inputted_context as an object
+      const user_inputted_context = {
+        target_company_name: name,
+        target_company_description: description,
+      };
+      // Build llm_inferred_context as an object
+      const llm_inferred_context = {
+        company_name: overview.company_name || '',
+        company_url: overview.company_url || '',
+        ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
+        ...(overview.product_description ? { product_description: overview.product_description } : {}),
+        ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
+        ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
+        ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
+        ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+      };
       // Debug: log the context variables
       console.log("[AddProfile] user_inputted_context:", user_inputted_context);
-      console.log("[AddProfile] llm_inferred_context:", llm_context);
+      console.log("[AddProfile] llm_inferred_context:", llm_inferred_context);
       const requestPayload = {
         website_url: overview.company_url.trim(),
         user_inputted_context,
-        llm_inferred_context: llm_context,
+        llm_inferred_context,
       };
       console.log("[AddProfile] API request payload:", requestPayload);
-      const response = await generateTargetCompany(requestPayload.website_url, requestPayload.user_inputted_context, requestPayload.llm_inferred_context);
+      const response = await generateTargetCompany(
+        requestPayload.website_url,
+        requestPayload.user_inputted_context,
+        requestPayload.llm_inferred_context
+      );
       console.log("[AddProfile] API response:", response);
       const newProfile: CustomerProfile = {
         id: generateCustomerProfileId(),
@@ -112,7 +120,6 @@ export default function CustomersList() {
         firmographics: response.firmographics,
         buying_signals: response.buying_signals,
         rationale: response.rationale,
-        confidence_scores: response.confidence_scores,
         metadata: response.metadata,
         created_at: new Date().toISOString(),
       };

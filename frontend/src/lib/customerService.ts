@@ -9,12 +9,12 @@ import type {
 // API service functions
 export async function generateTargetCompany(
   website_url: string,
-  user_description: string,
-  llm_inferred_context?: string
+  user_inputted_context: Record<string, any>,
+  llm_inferred_context?: Record<string, any>
 ): Promise<TargetCompanyResponse> {
   const request: TargetCompanyRequest = {
     website_url,
-    user_inputted_context: user_description,
+    user_inputted_context,
     ...(llm_inferred_context ? { llm_inferred_context } : {}),
   };
 
