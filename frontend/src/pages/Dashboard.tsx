@@ -12,6 +12,7 @@ import DashboardLoading from "@/components/dashboard/DashboardLoading";
 import { apiFetch } from "@/lib/apiClient";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import type { ApiError, AnalysisState } from "@/types/api";
+import ListInfoCard from "@/components/cards/ListInfoCard";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -243,38 +244,16 @@ export default function Dashboard() {
   const domain = overview?.company_url || "";
 
   // Edit logic for OverviewBlock
-  const handleEdit = (blockId: string, currentContent: string) => {
-    setEditingBlock(blockId);
-    setEditContent(currentContent);
-  };
-  const handleSave = () => {
-    if (
-      editingBlock &&
-      [
-        "capabilities",
-        "business_model",
-        "alternatives",
-        "differentiated_value",
-        "testimonials",
-        "customer_benefits",
-      ].includes(editingBlock)
-    ) {
-      setAnalysisState((prev: AnalysisState) => {
-        if (!prev.data) return prev;
-        const updated = {
-          ...prev.data,
-          [editingBlock]: editContent.split("\n").filter((line) => line.trim() !== ""),
-        };
-        localStorage.setItem("dashboard_overview", JSON.stringify(updated));
-        return { ...prev, data: updated };
-      });
-    }
-    setEditingBlock(null);
-    setEditContent("");
-  };
-  const handleCancel = () => {
-    setEditingBlock(null);
-    setEditContent("");
+  const handleEdit = (blockId: string, newItems: string[]) => {
+    setAnalysisState((prev: AnalysisState) => {
+      if (!prev.data) return prev;
+      const updated = {
+        ...prev.data,
+        [blockId]: newItems,
+      };
+      localStorage.setItem("dashboard_overview", JSON.stringify(updated));
+      return { ...prev, data: updated };
+    });
   };
 
   // Define subTabs for company section
@@ -316,43 +295,22 @@ export default function Dashboard() {
               />
               {/* New Info Cards Row 1 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {cardConfigs.map(({ key, title, label, bulleted }) =>
-                  editingBlock === key ? (
-                    <div className="space-y-4" key={key}>
-                      <label className="font-semibold">{label}</label>
-                      <Textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="min-h-[120px]"
-                      />
-                      <div className="flex space-x-2">
-                        <Button size="sm" onClick={handleSave}>
-                          <Check className="w-4 h-4 mr-2" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleCancel}>
-                          <X className="w-4 h-4 mr-2" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <InfoCard
-                      key={key}
-                      title={title}
-                      items={overview?.[key] || []}
-                      onEdit={() => handleEdit(key, (overview?.[key] || []).join("\n"))}
-                      renderItem={(item: string, idx: number) => (
-                        <li
-                          key={idx}
-                          className="list-disc list-inside text-sm text-gray-700 blue-bullet"
-                        >
-                          {item}
-                        </li>
-                      )}
-                    />
-                  )
-                )}
+                {cardConfigs.map(({ key, title, label }) => (
+                  <ListInfoCard
+                    key={key}
+                    title={title}
+                    items={overview?.[key] || []}
+                    onEdit={(newItems) => handleEdit(key, newItems)}
+                    renderItem={(item: string, idx: number) => (
+                      <li
+                        key={idx}
+                        className="list-disc list-inside text-sm text-gray-700 blue-bullet"
+                      >
+                        {item}
+                      </li>
+                    )}
+                  />
+                ))}
               </div>
             </div>
           </>
