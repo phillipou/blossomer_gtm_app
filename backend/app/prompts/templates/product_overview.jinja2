@@ -42,7 +42,7 @@ Analyze the provided website and context to extract a comprehensive product over
 
 {
   "company_name": "...",
-  "company_url": "...",
+  "company_url": "{{ input_website_url }}",
   "company_overview": "...",
   "capabilities": ["...", "...", "...", "...", "..."],
   "business_model": ["...", "...", "...", "...", "..."],
@@ -86,7 +86,7 @@ Analyze the provided website and context to extract a comprehensive product over
 
 **Company Name:** The official name of the company as found on the website or in the provided context.
 
-**Company URL:** The canonical website URL for the company (should match the input or be extracted from the website if different).
+**Company URL:** Always copy the exact input website URL provided as `input_website_url`. Do not infer, modify, or extract from the website content. This value must always match the input variable.
 
 **Company Overview:** 2-3 sentence summary of what the company does, their mission, and primary focus area.
 

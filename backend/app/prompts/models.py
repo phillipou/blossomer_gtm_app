@@ -46,7 +46,7 @@ class ProductOverviewPromptVars(BaseModel):
     context_quality: Optional[str] = None
     assessment_summary: Optional[str] = None
     company_name: Optional[str] = None
-    company_url: Optional[str] = None
+    input_website_url: str  # Canonical website URL, always required
 
 
 # ==============================================================================

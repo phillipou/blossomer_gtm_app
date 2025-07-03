@@ -80,7 +80,7 @@ class CompanyAnalysisService:
                 print(f"[PREPROCESS] Sample: {preprocessed_text[:300]}")
                 website_content = preprocessed_text
             # 3. Prompt construction
-            prompt_vars = prompt_vars_class(
+            prompt_vars_kwargs = dict(
                 website_content=website_content,
                 user_inputted_context=getattr(
                     request_data, "user_inputted_context", None
@@ -88,8 +88,12 @@ class CompanyAnalysisService:
                 llm_inferred_context=getattr(
                     request_data, "llm_inferred_context", None
                 ),
-                # Add extra fields if needed for specific analysis types
             )
+            if analysis_type == "product_overview":
+                prompt_vars_kwargs["input_website_url"] = getattr(
+                    request_data, "website_url", None
+                )
+            prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
             prompt = render_prompt(prompt_template, prompt_vars)
             # 4. LLM call and response parsing
             llm_output = await self.llm_client.generate_structured_output(
