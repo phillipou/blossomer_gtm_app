@@ -75,27 +75,23 @@ class CompanyAnalysisService:
                 t_scrape0 = time.monotonic()
                 scrape_result = extract_website_content(website_url)
                 t_scrape1 = time.monotonic()
-                print(
-                    f"[product_overview] Website scraping took {t_scrape1 - t_scrape0:.2f}s"
-                )
                 website_content = scrape_result.get("content", "")
                 html = scrape_result.get("html", None)
-                # Determine if this was a cache hit by checking for a special key or timing
-                from_cache = False
-                # If scrape_result is from cache, it will have been printed by extract_website_content
-                # We can add a marker in extract_website_content for clarity, but for now, infer from timing
-                if hasattr(scrape_result, "from_cache"):
-                    from_cache = scrape_result["from_cache"]
-                # Or, if scraping took less than 0.01s, likely a cache hit
-                if t_scrape1 - t_scrape0 < 0.01:
-                    from_cache = True
+                # Determine if this was a cache hit by timing (cache hits are very fast)
+                cache_hit = t_scrape1 - t_scrape0 < 0.05  # 50ms threshold for cache
                 context_result = {
                     "source": "website",
                     "context": website_content,
                     "content": website_content,
                     "html": html,
-                    "from_cache": from_cache,
+                    "from_cache": cache_hit,
                 }
+                print("[product_overview] Website scraping took ")
+                print(f"{t_scrape1 - t_scrape0:.2f}s")
+                if cache_hit:
+                    print("[product_overview] Context source: cache")
+                else:
+                    print("[product_overview] Context source: live scrape")
             else:
                 context_result = await self._resolve_context(
                     request_data, analysis_type
