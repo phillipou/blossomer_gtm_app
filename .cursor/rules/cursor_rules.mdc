@@ -4,10 +4,12 @@ globs: .cursor/rules/*.mdc
 alwaysApply: true
 ---
 - For current project tasks and status, see [.notes/TASKS.md](mdc:.notes/TASKS.md). Taskmaster is no longer used for project management.
-- For detailed requirements, user stories, and technical specifications, see [.notes/PRD.md](mdc:.notes/PRD.md).
-- For system architecture, service boundaries, and data flow, see [.notes/ARCHITECTURE.md](mdc:.notes/ARCHITECTURE.md).
+- For detailed backend requirements, user stories, and technical specifications, see [.notes/backend_prd.md](mdc:.notes/backend_prd.md).
+- For backend system architecture, service boundaries, and data flow, see [.notes/backend_architecture.md](mdc:.notes/backend_architecture.md).
+- For frontend requirements and architecture, see [.notes/frontend_prd.md](mdc:.notes/frontend_prd.md) and [.notes/frontend_architecture.md](mdc:.notes/frontend_architecture.md) (placeholders).
+- (Frontend documentation will be added in the future.)
 - For all project-related documentation, meeting notes, architectural diagrams, and AI interaction logs, see the [.notes directory](mdc:.notes). This is the project knowledge base.
-- For prompt system documentation and extension workflow, see [.notes/PROMPT_TEMPLATES.md](mdc:.notes/PROMPT_TEMPLATES.md).
+- For prompt system documentation and extension workflow, see [.notes/prompt_templates.md](mdc:.notes/prompt_templates.md).
 - **All LLM prompts must be constructed using Jinja2 templates via the prompt registry.**
     - Do not use f-strings or string concatenation for prompts in production code.
     - Define prompt variables as Pydantic models in `prompts/models.py`.
@@ -76,6 +78,10 @@ alwaysApply: true
   - Include both DO and DON'T examples
   - Reference actual code over theoretical examples
   - Use consistent formatting across rules 
+
+- For React best practices, see [react-best-practices.mdc](mdc:.cursor/rules/react-best-practices.mdc) (applies to *.js, *.jsx, *.ts, *.tsx)
+- For Vite best practices, see [vite-best-practices.mdc](mdc:.cursor/rules/vite-best-practices.mdc) (applies to *.js, *.jsx, *.ts, *.tsx, *.vue, *.svelte)
+- For Tailwind CSS best practices, see [tailwind-best-practices.mdc](mdc:.cursor/rules/tailwind-best-practices.mdc) (applies to *.html, *.js, *.jsx, *.ts, *.tsx, *.vue)
 
 ---
 description: Best practices and standards for using mypy type checking in Python projects, including gradual adoption, configuration, CI integration, and advanced usage.
