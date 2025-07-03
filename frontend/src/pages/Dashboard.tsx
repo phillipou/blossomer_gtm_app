@@ -157,10 +157,6 @@ export default function Dashboard() {
 
   // Effect to trigger analysis from navigation state
   useEffect(() => {
-    // Debug logs
-    console.log("Dashboard mount: location.state", location.state);
-    console.log("Dashboard mount: cachedUrl", getCachedUrl());
-    console.log("Dashboard mount: cached overview", getCachedOverview());
 
     if (!initialMount.current) return;
     initialMount.current = false;
