@@ -167,6 +167,12 @@ class TargetPersonaPromptVars(BaseModel):
         None,
         description="Optional context inferred from previous endpoints for chaining.",
     )
+    context_quality: Optional[str] = Field(
+        None, description="Optional context quality assessment for the prompt."
+    )
+    assessment_summary: Optional[str] = Field(
+        None, description="Optional summary of the context assessment."
+    )
 
 
 # ======================================================================
@@ -193,5 +199,4 @@ class CompanyOverviewResult(BaseModel):
     use_cases: List[str]
     pain_points: List[str]
     pricing: str
-    confidence_scores: Dict[str, float]
     metadata: Dict[str, Any]

@@ -217,7 +217,6 @@ def test_product_overview_endpoint_success(monkeypatch):
     assert data["company_url"] == "https://example.com"
     assert data["company_overview"] == "A great company."
     assert data["capabilities"] == ["AI", "Automation"]
-    assert data["confidence_scores"]["company_overview"] == 0.95
     assert data["metadata"]["context_quality"] == "high"
 
 
@@ -404,7 +403,6 @@ def test_target_company_endpoint_success(monkeypatch):
     assert "firmographics" in data
     assert "buying_signals" in data
     assert "rationale" in data
-    assert "confidence_scores" in data
     assert "metadata" in data
 
 
@@ -626,5 +624,4 @@ def test_target_persona_endpoint_success(monkeypatch):
         == "This persona is the primary decision maker for marketing technology purchases, "
         "as evidenced by the website's focus on digital growth."
     )
-    assert data["confidence_scores"]["persona_name"] == 0.95
     assert data["metadata"]["sources_used"] == ["website"]

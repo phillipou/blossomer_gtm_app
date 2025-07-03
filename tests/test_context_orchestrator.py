@@ -64,11 +64,6 @@ async def test_assess_context_happy_path():
             use_cases=["Automate workflows"],
             pain_points=["Manual work"],
             pricing="Contact us",
-            confidence_scores={
-                "company_name": 0.95,
-                "company_url": 0.95,
-                "company_overview": 0.95,
-            },
             metadata={"context_quality": "high"},
         )
     )
@@ -82,7 +77,6 @@ async def test_assess_context_happy_path():
     assert result.company_url == "https://example.com"
     assert result.company_overview == "A great company."
     assert result.capabilities == ["AI", "Automation"]
-    assert result.confidence_scores["company_overview"] == 0.95
     assert result.metadata["context_quality"] == "high"
 
 
@@ -108,11 +102,6 @@ async def test_assess_url_context_happy_path():
             use_cases=["Automate workflows"],
             pain_points=["Manual work"],
             pricing="Contact us",
-            confidence_scores={
-                "company_name": 0.9,
-                "company_url": 0.9,
-                "company_overview": 0.9,
-            },
             metadata={"context_quality": "high"},
         )
     )
@@ -127,7 +116,6 @@ async def test_assess_url_context_happy_path():
     assert result.company_url == "https://example.com"
     assert result.company_overview == "A great company."
     assert result.capabilities == ["AI", "Automation"]
-    assert result.confidence_scores["company_overview"] == 0.9
     assert result.metadata["context_quality"] == "high"
 
 
@@ -158,11 +146,6 @@ async def test_orchestrate_context_ready(monkeypatch):
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={
-            "company_name": 0.95,
-            "company_url": 0.95,
-            "company_overview": 0.95,
-        },
         metadata={"context_quality": "high"},
     )
     monkeypatch.setattr(
@@ -179,7 +162,6 @@ async def test_orchestrate_context_ready(monkeypatch):
     assert result["assessment"].company_name == "Example Inc."
     assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == "A great company."
-    assert result["assessment"].confidence_scores["company_overview"] == 0.95
     assert result["assessment"].metadata["context_quality"] == "high"
 
 
@@ -210,11 +192,6 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={
-            "company_name": 0.3,
-            "company_url": 0.3,
-            "company_overview": 0.3,
-        },
         metadata={"context_quality": "low"},
     )
     monkeypatch.setattr(
@@ -240,7 +217,6 @@ async def test_orchestrate_context_not_ready_enrichment(monkeypatch):
     assert result["assessment"].company_name == "Example Inc."
     assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == "A great company."
-    assert result["assessment"].confidence_scores["company_overview"] == 0.3
     assert result["assessment"].metadata["context_quality"] == "low"
 
 
@@ -266,11 +242,6 @@ async def test_orchestrate_context_no_content(monkeypatch):
             use_cases=[],
             pain_points=[],
             pricing="",
-            confidence_scores={
-                "company_name": 0.0,
-                "company_url": 0.0,
-                "company_overview": 0.0,
-            },
             metadata={"context_quality": "insufficient"},
         )
     )
@@ -297,11 +268,6 @@ async def test_orchestrate_context_no_content(monkeypatch):
                 use_cases=[],
                 pain_points=[],
                 pricing="",
-                confidence_scores={
-                    "company_name": 0.0,
-                    "company_url": 0.0,
-                    "company_overview": 0.0,
-                },
                 metadata={"context_quality": "insufficient"},
             )
         ),
@@ -314,7 +280,6 @@ async def test_orchestrate_context_no_content(monkeypatch):
     assert result["assessment"].company_name == "Example Inc."
     assert result["assessment"].company_url == "https://example.com"
     assert result["assessment"].company_overview == ""
-    assert result["assessment"].confidence_scores["company_overview"] == 0.0
     assert result["assessment"].metadata["context_quality"] == "insufficient"
 
 
@@ -472,19 +437,11 @@ async def test_check_endpoint_readiness_ready():
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={
-            "company_name": 0.95,
-            "company_url": 0.95,
-            "company_overview": 0.95,
-            "capabilities": 0.9,
-            "pricing": 0.0,  # Should not block readiness
-        },
         metadata={"context_quality": "high"},
     )
     readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
     assert readiness["is_ready"] is True
-    assert readiness["confidence"] == 0.9
-    assert "pricing" in readiness["missing_requirements"]
+    assert "pricing" not in readiness["missing_requirements"]
     assert "company_overview" not in readiness["missing_requirements"]
     assert "capabilities" not in readiness["missing_requirements"]
 
@@ -510,12 +467,6 @@ async def test_check_endpoint_readiness_not_ready_missing_company_overview():
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={
-            "company_name": 0.0,
-            "company_url": 0.0,
-            "company_overview": 0.0,
-            "capabilities": 0.9,
-        },
         metadata={"context_quality": "low"},
     )
     readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")
@@ -545,12 +496,6 @@ async def test_check_endpoint_readiness_not_ready_missing_capabilities():
         use_cases=["Automate workflows"],
         pain_points=["Manual work"],
         pricing="Contact us",
-        confidence_scores={
-            "company_name": 0.95,
-            "company_url": 0.95,
-            "company_overview": 0.95,
-            "capabilities": 0.0,
-        },
         metadata={"context_quality": "low"},
     )
     readiness = orchestrator.check_endpoint_readiness(assessment, "product_overview")

@@ -200,22 +200,16 @@ class ContextOrchestrator:
         Check if the assessment meets readiness criteria for the given endpoint.
 
         Readiness now only requires:
-        - company_overview: non-empty and confidence > 0.5
-        - capabilities: non-empty and confidence > 0.5
+        - company_overview: non-empty
+        - capabilities: non-empty
         All other fields are reported if low-confidence or missing, but do not block readiness.
 
         Returns:
-            Dict[str, Any]: Dict with keys: is_ready, confidence, missing_requirements, recommendations.
+            Dict[str, Any]: Dict with keys: is_ready, missing_requirements, recommendations.
         """
         # Main required fields
-        company_overview_ok = (
-            bool(assessment.company_overview.strip())
-            and assessment.confidence_scores.get("company_overview", 0.0) > 0.5
-        )
-        capabilities_ok = (
-            bool(getattr(assessment, "capabilities", []))
-            and assessment.confidence_scores.get("capabilities", 0.0) > 0.5
-        )
+        company_overview_ok = bool(assessment.company_overview.strip())
+        capabilities_ok = bool(getattr(assessment, "capabilities", []))
 
         is_ready = company_overview_ok and capabilities_ok
 
@@ -224,23 +218,14 @@ class ContextOrchestrator:
 
         if not company_overview_ok:
             missing_requirements.append("company_overview")
-            recommendations.append("Add a company overview with higher confidence.")
+            recommendations.append("Add a company overview.")
 
         if not capabilities_ok:
             missing_requirements.append("capabilities")
-            recommendations.append("Add capabilities with higher confidence.")
+            recommendations.append("Add capabilities.")
 
-        # Report (but do not block on) other low-confidence fields
-        for k, v in assessment.confidence_scores.items():
-            if k not in ("company_overview", "capabilities") and v <= 0.5:
-                missing_requirements.append(k)
-                recommendations.append(f"Improve confidence in {k}.")
-
-        # Confidence: minimum of required fields, or 0 if missing
-        confidence = min(
-            assessment.confidence_scores.get("company_overview", 0.0),
-            assessment.confidence_scores.get("capabilities", 0.0),
-        )
+        # Confidence: always 1.0 if present, 0.0 if missing (for backward compatibility)
+        confidence = 1.0 if is_ready else 0.0
 
         return {
             "is_ready": is_ready,

@@ -41,7 +41,8 @@ class ProductOverviewResponse(BaseModel):
     company_overview: str = Field(
         ...,
         description=(
-            "2-3 sentence summary of what the company does, their mission, and primary focus area."
+            "2-3 sentence summary of what the company does, their mission, and primary focus "
+            "area."
         ),
     )
     capabilities: List[str] = Field(
@@ -104,9 +105,6 @@ class ProductOverviewResponse(BaseModel):
         ..., description="Pain points explicitly listed on the website"
     )
     pricing: str = Field(..., description="Pricing information if available")
-    confidence_scores: Dict[str, float] = Field(
-        ..., description="Confidence/quality scores for each section (0-1)"
-    )
     metadata: Dict[str, Any] = Field(
         ...,
         description="Additional metadata (sources, context quality, processing time, etc.)",

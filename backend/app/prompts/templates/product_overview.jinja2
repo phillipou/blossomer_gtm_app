@@ -38,7 +38,7 @@ Analyze the provided website and context to extract a comprehensive product over
 - For alternatives, focus on direct competitors or similar solutions mentioned on the website or clearly comparable based on capabilities.
 - For all other fields, you may infer based on context if explicit statements are not available.
 - If information is not available, use an empty string or empty list as appropriate.
-- For each section, provide a confidence score (0-1) for the quality and completeness of the extracted data.
+- For each section, provide only the fields listed below. Do not include confidence scores or any extra fields.
 
 {
   "company_name": "...",
@@ -56,25 +56,7 @@ Analyze the provided website and context to extract a comprehensive product over
   "persona_profiles": ["...", "..."],
   "use_cases": ["...", "..."],
   "pain_points": ["...", "..."],
-  "pricing": "...",
-  "confidence_scores": {
-    "company_name": 0.0,
-    "company_url": 0.0,
-    "company_overview": 0.0,
-    "capabilities": 0.0,
-    "business_model": 0.0,
-    "differentiated_value": 0.0,
-    "customer_benefits": 0.0,
-    "alternatives": 0.0,
-    "testimonials": 0.0,
-    "product_description": 0.0,
-    "key_features": 0.0,
-    "company_profiles": 0.0,
-    "persona_profiles": 0.0,
-    "use_cases": 0.0,
-    "pain_points": 0.0,
-    "pricing": 0.0
-  },
+  "pricing": "",
   "metadata": {
     "sources_used": ["website"],
     "context_quality": "{{ context_quality|default('') }}",
@@ -101,6 +83,22 @@ Analyze the provided website and context to extract a comprehensive product over
 **Alternatives:** 3-5 bullet points listing similar services/competitors with brief comparison of similarities and key differences.
 
 **Testimonials:** Up to 5 direct customer quotes found on the website, including attribution when available (name, title, company if provided).
+
+**Product Description:** Concise summary of the product's main function, features, and value proposition.
+
+**Key Features:** 3-5 bullet points highlighting the most important product features.
+
+**Company Profiles:** 2-3 bullet points describing the types of companies that would benefit from this product.
+
+**Persona Profiles:** 2-3 bullet points describing the types of users or job roles that would benefit from this product.
+
+**Use Cases:** 3-5 bullet points describing practical applications or scenarios for the product.
+
+**Pain Points:** 3-5 bullet points describing the main problems or challenges the product addresses.
+
+**Pricing:** If available, provide a summary of pricing structure. If not, leave as an empty string.
+
+**Metadata:** Always include the sources used, context quality, and assessment summary as shown above.
 
 ## Quality Criteria for Your Response:
 1. **Explicitness:** Prefer information directly stated on the website, but inference is allowed if clearly marked.
