@@ -165,7 +165,7 @@ class TargetPersonaRequest(BaseModel):
 
 class TargetPersonaResponse(BaseModel):
     """
-    Response model for the /campaigns/target_persona endpoint (matches new prompt output).
+    Response model for the /customers/target_personas endpoint (matches new prompt output).
     """
 
     persona_name: str = Field(
@@ -185,41 +185,43 @@ class TargetPersonaResponse(BaseModel):
     likely_job_titles: List[str] = Field(
         ...,
         description=(
-            "3-5 specific job titles this persona might have, including various seniority levels."
+            "3-5 specific job titles this persona might have, including "
+            "various seniority levels."
         ),
     )
     status_quo: str = Field(
         ...,
         description=(
-            "Current processes, workflows, tools, and methods this persona uses that your "
-            "product would impact or replace."
+            "Current processes, workflows, tools, and methods this persona uses "
+            "that your product would impact or replace."
         ),
     )
     use_cases: List[str] = Field(
         ...,
         description=(
-            "3-5 specific, exciting use cases this persona would want to implement with your product."
+            "3-5 specific, exciting use cases this persona would want to implement "
+            "with your product."
         ),
     )
     pain_points: List[str] = Field(
         ...,
         description=(
-            "3-5 specific inefficiencies, challenges, and frustrations that prevent this persona "
-            "from achieving their desired outcomes in their current role."
+            "3-5 specific inefficiencies, challenges, and frustrations that prevent "
+            "this persona from achieving their desired outcomes in their current role."
         ),
     )
     desired_outcomes: List[str] = Field(
         ...,
         description=(
-            "3-5 measurable results or improvements this persona wants to achieve, focusing on "
-            "business impact and personal success metrics."
+            "3-5 measurable results or improvements this persona wants to achieve, "
+            "focusing on business impact and personal success metrics."
         ),
     )
     key_concerns: List[str] = Field(
         ...,
         description=(
-            "3-5 reservations, objections, or hesitations this persona typically has about "
-            "solutions in your product category."
+            "3-5 reservations, objections, or hesitations this persona typically has "
+            "about solutions in your product category."
         ),
     )
     why_we_matter: List[str] = Field(

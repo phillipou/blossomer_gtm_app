@@ -624,4 +624,22 @@ def test_target_persona_endpoint_success(monkeypatch):
         == "This persona is the primary decision maker for marketing technology purchases, "
         "as evidenced by the website's focus on digital growth."
     )
+    # Assert confidence_scores for all fields
+    for field in [
+        "persona_name",
+        "persona_description",
+        "likely_job_titles",
+        "status_quo",
+        "use_cases",
+        "pain_points",
+        "desired_outcomes",
+        "key_concerns",
+        "why_we_matter",
+        "persona_buying_signals",
+        "rationale",
+    ]:
+        assert field in data["confidence_scores"]
+        assert 0.0 <= data["confidence_scores"][field] <= 1.0
     assert data["metadata"]["sources_used"] == ["website"]
+    assert data["metadata"]["context_quality"] == "high"
+    assert "assessment_summary" in data["metadata"]
