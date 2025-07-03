@@ -360,10 +360,42 @@ export default function CustomerDetail() {
               setPersonaLoading(false);
               return;
             }
-            const user_inputted_context = `persona_name: ${name}\npersona_description: ${description}`;
-            console.log('Persona API request:', { website_url: websiteUrl, user_inputted_context });
-            const response = await generateTargetPersona(websiteUrl, user_inputted_context);
-            console.log('generateTargetPersona response:', response);
+            // Construct user_inputted_context as an object
+            const user_inputted_context = {
+              persona_name: name,
+              persona_description: description,
+            };
+            // Build company_context from overview (as in CustomersList.tsx)
+            const company_context = {
+              company_name: overview.company_name || '',
+              company_url: overview.company_url || '',
+              ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
+              ...(overview.product_description ? { product_description: overview.product_description } : {}),
+              ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
+              ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
+              ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
+              ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+            };
+            // Build target_account_context as a flattened object from the current customer profile's firmographics (if available)
+            let target_account_context = undefined;
+            const profiles = getStoredCustomerProfiles();
+            const profile = profiles.find((p: any) => p.id === id);
+            if (profile && profile.firmographics) {
+              const firmo = profile.firmographics;
+              target_account_context = {
+                ...firmo,
+                ...(firmo.company_size || {}), // flatten company_size fields
+                target_account_name: customerDetail.title || "",
+                target_account_description: customerDetail.description || "",
+              };
+            }
+            // Debug: log all context objects before API call
+            console.log('[Persona Generation] websiteUrl:', websiteUrl);
+            console.log('[Persona Generation] user_inputted_context:', user_inputted_context);
+            console.log('[Persona Generation] company_context:', company_context);
+            console.log('[Persona Generation] target_account_context (flattened):', target_account_context);
+            const response = await generateTargetPersona(websiteUrl, user_inputted_context, company_context, target_account_context);
+            console.log('[Persona Generation] API response:', response);
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
               name: response.persona_name,

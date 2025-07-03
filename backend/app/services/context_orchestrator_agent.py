@@ -53,36 +53,83 @@ def is_company_context_sufficient(context: Any) -> bool:
 
 
 def is_target_account_context_sufficient(context: Any) -> bool:
-    ctx = ensure_dict(context)
+    ctx = ensure_dict(context) if not isinstance(context, list) else context
     print(f"[Sufficiency] Checking target account context: {ctx}")
-    if not is_company_context_sufficient(ctx):
-        print("[Sufficiency] Company context insufficient for target account.")
-        return False
+    # If context is a list (firmographics array), scan for relevant variables
+    if isinstance(ctx, list):
+        industry = employees = revenue = None
+        for item in ctx:
+            if not isinstance(item, dict):
+                continue
+            # Industry: accept non-empty list or string
+            if industry is None and item.get("industry"):
+                val = item["industry"]
+                if isinstance(val, list):
+                    if val:
+                        industry = ", ".join(val)
+                elif isinstance(val, str) and val.strip():
+                    industry = val
+            # Employees: check top-level, then company_size
+            if employees is None:
+                if item.get("employees"):
+                    employees = item["employees"]
+                elif item.get("company_size") and isinstance(
+                    item["company_size"], dict
+                ):
+                    employees = item["company_size"].get("employees")
+            # Revenue: check top-level, then company_size
+            if revenue is None:
+                if item.get("revenue"):
+                    revenue = item["revenue"]
+                elif item.get("company_size") and isinstance(
+                    item["company_size"], dict
+                ):
+                    revenue = item["company_size"].get("revenue")
+        size_ok = any(
+            [
+                industry not in (None, "", []),
+                employees not in (None, "", []),
+                revenue not in (None, "", []),
+            ]
+        )
+        result = size_ok
+        if not result:
+            print(
+                f"[Sufficiency] Target account context insufficient (array): "
+                f"industry='{industry}', employees='{employees}', "
+                f"revenue='{revenue}', size_ok={size_ok}"
+            )
+        else:
+            print("[Sufficiency] Target account context is sufficient (array).")
+        return result
+    # If context is a dict, use improved logic
     industry = ctx.get("industry", "")
-    target_company_desc = ctx.get("target_company_description", "")
-    target_company_name = ctx.get("target_company_name", "")
+    if isinstance(industry, list):
+        industry = ", ".join(industry) if industry else None
+    elif isinstance(industry, str) and not industry.strip():
+        industry = None
     employees = ctx.get("employees", None)
-    department_size = ctx.get("department_size", None)
     revenue = ctx.get("revenue", None)
+    # Check company_size nested dict if not found at top level
+    company_size = ctx.get("company_size", {})
+    if isinstance(company_size, dict):
+        if employees in (None, "", []):
+            employees = company_size.get("employees")
+        if revenue in (None, "", []):
+            revenue = company_size.get("revenue")
     size_ok = any(
         [
+            industry not in (None, "", []),
             employees not in (None, "", []),
-            department_size not in (None, "", []),
             revenue not in (None, "", []),
         ]
     )
-    result = (
-        bool(industry.strip())
-        and bool(target_company_desc.strip())
-        and bool(target_company_name.strip())
-        and size_ok
-    )
+    result = size_ok
     if not result:
         print(
-            f"[Sufficiency] Target account context insufficient: industry='{industry}', "
-            f"target_company_desc='{target_company_desc}', "
-            f"target_company_name='{target_company_name}', "
-            f"size_ok={size_ok}"
+            f"[Sufficiency] Target account context insufficient: "
+            f"industry='{industry}', employees='{employees}', "
+            f"revenue='{revenue}', size_ok={size_ok}"
         )
     else:
         print("[Sufficiency] Target account context is sufficient.")

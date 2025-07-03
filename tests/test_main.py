@@ -75,8 +75,15 @@ async def fake_generate_structured_output(prompt, response_model):
         metadata={
             "context_quality": "high",
             "primary_context_source": "user",
-            "inference_level": "low",
-            "assessment_summary": ("Sufficient context provided by user."),
+            "assessment_summary": (
+                "Sufficient company and target account context provided. "
+                "Website data used for enrichment."
+            ),
+            "sources_used": [
+                "user input",
+                "company context",
+                "target account context",
+            ],
         },
     ).model_dump()
 
@@ -321,8 +328,15 @@ def test_target_account_endpoint_success(monkeypatch):
         metadata={
             "context_quality": "high",
             "primary_context_source": "user",
-            "inference_level": "low",
-            "assessment_summary": ("Sufficient context provided by user."),
+            "assessment_summary": (
+                "Sufficient company and target account context provided. "
+                "Website data used for enrichment."
+            ),
+            "sources_used": [
+                "user input",
+                "company context",
+                "target account context",
+            ],
         },
     ).model_dump()
 
@@ -400,6 +414,11 @@ def test_target_account_endpoint_success(monkeypatch):
     assert "buying_signals" in data
     assert "rationale" in data
     assert "metadata" in data
+    assert data["metadata"]["sources_used"] == [
+        "user input",
+        "company context",
+        "target account context",
+    ]
 
 
 def test_target_account_prompt_vars_render(monkeypatch):
@@ -523,15 +542,13 @@ def test_target_persona_endpoint_success(monkeypatch):
         "metadata": {
             "parsed_website_content": True,
             "primary_context_source": "website",
-            "inference_level": "high",
             "context_quality": "high",
             "assessment_summary": (
-                "Context is strong; persona is well-supported by evidence."
+                "Sufficient company and target account context provided. "
+                "Website data used for enrichment."
             ),
             "sources_used": [
-                "website",
                 "user input",
-                "llm provided context",
                 "company context",
                 "target account context",
             ],
@@ -658,9 +675,7 @@ def test_target_persona_endpoint_success(monkeypatch):
         assert field in data["confidence_scores"]
         assert 0.0 <= data["confidence_scores"][field] <= 1.0
     assert data["metadata"]["sources_used"] == [
-        "website",
         "user input",
-        "llm provided context",
         "company context",
         "target account context",
     ]

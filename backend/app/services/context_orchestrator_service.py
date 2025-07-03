@@ -1,10 +1,6 @@
 import logging
 from typing import Any, Type, Optional
 from fastapi import HTTPException
-from backend.app.services.context_orchestrator_agent import (
-    ContextOrchestrator,
-    resolve_context_for_endpoint,
-)
 from backend.app.services.llm_service import LLMClient
 from backend.app.prompts.registry import render_prompt
 from backend.app.services.content_preprocessing import ContentPreprocessingPipeline
@@ -13,6 +9,63 @@ import json
 import time
 
 logger = logging.getLogger(__name__)
+
+
+def flatten_dict(d: dict) -> dict:
+    """Flatten one level of nested dicts into the top-level dict."""
+    out = dict(d)
+    for k, v in d.items():
+        if isinstance(v, dict):
+            for subk, subv in v.items():
+                # Only promote if not already present at top level
+                if subk not in out:
+                    out[subk] = subv
+    return out
+
+
+def is_target_account_context_sufficient(context: Any) -> bool:
+    ctx = context
+    if not isinstance(ctx, (dict, list)):
+        try:
+            ctx = json.loads(ctx)
+        except Exception:
+            ctx = {}
+    print(f"[Sufficiency] Checking target account context: {ctx}")
+    required_fields = [
+        "company_size",
+        "target_account_name",
+        "target_account_description",
+    ]
+
+    def is_present(val):
+        if isinstance(val, dict):
+            return bool(val)
+        if isinstance(val, str):
+            return bool(val.strip())
+        return val is not None
+
+    # If context is a list (firmographics array), merge all dicts for field presence
+    if isinstance(ctx, list):
+        merged = {}
+        for item in ctx:
+            if not isinstance(item, dict):
+                continue
+            merged.update(item)
+        ctx = merged
+    # Now check for all required fields
+    missing = [f for f in required_fields if not is_present(ctx.get(f))]
+    result = not missing
+    if not result:
+        print(
+            "[Sufficiency] Target account context insufficient: "
+            f"missing fields: {missing}"
+        )
+    else:
+        print(
+            "[Sufficiency] Target account context is sufficient "
+            "(all required fields present)."
+        )
+    return result
 
 
 class ContextOrchestratorService:
@@ -31,10 +84,14 @@ class ContextOrchestratorService:
 
     def __init__(
         self,
-        orchestrator: ContextOrchestrator,
-        llm_client: LLMClient,
+        orchestrator: Optional[Any] = None,
+        llm_client: Optional[LLMClient] = None,
         preprocessing_pipeline: Optional[ContentPreprocessingPipeline] = None,
     ):
+        if llm_client is None:
+            raise ValueError(
+                "llm_client must be provided to ContextOrchestratorService"
+            )
         self.orchestrator = orchestrator
         self.llm_client = llm_client
         self.preprocessing_pipeline = preprocessing_pipeline
@@ -99,24 +156,18 @@ class ContextOrchestratorService:
                     print("[product_overview] Context source: cache")
                 else:
                     print("[product_overview] Context source: live scrape")
+                website_content = context_result["context"]
             else:
-                context_result = await self._resolve_context(
-                    request_data, analysis_type
-                )
+                # Directly extract context from request_data
+                website_content = getattr(request_data, "website_content", None)
             t1 = time.monotonic()
             print(f"[{analysis_type}] Context resolution took {t1 - t0:.2f}s")
-            # Debug: print source of context
-            website_content = (
-                context_result["context"]
-                if context_result["source"] == "website"
-                else None
-            )
             # 2. Preprocessing (if enabled and website content present)
             t2 = time.monotonic()
             if use_preprocessing and website_content and self.preprocessing_pipeline:
                 preprocessed_chunks = self.preprocessing_pipeline.process(
-                    text=context_result.get("content", ""),
-                    html=context_result.get("html", None),
+                    text=website_content,
+                    html=None,
                 )
                 preprocessed_text = "\n\n".join(preprocessed_chunks)
                 website_content = preprocessed_text
@@ -136,6 +187,13 @@ class ContextOrchestratorService:
                     request_data, "website_url", None
                 )
             if analysis_type == "target_persona":
+                prompt_vars_kwargs["company_context"] = getattr(
+                    request_data, "company_context", None
+                )
+                prompt_vars_kwargs["target_account_context"] = getattr(
+                    request_data, "target_account_context", None
+                )
+            if analysis_type == "target_account":
                 prompt_vars_kwargs["company_context"] = getattr(
                     request_data, "company_context", None
                 )
@@ -177,7 +235,8 @@ class ContextOrchestratorService:
             )
 
     async def _resolve_context(self, request_data: Any, analysis_type: str) -> dict:
-        # Use the orchestrator's context resolution logic
-        return await resolve_context_for_endpoint(
-            request_data, analysis_type, self.orchestrator
+        # This method is deprecated; orchestration should be handled in the service layer only.
+        raise NotImplementedError(
+            "_resolve_context is no longer used. "
+            "All orchestration should be handled in ContextOrchestratorService."
         )

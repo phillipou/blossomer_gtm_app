@@ -5,7 +5,6 @@ from backend.app.schemas import (
     TargetPersonaRequest,
     TargetPersonaResponse,
 )
-from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.target_account_service import generate_target_account_profile
 from backend.app.services.target_persona_service import generate_target_persona_profile
 from backend.app.core.auth import rate_limit_dependency
@@ -38,9 +37,8 @@ async def demo_generate_target_account(
     """
     Generate a target account profile for demo users, with IP-based rate limiting.
     """
-    orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_account_profile(data, orchestrator, llm_client)
+        return await generate_target_account_profile(data, llm_client=llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -60,9 +58,8 @@ async def prod_generate_target_account(
     """
     Generate a target account profile for authenticated users (API key required).
     """
-    orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_account_profile(data, orchestrator, llm_client)
+        return await generate_target_account_profile(data, llm_client=llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -84,9 +81,8 @@ async def demo_generate_target_persona(
     """
     Generate a target persona profile for demo users, with IP-based rate limiting.
     """
-    orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_persona_profile(data, orchestrator, llm_client)
+        return await generate_target_persona_profile(data, llm_client=llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -106,8 +102,7 @@ async def prod_generate_target_persona(
     """
     Generate a target persona profile for authenticated users (API key required).
     """
-    orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_persona_profile(data, orchestrator, llm_client)
+        return await generate_target_persona_profile(data, llm_client=llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
