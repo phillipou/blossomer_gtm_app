@@ -189,6 +189,14 @@ class TargetPersonaResponse(BaseModel):
             "various seniority levels."
         ),
     )
+    primary_responsibilities: List[str] = Field(
+        ...,
+        description=(
+            "3-5 specific responsibilities this persona has that are directly related to the "
+            "product or solution being considered. Focus on what this persona is accountable "
+            "for or must achieve that connects to your product's value."
+        ),
+    )
     status_quo: str = Field(
         ...,
         description=(
@@ -244,6 +252,10 @@ class TargetPersonaResponse(BaseModel):
             "Evidence-based explanation for why this is the primary persona, referencing "
             "specific elements from the provided context."
         ),
+    )
+    confidence_scores: Optional[Dict[str, float]] = Field(
+        None,
+        description="Confidence/quality scores for each section (0-1)",
     )
     metadata: Dict[str, Any] = Field(
         ...,

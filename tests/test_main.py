@@ -468,6 +468,11 @@ def test_target_persona_endpoint_success(monkeypatch):
             "Senior Marketing Manager",
             "Director of Marketing",
         ],
+        "primary_responsibilities": [
+            "Develop and execute digital marketing campaigns",
+            "Oversee lead generation initiatives",
+            "Analyze campaign performance metrics",
+        ],
         "status_quo": (
             "Currently uses spreadsheets and basic analytics tools to track campaigns."
         ),
@@ -509,6 +514,7 @@ def test_target_persona_endpoint_success(monkeypatch):
             "persona_name": 0.95,
             "persona_description": 0.9,
             "likely_job_titles": 0.9,
+            "primary_responsibilities": 0.9,
             "status_quo": 0.85,
             "use_cases": 0.9,
             "pain_points": 0.9,
@@ -585,6 +591,11 @@ def test_target_persona_endpoint_success(monkeypatch):
         "Senior Marketing Manager",
         "Director of Marketing",
     ]
+    assert data["primary_responsibilities"] == [
+        "Develop and execute digital marketing campaigns",
+        "Oversee lead generation initiatives",
+        "Analyze campaign performance metrics",
+    ]
     assert (
         data["status_quo"]
         == "Currently uses spreadsheets and basic analytics tools to track campaigns."
@@ -629,6 +640,7 @@ def test_target_persona_endpoint_success(monkeypatch):
         "persona_name",
         "persona_description",
         "likely_job_titles",
+        "primary_responsibilities",
         "status_quo",
         "use_cases",
         "pain_points",
