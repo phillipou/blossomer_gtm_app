@@ -134,12 +134,13 @@ class TargetAccountPromptVars(BaseModel):
     website_content: Optional[str] = Field(
         None, description="The preprocessed content from the company's website."
     )
-    user_inputted_context: Optional[str] = Field(
-        None, description="Optional user-provided context for campaign generation."
-    )
-    llm_inferred_context: Optional[str] = Field(
+    user_inputted_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Optional context inferred from previous endpoints for chaining.",
+        description="Flexible user-provided context for target account generation (JSON object)",
+    )
+    llm_inferred_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible LLM-inferred context for target account generation (JSON object)",
     )
     context_quality: Optional[str] = Field(
         None, description="Optional context quality assessment for the prompt."

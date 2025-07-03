@@ -27,14 +27,6 @@ async def generate_target_account_profile(
 ) -> TargetAccountResponse:
     """
     Generate a target account profile using the shared analysis service.
-
-    Args:
-        request (TargetAccountRequest): The validated request object.
-        orchestrator (ContextOrchestrator): The context orchestrator agent.
-        llm_client (LLMClient): The LLM client for prompt completion.
-
-    Returns:
-        TargetAccountResponse: The structured response model.
     """
     service = ContextOrchestratorService(
         orchestrator=orchestrator,
@@ -48,7 +40,10 @@ async def generate_target_account_profile(
         response_model=TargetAccountResponse,
         use_preprocessing=False,
     )
-    # Use the explicit target_company_name field if provided
-    if request.target_company_name:
-        response.target_company_name = request.target_company_name
+    # Set target_company_name from user_inputted_context if present
+    user_name = None
+    if request.user_inputted_context:
+        user_name = request.user_inputted_context.get("target_company_name")
+    if user_name:
+        response.target_company_name = user_name
     return response

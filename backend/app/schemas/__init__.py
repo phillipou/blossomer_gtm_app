@@ -115,15 +115,13 @@ class ProductOverviewResponse(BaseModel):
 
 class TargetAccountRequest(BaseModel):
     website_url: str = Field(..., description="Company website or landing page URL")
-    target_company_name: Optional[str] = Field(
+    user_inputted_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Short name for the target account (from user input, if provided)",
+        description="Flexible user-provided context for target account generation (JSON object)",
     )
-    user_inputted_context: Optional[str] = Field(
-        None, description="Optional user-provided context for campaign generation"
-    )
-    llm_inferred_context: Optional[str] = Field(
-        None, description="Optional context inferred from previous endpoints"
+    llm_inferred_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible LLM-inferred context for target account generation (JSON object)",
     )
 
 

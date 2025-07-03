@@ -6,6 +6,7 @@ assessing context quality for campaign generation endpoints.
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException
 import logging
+import json
 
 from backend.app.prompts.models import (
     ContextAssessmentResult,
@@ -18,43 +19,51 @@ from backend.app.services.llm_service import LLMClient
 from backend.app.services.website_scraper import extract_website_content
 
 
-def is_company_context_sufficient(context: dict) -> bool:
-    """
-    Checks if context has sufficient company/product information for downstream endpoints.
-    Requires:
-    - company_name or target_company_name (non-empty)
-    - company_overview (non-empty)
-    - At least one of: use_cases or capabilities (non-empty)
-    """
-    name = context.get("company_name", "") or context.get("target_company_name", "")
-    overview = context.get("company_overview", "")
-    use_cases = context.get("use_cases", [])
-    capabilities = context.get("capabilities", [])
-    return (
+def ensure_dict(context: Any) -> Dict[str, Any]:
+    if isinstance(context, dict):
+        return context
+    if isinstance(context, str):
+        try:
+            return json.loads(context)
+        except Exception:
+            return {}
+    return {}
+
+
+def is_company_context_sufficient(context: Any) -> bool:
+    ctx = ensure_dict(context)
+    print(f"[Sufficiency] Checking company context: {ctx}")
+    name = ctx.get("company_name", "") or ctx.get("target_company_name", "")
+    overview = ctx.get("company_overview", "")
+    use_cases = ctx.get("use_cases", [])
+    capabilities = ctx.get("capabilities", [])
+    result = (
         bool(name.strip())
         and bool(overview.strip())
         and (bool(use_cases) or bool(capabilities))
     )
+    if not result:
+        print(
+            f"[Sufficiency] Company context insufficient: name='{name}', overview='{overview}', "
+            f"use_cases={use_cases}, capabilities={capabilities}"
+        )
+    else:
+        print("[Sufficiency] Company context is sufficient.")
+    return result
 
 
-def is_target_account_context_sufficient(context: dict) -> bool:
-    """
-    Checks if context has sufficient target account information (requires company context).
-    Requires:
-    - Sufficient company context (see is_company_context_sufficient)
-    - industry (non-empty)
-    - target_company_description (non-empty)
-    - target_company_name (non-empty)
-    - At least one of: employees, department_size, revenue (non-empty)
-    """
-    if not is_company_context_sufficient(context):
+def is_target_account_context_sufficient(context: Any) -> bool:
+    ctx = ensure_dict(context)
+    print(f"[Sufficiency] Checking target account context: {ctx}")
+    if not is_company_context_sufficient(ctx):
+        print("[Sufficiency] Company context insufficient for target account.")
         return False
-    industry = context.get("industry", "")
-    target_company_desc = context.get("target_company_description", "")
-    target_company_name = context.get("target_company_name", "")
-    employees = context.get("employees", None)
-    department_size = context.get("department_size", None)
-    revenue = context.get("revenue", None)
+    industry = ctx.get("industry", "")
+    target_company_desc = ctx.get("target_company_description", "")
+    target_company_name = ctx.get("target_company_name", "")
+    employees = ctx.get("employees", None)
+    department_size = ctx.get("department_size", None)
+    revenue = ctx.get("revenue", None)
     size_ok = any(
         [
             employees not in (None, "", []),
@@ -62,12 +71,22 @@ def is_target_account_context_sufficient(context: dict) -> bool:
             revenue not in (None, "", []),
         ]
     )
-    return (
+    result = (
         bool(industry.strip())
         and bool(target_company_desc.strip())
         and bool(target_company_name.strip())
         and size_ok
     )
+    if not result:
+        print(
+            f"[Sufficiency] Target account context insufficient: industry='{industry}', "
+            f"target_company_desc='{target_company_desc}', "
+            f"target_company_name='{target_company_name}', "
+            f"size_ok={size_ok}"
+        )
+    else:
+        print("[Sufficiency] Target account context is sufficient.")
+    return result
 
 
 def is_target_persona_context_sufficient(context: dict) -> bool:
@@ -83,50 +102,39 @@ async def resolve_context_for_endpoint(
     request, endpoint_name: str, orchestrator
 ) -> Dict[str, Any]:
     """
-    Resolve the best context for a given endpoint, preferring user, then LLM, then website scraping.
-    Uses modular, daisy-chained sufficiency checks for company, target account, and target persona.
+    Resolve the best context for a given endpoint, preferring LLM-inferred, then website scraping.
+    For target_account, only check company context sufficiency on llm_inferred_context.
+    user_inputted_context is used as a steer, not for sufficiency.
     Returns a dict with keys: 'source', 'context', 'is_ready'.
     """
-    user_ctx = getattr(request, "user_inputted_context", None)
-    llm_ctx = getattr(request, "llm_inferred_context", None)
+    user_ctx = ensure_dict(getattr(request, "user_inputted_context", None))
+    llm_ctx = ensure_dict(getattr(request, "llm_inferred_context", None))
     website_url = getattr(request, "website_url", None)
 
     if endpoint_name == "target_account":
-        # Target account requires sufficient company context
-        for ctx, label in [(user_ctx, "user-provided"), (llm_ctx, "LLM-inferred")]:
-            if ctx:
-                try:
-                    ctx_dict = ctx if isinstance(ctx, dict) else {}
-                    if is_target_account_context_sufficient(ctx_dict):
-                        logging.info(
-                            f"[target_account] Using {label} context: "
-                            "sufficient for generation."
-                        )
-                        return {
-                            "source": f"{label}_context",
-                            "context": ctx,
-                            "is_ready": True,
-                        }
-                    elif not is_company_context_sufficient(ctx_dict):
-                        logging.info(
-                            f"[target_account] {label} context: "
-                            "insufficient company context."
-                        )
-                    else:
-                        logging.info(
-                            f"[target_account] {label} context: "
-                            "insufficient target account context."
-                        )
-                except Exception:
-                    logging.warning(
-                        f"[target_account] Exception while checking {label} context sufficiency."
-                    )
+        # Only check company context sufficiency on llm_inferred_context
+        if llm_ctx:
+            print(
+                "[ContextOrchestrator] Checking LLM-inferred context for company sufficiency..."
+            )
+            sufficient = is_company_context_sufficient(llm_ctx)
+            print(
+                f"[ContextOrchestrator] LLM-inferred context company sufficiency: {sufficient}"
+            )
+            if sufficient:
+                print(
+                    "[ContextOrchestrator] Using LLM-inferred context for generation."
+                )
+                return {
+                    "source": "llm_context",
+                    "context": llm_ctx,
+                    "is_ready": True,
+                }
         if website_url:
-            logging.info("[target_account] Resorting to website scraping for context.")
+            print("[ContextOrchestrator] Resorting to website scraping for context.")
             scrape_result = extract_website_content(website_url)
             content = scrape_result.get("content", "")
             html = scrape_result.get("html", None)
-            # Pass through cache status for accurate logging downstream
             from_cache = scrape_result.get("from_cache", False)
             return {
                 "source": "website",
@@ -136,8 +144,8 @@ async def resolve_context_for_endpoint(
                 "is_ready": True,
                 "from_cache": from_cache,
             }
-        logging.warning(
-            "[target_account] No sufficient context found and no website_url provided."
+        print(
+            "[ContextOrchestrator] No sufficient context found and no website_url provided."
         )
         return {"source": None, "context": None, "is_ready": False}
 

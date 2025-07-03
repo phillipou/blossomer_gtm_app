@@ -13,11 +13,11 @@ You are a world-class B2B go-to-market analyst specializing in identifying ideal
 ## Context Analysis
 {% if user_inputted_context %}
 **User-provided context (leading hypothesis):**
-{{ user_inputted_context }}
+{{ user_inputted_context | tojson }}
 {% endif %}
 {% if llm_inferred_context %}
 **LLM-inferred context (supporting):**
-{{ llm_inferred_context }}
+{{ llm_inferred_context | tojson }}
 {% endif %}
 {% if website_content %}
 **Company website analysis (supporting):**
@@ -36,8 +36,8 @@ Analyze the provided website and context to extract a clear, actionable profile 
 **Respond with valid JSON only. Do NOT include markdown code blocks or any text outside the JSON structure.**
 
 {
-  "target_company_name": "{{ target_company_name if target_company_name else (user_inputted_context.split('target_company_name: ')[1].split('\n')[0] if user_inputted_context and 'target_company_name:' in user_inputted_context else '...') }}",  // Always use explicit field if present, else fallback
-  "target_company_description": "...",  // Description of the ideal customer/company type and why they need this solution.
+  "target_company_name": "{{ target_company_name if target_company_name else (user_inputted_context.target_company_name if user_inputted_context and user_inputted_context.target_company_name else '...') }}",
+  "target_company_description": "{{ user_inputted_context.target_company_description if user_inputted_context and user_inputted_context.target_company_description else '...' }}",
   "firmographics": {
     "industry": ["...", "..."],
     "company_size": {
