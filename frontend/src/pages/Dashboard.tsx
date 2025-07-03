@@ -40,10 +40,37 @@ const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: bool
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [analysisState, setAnalysisState] = useState<AnalysisState>(() => {
+  // Helper to get cached overview
+  const getCachedOverview = () => {
     const stored = localStorage.getItem("dashboard_overview");
+    return stored ? JSON.parse(stored) : null;
+  };
+  // Helper to get cached URL
+  const getCachedUrl = () => {
+    const cached = getCachedOverview();
+    return cached?._input_url || null;
+  };
+  // Helper to normalize URLs for comparison
+  function normalizeUrl(url?: string | null): string {
+    if (!url) return "";
+    return url.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
+  }
+  // Initial state: use cache if no new URL, else null
+  const [analysisState, setAnalysisState] = useState<AnalysisState>(() => {
+    const urlFromNav = location.state?.url;
+    const cached = getCachedOverview();
+    // If a new URL is provided and it's different from cached, ignore cache
+    if (urlFromNav && urlFromNav !== getCachedUrl()) {
+      return {
+        data: null,
+        loading: false,
+        error: null,
+        hasAttempted: false,
+        analysisId: null
+      };
+    }
     return {
-      data: stored ? JSON.parse(stored) : null,
+      data: cached,
       loading: false,
       error: null,
       hasAttempted: false,
@@ -65,7 +92,7 @@ export default function Dashboard() {
   // Main analysis function
   const startAnalysis = useCallback(async (url: string, icp?: string) => {
     const analysisId = generateAnalysisId(url, icp);
-    setAnalysisState(prev => ({
+    setAnalysisState((prev: AnalysisState) => ({
       ...prev,
       loading: true,
       error: null,
@@ -83,7 +110,7 @@ export default function Dashboard() {
       });
       
       // Only update state if this is still the current analysis
-      setAnalysisState(prev => {
+      setAnalysisState((prev: AnalysisState) => {
         if (prev.analysisId !== analysisId) return prev;
         return {
           ...prev,
@@ -92,7 +119,11 @@ export default function Dashboard() {
           error: null
         };
       });
-      localStorage.setItem("dashboard_overview", JSON.stringify(response));
+      // Save the original input URL with the response
+      localStorage.setItem(
+        "dashboard_overview",
+        JSON.stringify({ ...response, _input_url: url })
+      );
     } catch (error: any) {
       let apiError: ApiError;
       if (error.status === 422 && error.body?.error_code) {
@@ -112,7 +143,7 @@ export default function Dashboard() {
       }
       
       // Only update state if this is still the current analysis
-      setAnalysisState(prev => {
+      setAnalysisState((prev: AnalysisState) => {
         if (prev.analysisId !== analysisId) return prev;
         return {
           ...prev,
@@ -126,13 +157,23 @@ export default function Dashboard() {
 
   // Effect to trigger analysis from navigation state
   useEffect(() => {
+    // Debug logs
+    console.log("Dashboard mount: location.state", location.state);
+    console.log("Dashboard mount: cachedUrl", getCachedUrl());
+    console.log("Dashboard mount: cached overview", getCachedOverview());
+
     if (!initialMount.current) return;
     initialMount.current = false;
 
     const url = location.state?.url;
     const icp = location.state?.icp;
-    
-    if (url && !analysisState.loading && !analysisState.data) {
+    const cachedUrl = getCachedUrl();
+    // If a new URL is provided and it's different from cached (normalized), trigger analysis
+    if (
+      url &&
+      normalizeUrl(url) !== normalizeUrl(cachedUrl) &&
+      !analysisState.loading
+    ) {
       startAnalysis(url, icp);
     }
   }, [location.state, startAnalysis]);
