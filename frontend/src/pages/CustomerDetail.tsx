@@ -65,7 +65,7 @@ export default function CustomerDetail() {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
 
   const handlePersonaClick = (personaId: string) => {
-    // You can navigate or open a modal here
+    navigate(`/customers/${id}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: Persona) => {
