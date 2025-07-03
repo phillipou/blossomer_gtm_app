@@ -9,30 +9,35 @@ import ListInfoCard from "../components/cards/ListInfoCard";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
-import { getPersonasForCustomer, transformBuyingSignals } from "../lib/customerService";
+import { getPersonasForCustomer, transformBuyingSignals, getStoredCustomerProfiles } from "../lib/customerService";
 import type { TargetPersonaResponse } from "../types/api";
 
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
   const navigate = useNavigate();
   const [persona, setPersona] = React.useState<TargetPersonaResponse | null>(null);
-  React.useEffect(() => {
-    if (accountId && personaId) {
-      const personas = getPersonasForCustomer(accountId);
-      const found = personas.find((p) => p.id === personaId) || null;
-      setPersona(found);
-      console.log('Loaded persona object:', found);
-    }
-  }, [accountId, personaId]);
+  const [accountName, setAccountName] = React.useState<string>("");
   const [editingBlock, setEditingBlock] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState("");
-  // Mock account name for breadcrumbs
-  const accountName = "Account " + accountId;
 
   // Buying signals modal state (copied from CustomerDetail)
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalEditingSignal, setModalEditingSignal] = React.useState<any>(null);
   const [buyingSignals, setBuyingSignals] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (accountId && personaId) {
+      const personas = getPersonasForCustomer(accountId);
+      const found = personas.find((p) => p.id === personaId) || null;
+      setPersona(found);
+      // Fetch account name from customer profile
+      const profiles = getStoredCustomerProfiles();
+      const profile = profiles.find((p) => p.id === accountId);
+      setAccountName(profile?.name || "Account");
+      console.log('Loaded persona object:', found);
+    }
+  }, [accountId, personaId]);
+
   React.useEffect(() => {
     setBuyingSignals(transformBuyingSignals(persona?.buyingSignals ?? []));
   }, [persona]);
