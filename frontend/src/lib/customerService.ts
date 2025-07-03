@@ -9,11 +9,13 @@ import type {
 // API service functions
 export async function generateTargetCompany(
   website_url: string,
-  user_description: string
+  user_description: string,
+  llm_inferred_context?: string
 ): Promise<TargetCompanyResponse> {
   const request: TargetCompanyRequest = {
     website_url,
     user_inputted_context: user_description,
+    ...(llm_inferred_context ? { llm_inferred_context } : {}),
   };
 
   // Use demo endpoint for now (no API key required)

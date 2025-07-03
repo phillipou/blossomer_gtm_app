@@ -128,28 +128,36 @@ class TargetCompanyResponse(BaseModel):
 
     target_company_name: str = Field(
         ...,
-        description="Short name for the target company (5 words max, from user context or inferred)",
+        description=(
+            "Short name for the target company (5 words max, from user context or inferred)"
+        ),
     )
     target_company_description: str = Field(
         ..., description="Ideal company type and why they need this solution"
     )
     firmographics: Dict[str, Any] = Field(
         ...,
-        description="Firmographic attributes: industry, company_size, geography, business_model, funding_stage",
+        description=(
+            "Firmographic attributes: industry, company_size, geography, business_model, "
+            "funding_stage"
+        ),
     )
     buying_signals: Dict[str, Any] = Field(
         ...,
-        description="Buying signals: growth_indicators, technology_signals, organizational_signals, market_signals",
+        description=(
+            "Buying signals: growth_indicators, technology_signals, organizational_signals, "
+            "market_signals"
+        ),
     )
     rationale: str = Field(
         ..., description="Explanation of why these companies are ideal customers"
     )
-    confidence_scores: Dict[str, float] = Field(
-        ..., description="Confidence/quality scores for each section (0-1)"
-    )
     metadata: Dict[str, Any] = Field(
         ...,
-        description="Additional metadata (sources, context quality, processing time, etc.)",
+        description=(
+            "Additional metadata (primary_context_source, inference_level, context_quality, "
+            "assessment_summary, etc.)"
+        ),
     )
 
 

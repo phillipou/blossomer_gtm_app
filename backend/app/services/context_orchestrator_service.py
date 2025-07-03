@@ -106,9 +106,6 @@ class ContextOrchestratorService:
             t1 = time.monotonic()
             print(f"[{analysis_type}] Context resolution took {t1 - t0:.2f}s")
             # Debug: print source of context
-            print(
-                f"[DEBUG] Context source: {'cache' if context_result.get('from_cache') else 'firecrawl'}"
-            )
             website_content = (
                 context_result["context"]
                 if context_result["source"] == "website"

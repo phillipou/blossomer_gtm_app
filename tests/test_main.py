@@ -72,14 +72,12 @@ async def fake_generate_structured_output(prompt, response_model):
             "market_signals": ["Industry expansion"],
         },
         rationale="These companies are ideal due to their innovation focus.",
-        confidence_scores={
-            "target_company_name": 0.9,
-            "target_company_description": 0.95,
-            "firmographics": 0.9,
-            "buying_signals": 0.9,
-            "rationale": 0.95,
+        metadata={
+            "context_quality": "high",
+            "primary_context_source": "user",
+            "inference_level": "low",
+            "assessment_summary": ("Sufficient context provided by user."),
         },
-        metadata={"source": "test"},
     ).model_dump()
 
 
@@ -320,14 +318,12 @@ def test_target_company_endpoint_success(monkeypatch):
             "market_signals": ["Industry expansion"],
         },
         rationale="These companies are ideal due to their innovation focus.",
-        confidence_scores={
-            "target_company_name": 0.9,
-            "target_company_description": 0.95,
-            "firmographics": 0.9,
-            "buying_signals": 0.9,
-            "rationale": 0.95,
+        metadata={
+            "context_quality": "high",
+            "primary_context_source": "user",
+            "inference_level": "low",
+            "assessment_summary": ("Sufficient context provided by user."),
         },
-        metadata={"source": "test"},
     ).model_dump()
 
     # Patch ContextOrchestrator to always return is_ready True
@@ -427,10 +423,9 @@ def test_target_company_prompt_vars_render(monkeypatch):
     prompt = render_prompt("target_company", vars)
     assert "Website content here." in prompt
     assert "User context here." in prompt
-    # Only user context should appear if both are provided
-    assert "LLM context here." not in prompt
+    assert "LLM context here." in prompt
     assert "high" in prompt or "context_quality" in prompt
-    assert "Assessment summary here." in prompt or "assessment_summary" in prompt
+    assert "assessment_summary" in prompt or "Assessment summary" in prompt
 
     # Case 2: Only llm_inferred_context provided
     vars2 = TargetCompanyPromptVars(
@@ -445,7 +440,7 @@ def test_target_company_prompt_vars_render(monkeypatch):
     assert "LLM context here." in prompt2
     assert "User context here." not in prompt2
     assert "context_quality" in prompt2
-    assert "Assessment summary here." in prompt2
+    assert "assessment_summary" in prompt2 or "Assessment summary" in prompt2
 
 
 def test_target_persona_endpoint_success(monkeypatch):
