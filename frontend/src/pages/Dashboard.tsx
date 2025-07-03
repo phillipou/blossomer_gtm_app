@@ -1,18 +1,18 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import SubNav from "@/components/navigation/SubNav";
-import InfoCard from "@/components/cards/InfoCard";
-import { Button } from "@/components/ui/button";
+import SubNav from "../components/navigation/SubNav";
+import InfoCard from "../components/cards/InfoCard";
+import { Button } from "../components/ui/button";
 import { Check, X } from "lucide-react";
 import CustomersList from "./CustomersList";
-import OverviewCard from "@/components/cards/OverviewCard";
-import { Textarea } from "@/components/ui/textarea";
-import DashboardLoading from "@/components/dashboard/DashboardLoading";
-import { apiFetch } from "@/lib/apiClient";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
-import type { ApiError, AnalysisState } from "@/types/api";
-import ListInfoCard from "@/components/cards/ListInfoCard";
+import OverviewCard from "../components/cards/OverviewCard";
+import { Textarea } from "../components/ui/textarea";
+import DashboardLoading from "../components/dashboard/DashboardLoading";
+import { apiFetch } from "../lib/apiClient";
+import { ErrorDisplay } from "../components/ErrorDisplay";
+import type { ApiError, AnalysisState } from "../types/api";
+import ListInfoCard from "../components/cards/ListInfoCard";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -121,10 +121,17 @@ export default function Dashboard() {
         };
       });
       // Save the original input URL with the response
-      localStorage.setItem(
-        "dashboard_overview",
-        JSON.stringify({ ...response, _input_url: url })
-      );
+      if (response && typeof response === 'object' && !Array.isArray(response)) {
+        localStorage.setItem(
+          "dashboard_overview",
+          JSON.stringify({ ...response, _input_url: url })
+        );
+      } else {
+        localStorage.setItem(
+          "dashboard_overview",
+          JSON.stringify({ _input_url: url, value: response })
+        );
+      }
     } catch (error: any) {
       let apiError: ApiError;
       if (error.status === 422 && error.body?.error_code) {
@@ -215,7 +222,6 @@ export default function Dashboard() {
       <DashboardLoading
         loading={true}
         progressPercent={STATUS_STAGES[progressStage]?.percent || 0}
-        statusMessage={STATUS_STAGES[progressStage]?.label || "Processing..."}
       />
     );
   }
@@ -244,12 +250,12 @@ export default function Dashboard() {
   const domain = overview?.company_url || "";
 
   // Edit logic for OverviewBlock
-  const handleEdit = (blockId: string, newItems: string[]) => {
+  const handleListEdit = (field: CardKey) => (newItems: string[]) => {
     setAnalysisState((prev: AnalysisState) => {
       if (!prev.data) return prev;
       const updated = {
         ...prev.data,
-        [blockId]: newItems,
+        [field]: newItems,
       };
       localStorage.setItem("dashboard_overview", JSON.stringify(updated));
       return { ...prev, data: updated };
@@ -300,7 +306,7 @@ export default function Dashboard() {
                     key={key}
                     title={title}
                     items={overview?.[key] || []}
-                    onEdit={(newItems) => handleEdit(key, newItems)}
+                    onEdit={handleListEdit(key)}
                     renderItem={(item: string, idx: number) => (
                       <li
                         key={idx}
@@ -336,11 +342,7 @@ export default function Dashboard() {
               setActiveSubTab={() => {}}
               subTabs={[]}
             />
-            <CustomersList
-              companyName={companyName}
-              domain={domain}
-              description={overview?.product_description}
-            />
+            <CustomersList />
           </div>
         )}
         {/* TODO: Add campaigns tab content here */}

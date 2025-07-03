@@ -25,6 +25,16 @@ export default function PersonaDetail() {
   const [modalEditingSignal, setModalEditingSignal] = React.useState<any>(null);
   const [buyingSignals, setBuyingSignals] = React.useState<any[]>([]);
 
+  const personaCardConfigs = [
+    { key: "likelyJobTitles", title: "Likely Job Titles", editModalSubtitle: "Job titles this persona is likely to have." },
+    { key: "primaryResponsibilities", title: "Primary Responsibilities", editModalSubtitle: "Key responsibilities typically held by this persona." },
+    { key: "useCases", title: "Use Cases", editModalSubtitle: "Ways this persona would use your product or service." },
+    { key: "painPoints", title: "Pain Points", editModalSubtitle: "Challenges and frustrations this persona faces." },
+    { key: "desiredOutcomes", title: "Desired Outcomes", editModalSubtitle: "What this persona hopes to achieve." },
+    { key: "keyConcerns", title: "Key Concerns", editModalSubtitle: "Questions or objections this persona may have." },
+    { key: "whyWeMatter", title: "Why We Matter to Them", editModalSubtitle: "Reasons your solution is valuable to this persona." },
+  ];
+
   React.useEffect(() => {
     if (accountId && personaId) {
       const personas = getPersonasForCustomer(accountId);
@@ -67,6 +77,10 @@ export default function PersonaDetail() {
     setEditContent("");
   };
 
+  const handleListEdit = (field: keyof TargetPersonaResponse) => (newItems: any[]) => {
+    setPersona(persona => persona ? { ...persona, [field]: newItems } : persona);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <SubNav
@@ -91,24 +105,18 @@ export default function PersonaDetail() {
         />
         {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ListInfoCard
-            title="Likely Job Titles"
-            items={Array.isArray(persona.likelyJobTitles) ? persona.likelyJobTitles : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, likelyJobTitles: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Job titles this persona is likely to have."
-          />
-          <ListInfoCard
-            title="Primary Responsibilities"
-            items={Array.isArray(persona.primaryResponsibilities) ? persona.primaryResponsibilities : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, primaryResponsibilities: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Key responsibilities typically held by this persona."
-          />
+          {personaCardConfigs.map(({ key, title, editModalSubtitle }) => (
+            <ListInfoCard
+              key={key}
+              title={title}
+              items={Array.isArray(persona[key as keyof typeof persona]) ? persona[key as keyof typeof persona] as string[] : []}
+              onEdit={handleListEdit(key as keyof TargetPersonaResponse)}
+              renderItem={(item: string, idx: number) => (
+                <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+              )}
+              editModalSubtitle={editModalSubtitle}
+            />
+          ))}
           {/* Status Quo InfoCard with edit */}
           <InfoCard
             title="Status Quo"
@@ -125,51 +133,6 @@ export default function PersonaDetail() {
                 ? persona.statusQuo.join("\n")
                 : persona.statusQuo || ""
             )}
-          />
-          <ListInfoCard
-            title="Use Cases"
-            items={Array.isArray(persona.useCases) ? persona.useCases : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, useCases: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Ways this persona would use your product or service."
-          />
-          <ListInfoCard
-            title="Pain Points"
-            items={Array.isArray(persona.painPoints) ? persona.painPoints : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, painPoints: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Challenges and frustrations this persona faces."
-          />
-          <ListInfoCard
-            title="Desired Outcomes"
-            items={Array.isArray(persona.desiredOutcomes) ? persona.desiredOutcomes : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, desiredOutcomes: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="What this persona hopes to achieve."
-          />
-          <ListInfoCard
-            title="Key Concerns"
-            items={Array.isArray(persona.keyConcerns) ? persona.keyConcerns : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, keyConcerns: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Questions or objections this persona may have."
-          />
-          <ListInfoCard
-            title="Why We Matter to Them"
-            items={Array.isArray(persona.whyWeMatter) ? persona.whyWeMatter : []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, whyWeMatter: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-            )}
-            editModalSubtitle="Reasons your solution is valuable to this persona."
           />
         </div>
         <div className="mt-8">
