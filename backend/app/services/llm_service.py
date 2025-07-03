@@ -144,7 +144,7 @@ class OpenAIProvider(BaseLLMProvider):
             logging.error("OPENAI_API_KEY is not set in the environment.")
             raise ValueError("OPENAI_API_KEY is required.")
         self.client = openai.OpenAI(api_key=api_key)
-        self.model = "gpt-4o"  # or "gpt-4-turbo" if you prefer
+        self.model = "gpt-4.1-nano"  # Switched to gpt-4.1-nano
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
@@ -458,17 +458,15 @@ class LLMClient:
                 print(f"Circuit breaker OPEN for provider: {provider.name}, skipping.")
                 continue
             try:
-                print(f"Trying provider: {provider.name}")
-                healthy = await provider.health_check()
-                print(f"Provider {provider.name} health: {healthy}")
-                if healthy:
-                    print(f"Calling generate on provider: {provider.name}")
-                    response = await provider.generate(request)
-                    await cb.record_success()
-                    return response
+                model_name = getattr(provider, "model", None)
+                if model_name:
+                    print(f"Trying provider: {provider.name} (model: {model_name})")
                 else:
-                    # Health check failed, record as failure
-                    await cb.record_failure()
+                    print(f"Trying provider: {provider.name}")
+                # Removed per-request health check for performance
+                response = await provider.generate(request)
+                await cb.record_success()
+                return response
             except Exception as e:
                 print("=== LLM CLIENT ERROR ===")
                 print(e)
