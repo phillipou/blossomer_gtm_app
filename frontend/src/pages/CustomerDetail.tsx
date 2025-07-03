@@ -1,125 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Edit3, Check, X, Plus, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Plus, Edit3, Check, X, Trash2 } from "lucide-react";
 import { FirmographicsTable } from "../components/tables/FirmographicsTable";
-import { Textarea } from "../components/ui/textarea";
-import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
-import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
 import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
-import InfoCard from "../components/cards/InfoCard";
 import { getStoredCustomerProfiles } from "../lib/customerService";
+import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
+import type { CustomerProfile } from "../types/api";
+import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
+import InfoCard from "../components/cards/InfoCard";
+import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
 
-const MOCK_CUSTOMER_DETAILS = {
-  id: "1",
-  title: "Technical B2B SaaS Founder-Led Startups",
-  subtitle: "External Facing Name: Technical B2B SaaS Founder-Led Startups",
-  description: `Early-stage, founder-led B2B software startups are driven by technical leaders who are building innovative products for business customers. These companies typically operate with lean teams and limited revenue, often relying on prioritizing product development over formalized sales processes. They frequently lack dedicated sales expertise, relying instead on the founders to lead outreach and customer discovery. Their focus is on rapidly validating product-market fit and establishing scalable, repeatable revenue systems to support future growth and fundraising.`,
-  firmographics: [
-    { label: "Revenue", values: [ { text: "$0-1M", color: "yellow" }, { text: "$1M-5M", color: "yellow" } ] },
-    { label: "Industry", values: [ { text: "Software", color: "blue" }, { text: "Technology", color: "blue" }, { text: "Information Services", color: "blue" } ] },
-    { label: "Employees", values: [ { text: "0-10", color: "red" }, { text: "10-50", color: "red" } ] },
-    { label: "Geography", values: [ { text: "US", color: "gray" }, { text: "North America", color: "gray" }, { text: "EMEA", color: "gray" }, { text: "APAC", color: "gray" }, { text: "Global", color: "gray" } ] },
-    { label: "Business model", values: [ { text: "B2B", color: "yellow" }, { text: "SaaS", color: "blue" } ] },
-  ],
-  buyingSignals: [
-    { id: "0", label: "Recently raised seed or Series A funding", description: "", enabled: true },
-    { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
-    { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
-    { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
-    { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
-    { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
-    { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
-    { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
-  ],
-  createdAt: "Jul 1, 2025",
-  updatedAt: "Jul 1, 2025",
-  creator: "Phil Ou",
-};
-
-type BuyingSignal = {
+interface Persona {
   id: string;
-  label: string;
+  name: string;
   description: string;
-  enabled: boolean;
-};
+  createdAt: string;
+}
 
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  // Find customer by id from localStorage
-  const customerProfiles = getStoredCustomerProfiles();
-  const customer = customerProfiles.find((c) => String(c.id) === String(id));
-  if (!customer) {
-    return <div className="p-8 text-center text-gray-500">Customer not found.</div>;
-  }
-  // Adapt the mock customer to the detail shape
-  const detailData = {
-    ...customer,
-    id: String(customer.id),
-    firmographics: [
-      { id: "revenue", label: "Revenue", values: [{ text: "$0-1M", color: "yellow" }] },
-      { id: "industry", label: "Industry", values: [{ text: "Software", color: "blue" }] },
-      { id: "employees", label: "Employees", values: [{ text: "0-10", color: "red" }] },
-      { id: "geography", label: "Geography", values: [{ text: "US", color: "gray" }] },
-      { id: "business_model", label: "Business model", values: [{ text: "B2B", color: "yellow" }] },
-    ],
-    buyingSignals: [
-      { id: "0", label: "Recently raised seed or Series A funding", description: "test description", enabled: true },
-      { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
-      { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
-      { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
-      { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
-      { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
-      { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
-      { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
-    ],
-    createdAt: "Jul 1, 2025",
-    updatedAt: "Jul 1, 2025",
-    creator: "Phil Ou",
-    title: customer.name,
-    subtitle: customer.role,
-    description: customer.description,
-    personaProfiles: [
-      "Technical Founder",
-      "Sales-Oriented Founder",
-      "Product Manager",
-    ],
-    painPoints: [
-      "Lack of sales expertise",
-      "Difficulty scaling outreach",
-      "Limited marketing budget",
-    ],
-  };
+  const [customerDetail, setCustomerDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // --- CustomerDetailView logic below ---
-  const [activeTab, setActiveTab] = useState("accounts");
-  const [editingBlock, setEditingBlock] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
-  // Buying signals state
-  const [buyingSignals, setBuyingSignals] = useState<BuyingSignal[]>(
-    detailData.buyingSignals.map((s: any) => ({ ...s, enabled: s.enabled ?? false }))
-  );
-  // Firmographics state
-  const [firmographics, setFirmographics] = useState(detailData.firmographics);
-  const [firmoModalOpen, setFirmoModalOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const [hoveredSignal, setHoveredSignal] = useState<string | null>(null);
+  // Buying signals modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalEditingSignal, setModalEditingSignal] = useState<BuyingSignal | null>(null);
-  const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
+  const [modalEditingSignal, setModalEditingSignal] = useState<any>(null);
+  const [buyingSignals, setBuyingSignals] = useState<any[]>([]);
+
+  const [firmographics, setFirmographics] = useState<any[]>([]);
+  const [firmoModalOpen, setFirmoModalOpen] = useState(false);
   const [hoveredFirmo, setHoveredFirmo] = useState(false);
   // State for rationale editing
-  const [rationale, setRationale] = useState("This account matches our ideal customer profile: early-stage, founder-led B2B SaaS companies with technical leadership and a strong focus on product innovation. They are likely to benefit from structured go-to-market support, as they often lack dedicated sales expertise and are seeking scalable, repeatable revenue systems.");
+  const [rationale, setRationale] = useState("");
   const [editingRationale, setEditingRationale] = useState(false);
   const [editRationaleContent, setEditRationaleContent] = useState("");
   const [hoveredRationale, setHoveredRationale] = useState(false);
 
-  // Mock personas data
-  const [personas, setPersonas] = useState([
+  const [personas, setPersonas] = useState<Persona[]>([
     {
       id: "1",
       name: "Startup Founder",
@@ -139,39 +62,9 @@ export default function CustomerDetail() {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
 
   const handlePersonaClick = (personaId: string) => {
-    navigate(`/customers/${detailData.id}/persona/${personaId}`);
+    // You can navigate or open a modal here
   };
 
-  const enabledCount = Array.isArray(buyingSignals) && buyingSignals.length > 0 && typeof buyingSignals[0] === 'object'
-    ? buyingSignals.filter((s: any) => s.enabled).length
-    : 0;
-  const totalCount = Array.isArray(buyingSignals) && buyingSignals.length > 0 && typeof buyingSignals[0] === 'object'
-    ? buyingSignals.length
-    : 0;
-
-  const handleToggleSignal = (id: string) => {
-    setBuyingSignals(signals => signals.map((s: BuyingSignal) => ({ ...s, enabled: s.enabled ?? false })).map((s: BuyingSignal) => s.id === id ? { ...s, enabled: !s.enabled } : s));
-  };
-
-  const handleEdit = (blockId: string, currentContent: string) => {
-    setEditingBlock(blockId);
-    setEditContent(currentContent);
-  };
-  const handleSave = () => {
-    setEditingBlock(null);
-    setEditContent("");
-  };
-  const handleCancel = () => {
-    setEditingBlock(null);
-    setEditContent("");
-  };
-
-  type Persona = {
-    id: string;
-    name: string;
-    description: string;
-    createdAt: string;
-  };
   const handleEditPersona = (persona: Persona) => {
     setEditingPersona(persona);
     setPersonaModalOpen(true);
@@ -180,173 +73,222 @@ export default function CustomerDetail() {
     setPersonas((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleEditSignal = (signal: any) => {
-    setModalEditingSignal({ ...signal, enabled: signal.enabled ?? false });
-    setModalOpen(true);
-  };
+  useEffect(() => {
+    try {
+      const profiles = getStoredCustomerProfiles();
+      const profile = profiles.find((p: any) => p.id === id);
+      if (profile) {
+        const detailData = transformTargetAccountToDetail(profile);
+        console.log("Firmographics for table:", detailData.firmographics);
+        setCustomerDetail(detailData);
+        setBuyingSignals(detailData.buyingSignals || []);
+        setFirmographics(detailData.firmographics || []);
+        setRationale(detailData.rationale || "");
+      } else {
+        setError("Target account profile not found");
+      }
+    } catch (err) {
+      console.error("Error in CustomerDetail useEffect:", err);
+      setError("Failed to load customer data");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error || !customerDetail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600 mb-4">{error || "Profile not found"}</p>
+            <Button onClick={() => navigate('/customers')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Customers
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Sub Navigation */}
+    <div className="min-h-screen bg-gray-50">
       <SubNav
+        title="Target Account Details"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Customers", href: "/customers" },
-          { label: detailData.name }
+          { label: customerDetail?.title || "Target Account" }
         ]}
-        activeSubTab={activeTab}
-        setActiveSubTab={setActiveTab}
-        subTabs={[
-          { label: "Accounts", value: "accounts" },
-          { label: "Personas", value: "personas" },
-        ]}
+        subTabs={[]}
       />
-      {/* Content */}
-      <div className="flex-1 p-8 space-y-8">
-        {/* Description Block */}
-        {activeTab === "accounts" && (
-          <>
-            {editingBlock === "description" ? (
-              <div className="space-y-4">
-                <label className="font-semibold">Description</label>
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="min-h-[120px]"
+      
+      <div className="max-w-6xl mx-auto p-8 space-y-8">
+        {/* Header */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-2xl">{customerDetail.title}</CardTitle>
+                <p className="text-gray-600 mt-2">{customerDetail.subtitle}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Created: {customerDetail.createdAt}
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/customers')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Customers
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Target Description */}
+        <OverviewCard
+          title="Target Account Description"
+          bodyText={customerDetail.description}
+          showButton={false}
+        />
+
+        {/* Why they're a good fit InfoCard with edit affordance */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Firmographics Card with edit affordance */}
+          <Card
+            className="group relative flex-1"
+            onMouseEnter={() => setHoveredFirmo(true)}
+            onMouseLeave={() => setHoveredFirmo(false)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Firmographics</CardTitle>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setFirmoModalOpen(true)}
+                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
+                tabIndex={-1}
+                style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
+              >
+                <Edit3 className="w-5 h-5" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <FirmographicsTable data={firmographics} />
+            </CardContent>
+          </Card>
+          {/* Why they're a good fit InfoCard with edit affordance */}
+          <div className="flex-1">
+            {editingRationale ? (
+              <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
+                <label className="font-semibold">Why they're a good fit</label>
+                <textarea
+                  value={editRationaleContent}
+                  onChange={e => setEditRationaleContent(e.target.value)}
+                  className="min-h-[120px] w-full border rounded p-2"
                 />
                 <div className="flex space-x-2">
-                  <Button size="sm" onClick={handleSave}>
-                    <Check className="w-4 h-4 mr-2" />
-                    Save
+                  <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
+                    <Check className="w-4 h-4 mr-2" />Save
                   </Button>
-                  <Button size="sm" variant="outline" onClick={handleCancel}>
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
+                  <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
+                    <X className="w-4 h-4 mr-2" />Cancel
                   </Button>
                 </div>
               </div>
             ) : (
-              <OverviewCard
-                title={"Title"}
-                subtitle={"Subtitle"}
-                bodyTitle="Description"
-                bodyText={detailData.description}
-                showButton={true}
-                buttonTitle="Edit"
-                onButtonClick={() => handleEdit("description", detailData.description)}
-              />
+              <div
+                className="group relative h-full"
+                onMouseEnter={() => setHoveredRationale(true)}
+                onMouseLeave={() => setHoveredRationale(false)}
+              >
+                <InfoCard
+                  title={"Why they're a good fit"}
+                  items={[rationale]}
+                  onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
+                />
+              </div>
             )}
-            {/* Firmographics and Why Good Fit Row */}
-            <div className="flex flex-col md:flex-row gap-6">
+          </div>
+        </div>
+
+        {/* Buying Signals */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between mb-2">
+              <CardTitle>Buying Signals</CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" /> Add
+              </Button>
+            </div>
+            <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+          </CardHeader>
+          <CardContent>
+            {buyingSignals.length > 0 ? (
+              <BuyingSignalsCard
+                signals={buyingSignals}
+                onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+                onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+                onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No buying signals identified
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Personas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {personas.map((persona) => (
               <Card
-                className="group relative flex-1"
-                onMouseEnter={() => setHoveredFirmo(true)}
-                onMouseLeave={() => setHoveredFirmo(false)}
+                key={persona.id}
+                className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                onClick={() => handlePersonaClick(persona.id)}
               >
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Firmographics</CardTitle>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setFirmoModalOpen(true)}
-                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
-                    tabIndex={-1}
-                    style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </Button>
+                  <div>
+                    <span className="inline-block mb-2">
+                      <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                        {persona.name}
+                      </span>
+                    </span>
+                    <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                    <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                  </div>
+                  <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                      <Edit3 className="w-5 h-5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <FirmographicsTable data={firmographics} />
-                </CardContent>
               </Card>
-              {/* Why they're a good fit InfoCard with edit affordance */}
-              <div className="flex-1">
-                {editingRationale ? (
-                  <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <label className="font-semibold">Why they're a good fit</label>
-                    <Textarea
-                      value={editRationaleContent}
-                      onChange={e => setEditRationaleContent(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                    <div className="flex space-x-2">
-                      <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
-                        <Check className="w-4 h-4 mr-2" />Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
-                        <X className="w-4 h-4 mr-2" />Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className="group relative h-full"
-                    onMouseEnter={() => setHoveredRationale(true)}
-                    onMouseLeave={() => setHoveredRationale(false)}
-                  >
-                    <InfoCard
-                      title={"Why they're a good fit"}
-                      items={[rationale]}
-                      onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
-                    />
-                  </div>
-                )}
+            ))}
+            {/* Add New Persona Card */}
+            <Card
+              className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+              onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
+            >
+              <div className="flex flex-col items-center">
+                <Plus className="w-8 h-8 text-blue-500 mb-2" />
+                <span className="text-blue-600 font-medium">Add New</span>
               </div>
-            </div>
-            {/* Buying Signals Block */}
-            <BuyingSignalsCard
-              signals={buyingSignals}
-              onEdit={(signal) => { handleEditSignal(signal); }}
-              onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-              onAdd={() => { handleEditSignal(null); }}
-            />
-            {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Personas</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {personas.map((persona) => (
-                  <Card
-                    key={persona.id}
-                    className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
-                    onClick={() => handlePersonaClick(persona.id)}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <span className="inline-block mb-2">
-                          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
-                            {persona.name}
-                          </span>
-                        </span>
-                        <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                        <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
-                      </div>
-                      <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                          <Edit3 className="w-5 h-5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-                {/* Add New Persona Card */}
-                <Card
-                  className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
-                  onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Plus className="w-8 h-8 text-blue-500 mb-2" />
-                    <span className="text-blue-600 font-medium">Add New</span>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </>
-        )}
+            </Card>
+          </div>
+        </div>
       </div>
+      {/* Buying Signal Modal */}
       <EditBuyingSignalModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

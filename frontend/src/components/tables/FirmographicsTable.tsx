@@ -3,10 +3,38 @@ import { Badge } from "../ui/badge";
 interface Value {
   text: string;
   color: string;
+  // Optionally allow subcategory keys (e.g., employees, revenue)
+  [key: string]: any;
 }
 interface Row {
   label: string;
   values: Value[];
+}
+
+// Helper to flatten company size subcategories
+function flattenFirmographicsData(data: Row[]): Row[] {
+  const result: Row[] = [];
+  data.forEach((row) => {
+    if (row.label.toLowerCase() === "company size") {
+      row.values.forEach((v) => {
+        if (v.employees) {
+          result.push({
+            label: "Employees",
+            values: [{ text: v.employees, color: v.color || "gray" }],
+          });
+        }
+        if (v.revenue) {
+          result.push({
+            label: "Revenue",
+            values: [{ text: v.revenue, color: v.color || "gray" }],
+          });
+        }
+      });
+    } else {
+      result.push(row);
+    }
+  });
+  return result;
 }
 
 export function FirmographicsTable({ data }: { data: Row[] }) {
@@ -16,9 +44,10 @@ export function FirmographicsTable({ data }: { data: Row[] }) {
     red: "bg-red-100 text-red-700",
     gray: "bg-gray-100 text-gray-800",
   };
+  const flatData = flattenFirmographicsData(data);
   return (
     <div className="space-y-3">
-      {data.map((row: Row) => (
+      {flatData.map((row: Row) => (
         <div key={row.label} className="flex items-center space-x-4">
           <div className="w-32 text-sm text-gray-600 font-medium flex-shrink-0">{row.label}</div>
           <div className="flex flex-wrap gap-2">
