@@ -1,9 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
-import SubNav from "@/components/navigation/SubNav";
-import InfoCard from "@/components/cards/InfoCard";
+import SubNav from "../components/navigation/SubNav";
+import InfoCard from "../components/cards/InfoCard";
 import React from "react";
-import OverviewCard from "@/components/cards/OverviewCard";
+import OverviewCard from "../components/cards/OverviewCard";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
+import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
+import ListInfoCard from "../components/cards/ListInfoCard";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Plus } from "lucide-react";
 
 // Mock persona data (in real app, fetch by accountId/personaId)
 const MOCK_PERSONAS = [
@@ -89,17 +94,49 @@ const MOCK_PERSONAS = [
   },
 ];
 
+type Persona = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  painPoints?: string[];
+  profile?: string[];
+  overview?: string;
+  likelyJobTitles?: string[];
+  primaryResponsibilities?: string[];
+  statusQuo?: string[];
+  useCases?: string[];
+  desiredOutcomes?: string[];
+  keyConcerns?: string[];
+  whyWeMatter?: string[];
+  buyingSignals?: { id: string; label: string; description: string; enabled: boolean }[];
+};
+
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
   const navigate = useNavigate();
+  console.log('PersonaDetail params:', { accountId, personaId });
   // In real app, fetch persona by accountId/personaId
-  const [persona, setPersona] = React.useState(() => {
-    return MOCK_PERSONAS.find((p) => p.id === personaId) || null;
-  });
+  const [persona, setPersona] = React.useState<Persona | null>(null);
+  React.useEffect(() => {
+    console.log('MOCK_PERSONAS:', MOCK_PERSONAS);
+    console.log('personaId:', personaId);
+    const found = MOCK_PERSONAS.find((p) => p.id === personaId) || null;
+    console.log('Found persona:', found);
+    setPersona(found);
+  }, [personaId]);
   const [editingBlock, setEditingBlock] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState("");
   // Mock account name for breadcrumbs
   const accountName = "Account " + accountId;
+
+  // Buying signals modal state (copied from CustomerDetail)
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [modalEditingSignal, setModalEditingSignal] = React.useState<any>(null);
+  const [buyingSignals, setBuyingSignals] = React.useState<any[]>(persona?.buyingSignals || []);
+  React.useEffect(() => {
+    setBuyingSignals(persona?.buyingSignals || []);
+  }, [persona]);
 
   if (!persona) {
     return <div className="p-8 text-center text-gray-500">Persona not found.</div>;
@@ -148,81 +185,124 @@ export default function PersonaDetail() {
         />
         {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <InfoCard
+          <ListInfoCard
             title="Likely Job Titles"
             items={persona.likelyJobTitles || []}
-            onEdit={() => handleEdit("likelyJobTitles", (persona.likelyJobTitles || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, likelyJobTitles: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Job titles this persona is likely to have."
           />
-          <InfoCard
+          <ListInfoCard
             title="Primary Responsibilities"
             items={persona.primaryResponsibilities || []}
-            onEdit={() => handleEdit("primaryResponsibilities", (persona.primaryResponsibilities || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, primaryResponsibilities: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Key responsibilities typically held by this persona."
           />
-          <InfoCard
+          <ListInfoCard
             title="Status Quo"
             items={persona.statusQuo || []}
-            onEdit={() => handleEdit("statusQuo", (persona.statusQuo || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, statusQuo: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="How this persona currently operates or solves problems."
           />
-          <InfoCard
+          <ListInfoCard
             title="Use Cases"
             items={persona.useCases || []}
-            onEdit={() => handleEdit("useCases", (persona.useCases || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, useCases: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Ways this persona would use your product or service."
           />
-          <InfoCard
+          <ListInfoCard
             title="Pain Points"
             items={persona.painPoints || []}
-            onEdit={() => handleEdit("painPoints", (persona.painPoints || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, painPoints: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Challenges and frustrations this persona faces."
           />
-          <InfoCard
+          <ListInfoCard
             title="Desired Outcomes"
             items={persona.desiredOutcomes || []}
-            onEdit={() => handleEdit("desiredOutcomes", (persona.desiredOutcomes || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, desiredOutcomes: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="What this persona hopes to achieve."
           />
-          <InfoCard
+          <ListInfoCard
             title="Key Concerns"
             items={persona.keyConcerns || []}
-            onEdit={() => handleEdit("keyConcerns", (persona.keyConcerns || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, keyConcerns: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Questions or objections this persona may have."
           />
-          <InfoCard
+          <ListInfoCard
             title="Why We Matter to Them"
             items={persona.whyWeMatter || []}
-            onEdit={() => handleEdit("whyWeMatter", (persona.whyWeMatter || []).join("\n"))}
+            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, whyWeMatter: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
+            editModalSubtitle="Reasons your solution is valuable to this persona."
           />
         </div>
         <div className="mt-8">
-          <BuyingSignalsCard
-            signals={persona.buyingSignals || []}
-            onEdit={() => {}}
-            onDelete={() => {}}
-            onAdd={() => {}}
-            title="Buying Signals"
-            description="Indicators that suggest a prospect is ready to buy or engage with your solution"
-          />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle>Buying Signals</CardTitle>
+                <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> Add
+                </Button>
+              </div>
+              <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+            </CardHeader>
+            <CardContent>
+              {buyingSignals.length > 0 ? (
+                <BuyingSignalsCard
+                  signals={buyingSignals}
+                  onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+                  onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+                  onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No buying signals identified
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+        <EditBuyingSignalModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          editingSignal={modalEditingSignal}
+          onSave={(values: Record<string, any>) => {
+            const { label, description } = values;
+            if (modalEditingSignal) {
+              // Edit
+              setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));
+            } else {
+              // Add
+              setBuyingSignals(signals => [
+                ...signals,
+                { id: String(Date.now()), label, description, enabled: true },
+              ]);
+            }
+          }}
+        />
       </div>
     </div>
   );

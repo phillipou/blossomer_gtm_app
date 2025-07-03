@@ -309,6 +309,15 @@ export default function Dashboard() {
                         {item}
                       </li>
                     )}
+                    editModalSubtitle={
+                      key === "capabilities" ? "Core features and strengths of the company/product."
+                      : key === "business_model" ? "How the company generates revenue."
+                      : key === "alternatives" ? "Competing solutions or approaches."
+                      : key === "differentiated_value" ? "Unique value propositions that set this company apart."
+                      : key === "testimonials" ? "Customer quotes or endorsements."
+                      : key === "customer_benefits" ? "Key benefits customers receive."
+                      : undefined
+                    }
                   />
                 ))}
               </div>

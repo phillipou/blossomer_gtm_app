@@ -2,12 +2,9 @@ import SidebarNav from "../navigation/SidebarNav";
 import { Button } from "../ui/button";
 import { Sparkles } from "lucide-react";
 import React from "react";
+import { Outlet } from "react-router-dom";
 
-interface MainLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header (copied from LandingPage) */}
@@ -34,7 +31,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Layout: Sidebar + Main Content */}
       <div className="flex flex-1 min-h-0">
         <SidebarNav />
-        <main className="flex-1 min-h-0 bg-gray-50">{children}</main>
+        <main className="flex-1 min-h-0 bg-gray-50"><Outlet /></main>
       </div>
     </div>
   );

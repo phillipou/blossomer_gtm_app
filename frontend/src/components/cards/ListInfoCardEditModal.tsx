@@ -21,6 +21,7 @@ interface ListInfoCardEditModalProps {
   onSave: (items: ListInfoCardItem[]) => void;
   title: string;
   initialItems: ListInfoCardItem[];
+  subtitle?: string;
 }
 
 export default function ListInfoCardEditModal({
@@ -29,6 +30,7 @@ export default function ListInfoCardEditModal({
   onSave,
   title,
   initialItems,
+  subtitle,
 }: ListInfoCardEditModalProps) {
   const [localItems, setLocalItems] = useState<ListInfoCardItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -169,14 +171,18 @@ export default function ListInfoCardEditModal({
       <EditDialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <EditDialogHeader>
           <EditDialogTitle>Edit {title}</EditDialogTitle>
+          {subtitle && (
+            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+          )}
         </EditDialogHeader>
-        <div className="space-y-3 py-4 px-6 max-h-96 overflow-y-auto">
+        <div className="space-y-3 py-4 px-6 max-h-96 overflow-y-auto bg-gray-100 shadow rounded-xl p-6">
           {localItems.map((item, index) => (
             <div
               key={item.id}
-              className={`group relative rounded-lg transition-all duration-200 ${
-                hoveredId === item.id || editingId === item.id ? "bg-gray-50 border border-gray-200" : ""
+              className={`group relative rounded-lg transition-all duration-200 bg-white shadow-sm ${
+                hoveredId === item.id || editingId === item.id ? "ring-1 ring-gray-300" : ""
               }`}
+              style={{ marginBottom: '0.5rem' }}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
@@ -194,11 +200,11 @@ export default function ListInfoCardEditModal({
                       onChange={(e) => handleItemChange(item.id, e.target.value)}
                       onBlur={handleFinishEdit}
                       onKeyDown={(e) => handleKeyPress(e, handleFinishEdit)}
-                      className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base"
+                      className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
                       style={{ boxShadow: "none" }}
                     />
                   ) : (
-                    <p className="text-gray-700 leading-relaxed cursor-text text-base" onClick={() => handleStartEdit(item.id)}>
+                    <p className="text-gray-700 leading-relaxed cursor-text text-base md:text-base" onClick={() => handleStartEdit(item.id)}>
                       {item.text}
                     </p>
                   )}
@@ -240,7 +246,7 @@ export default function ListInfoCardEditModal({
           {/* Add New Item Section */}
           <div className="pt-2">
             {isAddingNew ? (
-              <div className="flex items-start space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-start space-x-3 p-3 bg-white shadow-sm rounded-lg">
                 <div className="flex-shrink-0 mt-2">
                   <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                 </div>
@@ -258,7 +264,7 @@ export default function ListInfoCardEditModal({
                     }}
                     onKeyDown={(e) => handleKeyPress(e, handleAddNewItem)}
                     placeholder="Enter new item..."
-                    className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base"
+                    className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
                     style={{ boxShadow: "none" }}
                   />
                 </div>

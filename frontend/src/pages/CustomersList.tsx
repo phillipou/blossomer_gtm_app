@@ -149,7 +149,6 @@ export default function CustomersList() {
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {customerProfiles.map((profile) => {
-            console.log("Rendering profile card:", profile);
             return (
               <CustomerProfileCard
                 key={profile.id}

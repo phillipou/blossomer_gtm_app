@@ -10,9 +10,10 @@ interface ListInfoCardProps {
   items: string[];
   onEdit?: (newItems: string[]) => void;
   renderItem?: (item: string, index: number) => ReactNode;
+  editModalSubtitle?: string;
 }
 
-export default function ListInfoCard({ title, items, onEdit, renderItem }: ListInfoCardProps) {
+export default function ListInfoCard({ title, items, onEdit, renderItem, editModalSubtitle }: ListInfoCardProps) {
   const [hovered, setHovered] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [localItems, setLocalItems] = useState<string[]>(items);
@@ -86,6 +87,7 @@ export default function ListInfoCard({ title, items, onEdit, renderItem }: ListI
           onSave={handleModalSave}
           title={title}
           initialItems={toItemObjects(localItems)}
+          subtitle={editModalSubtitle}
         />
       )}
     </>

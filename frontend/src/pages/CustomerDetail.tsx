@@ -65,6 +65,7 @@ export default function CustomerDetail() {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
 
   const handlePersonaClick = (personaId: string) => {
+    console.log('Navigating to persona:', personaId, 'for account:', id);
     navigate(`/customers/${id}/personas/${personaId}`);
   };
 
@@ -82,7 +83,6 @@ export default function CustomerDetail() {
       const profile = profiles.find((p: any) => p.id === id);
       if (profile) {
         const detailData = transformTargetAccountToDetail(profile);
-        console.log("Firmographics for table:", detailData.firmographics);
         setCustomerDetail(detailData);
         setBuyingSignals(detailData.buyingSignals || []);
         setFirmographics(detailData.firmographics || []);
@@ -121,6 +121,8 @@ export default function CustomerDetail() {
       </div>
     );
   }
+
+  console.log('CustomerDetail render, id:', id);
 
   return (
     <div className="flex flex-col min-h-screen">

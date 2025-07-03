@@ -79,7 +79,7 @@ export default function EditDialogModal({
         </EditDialogHeader>
         <div className="space-y-4 py-4 px-6">
           {fields.map((field) => (
-            <div className="space-y-2" key={field.name}>
+            <div className="space-y-2 bg-gray-50 rounded-lg px-4 py-3" key={field.name}>
               <Label htmlFor={field.name}>{field.label}</Label>
               {field.type === "input" && (
                 <Input

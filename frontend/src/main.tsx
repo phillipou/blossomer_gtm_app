@@ -1,6 +1,6 @@
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import './index.css'
 import './App.css'
 import LandingPage from './pages/LandingPage'
@@ -26,20 +26,13 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/*"
-          element={
-            <MainLayout>
-              <Routes>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="customers" element={<CustomersList />} />
-                <Route path="customers/:id" element={<CustomerDetail />} />
-                <Route path="customers/:id/persona/:personaId" element={<PersonaDetail />} />
-                {/* Add campaigns and other routes here */}
-              </Routes>
-            </MainLayout>
-          }
-        />
+        <Route element={<MainLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="customers" element={<CustomersList />} />
+          <Route path="customers/:id" element={<CustomerDetail />} />
+          <Route path="customers/:id/personas/:personaId" element={<PersonaDetail />} />
+          {/* Add campaigns and other routes here */}
+        </Route>
       </Routes>
     </BrowserRouter>
   </StrictMode>,
