@@ -4,7 +4,7 @@ registry.py - Template registry and selector logic for prompt templates.
 
 from backend.app.prompts.models import (
     ProductOverviewPromptVars,
-    TargetCompanyPromptVars,
+    TargetAccountPromptVars,
     TargetPersonaPromptVars,
 )
 from .base import render_template
@@ -23,7 +23,7 @@ TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
         "model": ProductOverviewPromptVars,
         "template": "product_overview",
     },
-    "target_company": {"model": TargetCompanyPromptVars, "template": "target_company"},
+    "target_account": {"model": TargetAccountPromptVars, "template": "target_account"},
     "target_persona": {"model": TargetPersonaPromptVars, "template": "target_persona"},
     # Add more templates here
 }
@@ -35,4 +35,6 @@ def render_prompt(template_name: str, variables: BaseModel) -> str:
         raise TypeError(
             f"variables must be a Pydantic BaseModel instance, got {type(variables)}"
         )
-    return render_template(entry["template"], variables.model_dump())
+    # Ensure all fields, including target_company_name, are included
+    context = variables.model_dump()
+    return render_template(entry["template"], context)

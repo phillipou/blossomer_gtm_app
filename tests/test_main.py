@@ -53,9 +53,9 @@ VALID_ICP = {
 
 # Canonical definition for all tests
 async def fake_generate_structured_output(prompt, response_model):
-    from backend.app.schemas import TargetCompanyResponse
+    from backend.app.schemas import TargetAccountResponse
 
-    return TargetCompanyResponse(
+    return TargetAccountResponse(
         target_company_name="SaaS Innovators",
         target_company_description="Tech-forward SaaS companies",
         firmographics={
@@ -71,7 +71,7 @@ async def fake_generate_structured_output(prompt, response_model):
             "organizational_signals": ["New CTO"],
             "market_signals": ["Industry expansion"],
         },
-        rationale="These companies are ideal due to their innovation focus.",
+        rationale="These accounts are ideal due to their innovation focus.",
         metadata={
             "context_quality": "high",
             "primary_context_source": "user",
@@ -287,12 +287,12 @@ def test_product_overview_llm_refusal(monkeypatch):
         assert key in detail
 
 
-def test_target_company_endpoint_success(monkeypatch):
+def test_target_account_endpoint_success(monkeypatch):
     """
     Test the /customers/target_accounts endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
-    from backend.app.schemas import TargetCompanyResponse
+    from backend.app.schemas import TargetAccountResponse
 
     payload = {
         "website_url": "https://example.com",
@@ -301,7 +301,7 @@ def test_target_company_endpoint_success(monkeypatch):
         "context_quality": "high",
         "assessment_summary": "Summary of context assessment.",
     }
-    fake_response = TargetCompanyResponse(
+    fake_response = TargetAccountResponse(
         target_company_name="SaaS Innovators",
         target_company_description="Tech-forward SaaS companies",
         firmographics={
@@ -317,7 +317,7 @@ def test_target_company_endpoint_success(monkeypatch):
             "organizational_signals": ["New CTO"],
             "market_signals": ["Industry expansion"],
         },
-        rationale="These companies are ideal due to their innovation focus.",
+        rationale="These accounts are ideal due to their innovation focus.",
         metadata={
             "context_quality": "high",
             "primary_context_source": "user",
@@ -335,7 +335,7 @@ def test_target_company_endpoint_success(monkeypatch):
                         "ER",
                         (),
                         {
-                            "endpoint": "target_company",
+                            "endpoint": "target_account",
                             "is_ready": True,
                             "confidence": 1.0,
                             "missing_requirements": [],
@@ -402,25 +402,25 @@ def test_target_company_endpoint_success(monkeypatch):
     assert "metadata" in data
 
 
-def test_target_company_prompt_vars_render(monkeypatch):
+def test_target_account_prompt_vars_render(monkeypatch):
     """
-    Test that TargetCompanyPromptVars can be instantiated and rendered
+    Test that TargetAccountPromptVars can be instantiated and rendered
     with all fields, including context_quality and assessment_summary.
     Also test that the correct context is rendered depending on which
     context is provided.
     """
-    from backend.app.prompts.models import TargetCompanyPromptVars
+    from backend.app.prompts.models import TargetAccountPromptVars
     from backend.app.prompts.registry import render_prompt
 
     # Case 1: Both user_inputted_context and llm_inferred_context provided
-    vars = TargetCompanyPromptVars(
+    vars = TargetAccountPromptVars(
         website_content="Website content here.",
         user_inputted_context="User context here.",
         llm_inferred_context="LLM context here.",
         context_quality="high",
         assessment_summary="Assessment summary here.",
     )
-    prompt = render_prompt("target_company", vars)
+    prompt = render_prompt("target_account", vars)
     assert "Website content here." in prompt
     assert "User context here." in prompt
     assert "LLM context here." in prompt
@@ -428,14 +428,14 @@ def test_target_company_prompt_vars_render(monkeypatch):
     assert "assessment_summary" in prompt or "Assessment summary" in prompt
 
     # Case 2: Only llm_inferred_context provided
-    vars2 = TargetCompanyPromptVars(
+    vars2 = TargetAccountPromptVars(
         website_content="Website content here.",
         user_inputted_context=None,
         llm_inferred_context="LLM context here.",
         context_quality="high",
         assessment_summary="Assessment summary here.",
     )
-    prompt2 = render_prompt("target_company", vars2)
+    prompt2 = render_prompt("target_account", vars2)
     assert "Website content here." in prompt2
     assert "LLM context here." in prompt2
     assert "User context here." not in prompt2

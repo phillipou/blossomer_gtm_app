@@ -91,7 +91,7 @@ async def resolve_context_for_endpoint(
     llm_ctx = getattr(request, "llm_inferred_context", None)
     website_url = getattr(request, "website_url", None)
 
-    if endpoint_name == "target_company":
+    if endpoint_name == "target_account":
         # Target account requires sufficient company context
         for ctx, label in [(user_ctx, "user-provided"), (llm_ctx, "LLM-inferred")]:
             if ctx:
@@ -99,7 +99,7 @@ async def resolve_context_for_endpoint(
                     ctx_dict = ctx if isinstance(ctx, dict) else {}
                     if is_target_account_context_sufficient(ctx_dict):
                         logging.info(
-                            f"[target_company] Using {label} context: "
+                            f"[target_account] Using {label} context: "
                             "sufficient for generation."
                         )
                         return {
@@ -109,20 +109,20 @@ async def resolve_context_for_endpoint(
                         }
                     elif not is_company_context_sufficient(ctx_dict):
                         logging.info(
-                            f"[target_company] {label} context: "
+                            f"[target_account] {label} context: "
                             "insufficient company context."
                         )
                     else:
                         logging.info(
-                            f"[target_company] {label} context: "
+                            f"[target_account] {label} context: "
                             "insufficient target account context."
                         )
                 except Exception:
                     logging.warning(
-                        f"[target_company] Exception while checking {label} context sufficiency."
+                        f"[target_account] Exception while checking {label} context sufficiency."
                     )
         if website_url:
-            logging.info("[target_company] Resorting to website scraping for context.")
+            logging.info("[target_account] Resorting to website scraping for context.")
             scrape_result = extract_website_content(website_url)
             content = scrape_result.get("content", "")
             html = scrape_result.get("html", None)
@@ -137,7 +137,7 @@ async def resolve_context_for_endpoint(
                 "from_cache": from_cache,
             }
         logging.warning(
-            "[target_company] No sufficient context found and no website_url provided."
+            "[target_account] No sufficient context found and no website_url provided."
         )
         return {"source": None, "context": None, "is_ready": False}
 

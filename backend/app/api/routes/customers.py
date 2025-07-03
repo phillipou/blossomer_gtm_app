@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from backend.app.schemas import (
-    TargetCompanyRequest,
-    TargetCompanyResponse,
+    TargetAccountRequest,
+    TargetAccountResponse,
     TargetPersonaRequest,
     TargetPersonaResponse,
 )
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
-from backend.app.services.target_company_service import generate_target_company_profile
+from backend.app.services.target_account_service import generate_target_account_profile
 from backend.app.services.target_persona_service import generate_target_persona_profile
 from backend.app.core.auth import rate_limit_dependency
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
@@ -23,38 +23,38 @@ llm_client = LLMClient([OpenAIProvider()])
 
 @router.post(
     "/demo/customers/target_accounts",
-    response_model=TargetCompanyResponse,
+    response_model=TargetAccountResponse,
     summary="[DEMO] Generate Target Account Profile (firmographics, buying signals, rationale)",
     tags=["Demo", "Customers", "Target Accounts", "AI"],
     response_description="A structured target account profile for the given company context.",
 )
-async def demo_generate_target_company(
-    data: TargetCompanyRequest,
+async def demo_generate_target_account(
+    data: TargetAccountRequest,
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    _: None = Depends(demo_ip_rate_limit_dependency("target_company")),
+    _: None = Depends(demo_ip_rate_limit_dependency("target_account")),
 ):
     """
     Generate a target account profile for demo users, with IP-based rate limiting.
     """
     orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_company_profile(data, orchestrator, llm_client)
+        return await generate_target_account_profile(data, orchestrator, llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post(
     "/target_accounts",
-    response_model=TargetCompanyResponse,
+    response_model=TargetAccountResponse,
     summary="Generate Target Account Profile (firmographics, buying signals, rationale)",
     tags=["Customers", "Target Accounts", "AI"],
     response_description="A structured target account profile for the given company context.",
 )
-async def prod_generate_target_company(
-    data: TargetCompanyRequest,
-    api_key_record: APIKey = Depends(rate_limit_dependency("target_company")),
+async def prod_generate_target_account(
+    data: TargetAccountRequest,
+    api_key_record: APIKey = Depends(rate_limit_dependency("target_account")),
     db: Session = Depends(get_db),
 ):
     """
@@ -62,7 +62,7 @@ async def prod_generate_target_company(
     """
     orchestrator = ContextOrchestrator(llm_client)
     try:
-        return await generate_target_company_profile(data, orchestrator, llm_client)
+        return await generate_target_account_profile(data, orchestrator, llm_client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 

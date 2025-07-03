@@ -124,12 +124,12 @@ class ContextAssessmentResult(BaseModel):
 
 
 # ==============================================================================
-# Target Company Prompt Variables
+# Target Account Prompt Variables
 # ==============================================================================
 
 
-class TargetCompanyPromptVars(BaseModel):
-    """Variables for the target_company.jinja2 prompt template."""
+class TargetAccountPromptVars(BaseModel):
+    """Variables for the target_account.jinja2 prompt template."""
 
     website_content: Optional[str] = Field(
         None, description="The preprocessed content from the company's website."
@@ -146,6 +146,10 @@ class TargetCompanyPromptVars(BaseModel):
     )
     assessment_summary: Optional[str] = Field(
         None, description="Optional summary of the context assessment."
+    )
+    target_company_name: Optional[str] = Field(
+        None,
+        description="Short name for the target company (from user input, if provided)",
     )
 
 

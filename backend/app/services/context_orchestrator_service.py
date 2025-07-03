@@ -53,7 +53,7 @@ class ContextOrchestratorService:
         Run the analysis pipeline for the given type.
         Args:
             request_data: The validated request object (Pydantic model).
-            analysis_type: One of 'product_overview', 'target_company', 'target_persona'.
+            analysis_type: One of 'product_overview', 'target_account', 'target_persona'.
             prompt_template: Jinja2 template name.
             prompt_vars_class: Class for prompt variables.
             response_model: Pydantic response model.

@@ -107,12 +107,18 @@ class ProductOverviewResponse(BaseModel):
     pricing: str = Field(..., description="Pricing information if available")
     metadata: Dict[str, Any] = Field(
         ...,
-        description="Additional metadata (sources, context quality, processing time, etc.)",
+        description=(
+            "Additional metadata (sources, context quality, processing time, etc.)",
+        ),
     )
 
 
-class TargetCompanyRequest(BaseModel):
+class TargetAccountRequest(BaseModel):
     website_url: str = Field(..., description="Company website or landing page URL")
+    target_company_name: Optional[str] = Field(
+        None,
+        description="Short name for the target account (from user input, if provided)",
+    )
     user_inputted_context: Optional[str] = Field(
         None, description="Optional user-provided context for campaign generation"
     )
@@ -121,19 +127,19 @@ class TargetCompanyRequest(BaseModel):
     )
 
 
-class TargetCompanyResponse(BaseModel):
+class TargetAccountResponse(BaseModel):
     """
-    Response model for the /campaigns/target_company endpoint (matches new prompt output).
+    Response model for the /customers/target_accounts endpoint (matches new prompt output).
     """
 
     target_company_name: str = Field(
         ...,
         description=(
-            "Short name for the target company (5 words max, from user context or inferred)"
+            "Short name for the target account (5 words max, from user context or inferred)"
         ),
     )
     target_company_description: str = Field(
-        ..., description="Ideal company type and why they need this solution"
+        ..., description="Ideal account type and why they need this solution"
     )
     firmographics: Dict[str, Any] = Field(
         ...,
@@ -150,13 +156,15 @@ class TargetCompanyResponse(BaseModel):
         ),
     )
     rationale: str = Field(
-        ..., description="Explanation of why these companies are ideal customers"
+        ..., description="Explanation of why these accounts are ideal customers"
     )
     metadata: Dict[str, Any] = Field(
         ...,
         description=(
             "Additional metadata (primary_context_source, inference_level, context_quality, "
-            "assessment_summary, etc.)"
+            "assessment_summary, etc.). "
+            "Includes 'parsed_website_content' (true if website_content was parsed, false otherwise). "
+            "primary_context_source is set to 'website' if parsed_website_content is true."
         ),
     )
 
