@@ -9,122 +9,21 @@ import ListInfoCard from "../components/cards/ListInfoCard";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
-
-// Mock persona data (in real app, fetch by accountId/personaId)
-const MOCK_PERSONAS = [
-  {
-    id: "1",
-    name: "Startup Founder",
-    description:
-      "A visionary business leader who identifies market opportunities and builds innovative solutions. Typically...",
-    createdAt: "Jan 29, 2025",
-    painPoints: [
-      "Lack of sales expertise",
-      "Difficulty scaling outreach",
-      "Limited marketing budget",
-    ],
-    profile: [
-      "Technical Founder",
-      "Sales-Oriented Founder",
-      "Product Manager",
-    ],
-    overview: "Startup founders are driven, resourceful, and constantly seeking ways to bring their vision to life. They balance product innovation with the realities of market fit, often wearing multiple hats to push their company forward.",
-    likelyJobTitles: [
-      "Founder & CEO",
-      "Co-Founder",
-      "Chief Technology Officer (CTO)",
-      "Head of Product",
-      "Managing Director"
-    ],
-    primaryResponsibilities: [
-      "Set company vision and strategy",
-      "Build and iterate on the core product",
-      "Drive early customer acquisition and validate product-market fit"
-    ],
-    statusQuo: [
-      "Manual outreach via email and LinkedIn",
-      "Ad-hoc sales processes managed in spreadsheets",
-      "Relying on founder's personal network for leads"
-    ],
-    useCases: [
-      "Automate outbound prospecting to save time",
-      "Identify high-potential customer segments",
-      "Test new messaging and campaigns quickly",
-      "Track outreach performance in one dashboard"
-    ],
-    desiredOutcomes: [
-      "Consistent pipeline of qualified leads",
-      "Faster validation of product-market fit",
-      "More meetings with ideal customers"
-    ],
-    keyConcerns: [
-      "Will this tool actually save me time?",
-      "Is onboarding complex or disruptive?",
-      "Will it integrate with my existing tools?",
-      "How accurate is the targeting?"
-    ],
-    whyWeMatter: [
-      "Purpose-built for founder-led sales",
-      "Fast setup and minimal learning curve",
-      "Combines AI with human personalization",
-      "Transparent pricing, no long-term contracts"
-    ],
-    buyingSignals: [
-        { id: "0", label: "Recently raised seed or Series A funding", description: "boop", enabled: true },
-        { id: "1", label: "Hiring for sales or marketing roles", description: "", enabled: true },
-        { id: "2", label: "Posting about customer acquisition challenges on social media", description: "", enabled: true },
-        { id: "3", label: "Attending sales and marketing conferences", description: "", enabled: true },
-        { id: "4", label: "Implementing new CRM or sales tools", description: "", enabled: true },
-        { id: "5", label: "Founder actively networking and seeking sales advice", description: "", enabled: true },
-        { id: "6", label: "Company showing rapid user growth but struggling with monetization", description: "", enabled: true },
-        { id: "7", label: "Recent product launches or feature announcements", description: "", enabled: true },
-      ],
-  },
-  {
-    id: "2",
-    name: "Marketing Director",
-    description:
-      "Senior marketing professional responsible for driving customer acquisition and brand growth. Work...",
-    createdAt: "Jan 29, 2025",
-    painPoints: [
-      "Brand awareness challenges",
-      "Budget constraints",
-    ],
-    profile: ["Marketing Director"],
-  },
-];
-
-type Persona = {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  painPoints?: string[];
-  profile?: string[];
-  overview?: string;
-  likelyJobTitles?: string[];
-  primaryResponsibilities?: string[];
-  statusQuo?: string[];
-  useCases?: string[];
-  desiredOutcomes?: string[];
-  keyConcerns?: string[];
-  whyWeMatter?: string[];
-  buyingSignals?: { id: string; label: string; description: string; enabled: boolean }[];
-};
+import { getPersonasForCustomer, transformBuyingSignals } from "../lib/customerService";
+import type { TargetPersonaResponse } from "../types/api";
 
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
   const navigate = useNavigate();
-  console.log('PersonaDetail params:', { accountId, personaId });
-  // In real app, fetch persona by accountId/personaId
-  const [persona, setPersona] = React.useState<Persona | null>(null);
+  const [persona, setPersona] = React.useState<TargetPersonaResponse | null>(null);
   React.useEffect(() => {
-    console.log('MOCK_PERSONAS:', MOCK_PERSONAS);
-    console.log('personaId:', personaId);
-    const found = MOCK_PERSONAS.find((p) => p.id === personaId) || null;
-    console.log('Found persona:', found);
-    setPersona(found);
-  }, [personaId]);
+    if (accountId && personaId) {
+      const personas = getPersonasForCustomer(accountId);
+      const found = personas.find((p) => p.id === personaId) || null;
+      setPersona(found);
+      console.log('Loaded persona object:', found);
+    }
+  }, [accountId, personaId]);
   const [editingBlock, setEditingBlock] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState("");
   // Mock account name for breadcrumbs
@@ -133,9 +32,9 @@ export default function PersonaDetail() {
   // Buying signals modal state (copied from CustomerDetail)
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalEditingSignal, setModalEditingSignal] = React.useState<any>(null);
-  const [buyingSignals, setBuyingSignals] = React.useState<any[]>(persona?.buyingSignals || []);
+  const [buyingSignals, setBuyingSignals] = React.useState<any[]>([]);
   React.useEffect(() => {
-    setBuyingSignals(persona?.buyingSignals || []);
+    setBuyingSignals(transformBuyingSignals(persona?.buyingSignals ?? []));
   }, [persona]);
 
   if (!persona) {
@@ -152,6 +51,8 @@ export default function PersonaDetail() {
       setPersona({ ...persona, profile: editContent.split("\n").map(s => s.trim()).filter(Boolean) });
     } else if (editingBlock === "painPoints") {
       setPersona({ ...persona, painPoints: editContent.split("\n").map(s => s.trim()).filter(Boolean) });
+    } else if (editingBlock === "statusQuo") {
+      setPersona({ ...persona, statusQuo: editContent.split("\n").map(s => s.trim()).filter(Boolean) });
     }
     setEditingBlock(null);
     setEditContent("");
@@ -180,14 +81,14 @@ export default function PersonaDetail() {
           title={persona.name}
           subtitle={persona.createdAt}
           bodyTitle="Persona Overview"
-          bodyText={persona.overview}
+          bodyText={persona.description}
           showButton={false}
         />
         {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ListInfoCard
             title="Likely Job Titles"
-            items={persona.likelyJobTitles || []}
+            items={Array.isArray(persona.likelyJobTitles) ? persona.likelyJobTitles : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, likelyJobTitles: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -196,25 +97,33 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Primary Responsibilities"
-            items={persona.primaryResponsibilities || []}
+            items={Array.isArray(persona.primaryResponsibilities) ? persona.primaryResponsibilities : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, primaryResponsibilities: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
             )}
             editModalSubtitle="Key responsibilities typically held by this persona."
           />
-          <ListInfoCard
+          {/* Status Quo InfoCard with edit */}
+          <InfoCard
             title="Status Quo"
-            items={persona.statusQuo || []}
-            onEdit={(newItems) => setPersona(persona => persona ? { ...persona, statusQuo: newItems } : persona)}
-            renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            items={
+              Array.isArray(persona.statusQuo)
+                ? persona.statusQuo
+                : persona.statusQuo
+                  ? [persona.statusQuo]
+                  : []
+            }
+            onEdit={() => handleEdit(
+              "statusQuo",
+              Array.isArray(persona.statusQuo)
+                ? persona.statusQuo.join("\n")
+                : persona.statusQuo || ""
             )}
-            editModalSubtitle="How this persona currently operates or solves problems."
           />
           <ListInfoCard
             title="Use Cases"
-            items={persona.useCases || []}
+            items={Array.isArray(persona.useCases) ? persona.useCases : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, useCases: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -223,7 +132,7 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Pain Points"
-            items={persona.painPoints || []}
+            items={Array.isArray(persona.painPoints) ? persona.painPoints : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, painPoints: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -232,7 +141,7 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Desired Outcomes"
-            items={persona.desiredOutcomes || []}
+            items={Array.isArray(persona.desiredOutcomes) ? persona.desiredOutcomes : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, desiredOutcomes: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -241,7 +150,7 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Key Concerns"
-            items={persona.keyConcerns || []}
+            items={Array.isArray(persona.keyConcerns) ? persona.keyConcerns : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, keyConcerns: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -250,7 +159,7 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Why We Matter to Them"
-            items={persona.whyWeMatter || []}
+            items={Array.isArray(persona.whyWeMatter) ? persona.whyWeMatter : []}
             onEdit={(newItems) => setPersona(persona => persona ? { ...persona, whyWeMatter: newItems } : persona)}
             renderItem={(item: string, idx: number) => (
               <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
@@ -303,6 +212,25 @@ export default function PersonaDetail() {
             }
           }}
         />
+        {/* Edit modal for InfoCard fields */}
+        {editingBlock === "statusQuo" && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+              <h2 className="text-lg font-semibold mb-4">Edit Status Quo</h2>
+              <textarea
+                className="w-full border rounded p-2 mb-4 min-h-[120px]"
+                value={editContent}
+                onChange={e => setEditContent(e.target.value)}
+                placeholder="Enter each status quo item on a new line"
+                autoFocus
+              />
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleSave}>Save</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

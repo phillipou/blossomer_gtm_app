@@ -3,6 +3,7 @@ import type {
   TargetCompanyRequest,
   TargetCompanyResponse,
   CustomerProfile,
+  TargetPersonaResponse,
 } from '../types/api';
 
 // API service functions
@@ -17,6 +18,21 @@ export async function generateTargetCompany(
 
   // Use demo endpoint for now (no API key required)
   return apiFetch<TargetCompanyResponse>('/demo/customers/target_accounts', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function generateTargetPersona(
+  website_url: string,
+  user_inputted_context: string
+): Promise<any> {
+  const request = {
+    website_url,
+    user_inputted_context,
+  };
+  // Use demo endpoint for now (no API key required)
+  return apiFetch('/demo/customers/target_personas', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -49,4 +65,55 @@ export function deleteCustomerProfile(id: string): void {
 
 export function generateCustomerProfileId(): string {
   return `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+export function getPersonasForCustomer(customerId: string): TargetPersonaResponse[] {
+  const profiles = getStoredCustomerProfiles();
+  const profile = profiles.find(p => p.id === customerId);
+  return profile?.personas || [];
+}
+
+export function addPersonaToCustomer(customerId: string, persona: TargetPersonaResponse): void {
+  const profiles = getStoredCustomerProfiles();
+  const idx = profiles.findIndex(p => p.id === customerId);
+  if (idx === -1) return;
+  const profile = profiles[idx];
+  if (!profile.personas) profile.personas = [];
+  profile.personas.push(persona);
+  saveCustomerProfile(profile);
+}
+
+export function updatePersonaForCustomer(customerId: string, persona: TargetPersonaResponse): void {
+  const profiles = getStoredCustomerProfiles();
+  const idx = profiles.findIndex(p => p.id === customerId);
+  if (idx === -1) return;
+  const profile = profiles[idx];
+  if (!profile.personas) return;
+  const personaIdx = profile.personas.findIndex(p => p.id === persona.id);
+  if (personaIdx === -1) return;
+  profile.personas[personaIdx] = persona;
+  saveCustomerProfile(profile);
+}
+
+export function deletePersonaFromCustomer(customerId: string, personaId: string): void {
+  const profiles = getStoredCustomerProfiles();
+  const idx = profiles.findIndex(p => p.id === customerId);
+  if (idx === -1) return;
+  const profile = profiles[idx];
+  if (!profile.personas) return;
+  profile.personas = profile.personas.filter(p => p.id !== personaId);
+  saveCustomerProfile(profile);
+}
+
+export function transformBuyingSignals(raw: any[]): { id: string; label: string; description: string; enabled: boolean }[] {
+  return (Array.isArray(raw) ? raw : []).map((s, idx) =>
+    typeof s === 'string'
+      ? { id: String(idx), label: s, description: '', enabled: true }
+      : {
+          id: s.id || String(idx),
+          label: s.label || s.name || '',
+          description: s.description || '',
+          enabled: s.enabled !== undefined ? s.enabled : true,
+        }
+  );
 } 

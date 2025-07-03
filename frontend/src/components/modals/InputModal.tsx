@@ -27,6 +27,7 @@ interface InputModalProps {
   isLoading?: boolean;
   defaultName?: string;
   defaultDescription?: string;
+  error?: string;
 }
 
 export default function InputModal({
@@ -44,6 +45,7 @@ export default function InputModal({
   isLoading = false,
   defaultName = "",
   defaultDescription = "",
+  error,
 }: InputModalProps) {
   const [name, setName] = useState<string>(defaultName);
   const [description, setDescription] = useState<string>(defaultDescription);
@@ -93,6 +95,11 @@ export default function InputModal({
               disabled={isLoading}
             />
           </div>
+          {error && (
+            <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm text-center">
+              {error}
+            </div>
+          )}
         </div>
         <EditDialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>

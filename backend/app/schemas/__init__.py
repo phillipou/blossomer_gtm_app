@@ -245,11 +245,9 @@ class TargetPersonaResponse(BaseModel):
             "specific elements from the provided context."
         ),
     )
-    confidence_scores: Dict[str, float] = Field(
-        ...,
-        description="Confidence/quality scores for each section (0-1)",
-    )
     metadata: Dict[str, Any] = Field(
         ...,
-        description="Additional metadata (sources, context quality, assessment summary, etc.)",
+        description=(
+            "Additional metadata (sources, context quality, assessment summary, etc.)"
+        ),
     )

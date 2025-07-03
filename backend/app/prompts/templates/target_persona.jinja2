@@ -2,7 +2,11 @@ You are a world-class B2B go-to-market analyst specializing in buyer persona dev
 
 ## Context Analysis
 {% if user_inputted_context %}
-**User-provided context:**
+**User-provided context (JSON):**
+Parse the following as JSON. It may contain:
+- persona_name: (string, optional) The user's suggested persona name. If provided, use this directly as the persona_name output. If not provided, infer a suitable name from the context.
+- persona_description: (string, optional) The user's raw description of the persona. Use this as the basis for the output persona_description, but augment and summarize it into a more complete, professional 2-3 sentence summary.
+
 {{ user_inputted_context }}
 {% elif llm_inferred_context %}
 **LLM-inferred context:**
@@ -16,6 +20,9 @@ You are a world-class B2B go-to-market analyst specializing in buyer persona dev
 
 ## Task
 Analyze the provided website and context to create a comprehensive primary persona profile. Focus on the most likely decision maker or primary influencer who would evaluate, champion, or purchase this solution.
+
+- If persona_name is provided in the user_inputted_context, use it directly as the persona_name output. If not, infer a suitable name.
+- For persona_description, use the user's input as a starting point, but generate a more complete, professional summary (2-3 sentences) that describes who this person is, their role scope, and primary responsibilities.
 
 ## Required Output Format
 
@@ -33,19 +40,6 @@ Analyze the provided website and context to create a comprehensive primary perso
   "why_we_matter": ["...", "...", "..."],
   "persona_buying_signals": ["...", "...", "..."],
   "rationale": "...",
-  "confidence_scores": {
-    "persona_name": 0.0,
-    "persona_description": 0.0,
-    "likely_job_titles": 0.0,
-    "status_quo": 0.0,
-    "use_cases": 0.0,
-    "pain_points": 0.0,
-    "desired_outcomes": 0.0,
-    "key_concerns": 0.0,
-    "why_we_matter": 0.0,
-    "persona_buying_signals": 0.0,
-    "rationale": 0.0
-  },
   "metadata": {
     "sources_used": ["website"],
     "context_quality": "{{ context_quality|default('') }}",
@@ -55,9 +49,9 @@ Analyze the provided website and context to create a comprehensive primary perso
 
 ## Field Definitions:
 
-**persona_name**: A short, descriptive name for the persona (5 words max). Can be inferred from context if not explicitly provided. Examples: "Growth Marketing Manager", "VP Sales Operations", "Technical Product Owner"
+**persona_name**: A short, descriptive name for the persona (5 words max). Use the user's input directly if provided; otherwise, infer from context. Examples: "Growth Marketing Manager", "VP Sales Operations", "Technical Product Owner"
 
-**persona_description**: 2-3 sentences describing who this person is, their role scope, and primary responsibilities within their organization.
+**persona_description**: 2-3 sentences describing who this person is, their role scope, and primary responsibilities within their organization. Use the user's input as a starting point, but augment and summarize it for clarity and completeness.
 
 **likely_job_titles**: 3-5 specific job titles this persona might have, including various seniority levels (e.g., "Marketing Manager", "Senior Marketing Manager", "Director of Marketing").
 

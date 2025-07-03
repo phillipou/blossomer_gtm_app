@@ -7,19 +7,15 @@ import { FirmographicsTable } from "../components/tables/FirmographicsTable";
 import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
-import { getStoredCustomerProfiles } from "../lib/customerService";
+import { getStoredCustomerProfiles, addPersonaToCustomer, getPersonasForCustomer, transformBuyingSignals } from "../lib/customerService";
 import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
-import type { CustomerProfile } from "../types/api";
+import type { CustomerProfile, TargetPersonaResponse } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
 import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
-
-interface Persona {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-}
+import InputModal from "../components/modals/InputModal";
+import { generateTargetPersona } from "../lib/customerService";
+import { useCompanyOverview } from "../lib/useCompanyOverview";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -45,31 +41,25 @@ export default function CustomerDetail() {
   // Tab state for sub navigation
   const [activeTab, setActiveTab] = useState<string>("accounts");
 
-  const [personas, setPersonas] = useState<Persona[]>([
-    {
-      id: "1",
-      name: "Startup Founder",
-      description:
-        "A visionary business leader who identifies market opportunities and builds innovative solutions. Typically...",
-      createdAt: "Jan 29, 2025",
-    },
-    {
-      id: "2",
-      name: "Marketing Director",
-      description:
-        "Senior marketing professional responsible for driving customer acquisition and brand growth. Work...",
-      createdAt: "Jan 29, 2025",
-    },
-  ]);
+  const [personas, setPersonas] = useState<TargetPersonaResponse[]>([]);
   const [personaModalOpen, setPersonaModalOpen] = useState(false);
-  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
+  const [editingPersona, setEditingPersona] = useState<TargetPersonaResponse | null>(null);
+  const [personaLoading, setPersonaLoading] = useState(false);
+  const [personaError, setPersonaError] = useState<string | null>(null);
+
+  // Use the analyzed company website from the overview hook (matches CustomersList.tsx)
+  const overview = useCompanyOverview();
+  let websiteUrl = overview?.company_url || "";
+  if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+    websiteUrl = `https://${websiteUrl}`;
+  }
 
   const handlePersonaClick = (personaId: string) => {
     console.log('Navigating to persona:', personaId, 'for account:', id);
     navigate(`/customers/${id}/personas/${personaId}`);
   };
 
-  const handleEditPersona = (persona: Persona) => {
+  const handleEditPersona = (persona: TargetPersonaResponse) => {
     setEditingPersona(persona);
     setPersonaModalOpen(true);
   };
@@ -84,7 +74,7 @@ export default function CustomerDetail() {
       if (profile) {
         const detailData = transformTargetAccountToDetail(profile);
         setCustomerDetail(detailData);
-        setBuyingSignals(detailData.buyingSignals || []);
+        setBuyingSignals(transformBuyingSignals(detailData.buyingSignals));
         setFirmographics(detailData.firmographics || []);
         setRationale(detailData.rationale || "");
       } else {
@@ -95,6 +85,13 @@ export default function CustomerDetail() {
       setError("Failed to load customer data");
     } finally {
       setLoading(false);
+    }
+  }, [id]);
+
+  // Load personas from localStorage on mount and when id changes
+  useEffect(() => {
+    if (id) {
+      setPersonas(getPersonasForCustomer(id));
     }
   }, [id]);
 
@@ -349,6 +346,62 @@ export default function CustomerDetail() {
         onClose={() => setFirmoModalOpen(false)}
         initialRows={firmographics}
         onSave={setFirmographics}
+      />
+      {/* Persona Creation Modal */}
+      <InputModal
+        isOpen={personaModalOpen}
+        onClose={() => { setPersonaModalOpen(false); setPersonaError(null); setPersonaLoading(false); }}
+        onSubmit={async ({ name, description }) => {
+          setPersonaLoading(true);
+          setPersonaError(null);
+          try {
+            if (!websiteUrl) {
+              setPersonaError("Company website URL is missing. Cannot generate persona.");
+              setPersonaLoading(false);
+              return;
+            }
+            const user_inputted_context = `persona_name: ${name}\npersona_description: ${description}`;
+            console.log('Persona API request:', { website_url: websiteUrl, user_inputted_context });
+            const response = await generateTargetPersona(websiteUrl, user_inputted_context);
+            console.log('generateTargetPersona response:', response);
+            const newPersona: TargetPersonaResponse = {
+              id: String(Date.now()),
+              name: response.persona_name,
+              description: response.persona_description,
+              createdAt: new Date().toLocaleDateString(),
+              overview: response.overview,
+              painPoints: response.pain_points,
+              profile: response.profile,
+              likelyJobTitles: response.likely_job_titles,
+              primaryResponsibilities: response.primary_responsibilities,
+              statusQuo: response.status_quo,
+              useCases: response.use_cases,
+              desiredOutcomes: response.desired_outcomes,
+              keyConcerns: response.key_concerns,
+              whyWeMatter: response.why_we_matter,
+              buyingSignals: response.persona_buying_signals,
+            };
+            addPersonaToCustomer(id!, newPersona);
+            setPersonas(getPersonasForCustomer(id!));
+            setPersonaModalOpen(false);
+          } catch (err: any) {
+            setPersonaError(err?.body?.error || err.message || "Failed to generate persona.");
+          } finally {
+            setPersonaLoading(false);
+          }
+        }}
+        title={"Describe a Persona"}
+        subtitle={"What type of person is your ideal buyer or user?"}
+        nameLabel="Persona Name"
+        namePlaceholder="e.g. Startup Founder, Marketing Director, etc."
+        descriptionLabel="Persona Description"
+        descriptionPlaceholder="Describe the role, responsibilities, and traits of this persona."
+        submitLabel={personaLoading ? "Generating..." : "Generate Persona"}
+        cancelLabel="Cancel"
+        isLoading={personaLoading}
+        defaultName={editingPersona ? editingPersona.name : ""}
+        defaultDescription={editingPersona ? editingPersona.description : ""}
+        error={personaError || undefined}
       />
     </div>
   );
