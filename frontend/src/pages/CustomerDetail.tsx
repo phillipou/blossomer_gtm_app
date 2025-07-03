@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { Edit3, Check, X, Plus, Trash2 } from "lucide-react";
-import { FirmographicsTable } from "@/components/tables/FirmographicsTable";
-import { Textarea } from "@/components/ui/textarea";
-import EditBuyingSignalModal from "@/components/modals/EditBuyingSignalModal";
-import EditFirmographicsModal from "@/components/modals/EditFirmographicsModal";
-import SubNav from "@/components/navigation/SubNav";
-import BuyingSignalsCard from "@/components/cards/BuyingSignalsCard";
-import OverviewCard from "@/components/cards/OverviewCard";
+import { FirmographicsTable } from "../components/tables/FirmographicsTable";
+import { Textarea } from "../components/ui/textarea";
+import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
+import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
+import SubNav from "../components/navigation/SubNav";
+import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
+import OverviewCard from "../components/cards/OverviewCard";
 import InfoCard from "../components/cards/InfoCard";
-
-// Import types and mock data from CustomersList
-import { MOCK_CUSTOMERS } from "./CustomersList";
+import { getStoredCustomerProfiles } from "../lib/customerService";
 
 const MOCK_CUSTOMER_DETAILS = {
   id: "1",
@@ -42,18 +40,19 @@ const MOCK_CUSTOMER_DETAILS = {
   creator: "Phil Ou",
 };
 
-interface BuyingSignal {
+type BuyingSignal = {
   id: string;
   label: string;
   description: string;
   enabled: boolean;
-}
+};
 
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  // Find customer by id (mock)
-  const customer = MOCK_CUSTOMERS.find((c) => String(c.id) === String(id));
+  // Find customer by id from localStorage
+  const customerProfiles = getStoredCustomerProfiles();
+  const customer = customerProfiles.find((c) => String(c.id) === String(id));
   if (!customer) {
     return <div className="p-8 text-center text-gray-500">Customer not found.</div>;
   }
@@ -101,7 +100,9 @@ export default function CustomerDetail() {
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   // Buying signals state
-  const [buyingSignals, setBuyingSignals] = useState<BuyingSignal[]>(detailData.buyingSignals);
+  const [buyingSignals, setBuyingSignals] = useState<BuyingSignal[]>(
+    detailData.buyingSignals.map((s: any) => ({ ...s, enabled: s.enabled ?? false }))
+  );
   // Firmographics state
   const [firmographics, setFirmographics] = useState(detailData.firmographics);
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
@@ -149,7 +150,7 @@ export default function CustomerDetail() {
     : 0;
 
   const handleToggleSignal = (id: string) => {
-    setBuyingSignals(signals => signals.map((s: BuyingSignal) => s.id === id ? { ...s, enabled: !s.enabled } : s));
+    setBuyingSignals(signals => signals.map((s: BuyingSignal) => ({ ...s, enabled: s.enabled ?? false })).map((s: BuyingSignal) => s.id === id ? { ...s, enabled: !s.enabled } : s));
   };
 
   const handleEdit = (blockId: string, currentContent: string) => {
@@ -177,6 +178,11 @@ export default function CustomerDetail() {
   };
   const handleDeletePersona = (id: string) => {
     setPersonas((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleEditSignal = (signal: any) => {
+    setModalEditingSignal({ ...signal, enabled: signal.enabled ?? false });
+    setModalOpen(true);
   };
 
   return (
@@ -291,9 +297,9 @@ export default function CustomerDetail() {
             {/* Buying Signals Block */}
             <BuyingSignalsCard
               signals={buyingSignals}
-              onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+              onEdit={(signal) => { handleEditSignal(signal); }}
               onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-              onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
+              onAdd={() => { handleEditSignal(null); }}
             />
             {/* Personas Section (moved below Buying Signals, styled like CustomersList) */}
             <div>

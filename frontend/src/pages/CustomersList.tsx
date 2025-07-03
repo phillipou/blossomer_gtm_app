@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -6,34 +6,18 @@ import { Plus, Edit3, Trash2, Building2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import OverviewCard from "../components/cards/OverviewCard";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
-
-// Mock data and types (move to shared file if needed)
-export const MOCK_CUSTOMERS = [
-  {
-    id: 1,
-    name: "Acme Corp",
-    role: "Startup Founder",
-    description:
-      "A visionary business leader who identifies market opportunities and builds innovative solutions. Typically leads early-stage companies with 5-50 employees, focused on rapid growth.",
-  },
-  {
-    id: 2,
-    name: "Beta Inc",
-    role: "Marketing Director",
-    description:
-      "Senior marketing professional responsible for driving customer acquisition and brand growth. Works at mid-market companies with established products looking to scale their reach.",
-  },
-];
-
-export type CustomerProfile = {
-  id: number;
-  name: string;
-  role: string;
-  description: string;
-};
+import {
+  generateTargetCompany,
+  getStoredCustomerProfiles,
+  saveCustomerProfile,
+  deleteCustomerProfile,
+  generateCustomerProfileId,
+} from "../lib/customerService";
+import type { CustomerProfile } from "../types/api";
 
 function CustomerProfileCard({ profile, onEdit, onDelete }: any) {
   const navigate = useNavigate();
+  const formattedDate = profile.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   return (
     <Card
       className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
@@ -47,7 +31,7 @@ function CustomerProfileCard({ profile, onEdit, onDelete }: any) {
             </span>
           </span>
           <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{profile.description}</p>
-          <p className="text-xs text-gray-400 mt-4">Created: Jan 29, 2025</p>
+          <p className="text-xs text-gray-400 mt-4">Created: {formattedDate}</p>
         </div>
         <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
@@ -78,22 +62,54 @@ function AddCustomerCard({ onClick }: { onClick: () => void }) {
 
 export default function CustomersList() {
   const overview = useCompanyOverview();
-  const [customerProfiles, setCustomerProfiles] = useState(MOCK_CUSTOMERS);
+  const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<CustomerProfile | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddProfile = ({ name, description }: { name: string; description: string }) => {
-    const newId = Math.max(...customerProfiles.map(p => p.id)) + 1;
-    setCustomerProfiles([
-      ...customerProfiles,
-      {
-        id: newId,
-        name: name,
+  // Load customer profiles from localStorage on mount
+  useEffect(() => {
+    setCustomerProfiles(getStoredCustomerProfiles());
+  }, []);
+
+  const handleAddProfile = async ({ name, description }: { name: string; description: string }) => {
+    setError(null);
+    if (!overview.company_url || !overview.company_url.trim()) {
+      setError("Company website URL is missing from overview. Cannot generate profile.");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const user_inputted_context = `target_company_name: ${name}\ntarget_company_description: ${description}`;
+      const requestPayload = {
+        website_url: overview.company_url.trim(),
+        user_inputted_context,
+      };
+      console.log("[AddProfile] API request payload:", requestPayload);
+      const response = await generateTargetCompany(requestPayload.website_url, requestPayload.user_inputted_context);
+      console.log("[AddProfile] API response:", response);
+      const newProfile: CustomerProfile = {
+        id: generateCustomerProfileId(),
+        name: response.target_company_name,
         role: "Target Account",
-        description: description,
-      },
-    ]);
-    setIsAddModalOpen(false);
+        description: response.target_company_description || description,
+        firmographics: response.firmographics,
+        buying_signals: response.buying_signals,
+        rationale: response.rationale,
+        confidence_scores: response.confidence_scores,
+        metadata: response.metadata,
+        created_at: new Date().toISOString(),
+      };
+      saveCustomerProfile(newProfile);
+      setCustomerProfiles(getStoredCustomerProfiles());
+      setIsAddModalOpen(false);
+    } catch (err: any) {
+      console.error("[AddProfile] API error:", err);
+      setError(err?.body?.error || err.message || "Failed to generate customer profile.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleEditProfile = (profile: CustomerProfile) => {
@@ -101,17 +117,16 @@ export default function CustomersList() {
     setIsAddModalOpen(true);
   };
 
-  const handleUpdateProfile = ({ name, description }: { name: string; description: string }) => {
-    if (!editingProfile) return;
-    setCustomerProfiles(prev => prev.map(p =>
-      p.id === editingProfile.id ? { ...p, name, description } : p
-    ));
+  // TODO: Implement API call for updating profile
+  const handleUpdateProfile = async () => {
+    // TODO: Re-run generateTargetCompany with updated info and update localStorage
     setIsAddModalOpen(false);
     setEditingProfile(null);
   };
 
-  const handleDeleteProfile = (id: number) => {
-    setCustomerProfiles((prev) => prev.filter((p) => p.id !== id));
+  const handleDeleteProfile = (id: string) => {
+    deleteCustomerProfile(id);
+    setCustomerProfiles(getStoredCustomerProfiles());
   };
 
   if (!overview) {
@@ -129,6 +144,9 @@ export default function CustomersList() {
           showButton={true}
           buttonTitle="View Details"
         />
+        {error && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {customerProfiles.map((profile) => (
             <CustomerProfileCard
@@ -151,10 +169,11 @@ export default function CustomersList() {
         namePlaceholder="e.g. SaaS Startups, B2B Fintech Companies, etc."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe the characteristics, size, industry, or other traits that define your ideal target accounts."
-        submitLabel={editingProfile ? "Update Profile" : "Generate"}
+        submitLabel={editingProfile ? "Update Profile" : isGenerating ? "Generating..." : "Generate"}
         cancelLabel="Cancel"
         defaultName={editingProfile ? editingProfile.name : ""}
         defaultDescription={editingProfile ? editingProfile.description : ""}
+        isLoading={isGenerating}
       />
     </div>
   );
