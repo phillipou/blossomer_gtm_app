@@ -1,5 +1,5 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SubNav from "@/components/navigation/SubNav";
 import InfoCard from "@/components/cards/InfoCard";
@@ -10,6 +10,8 @@ import OverviewCard from "@/components/cards/OverviewCard";
 import { Textarea } from "@/components/ui/textarea";
 import DashboardLoading from "@/components/dashboard/DashboardLoading";
 import { apiFetch } from "@/lib/apiClient";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
+import type { ApiError, AnalysisState } from "@/types/api";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -38,74 +40,113 @@ const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: bool
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [overview, setOverview] = useState<any>(() => {
+  const [analysisState, setAnalysisState] = useState<AnalysisState>(() => {
     const stored = localStorage.getItem("dashboard_overview");
-    return stored ? JSON.parse(stored) : null;
+    return {
+      data: stored ? JSON.parse(stored) : null,
+      loading: false,
+      error: null,
+      hasAttempted: false,
+      analysisId: null
+    };
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [progressStage, setProgressStage] = useState(0);
-  const [analysisKey, setAnalysisKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("company");
   const [activeSubTab, setActiveSubTab] = useState("overview");
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const initialMount = useRef(true);
 
-  useEffect(() => {
-    const url = location.state?.url;
-    const icp = location.state?.icp;
-    const currentAnalysisKey = url ? `${url}-${icp || ''}` : null;
-    // Check if we have meaningful data for this URL
-    const hasMeaningfulData = overview && 
-      overview.company_url === url && 
-      overview.company_name && 
-      overview.company_name.trim() !== "" &&
-      overview.capabilities && 
-      overview.capabilities.length > 0;
-    // Only trigger if:
-    // 1. We have a URL from navigation state
-    // 2. We haven't already processed this exact request (analysisKey check)
-    // 3. We're not currently loading
-    // 4. We don't already have meaningful data for this URL
-    if (url && currentAnalysisKey !== analysisKey && !loading && !hasMeaningfulData) {
-      setAnalysisKey(currentAnalysisKey);
-      setLoading(true);
-      setProgressStage(0);
-      setError(null);
-      apiFetch("/demo/company/generate", {
+  // Generate unique analysis ID
+  const generateAnalysisId = useCallback((url: string, icp?: string) => {
+    return `${url}-${icp || ''}-${Date.now()}`;
+  }, []);
+
+  // Main analysis function
+  const startAnalysis = useCallback(async (url: string, icp?: string) => {
+    const analysisId = generateAnalysisId(url, icp);
+    setAnalysisState(prev => ({
+      ...prev,
+      loading: true,
+      error: null,
+      hasAttempted: true,
+      analysisId
+    }));
+    setProgressStage(0);
+    try {
+      const response = await apiFetch("/demo/company/generate", {
         method: "POST",
         body: JSON.stringify({
           website_url: url,
           user_inputted_context: icp || "",
         }),
-      })
-        .then((data) => {
-          console.log("API response:", data);
-          // Check if the response has meaningful data
-          if (data.company_name && data.company_name.trim() !== "" && 
-              data.capabilities && data.capabilities.length > 0) {
-            setOverview(data);
-            localStorage.setItem("dashboard_overview", JSON.stringify(data));
-          } else {
-            // If response is empty/meaningless, treat as error
-            console.warn("Received empty response, will retry");
-            setError("Unable to analyze website. Please try again.");
-            setOverview(null);
-          }
-        })
-        .catch(() => {
-          setError("Failed to generate analysis. Please try again.");
-          setOverview(null);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      });
+      
+      // Only update state if this is still the current analysis
+      setAnalysisState(prev => {
+        if (prev.analysisId !== analysisId) return prev;
+        return {
+          ...prev,
+          data: response,
+          loading: false,
+          error: null
+        };
+      });
+      localStorage.setItem("dashboard_overview", JSON.stringify(response));
+    } catch (error: any) {
+      let apiError: ApiError;
+      if (error.status === 422 && error.body?.error_code) {
+        apiError = error.body;
+      } else if (error.status === 429) {
+        apiError = {
+          error_code: "RATE_LIMITED",
+          message: "Rate limit exceeded. Sign up for higher limits!",
+          retry_recommended: false
+        };
+      } else {
+        apiError = {
+          error_code: "NETWORK_ERROR",
+          message: "Failed to analyze website. Please check your connection and try again.",
+          retry_recommended: true
+        };
+      }
+      
+      // Only update state if this is still the current analysis
+      setAnalysisState(prev => {
+        if (prev.analysisId !== analysisId) return prev;
+        return {
+          ...prev,
+          data: null,
+          loading: false,
+          error: apiError
+        };
+      });
     }
-  }, [location.state?.url, location.state?.icp, analysisKey, loading]);
+  }, [generateAnalysisId]);
 
-  // Animate progress stages during loading
+  // Effect to trigger analysis from navigation state
   useEffect(() => {
-    if (!loading) return;
+    if (!initialMount.current) return;
+    initialMount.current = false;
+
+    const url = location.state?.url;
+    const icp = location.state?.icp;
+    
+    if (url && !analysisState.loading && !analysisState.data) {
+      startAnalysis(url, icp);
+    }
+  }, [location.state, startAnalysis]);
+
+  // Reset progress when loading starts
+  useEffect(() => {
+    if (analysisState.loading) {
+      setProgressStage(0);
+    }
+  }, [analysisState.loading]);
+
+  // Progress animation
+  useEffect(() => {
+    if (!analysisState.loading) return;
     const timer = setInterval(() => {
       setProgressStage(prev => {
         if (prev < STATUS_STAGES.length - 1) {
@@ -115,23 +156,23 @@ export default function Dashboard() {
       });
     }, 4000);
     return () => clearInterval(timer);
-  }, [loading]);
+  }, [analysisState.loading]);
 
-  // Reset progress when loading starts
-  useEffect(() => {
-    if (loading) {
-      setProgressStage(0);
+  // Retry function
+  const handleRetry = useCallback(() => {
+    const url = location.state?.url;
+    const icp = location.state?.icp;
+    if (url) {
+      setAnalysisState(prev => ({
+        ...prev,
+        hasAttempted: false,
+        error: null
+      }));
     }
-  }, [loading]);
+  }, [location.state?.url, location.state?.icp]);
 
-  // When overview changes (e.g., after edits), update localStorage
-  useEffect(() => {
-    if (overview) {
-      localStorage.setItem("dashboard_overview", JSON.stringify(overview));
-    }
-  }, [overview]);
-
-  if (loading) {
+  // Loading state
+  if (analysisState.loading) {
     return (
       <DashboardLoading
         loading={true}
@@ -141,36 +182,13 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center border border-red-200">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Rate Limit Reached</h2>
-          <p className="text-gray-700 mb-8">
-            You've hit your free usage limit for AI-powered GTM analysis.<br />
-            <b>Sign up for a free account</b> to unlock higher limits and more features!
-          </p>
-          <Button
-            asChild
-            className="w-full mb-3 bg-blue-600 hover:bg-blue-700 !text-white"
-            variant="default"
-          >
-            <a href="/signup">Sign up for an account</a>
-          </Button>
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => navigate("/")}
-          >
-            Back to Home
-          </Button>
-        </div>
-      </div>
-    );
+  // Error state with specific handling
+  if (analysisState.error) {
+    return <ErrorDisplay error={analysisState.error} onRetry={handleRetry} onHome={() => navigate("/")} />;
   }
 
-  // Add fallback for no analysis input
-  if (!overview && !loading && !location.state?.url) {
+  // No data state
+  if (!analysisState.data && !location.state?.url) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <div className="text-center">
@@ -182,32 +200,8 @@ export default function Dashboard() {
     );
   }
 
-  // Add fallback for empty/failed analysis
-  if (overview && (!overview.company_name || overview.company_name.trim() === "")) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center border border-yellow-200">
-          <h2 className="text-2xl font-bold text-yellow-600 mb-4">Unable to Analyze Website</h2>
-          <p className="text-gray-700 mb-8">
-            We couldn't extract meaningful information from this website. 
-            This might be due to the site being unavailable or having limited content.
-          </p>
-          <Button
-            className="w-full"
-            onClick={() => {
-              setOverview(null);
-              localStorage.removeItem("dashboard_overview");
-              navigate("/");
-            }}
-          >
-            Try Another Website
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Use real API data for company info
+  // Success state - render dashboard with real data
+  const overview = analysisState.data;
   const companyName = overview?.company_name || "Company";
   const domain = overview?.company_url || "";
 
@@ -228,13 +222,14 @@ export default function Dashboard() {
         "customer_benefits",
       ].includes(editingBlock)
     ) {
-      setOverview((prev: any) => {
+      setAnalysisState((prev: AnalysisState) => {
+        if (!prev.data) return prev;
         const updated = {
-          ...prev,
+          ...prev.data,
           [editingBlock]: editContent.split("\n").filter((line) => line.trim() !== ""),
         };
         localStorage.setItem("dashboard_overview", JSON.stringify(updated));
-        return updated;
+        return { ...prev, data: updated };
       });
     }
     setEditingBlock(null);

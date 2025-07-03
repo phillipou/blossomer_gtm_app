@@ -193,8 +193,22 @@ def extract_website_content(
     if os.getenv("ENV") != "production":
         cached = load_cached_scrape(url)
         if cached is not None:
-            logger.info(f"[DEV CACHE] Cache hit for URL: {url}")
-            return cached
+            # Validate cache structure
+            if "content" not in cached or "html" not in cached:
+                logger.warning(
+                    f"[DEV CACHE] Cache for {url} missing 'content' or 'html'. "
+                    "Forcing fresh scrape."
+                )
+                cached = None
+            elif not cached["content"] and not cached["html"]:
+                logger.warning(
+                    f"[DEV CACHE] Cache for {url} has empty 'content' and 'html'. "
+                    "Forcing fresh scrape."
+                )
+                cached = None
+            else:
+                logger.info(f"[DEV CACHE] Cache hit for URL: {url}")
+                return cached
         else:
             logger.info(f"[DEV CACHE] Cache miss for URL: {url}")
 
@@ -202,6 +216,9 @@ def extract_website_content(
     if not validation["is_valid"] or not validation["reachable"]:
         logger.warning(f"URL validation failed: {validation}")
         raise ValueError(f"URL validation failed: {validation}")
+
+    if formats is None:
+        formats = ["markdown", "html"]
 
     if crawl:
         crawl_result = firecrawl_crawl_site(
@@ -211,17 +228,25 @@ def extract_website_content(
             only_main_content=only_main_content,
             wait_for=wait_for,
         )
-        content = crawl_result.get("data", [])
+        # Concatenate all markdown and html from crawled pages
+        content = "\n\n".join(
+            [page.get("markdown", "") for page in crawl_result.get("data", [])]
+        )
+        html = "\n\n".join(
+            [page.get("html", "") for page in crawl_result.get("data", [])]
+        )
         metadata = crawl_result.get("metadata", {})
     else:
         scrape_result = firecrawl_scrape_url(url, formats=formats)
         content = scrape_result.get("markdown", "")
+        html = scrape_result.get("html", "")
         metadata = scrape_result.get("metadata", {})
 
     result = {
         "url": url,
         "validation": validation,
         "content": content,
+        "html": html,
         "metadata": metadata,
         "crawl": crawl,
     }

@@ -13,14 +13,22 @@ export async function apiFetch<T>(
     },
   });
 
-  if (!response.ok) {
-    // Optionally, handle specific status codes here
-    const errorText = await response.text();
-    throw new Error(
-      `API error: ${response.status} ${response.statusText} - ${errorText}`
-    );
+  let body: any = null;
+  const text = await response.text();
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = text;
   }
 
-  // If expecting JSON:
-  return response.json();
+  if (!response.ok) {
+    const error: any = new Error(
+      `API error: ${response.status} ${response.statusText}`
+    );
+    error.status = response.status;
+    error.body = body;
+    throw error;
+  }
+
+  return body;
 } 

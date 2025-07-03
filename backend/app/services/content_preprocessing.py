@@ -1,5 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None  # Will raise if used without install
 
 
 class IChunker(ABC):
@@ -98,6 +103,30 @@ class BoilerplateFilter(IFilter):
         return chunks
 
 
+def extract_main_text_from_html(html: str) -> str:
+    """
+    Extracts the main readable text from HTML using BeautifulSoup.
+    Removes scripts, styles, nav, footer, and aside elements.
+    Prefers <main> or <article> if present, else uses <body>.
+    """
+    if BeautifulSoup is None:
+        raise ImportError(
+            "BeautifulSoup4 is required for HTML extraction. Please install it."
+        )
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "aside"]):
+        tag.decompose()
+    main = soup.find("main") or soup.find("article") or soup.body
+    if main:
+        text = main.get_text(separator="\n", strip=True)
+    else:
+        text = soup.get_text(separator="\n", strip=True)
+    import re
+
+    text = re.sub(r"\n{2,}", "\n\n", text)
+    return text
+
+
 class ContentPreprocessingPipeline:
     """
     Pipeline that composes chunking, summarization, and filtering for website content.
@@ -108,14 +137,19 @@ class ContentPreprocessingPipeline:
         self.summarizer = summarizer
         self.filter = filter_
 
-    def process(self, text: str) -> List[str]:
+    def process(self, text: str, html: Optional[str] = None) -> List[str]:
         """
-        Process website content through chunking, summarization, and filtering.
+        Process website content through HTML extraction (if available), chunking, summarization,
+        and filtering.
         Args:
-            text (str): Raw website content.
+            text (str): Raw website content (markdown or plain text).
+            html (Optional[str]): Raw HTML content, if available.
         Returns:
             List[str]: List of processed content chunks.
         """
+        # Always prefer html if available
+        if html:
+            text = extract_main_text_from_html(html)
         chunks = self.chunker.chunk(text)
         summarized = [self.summarizer.summarize(chunk) for chunk in chunks]
         filtered = self.filter.filter(summarized)
@@ -127,22 +161,4 @@ class ContentPreprocessingPipeline:
 
 
 if __name__ == "__main__":
-    # Example usage
-    raw_content = """
-# Welcome to Example
-## About Us
-We are a B2B SaaS company.
-## Features
-- Fast integration
-- 24/7 support
-## Contact
-Email us at hello@example.com
-"""
-    chunker = SectionChunker()
-    summarizer = LangChainSummarizer()
-    filter_ = BoilerplateFilter()
-    pipeline = ContentPreprocessingPipeline(chunker, summarizer, filter_)
-    processed = pipeline.process(raw_content)
-    print("Processed Chunks:")
-    for i, chunk in enumerate(processed, 1):
-        print(f"--- Chunk {i} ---\n{chunk}\n")
+    pass

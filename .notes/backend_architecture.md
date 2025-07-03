@@ -238,6 +238,53 @@ All campaign endpoints now follow a unified context assessment and orchestration
 
 This logic is a core part of the smart context orchestration system and is enforced across all campaign endpoints. See backend_prd.md for rationale and user impact.
 
+### Smart Context Orchestration System
+
+#### Website Content Resolution Flow
+
+When a request is made to a campaign generation endpoint, the ContextOrchestrator determines the best available context in this order:
+
+1. **User-provided context** (if present and sufficient)
+2. **LLM-inferred context** (if present and sufficient)
+3. **Website content** (scraped and processed if above are insufficient)
+
+**Website scraping:**  
+When falling back to website scraping, the orchestrator now returns the actual scraped content and HTML (not just the URL) to downstream consumers. This ensures the content preprocessing pipeline receives the correct data for chunking, summarization, and filtering.
+
+**Preprocessing pipeline:**  
+The pipeline receives both the raw HTML and markdown/text, extracts the main content, and prepares it for LLM prompt construction.
+
+---
+
+#### Agent Responsibilities
+
+- **ContextOrchestrator:**  
+  Ensures that when website scraping is used, the actual content and HTML are passed through the orchestration chain, enabling accurate preprocessing and campaign generation.
+
+- **WebsiteAnalysisAgent:**  
+  Responsible for scraping, extracting, and returning both markdown and HTML content for further processing.
+
+---
+
+#### Data Flow Diagram
+
+```mermaid
+flowchart TD
+    A[API Request] --> B{ContextOrchestrator}
+    B -->|User Context| C[Prompt Construction]
+    B -->|LLM-inferred| C
+    B -->|Website Scraping| D[WebsiteAnalysisAgent]
+    D --> E[Scraped Content & HTML]
+    E --> F[ContentPreprocessingPipeline]
+    F --> C
+```
+
+---
+
+#### Rationale
+
+Returning the actual website content and HTML (not just the URL) from the context orchestrator ensures that the content preprocessing pipeline and downstream campaign generation logic always have access to the full, accurate data needed for high-quality output. This prevents silent failures and improves reliability and transparency in the campaign generation workflow.
+
 ## 4. AI Agent Architecture
 
 ### Agent vs. Endpoint Design Philosophy

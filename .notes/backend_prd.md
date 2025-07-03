@@ -91,6 +91,8 @@ Unlike traditional marketing automation tools that focus on campaign execution, 
 - **ICP inference**: Automated generation of ideal customer profile when not provided, based on website analysis and market positioning
 - **Content vectorization**: ChromaDB storage for semantic search and retrieval-augmented generation
 - **Smart context orchestration**: Intelligent assessment of context quality and automatic data fetching when needed
+- **Website content extraction:**  
+  When the system scrapes a website, it now passes the actual content and HTML (not just the URL) through the context orchestration pipeline, ensuring downstream preprocessing and campaign generation receive the correct data.
 
 #### 5.2 AI agent orchestration
 
@@ -224,6 +226,7 @@ As a B2B founder, I want to submit my website URL and have the system intelligen
 - Context orchestration provides transparent feedback on data sources used
 - Invalid URLs return 400 Bad Request with specific error details
 - Processed website data is available for all subsequent campaign generation requests
+- The system passes actual website content and HTML to the preprocessing pipeline, ensuring high-quality input for campaign generation.
 
 **ST-104: Company overview generation**
 As a B2B founder, I want to generate a comprehensive company overview from my website so I can understand how my product is positioned.
@@ -235,6 +238,7 @@ As a B2B founder, I want to generate a comprehensive company overview from my we
 - Use cases and pain points are extracted from explicit mentions on the website
 - Technology stack and competitive context are identified
 - Confidence scoring indicates data quality and gaps
+- The content preprocessing pipeline receives the full website content and HTML, enabling accurate extraction of product description, features, and company profiles.
 
 **ST-105: Target account analysis**
 As a B2B founder, I want to generate detailed target account profiles so I can identify ideal prospects.
@@ -308,6 +312,9 @@ As a developer, I want efficient context passing between endpoints so I can buil
 - Clear documentation of context dependencies and requirements
 - Versioned context schemas for backwards compatibility
 - Performance optimization through intelligent caching
+
+**Context orchestration:**  
+The orchestrator always provides the most complete and relevant context available. When scraping is required, it returns the actual website content and HTML, not just the URL, to ensure preprocessing and LLM prompt construction work as intended.
 
 ### Error handling and reliability
 

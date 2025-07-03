@@ -4,6 +4,7 @@ assessing context quality for campaign generation endpoints.
 """
 
 from typing import Optional, Dict, Any
+from fastapi import HTTPException
 
 from backend.app.prompts.models import (
     ContextAssessmentResult,
@@ -56,15 +57,20 @@ async def resolve_context_for_endpoint(
     # 3. Website scraping
     website_url = getattr(request, "website_url", None)
     if website_url:
-        assessment = await orchestrator.assess_url_context(
-            url=website_url,
+        scrape_result = extract_website_content(website_url)
+        content = scrape_result.get("content", "")
+        html = scrape_result.get("html", None)
+        assessment = await orchestrator.assess_context(
+            website_content=content,
             target_endpoint=endpoint_name,
             user_context=None,
         )
         readiness = orchestrator.check_endpoint_readiness(assessment, endpoint_name)
         return {
             "source": "website",
-            "context": website_url,
+            "context": content,
+            "content": content,
+            "html": html,
             "is_ready": readiness.get("is_ready", False),
         }
     # If all fail
@@ -89,70 +95,30 @@ class ContextOrchestrator:
     ) -> CompanyOverviewResult:
         """
         Uses an LLM to assess the quality of the provided website content for GTM endpoints.
-
-        Args:
-            website_content (str): The preprocessed content from the company's website.
-            target_endpoint (Optional[str]): The endpoint being assessed (e.g., 'product_overview').
-            user_context (Optional[dict]): Optional user-provided context for campaign generation.
-
-        Returns:
-            CompanyOverviewResult: A Pydantic model containing the structured,
-                rich assessment from the LLM.
         """
         if not website_content or not website_content.strip():
-            # Return an empty product overview structure if no content
-            return CompanyOverviewResult(
-                company_name="",
-                company_url="",
-                company_overview="",
-                capabilities=[],
-                business_model=[],
-                differentiated_value=[],
-                customer_benefits=[],
-                alternatives=[],
-                testimonials=[],
-                product_description="",
-                key_features=[],
-                company_profiles=[],
-                persona_profiles=[],
-                use_cases=[],
-                pain_points=[],
-                pricing="",
-                confidence_scores={
-                    "company_name": 0.0,
-                    "company_url": 0.0,
-                    "company_overview": 0.0,
-                    "capabilities": 0.0,
-                    "business_model": 0.0,
-                    "differentiated_value": 0.0,
-                    "customer_benefits": 0.0,
-                    "alternatives": 0.0,
-                    "testimonials": 0.0,
-                    "product_description": 0.0,
-                    "key_features": 0.0,
-                    "company_profiles": 0.0,
-                    "persona_profiles": 0.0,
-                    "use_cases": 0.0,
-                    "pain_points": 0.0,
-                    "pricing": 0.0,
-                },
-                metadata={
-                    "sources_used": [],
-                    "context_quality": "insufficient",
-                    "assessment_summary": (
-                        "No website content available. "
-                        "Unable to assess context quality."
-                    ),
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error_code": "WEBSITE_INACCESSIBLE",
+                    "message": "Unable to access website content for analysis",
+                    "details": {
+                        "reason": "website_scraping_failed",
+                        "suggestions": [
+                            "Verify the website URL is correct and publicly accessible",
+                            "Check if the website blocks automated access",
+                            "Try again in a few minutes if the site is temporarily down",
+                        ],
+                    },
+                    "retry_recommended": True,
                 },
             )
-
         prompt_vars = ContextAssessmentVars(
             website_content=website_content,
             target_endpoint=target_endpoint,
             user_context=user_context,
         )
         prompt = render_prompt("product_overview", prompt_vars)
-
         response_model = await self.llm_client.generate_structured_output(
             prompt=prompt, response_model=CompanyOverviewResult
         )

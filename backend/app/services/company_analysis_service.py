@@ -58,6 +58,10 @@ class CompanyAnalysisService:
         try:
             # 1. Context resolution
             context_result = await self._resolve_context(request_data, analysis_type)
+            # Debug: print source of context
+            print(
+                f"[DEBUG] Context source: {'cache' if context_result.get('from_cache') else 'firecrawl'}"
+            )
             website_content = (
                 context_result["context"]
                 if context_result["source"] == "website"
@@ -65,18 +69,16 @@ class CompanyAnalysisService:
             )
             # 2. Preprocessing (if enabled and website content present)
             if use_preprocessing and website_content and self.preprocessing_pipeline:
-                processed_chunks = self.preprocessing_pipeline.chunker.chunk(
-                    website_content
+                preprocessed_chunks = self.preprocessing_pipeline.process(
+                    text=context_result.get("content", ""),
+                    html=context_result.get("html", None),
                 )
-                summarized_chunks = [
-                    self.preprocessing_pipeline.summarizer.summarize(chunk)
-                    for chunk in processed_chunks
-                ]
-                filtered_chunks = self.preprocessing_pipeline.filter.filter(
-                    summarized_chunks
+                preprocessed_text = "\n\n".join(preprocessed_chunks)
+                print(
+                    f"[PREPROCESS] Preprocessed text length: {len(preprocessed_text)}"
                 )
-                cleaned_content = "\n\n".join(filtered_chunks)
-                website_content = cleaned_content
+                print(f"[PREPROCESS] Sample: {preprocessed_text[:300]}")
+                website_content = preprocessed_text
             # 3. Prompt construction
             prompt_vars = prompt_vars_class(
                 website_content=website_content,
