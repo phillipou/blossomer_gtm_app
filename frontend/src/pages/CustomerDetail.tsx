@@ -10,6 +10,7 @@ import EditFirmographicsModal from "@/components/modals/EditFirmographicsModal";
 import SubNav from "@/components/navigation/SubNav";
 import BuyingSignalsCard from "@/components/cards/BuyingSignalsCard";
 import OverviewCard from "@/components/cards/OverviewCard";
+import InfoCard from "../components/cards/InfoCard";
 
 // Import types and mock data from CustomersList
 import { MOCK_CUSTOMERS } from "./CustomersList";
@@ -110,6 +111,11 @@ export default function CustomerDetail() {
   const [modalEditingSignal, setModalEditingSignal] = useState<BuyingSignal | null>(null);
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
   const [hoveredFirmo, setHoveredFirmo] = useState(false);
+  // State for rationale editing
+  const [rationale, setRationale] = useState("This account matches our ideal customer profile: early-stage, founder-led B2B SaaS companies with technical leadership and a strong focus on product innovation. They are likely to benefit from structured go-to-market support, as they often lack dedicated sales expertise and are seeking scalable, repeatable revenue systems.");
+  const [editingRationale, setEditingRationale] = useState(false);
+  const [editRationaleContent, setEditRationaleContent] = useState("");
+  const [hoveredRationale, setHoveredRationale] = useState(false);
 
   // Mock personas data
   const [personas, setPersonas] = useState([
@@ -224,29 +230,64 @@ export default function CustomerDetail() {
                 onButtonClick={() => handleEdit("description", detailData.description)}
               />
             )}
-            {/* Firmographics Block */}
-            <Card
-              className="group relative"
-              onMouseEnter={() => setHoveredFirmo(true)}
-              onMouseLeave={() => setHoveredFirmo(false)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Firmographics</CardTitle>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setFirmoModalOpen(true)}
-                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
-                  tabIndex={-1}
-                  style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
-                >
-                  <Edit3 className="w-5 h-5" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <FirmographicsTable data={firmographics} />
-              </CardContent>
-            </Card>
+            {/* Firmographics and Why Good Fit Row */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <Card
+                className="group relative flex-1"
+                onMouseEnter={() => setHoveredFirmo(true)}
+                onMouseLeave={() => setHoveredFirmo(false)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Firmographics</CardTitle>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setFirmoModalOpen(true)}
+                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
+                    tabIndex={-1}
+                    style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
+                  >
+                    <Edit3 className="w-5 h-5" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <FirmographicsTable data={firmographics} />
+                </CardContent>
+              </Card>
+              {/* Why they're a good fit InfoCard with edit affordance */}
+              <div className="flex-1">
+                {editingRationale ? (
+                  <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
+                    <label className="font-semibold">Why they're a good fit</label>
+                    <Textarea
+                      value={editRationaleContent}
+                      onChange={e => setEditRationaleContent(e.target.value)}
+                      className="min-h-[120px]"
+                    />
+                    <div className="flex space-x-2">
+                      <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
+                        <Check className="w-4 h-4 mr-2" />Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
+                        <X className="w-4 h-4 mr-2" />Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="group relative h-full"
+                    onMouseEnter={() => setHoveredRationale(true)}
+                    onMouseLeave={() => setHoveredRationale(false)}
+                  >
+                    <InfoCard
+                      title={"Why they're a good fit"}
+                      items={[rationale]}
+                      onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
             {/* Buying Signals Block */}
             <BuyingSignalsCard
               signals={buyingSignals}
