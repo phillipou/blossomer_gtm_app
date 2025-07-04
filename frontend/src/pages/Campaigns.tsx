@@ -256,6 +256,18 @@ Best,
     navigate(`/campaigns/${email.id}`)
   }
 
+  const handleEditEmail = (email: GeneratedEmail) => {
+    navigate(`/campaigns/${email.id}`)
+  }
+
+  const handleDeleteEmail = (email: GeneratedEmail) => {
+    setEmailHistory((prev) => {
+      const updated = prev.filter(e => e.id !== email.id)
+      localStorage.setItem("emailHistory", JSON.stringify(updated))
+      return updated
+    })
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -269,36 +281,34 @@ Best,
       />
 
       {/* Content Layout */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden p-8 space-y-8">
         {/* View Toggle - Removed since we're using separate pages now */}
 
         {/* Content Area */}
-        <div className="flex flex-1 gap-8 overflow-auto p-6">
-          <div className="max-w-6xl mx-auto w-full">
-            {emailHistory.length === 0 ? (
-              <div className="flex items-center justify-center h-full w-full">
-                <div className="text-center text-gray-500 max-w-md">
-                  <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
-                  <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Email</h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    Create personalized outreach emails with our AI-powered wizard. Configure your target audience,
-                    use case, and personalization settings to generate compelling emails.
-                  </p>
-                  <Button onClick={handleOpenCreateWizard} size="lg" className="bg-blue-600 hover:bg-blue-700">
-                    <Wand2 className="w-5 h-5 mr-2" />
-                    Generate Your First Email
-                  </Button>
-                </div>
+        <div className="flex flex-1 gap-8 overflow-auto">
+          {emailHistory.length === 0 ? (
+            <div className="flex items-center justify-center h-full w-full">
+              <div className="text-center text-gray-500 max-w-md">
+                <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Email</h3>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Create personalized outreach emails with our AI-powered wizard. Configure your target audience,
+                  use case, and personalization settings to generate compelling emails.
+                </p>
+                <Button onClick={handleOpenCreateWizard} size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  <Wand2 className="w-5 h-5 mr-2" />
+                  Generate Your First Email
+                </Button>
               </div>
-            ) : (
-              <EmailHistory
-                emails={emailHistory}
-                onSelectEmail={handleSelectEmail}
-                onCopyEmail={handleCopyEmail}
-                onSendEmail={handleSaveEmail}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <EmailHistory
+              emails={emailHistory}
+              onSelectEmail={handleSelectEmail}
+              onEditEmail={handleEditEmail}
+              onDeleteEmail={handleDeleteEmail}
+            />
+          )}
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Clock, Search, Copy, Send, Eye, Filter } from "lucide-react"
+import { Clock, Search, Copy, Send, Eye, Filter, Pencil, Trash } from "lucide-react"
 import SummaryCard from "../cards/SummaryCard"
 
 interface GeneratedEmail {
@@ -21,9 +21,11 @@ interface EmailHistoryProps {
   onSelectEmail: (email: GeneratedEmail) => void
   onCopyEmail: (email: GeneratedEmail) => void
   onSendEmail: (email: GeneratedEmail) => void
+  onEditEmail: (email: GeneratedEmail) => void
+  onDeleteEmail: (email: GeneratedEmail) => void
 }
 
-export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail }: EmailHistoryProps) {
+export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, onEditEmail, onDeleteEmail }: EmailHistoryProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterBy, setFilterBy] = useState("all")
   // const [viewMode, setViewMode] = useState("grid") // "grid" or "list"
@@ -127,38 +129,31 @@ export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail }
               parents={parents}
               onClick={() => onSelectEmail(email)}
             >
+              {/* Edit button */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation()
-                  onSelectEmail(email)
+                  onEditEmail(email)
                 }}
+                aria-label="Edit Email"
               >
-                <Eye className="w-4 h-4" />
+                <Pencil className="w-4 h-4" />
               </Button>
+              {/* Delete button */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation()
-                  onCopyEmail(email)
+                  onDeleteEmail(email)
                 }}
+                aria-label="Delete Email"
               >
-                <Copy className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSendEmail(email)
-                }}
-              >
-                <Send className="w-4 h-4" />
+                <Trash className="w-4 h-4" />
               </Button>
             </SummaryCard>
           );

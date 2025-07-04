@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, LayoutGrid, Pencil } from "lucide-react"
 import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
 import PageHeader from "../components/navigation/PageHeader"
 import SubNav from "../components/navigation/SubNav"
+import CampaignDetailHeader, { type EditingMode as HeaderEditingMode } from "../components/campaigns/CampaignDetailHeader"
 
 interface GeneratedEmail {
   id: string
@@ -32,10 +33,9 @@ interface EmailBreakdown {
 }
 
 const EditingMode = {
-  Component: 'component',
-  Writing: 'writing',
-} as const;
-type EditingMode = (typeof EditingMode)[keyof typeof EditingMode];
+  Component: "component" as HeaderEditingMode,
+  Writing: "writing" as HeaderEditingMode,
+};
 
 export default function CampaignDetail() {
   const { campaignId } = useParams<{ campaignId: string }>()
@@ -46,7 +46,7 @@ export default function CampaignDetail() {
     type: string
     currentConfig: any
   } | null>(null)
-  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Component)
+  const [editingMode, setEditingMode] = useState<HeaderEditingMode>(EditingMode.Component)
 
   useEffect(() => {
     // In a real app, this would fetch the email data from an API
@@ -181,10 +181,10 @@ Best,
     )
   }
 
-  // Tab switcher for Writing Mode / Component Mode
+  // Tab switcher for Component Mode (left, default) and Writing Mode (right)
   const modeTabs = [
-    { label: "Writing Mode", value: EditingMode.Writing },
-    { label: "Component Mode", value: EditingMode.Component },
+    { label: "Component Mode", value: EditingMode.Component, icon: <LayoutGrid className="w-4 h-4 mr-2" /> },
+    { label: "Writing Mode", value: EditingMode.Writing, icon: <Pencil className="w-4 h-4 mr-2" /> },
   ];
 
   return (
@@ -200,25 +200,16 @@ Best,
         subTabs={[]}
       />
       <div className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-4">
-          <PageHeader
-            title={email.subject}
-            subtitle={`Generated on ${email.timestamp}`}
-          />
-          <div className="flex space-x-2 bg-gray-100 rounded-lg p-1">
-            {modeTabs.map(tab => (
-              <button
-                key={tab.value}
-                onClick={() => setEditingMode(tab.value)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  editingMode === tab.value ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CampaignDetailHeader
+          subject={email.subject}
+          timestamp={email.timestamp}
+          modeTabs={modeTabs}
+          editingMode={editingMode}
+          setEditingMode={setEditingMode}
+          companyName={email.config?.companyName || "Company"}
+          accountName={email.config?.accountName || "Account"}
+          personaName={email.config?.personaName || "Persona"}
+        />
         {/* Content Area */}
         <div className="overflow-auto p-0">
           <EmailPreview
