@@ -14,8 +14,9 @@ import {
   generateCustomerProfileId,
 } from "../lib/customerService";
 import type { CustomerProfile } from "../types/api";
+import CardParentFooter from "../components/cards/CardParentFooter";
 
-function CustomerProfileCard({ profile, onEdit, onDelete }: any) {
+function CustomerProfileCard({ profile, onEdit, onDelete, companyName }: any) {
   const navigate = useNavigate();
   const formattedDate = profile.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   return (
@@ -26,12 +27,16 @@ function CustomerProfileCard({ profile, onEdit, onDelete }: any) {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <span className="inline-block mb-2">
-            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+            <span className="text-blue-700 text-base font-semibold">
               {profile.name}
             </span>
           </span>
-          <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{profile.description}</p>
-          <p className="text-xs text-gray-400 mt-4">Created: {formattedDate}</p>
+          <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{profile.description}</p>
+          <CardParentFooter
+            parents={[
+              { name: companyName, color: "bg-green-400", label: "Company" },
+            ]}
+          />
         </div>
         <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
@@ -177,6 +182,7 @@ export default function CustomersList() {
                 profile={profile}
                 onEdit={handleEditProfile}
                 onDelete={handleDeleteProfile}
+                companyName={overview.company_name}
               />
             );
           })}

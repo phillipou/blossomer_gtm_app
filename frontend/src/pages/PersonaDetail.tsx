@@ -11,6 +11,7 @@ import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
 import { getPersonasForCustomer, transformBuyingSignals, getStoredCustomerProfiles } from "../lib/customerService";
 import type { TargetPersonaResponse } from "../types/api";
+import CardParentFooter from "../components/cards/CardParentFooter";
 
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
@@ -102,7 +103,15 @@ export default function PersonaDetail() {
           bodyTitle="Persona Overview"
           bodyText={persona.description}
           showButton={false}
-        />
+        >
+          {/* Show parent company/account in the card footer */}
+          <CardParentFooter
+            parents={[
+              { name: accountName, color: "bg-red-400", label: "Account" },
+              { name: "Your Company", color: "bg-green-400", label: "Company" },
+            ]}
+          />
+        </OverviewCard>
         {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {personaCardConfigs.map(({ key, title, editModalSubtitle }) => (

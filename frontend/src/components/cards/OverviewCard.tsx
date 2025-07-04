@@ -10,6 +10,7 @@ interface OverviewCardProps {
   bodyText?: string;
   showButton?: boolean;
   onButtonClick?: () => void;
+  children?: React.ReactNode;
 }
 
 export default function OverviewCard({
@@ -20,6 +21,7 @@ export default function OverviewCard({
   bodyText = "",
   showButton = true,
   onButtonClick,
+  children,
 }: OverviewCardProps) {
   return (
     <Card className="mb-6">
@@ -49,6 +51,7 @@ export default function OverviewCard({
           {bodyTitle && <h3 className="text-sm font-medium text-gray-700 mb-2">{bodyTitle}</h3>}
           <p className="text-gray-600 text-sm leading-relaxed">{bodyText}</p>
         </div>
+        {children}
       </CardContent>
     </Card>
   );

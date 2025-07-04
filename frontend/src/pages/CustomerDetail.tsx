@@ -16,6 +16,7 @@ import EditFirmographicsModal from "../components/modals/EditFirmographicsModal"
 import InputModal from "../components/modals/InputModal";
 import { generateTargetPersona } from "../lib/customerService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
+import CardParentFooter from "../components/cards/CardParentFooter";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -246,12 +247,17 @@ export default function CustomerDetail() {
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div>
                         <span className="inline-block mb-2">
-                          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                          <span className="text-blue-700 text-base font-semibold">
                             {persona.name}
                           </span>
                         </span>
-                        <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                        <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                        <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                        <CardParentFooter
+                          parents={[
+                            { name: overview.company_name, color: "bg-green-400", label: "Company" },
+                            { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                          ]}
+                        />
                       </div>
                       <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
@@ -291,12 +297,17 @@ export default function CustomerDetail() {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <span className="inline-block mb-2">
-                        <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full">
+                        <span className="text-blue-700 text-base font-semibold">
                           {persona.name}
                         </span>
                       </span>
-                      <p className="text-gray-700 text-base mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                      <p className="text-xs text-gray-400 mt-4">Created: {persona.createdAt}</p>
+                      <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{persona.description}</p>
+                      <CardParentFooter
+                        parents={[
+                          { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                          { name: overview.company_name, color: "bg-green-400", label: "Company" },
+                        ]}
+                      />
                     </div>
                     <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
