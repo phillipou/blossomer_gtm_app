@@ -57,7 +57,37 @@ interface EmailSegment {
 }
 
 interface EmailBreakdown {
-  [key: string]: {
+  subject: {
+    label: string
+    description: string
+    color: string
+  }
+  greeting: {
+    label: string
+    description: string
+    color: string
+  }
+  opening: {
+    label: string
+    description: string
+    color: string
+  }
+  "pain-point": {
+    label: string
+    description: string
+    color: string
+  }
+  solution: {
+    label: string
+    description: string
+    color: string
+  }
+  cta: {
+    label: string
+    description: string
+    color: string
+  }
+  signature: {
     label: string
     description: string
     color: string
@@ -163,6 +193,11 @@ Best,
         { text: "Best,\n[Your Name]", type: "signature", color: "bg-gray-100 border-gray-200" },
       ],
       breakdown: {
+        subject: {
+          label: "Subject Line",
+          description: "The email's subject line, crafted to grab attention",
+          color: "bg-blue-50 border-blue-200",
+        },
         greeting: {
           label: "Greeting",
           description: "Standard personalized greeting",

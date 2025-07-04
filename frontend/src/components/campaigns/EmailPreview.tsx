@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save, Eye, EyeOff } from "lucide-react"
@@ -39,6 +39,36 @@ interface EmailPreviewProps {
 export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditComponent }: EmailPreviewProps) {
   const [showBreakdown, setShowBreakdown] = useState(true)
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null)
+  const [editingSubject, setEditingSubject] = useState(false)
+  const [subjectValue, setSubjectValue] = useState(email.subject)
+  const [editingSegment, setEditingSegment] = useState<number | null>(null)
+  const [segmentValues, setSegmentValues] = useState(email.segments.map(s => s.text))
+  const subjectInputRef = useRef<HTMLInputElement>(null)
+  const segmentInputRefs = useRef<(HTMLTextAreaElement | null)[]>([])
+
+  // Save subject on blur or Enter
+  const handleSubjectSave = () => {
+    setEditingSubject(false)
+    // Optionally: propagate change to parent or API here
+  }
+  const handleSubjectKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleSubjectSave()
+    }
+  }
+
+  // Save segment on blur or Enter
+  const handleSegmentSave = (idx: number) => {
+    setEditingSegment(null)
+    // Optionally: propagate change to parent or API here
+  }
+  const handleSegmentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, idx: number) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSegmentSave(idx)
+    }
+  }
 
   const renderColorCodedBody = () => {
     return (
@@ -53,7 +83,25 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
             onMouseLeave={() => setHoveredSegment(null)}
           >
             <div className="flex items-start justify-between">
-              <pre className="text-sm whitespace-pre-wrap font-sans flex-1">{segment.text}</pre>
+              {editingSegment === index ? (
+                <textarea
+                  ref={el => { segmentInputRefs.current[index] = el; }}
+                  className="text-sm whitespace-pre-wrap font-sans flex-1 bg-white border rounded p-1"
+                  value={segmentValues[index]}
+                  onChange={e => setSegmentValues(vals => vals.map((v, i) => i === index ? e.target.value : v))}
+                  onBlur={() => handleSegmentSave(index)}
+                  onKeyDown={e => handleSegmentKeyDown(e, index)}
+                  rows={2}
+                  autoFocus
+                />
+              ) : (
+                <pre
+                  className="text-sm whitespace-pre-wrap font-sans flex-1"
+                  onClick={() => setEditingSegment(index)}
+                  tabIndex={0}
+                  style={{ cursor: "text" }}
+                >{segmentValues[index]}</pre>
+              )}
               <Badge variant="secondary" className="ml-2 text-xs">
                 {email.breakdown[segment.type]?.label}
               </Badge>
@@ -92,9 +140,31 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-gray-700">Subject Line</Label>
-            <div className="mt-1 p-3 bg-gray-50 rounded-lg border">
-              <p className="text-sm">{email.subject}</p>
-            </div>
+            {editingSubject ? (
+              <input
+                ref={subjectInputRef}
+                className="mt-1 p-3 rounded-lg border w-full text-sm bg-white"
+                value={subjectValue}
+                onChange={e => setSubjectValue(e.target.value)}
+                onBlur={handleSubjectSave}
+                onKeyDown={handleSubjectKeyDown}
+                autoFocus
+              />
+            ) : (
+              <div
+                className={`mt-1 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${email.breakdown.subject.color} ${hoveredSegment === "subject" ? "ring-2 ring-blue-400" : ""}`}
+                onMouseEnter={() => setHoveredSegment("subject")}
+                onMouseLeave={() => setHoveredSegment(null)}
+                onClick={() => setEditingSubject(true)}
+                tabIndex={0}
+                style={{ cursor: "text" }}
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-sm">{subjectValue}</p>
+                  <Badge variant="secondary" className="ml-2 text-xs">{email.breakdown.subject.label}</Badge>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
