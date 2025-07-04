@@ -15,39 +15,24 @@ import {
 } from "../lib/customerService";
 import type { CustomerProfile } from "../types/api";
 import CardParentFooter from "../components/cards/CardParentFooter";
+import SummaryCard from "../components/cards/SummaryCard";
 
 function CustomerProfileCard({ profile, onEdit, onDelete, companyName }: any) {
   const navigate = useNavigate();
-  const formattedDate = profile.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   return (
-    <Card
-      className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+    <SummaryCard
+      title={profile.name}
+      description={profile.description}
+      parents={[{ name: companyName, color: "bg-green-400", label: "Company" }]}
       onClick={() => navigate(`/customers/${profile.id}`)}
     >
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <span className="inline-block mb-2">
-            <span className="text-blue-700 text-base font-semibold">
-              {profile.name}
-            </span>
-          </span>
-          <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{profile.description}</p>
-          <CardParentFooter
-            parents={[
-              { name: companyName, color: "bg-green-400", label: "Company" },
-            ]}
-          />
-        </div>
-        <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
-            <Edit3 className="w-5 h-5" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(profile.id); }} className="text-red-500">
-            <Trash2 className="w-5 h-5" />
-          </Button>
-        </div>
-      </CardHeader>
-    </Card>
+      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
+        <Edit3 className="w-5 h-5" />
+      </Button>
+      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(profile.id); }} className="text-red-500">
+        <Trash2 className="w-5 h-5" />
+      </Button>
+    </SummaryCard>
   );
 }
 

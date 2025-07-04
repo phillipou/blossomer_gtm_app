@@ -17,6 +17,7 @@ import InputModal from "../components/modals/InputModal";
 import { generateTargetPersona } from "../lib/customerService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import CardParentFooter from "../components/cards/CardParentFooter";
+import SummaryCard from "../components/cards/SummaryCard";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -239,39 +240,28 @@ export default function CustomerDetail() {
               <h2 className="text-lg font-semibold mb-4">Personas</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {personas.map((persona) => (
-                  <Card
+                  <SummaryCard
                     key={persona.id}
-                    className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                    title={persona.name}
+                    description={persona.description}
+                    parents={[
+                      { name: overview.company_name, color: "bg-green-400", label: "Company" },
+                      { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                    ]}
                     onClick={() => handlePersonaClick(persona.id)}
                   >
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <span className="inline-block mb-2">
-                          <span className="text-blue-700 text-base font-semibold">
-                            {persona.name}
-                          </span>
-                        </span>
-                        <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                        <CardParentFooter
-                          parents={[
-                            { name: overview.company_name, color: "bg-green-400", label: "Company" },
-                            { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
-                          ]}
-                        />
-                      </div>
-                      <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                          <Edit3 className="w-5 h-5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                      <Edit3 className="w-5 h-5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </SummaryCard>
                 ))}
                 {/* Add New Persona Card */}
-                <Card
+                <SummaryCard
+                  title="Add New"
+                  description=""
                   className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
                   onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
                 >
@@ -279,7 +269,7 @@ export default function CustomerDetail() {
                     <Plus className="w-8 h-8 text-blue-500 mb-2" />
                     <span className="text-blue-600 font-medium">Add New</span>
                   </div>
-                </Card>
+                </SummaryCard>
               </div>
             </div>
           </>
@@ -289,39 +279,28 @@ export default function CustomerDetail() {
             <h2 className="text-lg font-semibold mb-4">Personas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {personas.map((persona) => (
-                <Card
+                <SummaryCard
                   key={persona.id}
-                  className="group relative transition-colors duration-200 hover:border-blue-400 cursor-pointer"
+                  title={persona.name}
+                  description={persona.description}
+                  parents={[
+                    { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                    { name: overview.company_name, color: "bg-green-400", label: "Company" },
+                  ]}
                   onClick={() => handlePersonaClick(persona.id)}
                 >
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <span className="inline-block mb-2">
-                        <span className="text-blue-700 text-base font-semibold">
-                          {persona.name}
-                        </span>
-                      </span>
-                      <p className="text-gray-700 text-sm mt-2 mb-2 line-clamp-3">{persona.description}</p>
-                      <CardParentFooter
-                        parents={[
-                          { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
-                          { name: overview.company_name, color: "bg-green-400", label: "Company" },
-                        ]}
-                      />
-                    </div>
-                    <div className="flex space-x-2 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                        <Edit3 className="w-5 h-5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                        <Trash2 className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                </Card>
+                  <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                    <Edit3 className="w-5 h-5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </SummaryCard>
               ))}
               {/* Add New Persona Card */}
-              <Card
+              <SummaryCard
+                title="Add New"
+                description=""
                 className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
                 onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
               >
@@ -329,7 +308,7 @@ export default function CustomerDetail() {
                   <Plus className="w-8 h-8 text-blue-500 mb-2" />
                   <span className="text-blue-600 font-medium">Add New</span>
                 </div>
-              </Card>
+              </SummaryCard>
             </div>
           </div>
         )}
