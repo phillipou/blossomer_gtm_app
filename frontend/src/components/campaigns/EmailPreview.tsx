@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save, Eye, EyeOff } from "lucide-react"
@@ -43,8 +43,14 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   const [subjectValue, setSubjectValue] = useState(email.subject)
   const [editingSegment, setEditingSegment] = useState<number | null>(null)
   const [segmentValues, setSegmentValues] = useState(email.segments.map(s => s.text))
+  const [editingBody, setEditingBody] = useState(false)
+  const [bodyValue, setBodyValue] = useState(email.segments.map(s => s.text).join('\n\n'))
   const subjectInputRef = useRef<HTMLInputElement>(null)
   const segmentInputRefs = useRef<(HTMLTextAreaElement | null)[]>([])
+  const [editingBodyActive, setEditingBodyActive] = useState(false)
+  const bodyPreRef = useRef<HTMLPreElement>(null)
+  const [bodyTextareaHeight, setBodyTextareaHeight] = useState<string | undefined>(undefined)
+  const lastPreHeight = useRef<number>(0)
 
   // Save subject on blur or Enter
   const handleSubjectSave = () => {
@@ -58,17 +64,42 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     }
   }
 
-  // Save segment on blur or Enter
+  // When a segment is edited, update the body
   const handleSegmentSave = (idx: number) => {
     setEditingSegment(null)
+    const newBody = segmentValues.join('\n\n')
+    setBodyValue(newBody)
     // Optionally: propagate change to parent or API here
   }
+
+  // Save segment on blur or Enter
   const handleSegmentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, idx: number) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSegmentSave(idx)
     }
   }
+
+  // When the body is edited, update the segments
+  const handleBodySave = () => {
+    setEditingBody(false)
+    // Split by double newlines, but keep the number of segments the same as before
+    const split = bodyValue.split(/\n\n+/)
+    setSegmentValues(vals => vals.map((v, i) => split[i] !== undefined ? split[i] : v))
+    // Optionally: propagate change to parent or API here
+  }
+  const handleBodyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && e.metaKey) {
+      e.preventDefault()
+      handleBodySave()
+    }
+  }
+
+  // When showBreakdown changes, reset editingBodyActive
+  useEffect(() => {
+    setEditingBody(!showBreakdown)
+    setEditingBodyActive(false)
+  }, [showBreakdown])
 
   const renderColorCodedBody = () => {
     return (
@@ -170,10 +201,36 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
           <div>
             <Label className="text-sm font-medium text-gray-700">Email Body</Label>
             <div className="mt-1 p-4 bg-gray-50 rounded-lg border">
-              {showBreakdown ? (
+              {editingBody ? (
+                editingBodyActive ? (
+                  <textarea
+                    className="email-body-textarea w-full text-sm font-sans bg-white border rounded p-2"
+                    style={bodyTextareaHeight ? { height: bodyTextareaHeight, resize: 'vertical' } : { minHeight: '120px', resize: 'vertical' }}
+                    value={bodyValue}
+                    onChange={e => setBodyValue(e.target.value)}
+                    onBlur={() => setEditingBodyActive(false)}
+                    onKeyDown={handleBodyKeyDown}
+                    autoFocus
+                  />
+                ) : (
+                  <pre
+                    ref={bodyPreRef}
+                    className="text-sm whitespace-pre-wrap font-sans w-full min-h-[120px] cursor-text"
+                    onClick={() => {
+                      if (bodyPreRef.current) {
+                        const h = Math.max(bodyPreRef.current.offsetHeight, 120)
+                        setBodyTextareaHeight(`${h}px`)
+                      }
+                      setEditingBodyActive(true)
+                    }}
+                    tabIndex={0}
+                    style={{ minHeight: '120px' }}
+                  >{bodyValue}</pre>
+                )
+              ) : showBreakdown ? (
                 renderColorCodedBody()
               ) : (
-                <pre className="text-sm whitespace-pre-wrap font-sans">{email.body}</pre>
+                <pre className="text-sm whitespace-pre-wrap font-sans">{bodyValue}</pre>
               )}
             </div>
           </div>
