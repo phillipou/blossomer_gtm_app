@@ -52,6 +52,8 @@ interface EmailPreviewProps {
   onCopy: (email: GeneratedEmail) => void
   onSend: (email: GeneratedEmail) => void
   onEditComponent?: (componentType: string, email: GeneratedEmail) => void
+  editingMode: EditingMode
+  setEditingMode: (mode: EditingMode) => void
 }
 
 interface Segment {
@@ -157,7 +159,7 @@ function SortableSegment({ segment, index, breakdown, hoveredSegment, setHovered
   );
 }
 
-export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditComponent }: EmailPreviewProps) {
+export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditComponent, editingMode, setEditingMode }: EmailPreviewProps) {
   const [showBreakdown, setShowBreakdown] = useState(true)
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null)
   const [editingSubject, setEditingSubject] = useState(false)
@@ -177,7 +179,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   const [pendingBodyChanges, setPendingBodyChanges] = useState(false)
   const [currentEditingSection, setCurrentEditingSection] = useState<number | null>(null)
   const prevBodyValue = useRef(bodyValue);
-  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Component);
   const renderedBodyRef = useRef<HTMLDivElement>(null)
   const [editingLabelIndex, setEditingLabelIndex] = useState<number | null>(null);
   const [inputModalOpen, setInputModalOpen] = useState(false);
@@ -274,19 +275,9 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     }
   }
 
-  // When showBreakdown changes, reset editingBodyActive
-  useEffect(() => {
-    setEditingBody(editingMode === EditingMode.Writing)
-    setEditingBodyActive(false)
-  }, [editingMode])
-
-  // Add a new type for custom segments
-  const getNextCustomType = () => `custom-${segments.length + 1}`;
-
   // Mode switching handlers
   const switchToWritingMode = () => {
     setBodyValue(segmentValues.join('\n\n'));
-    // Measure the rendered body height and set textarea height
     if (renderedBodyRef.current) {
       const height = renderedBodyRef.current.offsetHeight;
       setBodyTextareaHeight(height ? `${height}px` : undefined);
@@ -296,7 +287,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     setEditingMode(EditingMode.Writing);
   };
   const switchToComponentMode = () => {
-    // Use simple chunk-to-section mapping
     const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
       bodyValue,
       segments,
@@ -308,6 +298,28 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     setEditingMode(EditingMode.Component);
   };
 
+  // Handler to open InputModal for editing label
+  const handleEditLabel = (index: number) => {
+    setEditingLabelIndex(index);
+    setInputModalOpen(true);
+  };
+
+  // Handler for InputModal submit
+  const handleLabelSubmit = ({ name }: { name: string; description: string }) => {
+    if (editingLabelIndex === null) return;
+    const segType = segments[editingLabelIndex].type;
+    setBreakdown(bd => ({
+      ...bd,
+      [segType]: {
+        ...bd[segType],
+        label: name,
+      },
+    }));
+    setInputModalOpen(false);
+    setEditingLabelIndex(null);
+  };
+
+  // Restore renderColorCodedBody
   const renderColorCodedBody = () => (
     <div className="space-y-2">
       {segmentValues.map((text, index) => (
@@ -359,34 +371,33 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     </div>
   );
 
-  const handleToggleMode = () => {
-    if (editingMode === EditingMode.Component) {
-      switchToWritingMode();
+  // Remove all local editingMode state and toggle logic
+  // Sync all mode-dependent logic via useEffect
+  useEffect(() => {
+    if (editingMode === EditingMode.Writing) {
+      // Switch to writing mode: join segments, estimate height, hide breakdown
+      const joined = segmentValues.join('\n\n');
+      setBodyValue(joined);
+      // Estimate height: 20px per line + 40px padding, min 120px
+      const lineCount = joined.split('\n').length;
+      const estimatedHeight = Math.max(120, lineCount * 20 + 40);
+      setBodyTextareaHeight(`${estimatedHeight}px`);
+      setShowBreakdown(false);
     } else {
-      switchToComponentMode();
+      // Switch to component mode: parse body, show breakdown
+      const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
+        bodyValue,
+        segments,
+        breakdown
+      );
+      setSegments(newSegments);
+      setBreakdown(newBreakdown);
+      setSegmentValues(newSegments.map(s => s.text));
+      setShowBreakdown(true);
+      setBodyTextareaHeight(undefined);
     }
-  };
-
-  // Handler to open InputModal for editing label
-  const handleEditLabel = (index: number) => {
-    setEditingLabelIndex(index);
-    setInputModalOpen(true);
-  };
-
-  // Handler for InputModal submit
-  const handleLabelSubmit = ({ name }: { name: string; description: string }) => {
-    if (editingLabelIndex === null) return;
-    const segType = segments[editingLabelIndex].type;
-    setBreakdown(bd => ({
-      ...bd,
-      [segType]: {
-        ...bd[segType],
-        label: name,
-      },
-    }));
-    setInputModalOpen(false);
-    setEditingLabelIndex(null);
-  };
+    // eslint-disable-next-line
+  }, [editingMode]);
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
@@ -398,14 +409,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
             <p className="text-sm text-gray-500 mt-1">Generated on {email.timestamp}</p>
           </div>
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={handleToggleMode}>
-              {editingMode === EditingMode.Component ? (
-                <Pencil className="w-4 h-4 mr-2" />
-              ) : (
-                <LayoutGrid className="w-4 h-4 mr-2" />
-              )}
-              {editingMode === EditingMode.Component ? "Writing Mode" : "Component Mode"}
-            </Button>
             <Button size="sm" variant="outline" onClick={() => onCopy(email)}>
               <Copy className="w-4 h-4 mr-2" />
               Copy

@@ -31,6 +31,12 @@ interface EmailBreakdown {
   }
 }
 
+const EditingMode = {
+  Component: 'component',
+  Writing: 'writing',
+} as const;
+type EditingMode = (typeof EditingMode)[keyof typeof EditingMode];
+
 export default function CampaignDetail() {
   const { campaignId } = useParams<{ campaignId: string }>()
   const navigate = useNavigate()
@@ -40,6 +46,7 @@ export default function CampaignDetail() {
     type: string
     currentConfig: any
   } | null>(null)
+  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Component)
 
   useEffect(() => {
     // In a real app, this would fetch the email data from an API
@@ -174,6 +181,12 @@ Best,
     )
   }
 
+  // Tab switcher for Writing Mode / Component Mode
+  const modeTabs = [
+    { label: "Writing Mode", value: EditingMode.Writing },
+    { label: "Component Mode", value: EditingMode.Component },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       <SubNav
@@ -187,23 +200,25 @@ Best,
         subTabs={[]}
       />
       <div className="flex-1 p-8">
-        <PageHeader
-          title={email.subject}
-          subtitle={`Generated on ${email.timestamp}`}
-          primaryAction={{
-            label: "Edit Email",
-            onClick: () => handleOpenEditWizard("email"),
-            icon: <ArrowLeft className="w-4 h-4 mr-2" />
-          }}
-          secondaryActions={
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/campaigns")}
-            >
-              Back to Campaigns
-            </Button>
-          }
-        />
+        <div className="flex items-center justify-between mb-4">
+          <PageHeader
+            title={email.subject}
+            subtitle={`Generated on ${email.timestamp}`}
+          />
+          <div className="flex space-x-2 bg-gray-100 rounded-lg p-1">
+            {modeTabs.map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => setEditingMode(tab.value)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  editingMode === tab.value ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Content Area */}
         <div className="overflow-auto p-0">
           <EmailPreview
@@ -212,6 +227,8 @@ Best,
             onCopy={handleCopyEmail}
             onSend={handleSaveEmail}
             onEditComponent={handleOpenEditWizard}
+            editingMode={editingMode}
+            setEditingMode={setEditingMode}
           />
         </div>
       </div>
