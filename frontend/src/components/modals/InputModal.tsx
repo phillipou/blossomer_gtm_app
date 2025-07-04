@@ -69,10 +69,13 @@ export default function InputModal({
   const [accountId, setAccountId] = useState<string>(selectedAccountId);
 
   useEffect(() => {
-    setName(defaultName);
-    setDescription(defaultDescription);
-    setAccountId(selectedAccountId);
-  }, [defaultName, defaultDescription, isOpen, selectedAccountId]);
+    if (isOpen) {
+      // Reset form when modal opens
+      setName(defaultName);
+      setDescription(defaultDescription);
+      setAccountId(selectedAccountId);
+    }
+  }, [isOpen, defaultName, defaultDescription, selectedAccountId]);
 
   const handleAccountChange = (value: string) => {
     setAccountId(value);

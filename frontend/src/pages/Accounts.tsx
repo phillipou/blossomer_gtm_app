@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Plus, Edit3, Trash2 } from "lucide-react";
+import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import OverviewCard from "../components/cards/OverviewCard";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
@@ -184,7 +184,7 @@ export default function TargetAccountsList() {
       />
 
       {/* Content */}
-      <div className="flex-1 p-8 space-y-8">
+      <div className="flex-1 flex flex-col overflow-hidden p-8 space-y-8">
         <OverviewCard 
           title={overview.company_name}
           subtitle={overview.company_url}
@@ -223,19 +223,39 @@ export default function TargetAccountsList() {
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAccounts.map((account) => {
-            return (
-              <TargetAccountCard
-                key={account.id}
-                targetAccount={account}
-                onEdit={handleEditAccount}
-                onDelete={handleDeleteAccount}
-                companyName={overview.company_name}
-              />
-            );
-          })}
-          <AddAccountCard onClick={() => { setIsAddModalOpen(true); setEditingAccount(null); }} />
+        <div className="flex flex-1 gap-8 overflow-auto">
+          <div className="flex flex-col w-full">
+            {filteredAccounts.length === 0 ? (
+              <div className="flex items-center justify-center h-full w-full">
+                <div className="text-center text-gray-500 max-w-md">
+                  <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Target Account</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Create your first target account with our AI-powered wizard. Define your ideal customer profile (ICP) and let us help you identify and manage your best-fit accounts.
+                  </p>
+                  <Button onClick={() => { setIsAddModalOpen(true); setEditingAccount(null); }} size="lg" className="bg-blue-600 hover:bg-blue-700">
+                    <Wand2 className="w-5 h-5 mr-2" />
+                    Generate Your First Account
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredAccounts.map((account) => {
+                  return (
+                    <TargetAccountCard
+                      key={account.id}
+                      targetAccount={account}
+                      onEdit={handleEditAccount}
+                      onDelete={handleDeleteAccount}
+                      companyName={overview.company_name}
+                    />
+                  );
+                })}
+                <AddAccountCard onClick={() => { setIsAddModalOpen(true); setEditingAccount(null); }} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <InputModal

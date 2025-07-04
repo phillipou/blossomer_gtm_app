@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Loader2, Plus, Edit3, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit3, Trash2, Wand2 } from "lucide-react";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getAllPersonas, deletePersonaFromTargetAccount, updatePersonaForTargetAccount, addPersonaToTargetAccount, generateTargetPersona, getStoredTargetAccounts } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
@@ -128,7 +128,7 @@ export default function TargetPersonas() {
         subtitle="Manage buyer personas across all target accounts"
         primaryAction={{
           label: "Add Target Persona",
-          onClick: () => navigate('/target-accounts')
+          onClick: () => setAddModalOpen(true)
         }}
       />
 
@@ -148,85 +148,90 @@ export default function TargetPersonas() {
         )}
 
         {/* Personas Section */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">All Personas</h2>
-              <p className="text-sm text-gray-500">{personas.length} personas across all target accounts</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search personas..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-10 w-64"
-                />
+        <div className="flex flex-1 gap-8 overflow-auto">
+          <div className="flex flex-col w-full">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">All Personas</h2>
+                <p className="text-sm text-gray-500">{personas.length} personas across all target accounts</p>
               </div>
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-40">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Personas</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search personas..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-10 w-64"
+                  />
+                </div>
+                <Select value={filterBy} onValueChange={setFilterBy}>
+                  <SelectTrigger className="w-40">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Personas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
+            {filteredPersonas.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredPersonas.map(({ persona, accountId, accountName }) => (
+                  <SummaryCard
+                    key={`${accountId}-${persona.id}`}
+                    title={persona.name}
+                    description={persona.description}
+                    parents={[
+                      { name: accountName, color: "bg-red-400", label: "Account" },
+                      { name: overview?.company_name || "Company", color: "bg-green-400", label: "Company" },
+                    ]}
+                    onClick={() => handlePersonaClick(accountId, persona.id)}
+                  >
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={e => { 
+                        e.stopPropagation(); 
+                        handleEditPersona(persona, accountId); 
+                      }} 
+                      className="text-blue-600"
+                    >
+                      <Edit3 className="w-5 h-5" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={e => { 
+                        e.stopPropagation(); 
+                        handleDeletePersona(persona.id, accountId); 
+                      }} 
+                      className="text-red-500"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </SummaryCard>
+                ))}
+                <AddCard onClick={() => setAddModalOpen(true)} label="Add New" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full w-full">
+                <div className="text-center text-gray-500 max-w-md">
+                  <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Persona</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Create your first target persona with our AI-powered wizard. Configure your target audience and let us help you generate detailed buyer insights.
+                  </p>
+                  <Button onClick={() => setAddModalOpen(true)} size="lg" className="bg-blue-600 hover:bg-blue-700">
+                    <Wand2 className="w-5 h-5 mr-2" />
+                    Generate Your First Persona
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-          
-          {filteredPersonas.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPersonas.map(({ persona, accountId, accountName }) => (
-                <SummaryCard
-                  key={`${accountId}-${persona.id}`}
-                  title={persona.name}
-                  description={persona.description}
-                  parents={[
-                    { name: accountName, color: "bg-red-400", label: "Account" },
-                    { name: overview?.company_name || "Company", color: "bg-green-400", label: "Company" },
-                  ]}
-                  onClick={() => handlePersonaClick(accountId, persona.id)}
-                >
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    onClick={e => { 
-                      e.stopPropagation(); 
-                      handleEditPersona(persona, accountId); 
-                    }} 
-                    className="text-blue-600"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    onClick={e => { 
-                      e.stopPropagation(); 
-                      handleDeletePersona(persona.id, accountId); 
-                    }} 
-                    className="text-red-500"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </SummaryCard>
-              ))}
-              <AddCard onClick={() => setAddModalOpen(true)} label="Add New" />
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-500 mb-4">
-                <p className="text-lg font-medium mb-2">No personas created yet</p>
-                <p className="text-sm">Create personas for your target accounts to get started</p>
-              </div>
-              <Button onClick={() => navigate('/target-accounts')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Go to Target Accounts
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -266,8 +271,8 @@ export default function TargetPersonas() {
             const accountName = account.name;
             // Build user_inputted_context as an object
             const user_inputted_context = {
-              target_persona_name: name,
-              target_persona_description: description,
+              persona_name: name,
+              persona_description: description,
             };
             // Build company_context as an object
             const company_context = {
@@ -290,8 +295,8 @@ export default function TargetPersonas() {
             );
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
-              name: response.target_persona_name || name,
-              description: response.target_persona_description || description,
+              name: response.persona_name || name,
+              description: response.persona_description || description,
               createdAt: new Date().toLocaleDateString(),
               overview: response.overview || "",
               painPoints: response.pain_points || [],
@@ -303,7 +308,7 @@ export default function TargetPersonas() {
               desiredOutcomes: response.desired_outcomes || [],
               keyConcerns: response.key_concerns || [],
               whyWeMatter: response.why_we_matter || [],
-              buyingSignals: response.buying_signals || [],
+              buyingSignals: response.persona_buying_signals || [],
             };
             addPersonaToTargetAccount(accountIdFinal, newPersona);
             setPersonas(getAllPersonas());
