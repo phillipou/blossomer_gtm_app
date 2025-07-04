@@ -283,7 +283,7 @@ Best,
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center h-full w-full">
                 <div className="text-center text-gray-500 max-w-md">
                   <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
                   <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Email</h3>

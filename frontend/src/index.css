@@ -99,3 +99,35 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom radio button styles for button[role="radio"] */
+button[role="radio"] {
+  border-radius: 9999px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #d1d5db; /* Tailwind gray-300 */
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  position: relative;
+}
+button[role="radio"][aria-checked="true"] {
+  border-color: #2563eb; /* Tailwind blue-600 */
+}
+button[role="radio"][aria-checked="true"]::after {
+  content: '';
+  display: block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: #2563eb; /* Tailwind blue-600 */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
