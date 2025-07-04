@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { Copy, RefreshCw, Save, Eye, EyeOff, Pencil } from "lucide-react"
+import { Copy, RefreshCw, Save, Eye, EyeOff, Pencil, LayoutGrid } from "lucide-react"
 import { Label } from "../ui/label"
 import InputModal from "../modals/InputModal"
 import {
@@ -72,8 +72,8 @@ interface Breakdown {
 
 // Replace enums with const objects for EditingMode and WizardMode
 const EditingMode = {
-  Breakdown: 'breakdown',
-  Body: 'body',
+  Component: 'component',
+  Writing: 'writing',
 } as const;
 type EditingMode = (typeof EditingMode)[keyof typeof EditingMode];
 
@@ -177,7 +177,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   const [pendingBodyChanges, setPendingBodyChanges] = useState(false)
   const [currentEditingSection, setCurrentEditingSection] = useState<number | null>(null)
   const prevBodyValue = useRef(bodyValue);
-  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Breakdown);
+  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Component);
   const renderedBodyRef = useRef<HTMLDivElement>(null)
   const [editingLabelIndex, setEditingLabelIndex] = useState<number | null>(null);
   const [inputModalOpen, setInputModalOpen] = useState(false);
@@ -276,15 +276,15 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
 
   // When showBreakdown changes, reset editingBodyActive
   useEffect(() => {
-    setEditingBody(!showBreakdown)
+    setEditingBody(editingMode === EditingMode.Writing)
     setEditingBodyActive(false)
-  }, [showBreakdown])
+  }, [editingMode])
 
   // Add a new type for custom segments
   const getNextCustomType = () => `custom-${segments.length + 1}`;
 
   // Mode switching handlers
-  const switchToBodyMode = () => {
+  const switchToWritingMode = () => {
     setBodyValue(segmentValues.join('\n\n'));
     // Measure the rendered body height and set textarea height
     if (renderedBodyRef.current) {
@@ -293,9 +293,9 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     } else {
       setBodyTextareaHeight(undefined);
     }
-    setEditingMode(EditingMode.Body);
+    setEditingMode(EditingMode.Writing);
   };
-  const switchToBreakdownMode = () => {
+  const switchToComponentMode = () => {
     // Use simple chunk-to-section mapping
     const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
       bodyValue,
@@ -305,7 +305,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     setSegments(newSegments);
     setBreakdown(newBreakdown);
     setSegmentValues(newSegments.map(s => s.text));
-    setEditingMode(EditingMode.Breakdown);
+    setEditingMode(EditingMode.Component);
   };
 
   const renderColorCodedBody = () => (
@@ -359,15 +359,11 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     </div>
   );
 
-  const handleToggleBreakdown = () => {
-    if (showBreakdown) {
-      // Hiding breakdown: switch to body mode
-      setShowBreakdown(false);
-      switchToBodyMode();
+  const handleToggleMode = () => {
+    if (editingMode === EditingMode.Component) {
+      switchToWritingMode();
     } else {
-      // Showing breakdown: switch to breakdown mode
-      setShowBreakdown(true);
-      switchToBreakdownMode();
+      switchToComponentMode();
     }
   };
 
@@ -402,9 +398,13 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
             <p className="text-sm text-gray-500 mt-1">Generated on {email.timestamp}</p>
           </div>
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={handleToggleBreakdown}>
-              {showBreakdown ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {showBreakdown ? "Hide" : "Show"} Breakdown
+            <Button size="sm" variant="outline" onClick={handleToggleMode}>
+              {editingMode === EditingMode.Component ? (
+                <Pencil className="w-4 h-4 mr-2" />
+              ) : (
+                <LayoutGrid className="w-4 h-4 mr-2" />
+              )}
+              {editingMode === EditingMode.Component ? "Writing Mode" : "Component Mode"}
             </Button>
             <Button size="sm" variant="outline" onClick={() => onCopy(email)}>
               <Copy className="w-4 h-4 mr-2" />
@@ -449,7 +449,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
           <div>
             <Label className="text-sm font-medium text-gray-700">Email Body</Label>
             <div className="mt-1 p-4 bg-gray-50 rounded-lg border">
-              {editingMode === EditingMode.Body ? (
+              {editingMode === EditingMode.Writing ? (
                 <textarea
                   className="email-body-textarea w-full text-sm font-sans bg-white border rounded p-2"
                   style={bodyTextareaHeight ? { height: bodyTextareaHeight, resize: 'vertical' } : { minHeight: '120px', resize: 'vertical' }}
@@ -475,7 +475,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
       </div>
 
       {/* Breakdown */}
-      {showBreakdown && (
+      {editingMode === EditingMode.Component && (
         <div className="w-full min-w-[500px] bg-white rounded-lg shadow border p-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Email Breakdown</h3>
