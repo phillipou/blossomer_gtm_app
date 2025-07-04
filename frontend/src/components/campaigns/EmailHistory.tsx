@@ -4,6 +4,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Clock, Search, Copy, Send, Eye, Filter } from "lucide-react"
+import SummaryCard from "../cards/SummaryCard"
 
 interface GeneratedEmail {
   id: string
@@ -105,84 +106,63 @@ export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail }
 
       {/* Email Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredEmails.map((email) => (
-          <Card
-            key={email.id}
-            className="hover:shadow-md transition-shadow cursor-pointer group"
-            onClick={() => onSelectEmail(email)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 truncate text-sm">{email.subject}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{formatTimestamp(email.timestamp)}</p>
-                </div>
-
-                <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSelectEmail(email)
-                    }}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onCopyEmail(email)
-                    }}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSendEmail(email)
-                    }}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="pt-0">
-              <p className="text-sm text-gray-600 mb-3 overflow-hidden text-ellipsis" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{email.body.substring(0, 120)}...</p>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Configuration</span>
-                  <div className="flex space-x-1">
-                    {Object.entries(email.breakdown)
-                      .slice(0, 4)
-                      .map(([key, value]: [string, any]) => (
-                        <div
-                          key={key}
-                          className={`w-2 h-2 rounded-full ${value.color.replace("bg-", "bg-").replace("border-", "")}`}
-                          title={value.label}
-                        />
-                      ))}
-                    {Object.keys(email.breakdown).length > 4 && (
-                      <span className="text-xs text-gray-400">+{Object.keys(email.breakdown).length - 4}</span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-xs text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">{getConfigSummary(email.config)}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {filteredEmails.map((email) => {
+          // Extract parent info from email.config if available, else use placeholders
+          let parents = [];
+          if (email.config?.companyName) parents.push({ name: email.config.companyName, color: "bg-green-400", label: "Company" });
+          if (email.config?.accountName) parents.push({ name: email.config.accountName, color: "bg-red-400", label: "Account" });
+          if (email.config?.personaName) parents.push({ name: email.config.personaName, color: "bg-blue-400", label: "Persona" });
+          if (parents.length === 0) {
+            parents = [
+              { name: "Demo Company", color: "bg-green-400", label: "Company" },
+              { name: "Demo Account", color: "bg-red-400", label: "Account" },
+              { name: "Demo Persona", color: "bg-blue-400", label: "Persona" },
+            ];
+          }
+          return (
+            <SummaryCard
+              key={email.id}
+              title={email.subject}
+              description={email.body.substring(0, 120) + (email.body.length > 120 ? "..." : "")}
+              parents={parents}
+              onClick={() => onSelectEmail(email)}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectEmail(email)
+                }}
+              >
+                <Eye className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCopyEmail(email)
+                }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSendEmail(email)
+                }}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </SummaryCard>
+          );
+        })}
       </div>
 
       {filteredEmails.length === 0 && searchTerm && (
