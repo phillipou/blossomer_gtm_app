@@ -1,4 +1,4 @@
-import type { CustomerProfile } from "../types/api";
+import type { TargetAccount } from "../types/api";
 
 export function transformFirmographicsToTable(firmographics: Record<string, any>) {
   const colorMap: { [key: string]: string } = {
@@ -60,15 +60,15 @@ export function transformBuyingSignalsToCards(buyingSignals: Record<string, stri
   return signals;
 }
 
-export function transformTargetAccountToDetail(customerProfile: CustomerProfile) {
+export function transformTargetAccountToDetail(targetAccount: TargetAccount) {
   return {
-    id: customerProfile.id,
-    title: customerProfile.name,
+    id: targetAccount.id,
+    title: targetAccount.name,
     subtitle: `Target Account Profile`,
-    description: customerProfile.description,
-    rationale: customerProfile.rationale,
-    firmographics: transformFirmographicsToTable(customerProfile.firmographics || {}),
-    buyingSignals: transformBuyingSignalsToCards(customerProfile.buying_signals || {}),
-    createdAt: customerProfile.created_at
+    description: targetAccount.description,
+    rationale: targetAccount.rationale,
+    firmographics: transformFirmographicsToTable(targetAccount.firmographics || {}),
+    buyingSignals: transformBuyingSignalsToCards(targetAccount.buying_signals || {}),
+    createdAt: targetAccount.created_at
   };
 } 

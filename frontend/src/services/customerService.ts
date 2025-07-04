@@ -1,4 +1,4 @@
-export interface CustomerProfile {
+export interface TargetAccount {
   id: string;
   name: string; // target_company_name
   role: string; // "Target Account"

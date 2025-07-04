@@ -4,7 +4,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Loader2, Plus, Edit3, Trash2 } from "lucide-react";
 import OverviewCard from "../components/cards/OverviewCard";
-import { getAllPersonas, deletePersonaFromCustomer, updatePersonaForCustomer, addPersonaToCustomer, generateTargetPersona } from "../lib/customerService";
+import { getAllPersonas, deletePersonaFromTargetAccount, updatePersonaForTargetAccount, addPersonaToTargetAccount, generateTargetPersona, getStoredTargetAccounts } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 
 import SummaryCard from "../components/cards/SummaryCard";
@@ -12,17 +12,24 @@ import type { TargetPersonaResponse } from "../types/api";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
 import InputModal from "../components/modals/InputModal";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Search, Filter } from "lucide-react";
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
-  const [personas, setPersonas] = useState<Array<{ persona: TargetPersonaResponse; customerId: string; customerName: string }>>([]);
+  const [personas, setPersonas] = useState<Array<{ persona: TargetPersonaResponse; accountId: string; accountName: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingPersona, setEditingPersona] = useState<{ persona: TargetPersonaResponse; customerId: string } | null>(null);
+  const [editingPersona, setEditingPersona] = useState<{ persona: TargetPersonaResponse; accountId: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addPersonaLoading, setAddPersonaLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
+  const [targetAccounts, setTargetAccounts] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   // Use the analyzed company website from the overview hook
   const overview = useCompanyOverview();
@@ -31,6 +38,9 @@ export default function TargetPersonas() {
     try {
       const allPersonas = getAllPersonas();
       setPersonas(allPersonas);
+              // Fetch all target accounts for the dropdown
+      const accounts = getStoredTargetAccounts();
+      setTargetAccounts(accounts.map(p => ({ id: p.id, name: p.name })));
     } catch (err) {
       console.error("Error loading personas:", err);
       setError("Failed to load personas");
@@ -44,8 +54,8 @@ export default function TargetPersonas() {
     navigate(`/target-accounts/${customerId}/personas/${personaId}`);
   };
 
-  const handleEditPersona = (persona: TargetPersonaResponse, customerId: string) => {
-    setEditingPersona({ persona, customerId });
+  const handleEditPersona = (persona: TargetPersonaResponse, accountId: string) => {
+    setEditingPersona({ persona, accountId });
     setEditModalOpen(true);
   };
 
@@ -59,7 +69,7 @@ export default function TargetPersonas() {
         name: name.trim(),
         description: description.trim(),
       };
-      updatePersonaForCustomer(editingPersona.customerId, updatedPersona);
+      updatePersonaForTargetAccount(editingPersona.accountId, updatedPersona);
       // Refresh the list
       setPersonas(getAllPersonas());
       setEditModalOpen(false);
@@ -76,11 +86,20 @@ export default function TargetPersonas() {
     setEditingPersona(null);
   };
 
-  const handleDeletePersona = (personaId: string, customerId: string) => {
-    deletePersonaFromCustomer(customerId, personaId);
+  const handleDeletePersona = (personaId: string, accountId: string) => {
+    deletePersonaFromTargetAccount(accountId, personaId);
     // Refresh the list
     setPersonas(getAllPersonas());
   };
+
+  // Filtered personas based on search and filter
+  const filteredPersonas = personas.filter(({ persona }) => {
+    const matchesSearch =
+      persona.name.toLowerCase().includes(search.toLowerCase()) ||
+      (persona.description && persona.description.toLowerCase().includes(search.toLowerCase()));
+    if (filterBy === "all") return matchesSearch;
+    return matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -121,7 +140,8 @@ export default function TargetPersonas() {
           subtitle={overview?.company_url || ""}
           bodyTitle="Company Overview"
           bodyText={overview?.company_overview || overview?.product_description}
-          showButton={false}
+          showButton={true}
+          buttonTitle="View Details"
         />
         {error && (
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
@@ -130,31 +150,51 @@ export default function TargetPersonas() {
         {/* Personas Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">All Personas</h2>
-            <p className="text-sm text-gray-500">
-              {personas.length} persona{personas.length !== 1 ? 's' : ''} across all target accounts
-            </p>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">All Personas</h2>
+              <p className="text-sm text-gray-500">{personas.length} personas across all target accounts</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search personas..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Select value={filterBy} onValueChange={setFilterBy}>
+                <SelectTrigger className="w-40">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Personas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
-          {personas.length > 0 ? (
+          {filteredPersonas.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {personas.map(({ persona, customerId, customerName }) => (
+              {filteredPersonas.map(({ persona, accountId, accountName }) => (
                 <SummaryCard
-                  key={`${customerId}-${persona.id}`}
+                  key={`${accountId}-${persona.id}`}
                   title={persona.name}
                   description={persona.description}
                   parents={[
-                    { name: customerName, color: "bg-red-400", label: "Account" },
+                    { name: accountName, color: "bg-red-400", label: "Account" },
                     { name: overview?.company_name || "Company", color: "bg-green-400", label: "Company" },
                   ]}
-                  onClick={() => handlePersonaClick(customerId, persona.id)}
+                  onClick={() => handlePersonaClick(accountId, persona.id)}
                 >
                   <Button 
                     size="icon" 
                     variant="ghost" 
                     onClick={e => { 
                       e.stopPropagation(); 
-                      handleEditPersona(persona, customerId); 
+                      handleEditPersona(persona, accountId); 
                     }} 
                     className="text-blue-600"
                   >
@@ -165,7 +205,7 @@ export default function TargetPersonas() {
                     variant="ghost" 
                     onClick={e => { 
                       e.stopPropagation(); 
-                      handleDeletePersona(persona.id, customerId); 
+                      handleDeletePersona(persona.id, accountId); 
                     }} 
                     className="text-red-500"
                   >
@@ -211,24 +251,24 @@ export default function TargetPersonas() {
       {/* Add Persona Modal */}
       <InputModal
         isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={async ({ name, description }) => {
-          if (personas.length === 0) return; // No accounts to add to
+        onClose={() => { setAddModalOpen(false); setSelectedAccountId(""); }}
+        onSubmit={async ({ name, description, accountId }) => {
+          if (!accountId) return; // Require account selection
           if (!overview?.company_url || !overview.company_url.trim()) {
             setError("Company website URL is missing from overview. Cannot generate persona.");
             return;
           }
           setAddPersonaLoading(true);
           try {
-            const customerId = personas[0].customerId; // Default to first account
-            const customerName = personas[0].customerName;
-            
+            const account = getStoredTargetAccounts().find(acc => acc.id === accountId);
+            if (!account) throw new Error("Selected account not found");
+            const accountIdFinal = account.id;
+            const accountName = account.name;
             // Build user_inputted_context as an object
             const user_inputted_context = {
               target_persona_name: name,
               target_persona_description: description,
             };
-            
             // Build company_context as an object
             const company_context = {
               company_name: overview.company_name || '',
@@ -240,19 +280,14 @@ export default function TargetPersonas() {
               ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
               ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
             };
-            
-            // Build target_account_context as an object
-            const target_account_context = {
-              target_company_name: customerName,
-            };
-            
+            // Pass the full target account as target_account_context
+            const target_account_context = account;
             const response = await generateTargetPersona(
               overview.company_url.trim(),
               user_inputted_context,
               company_context,
               target_account_context
             );
-            
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
               name: response.target_persona_name || name,
@@ -270,10 +305,10 @@ export default function TargetPersonas() {
               whyWeMatter: response.why_we_matter || [],
               buyingSignals: response.buying_signals || [],
             };
-            
-            addPersonaToCustomer(customerId, newPersona);
+            addPersonaToTargetAccount(accountIdFinal, newPersona);
             setPersonas(getAllPersonas());
             setAddModalOpen(false);
+            setSelectedAccountId("");
           } catch (err: any) {
             console.error("Error generating persona:", err);
             setError(err?.body?.error || err.message || "Failed to generate persona.");
@@ -290,6 +325,11 @@ export default function TargetPersonas() {
         submitLabel={addPersonaLoading ? "Generating..." : "Generate"}
         cancelLabel="Cancel"
         isLoading={addPersonaLoading}
+        accounts={targetAccounts}
+        selectedAccountId={selectedAccountId}
+        onAccountChange={setSelectedAccountId}
+        accountLabel="Target Account"
+        accountPlaceholder="None"
       />
     </div>
   );

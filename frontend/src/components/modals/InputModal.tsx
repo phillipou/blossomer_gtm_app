@@ -11,11 +11,18 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface InputModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (values: { name: string; description: string }) => void;
+  onSubmit: (values: { name: string; description: string; accountId: string }) => void;
   title: string;
   subtitle?: string;
   nameLabel?: string;
@@ -28,6 +35,11 @@ interface InputModalProps {
   defaultName?: string;
   defaultDescription?: string;
   error?: string;
+  accounts?: Array<{ id: string; name: string }>;
+  selectedAccountId?: string;
+  onAccountChange?: (accountId: string) => void;
+  accountLabel?: string;
+  accountPlaceholder?: string;
 }
 
 export default function InputModal({
@@ -46,23 +58,37 @@ export default function InputModal({
   defaultName = "",
   defaultDescription = "",
   error,
+  accounts = [],
+  selectedAccountId = "",
+  onAccountChange,
+  accountLabel = "Target Account",
+  accountPlaceholder = "Select target account...",
 }: InputModalProps) {
   const [name, setName] = useState<string>(defaultName);
   const [description, setDescription] = useState<string>(defaultDescription);
+  const [accountId, setAccountId] = useState<string>(selectedAccountId);
 
   useEffect(() => {
     setName(defaultName);
     setDescription(defaultDescription);
-  }, [defaultName, defaultDescription, isOpen]);
+    setAccountId(selectedAccountId);
+  }, [defaultName, defaultDescription, isOpen, selectedAccountId]);
+
+  const handleAccountChange = (value: string) => {
+    setAccountId(value);
+    if (onAccountChange) onAccountChange(value);
+  };
 
   const handleSubmit = () => {
+    if (accounts.length > 0 && !accountId) return;
     if (!name.trim() || !description.trim()) return;
-    onSubmit({ name: name.trim(), description: description.trim() });
+    onSubmit({ name: name.trim(), description: description.trim(), accountId });
   };
 
   const handleClose = () => {
     setName(defaultName);
     setDescription(defaultDescription);
+    setAccountId(selectedAccountId);
     onClose();
   };
 
@@ -74,6 +100,24 @@ export default function InputModal({
           {subtitle && <EditDialogDescription>{subtitle}</EditDialogDescription>}
         </EditDialogHeader>
         <div className="py-4 px-6 space-y-4">
+          {accounts.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="input-modal-account">{accountLabel}</Label>
+              <Select
+                value={accountId}
+                onValueChange={handleAccountChange}
+              >
+                <SelectTrigger id="input-modal-account" className="w-full">
+                  <SelectValue placeholder={accountPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="input-modal-name">{nameLabel}</Label>
             <Input
@@ -107,7 +151,7 @@ export default function InputModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || !description.trim() || isLoading}
+            disabled={(!name.trim() || !description.trim() || isLoading || (accounts.length > 0 && !accountId))}
             className="bg-blue-500 hover:bg-blue-600"
           >
             {isLoading ? "Saving..." : submitLabel}

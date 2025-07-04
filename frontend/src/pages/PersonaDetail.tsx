@@ -9,7 +9,7 @@ import ListInfoCard from "../components/cards/ListInfoCard";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
-import { getPersonasForCustomer, transformBuyingSignals, getStoredCustomerProfiles, updatePersonaForCustomer } from "../lib/customerService";
+import { getPersonasForTargetAccount, transformBuyingSignals, getStoredTargetAccounts, updatePersonaForTargetAccount } from "../lib/accountService";
 import type { TargetPersonaResponse } from "../types/api";
 import CardParentFooter from "../components/cards/CardParentFooter";
 
@@ -38,11 +38,11 @@ export default function PersonaDetail() {
 
   React.useEffect(() => {
     if (accountId && personaId) {
-      const personas = getPersonasForCustomer(accountId);
+      const personas = getPersonasForTargetAccount(accountId);
       const found = personas.find((p) => p.id === personaId) || null;
       setPersona(found);
-      // Fetch account name from customer profile
-      const profiles = getStoredCustomerProfiles();
+              // Fetch account name from target account
+      const profiles = getStoredTargetAccounts();
       const profile = profiles.find((p) => p.id === accountId);
       setAccountName(profile?.name || "Account");
       console.log('Loaded persona object:', found);
@@ -112,8 +112,8 @@ export default function PersonaDetail() {
             // Also update the stored persona
             if (accountId && persona) {
               const updatedPersona = { ...persona, name: name, description: description };
-              // Use the helper function to update the persona in the customer profile
-              updatePersonaForCustomer(accountId, updatedPersona);
+                              // Use the helper function to update the persona in the target account
+              updatePersonaForTargetAccount(accountId, updatedPersona);
             }
           }}
         >

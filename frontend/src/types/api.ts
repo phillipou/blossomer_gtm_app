@@ -57,7 +57,7 @@ export interface TargetPersonaResponse {
   buyingSignals?: { id: string; label: string; description: string; enabled: boolean }[];
 }
 
-export interface CustomerProfile {
+export interface TargetAccount {
   id: string;
   name: string;
   role: string;

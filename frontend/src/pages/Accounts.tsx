@@ -8,36 +8,39 @@ import OverviewCard from "../components/cards/OverviewCard";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import {
   generateTargetCompany,
-  getStoredCustomerProfiles,
-  saveCustomerProfile,
-  deleteCustomerProfile,
-  generateCustomerProfileId,
-} from "../lib/customerService";
-import type { CustomerProfile } from "../types/api";
+  getStoredTargetAccounts,
+  saveTargetAccount,
+  deleteTargetAccount,
+  generateTargetAccountId,
+} from "../lib/accountService";
+import type { TargetAccount } from "../types/api";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Search, Filter } from "lucide-react";
 
-function CustomerProfileCard({ profile, onEdit, onDelete, companyName }: any) {
+function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: any) {
   const navigate = useNavigate();
   return (
     <SummaryCard
-      title={profile.name}
-      description={profile.description}
+      title={targetAccount.name}
+      description={targetAccount.description}
       parents={[{ name: companyName, color: "bg-green-400", label: "Company" }]}
-      onClick={() => navigate(`/target-accounts/${profile.id}`)}
+      onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
     >
-      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
+      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(targetAccount); }} className="text-blue-600">
         <Edit3 className="w-5 h-5" />
       </Button>
-      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(profile.id); }} className="text-red-500">
+      <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(targetAccount.id); }} className="text-red-500">
         <Trash2 className="w-5 h-5" />
       </Button>
     </SummaryCard>
   );
 }
 
-function AddCustomerCard({ onClick }: { onClick: () => void }) {
+function AddAccountCard({ onClick }: { onClick: () => void }) {
   return (
     <Card
       className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
@@ -51,23 +54,25 @@ function AddCustomerCard({ onClick }: { onClick: () => void }) {
   );
 }
 
-export default function CustomersList() {
+export default function TargetAccountsList() {
   const overview = useCompanyOverview();
-  const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
+  const [targetAccounts, setTargetAccounts] = useState<TargetAccount[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<CustomerProfile | null>(null);
+  const [editingAccount, setEditingAccount] = useState<TargetAccount | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
 
-  // Load customer profiles from localStorage on mount
+  // Load target accounts from localStorage on mount
   useEffect(() => {
-    setCustomerProfiles(getStoredCustomerProfiles());
+    setTargetAccounts(getStoredTargetAccounts());
   }, []);
 
-  const handleAddProfile = async ({ name, description }: { name: string; description: string }) => {
+  const handleAddAccount = async ({ name, description }: { name: string; description: string }) => {
     setError(null);
     if (!overview.company_url || !overview.company_url.trim()) {
-      setError("Company website URL is missing from overview. Cannot generate profile.");
+      setError("Company website URL is missing from overview. Cannot generate account.");
       return;
     }
     setIsGenerating(true);
@@ -89,22 +94,22 @@ export default function CustomersList() {
         ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
       };
       // Debug: log the context variables
-      console.log("[AddProfile] user_inputted_context:", user_inputted_context);
-      console.log("[AddProfile] company_context:", company_context);
+      console.log("[AddAccount] user_inputted_context:", user_inputted_context);
+      console.log("[AddAccount] company_context:", company_context);
       const requestPayload = {
         website_url: overview.company_url.trim(),
         user_inputted_context,
         company_context,
       };
-      console.log("[AddProfile] API request payload:", requestPayload);
+      console.log("[AddAccount] API request payload:", requestPayload);
       const response = await generateTargetCompany(
         requestPayload.website_url,
         requestPayload.user_inputted_context,
         requestPayload.company_context
       );
-      console.log("[AddProfile] API response:", response);
-      const newProfile: CustomerProfile = {
-        id: generateCustomerProfileId(),
+      console.log("[AddAccount] API response:", response);
+      const newAccount: TargetAccount = {
+        id: generateTargetAccountId(),
         name: response.target_company_name,
         role: "Target Account",
         description: response.target_company_description || description,
@@ -114,43 +119,54 @@ export default function CustomersList() {
         metadata: response.metadata,
         created_at: new Date().toISOString(),
       };
-      saveCustomerProfile(newProfile);
-      setCustomerProfiles(getStoredCustomerProfiles());
+      saveTargetAccount(newAccount);
+      setTargetAccounts(getStoredTargetAccounts());
       setIsAddModalOpen(false);
     } catch (err: any) {
-      console.error("[AddProfile] API error:", err);
-      setError(err?.body?.error || err.message || "Failed to generate customer profile.");
+      console.error("[AddAccount] API error:", err);
+      setError(err?.body?.error || err.message || "Failed to generate target account.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleEditProfile = (profile: CustomerProfile) => {
-    setEditingProfile(profile);
+  const handleEditAccount = (account: TargetAccount) => {
+    setEditingAccount(account);
     setIsAddModalOpen(true);
   };
 
-  const handleUpdateProfile = async ({ name, description }: { name: string; description: string }) => {
-    if (!editingProfile) return;
+  const handleUpdateAccount = async ({ name, description }: { name: string; description: string }) => {
+    if (!editingAccount) return;
     
-    // Update only the metadata (name and description) of the existing profile
-    const updatedProfile: CustomerProfile = {
-      ...editingProfile,
+    // Update only the metadata (name and description) of the existing account
+    const updatedAccount: TargetAccount = {
+      ...editingAccount,
       name: name.trim(),
       description: description.trim(),
     };
     
-    // Save the updated profile to localStorage
-    saveCustomerProfile(updatedProfile);
-    setCustomerProfiles(getStoredCustomerProfiles());
+    // Save the updated account to localStorage
+    saveTargetAccount(updatedAccount);
+    setTargetAccounts(getStoredTargetAccounts());
     setIsAddModalOpen(false);
-    setEditingProfile(null);
+    setEditingAccount(null);
   };
 
-  const handleDeleteProfile = (id: string) => {
-    deleteCustomerProfile(id);
-    setCustomerProfiles(getStoredCustomerProfiles());
+  const handleDeleteAccount = (id: string) => {
+    deleteTargetAccount(id);
+    setTargetAccounts(getStoredTargetAccounts());
   };
+
+  // Filtered accounts based on search and filter
+  const filteredAccounts = targetAccounts.filter(
+    (account) => {
+      const matchesSearch =
+        account.name.toLowerCase().includes(search.toLowerCase()) ||
+        (account.description && account.description.toLowerCase().includes(search.toLowerCase()));
+      if (filterBy === "all") return matchesSearch;
+      return matchesSearch;
+    }
+  );
 
   if (!overview) {
     return <div>Loading...</div>;
@@ -160,10 +176,10 @@ export default function CustomersList() {
     <div className="flex flex-col h-full">
       <PageHeader
         title="Target Accounts"
-        subtitle="Identify and manage your ideal customer profiles"
+        subtitle="Identify and manage your ideal target accounts"
         primaryAction={{
           label: "Add Target Account",
-          onClick: () => { setIsAddModalOpen(true); setEditingProfile(null); }
+          onClick: () => { setIsAddModalOpen(true); setEditingAccount(null); }
         }}
       />
 
@@ -182,41 +198,61 @@ export default function CustomersList() {
         )}
         {/* All Accounts Section Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">All Accounts</h2>
-          <p className="text-sm text-gray-500">
-            {customerProfiles.length} account{customerProfiles.length !== 1 ? 's' : ''} created
-          </p>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">All Accounts</h2>
+            <p className="text-sm text-gray-500">{targetAccounts.length} accounts created</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search accounts..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+            <Select value={filterBy} onValueChange={setFilterBy}>
+              <SelectTrigger className="w-40">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Accounts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {customerProfiles.map((profile) => {
+          {filteredAccounts.map((account) => {
             return (
-              <CustomerProfileCard
-                key={profile.id}
-                profile={profile}
-                onEdit={handleEditProfile}
-                onDelete={handleDeleteProfile}
+              <TargetAccountCard
+                key={account.id}
+                targetAccount={account}
+                onEdit={handleEditAccount}
+                onDelete={handleDeleteAccount}
                 companyName={overview.company_name}
               />
             );
           })}
-          <AddCustomerCard onClick={() => { setIsAddModalOpen(true); setEditingProfile(null); }} />
+          <AddAccountCard onClick={() => { setIsAddModalOpen(true); setEditingAccount(null); }} />
         </div>
       </div>
       <InputModal
         isOpen={isAddModalOpen}
-        onClose={() => { setIsAddModalOpen(false); setEditingProfile(null); }}
-        onSubmit={editingProfile ? handleUpdateProfile : handleAddProfile}
-        title={editingProfile ? "Edit Target Account" : "Describe Your Ideal Customer Profile (ICP)"}
-        subtitle={editingProfile ? "Update the name and description for this target account." : "What types of companies do you believe fit your ICP?"}
+        onClose={() => { setIsAddModalOpen(false); setEditingAccount(null); }}
+        onSubmit={editingAccount ? handleUpdateAccount : handleAddAccount}
+        title={editingAccount ? "Edit Target Account" : "Describe Your Ideal Target Account (ICP)"}
+        subtitle={editingAccount ? "Update the name and description for this target account." : "What types of companies do you believe fit your ICP?"}
         nameLabel="Target Account Name"
         namePlaceholder="e.g. SaaS Startups, B2B Fintech Companies, etc."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe the characteristics, size, industry, or other traits that define your ideal target accounts."
-        submitLabel={editingProfile ? "Update" : isGenerating ? "Generating..." : "Generate"}
+        submitLabel={editingAccount ? "Update" : isGenerating ? "Generating..." : "Generate"}
         cancelLabel="Cancel"
-        defaultName={editingProfile ? editingProfile.name : ""}
-        defaultDescription={editingProfile ? editingProfile.description : ""}
-        isLoading={editingProfile ? false : isGenerating}
+        defaultName={editingAccount ? editingAccount.name : ""}
+        defaultDescription={editingAccount ? editingAccount.description : ""}
+        isLoading={editingAccount ? false : isGenerating}
       />
     </div>
   );

@@ -7,23 +7,23 @@ import { FirmographicsTable } from "../components/tables/FirmographicsTable";
 import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
-import { getStoredCustomerProfiles, addPersonaToCustomer, getPersonasForCustomer, transformBuyingSignals } from "../lib/customerService";
+import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount, transformBuyingSignals } from "../lib/accountService";
 import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
-import type { CustomerProfile, TargetPersonaResponse } from "../types/api";
+import type { TargetAccount, TargetPersonaResponse } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
 import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
 import InputModal from "../components/modals/InputModal";
-import { generateTargetPersona } from "../lib/customerService";
+import { generateTargetPersona } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import CardParentFooter from "../components/cards/CardParentFooter";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 
-export default function CustomerDetail() {
+export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [customerDetail, setCustomerDetail] = useState<any>(null);
+  const [accountDetail, setAccountDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,20 +72,20 @@ export default function CustomerDetail() {
 
   useEffect(() => {
     try {
-      const profiles = getStoredCustomerProfiles();
-      const profile = profiles.find((p: any) => p.id === id);
-      if (profile) {
-        const detailData = transformTargetAccountToDetail(profile);
-        setCustomerDetail(detailData);
+      const accounts = getStoredTargetAccounts();
+      const account = accounts.find((p: any) => p.id === id);
+      if (account) {
+        const detailData = transformTargetAccountToDetail(account);
+        setAccountDetail(detailData);
         setBuyingSignals(transformBuyingSignals(detailData.buyingSignals));
         setFirmographics(detailData.firmographics || []);
         setRationale(detailData.rationale || "");
       } else {
-        setError("Target account profile not found");
+        setError("Account not found");
       }
     } catch (err) {
-      console.error("Error in CustomerDetail useEffect:", err);
-      setError("Failed to load customer data");
+      console.error("Error in TargetAccountDetail useEffect:", err);
+      setError("Failed to load account data");
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function CustomerDetail() {
   // Load personas from localStorage on mount and when id changes
   useEffect(() => {
     if (id) {
-      setPersonas(getPersonasForCustomer(id));
+      setPersonas(getPersonasForTargetAccount(id));
     }
   }, [id]);
 
@@ -106,12 +106,12 @@ export default function CustomerDetail() {
     );
   }
 
-  if (error || !customerDetail) {
+  if (error || !accountDetail) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{error || "Profile not found"}</p>
+            <p className="text-red-600 mb-4">{error || "Account not found"}</p>
             <Button onClick={() => navigate('/target-accounts')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Target Accounts
@@ -122,7 +122,7 @@ export default function CustomerDetail() {
     );
   }
 
-  console.log('CustomerDetail render, id:', id);
+  console.log('AccountDetail render, id:', id);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -131,7 +131,7 @@ export default function CustomerDetail() {
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Target Accounts", href: "/target-accounts" },
-          { label: customerDetail?.title || "Target Account" }
+          { label: accountDetail?.title || "Target Account" }
         ]}
         activeSubTab={activeTab}
         setActiveSubTab={setActiveTab}
@@ -145,21 +145,21 @@ export default function CustomerDetail() {
           <>
             {/* Target Description */}
             <OverviewCard
-              title={customerDetail.title}
-              bodyText={customerDetail.description}
+              title={accountDetail.title}
+              bodyText={accountDetail.description}
               showButton={false}
               onEdit={({ name, description }) => {
-                setCustomerDetail((prev: any) => ({
+                setAccountDetail((prev: any) => ({
                   ...prev,
                   title: name,
                   description: description
                 }));
-                // Also update the stored profile
-                const profiles = getStoredCustomerProfiles();
-                const updatedProfiles = profiles.map((p: any) => 
+                // Also update the stored account
+                const accounts = getStoredTargetAccounts();
+                const updatedAccounts = accounts.map((p: any) => 
                   p.id === id ? { ...p, name: name, description: description } : p
                 );
-                localStorage.setItem('customer_profiles', JSON.stringify(updatedProfiles));
+                localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
               }}
             />
             {/* Firmographics and Why Good Fit Row */}
@@ -258,7 +258,7 @@ export default function CustomerDetail() {
                     description={persona.description}
                     parents={[
                       { name: overview.company_name, color: "bg-green-400", label: "Company" },
-                      { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                      { name: accountDetail?.title || "Account", color: "bg-red-400", label: "Account" },
                     ]}
                     onClick={() => handlePersonaClick(persona.id)}
                   >
@@ -331,17 +331,17 @@ export default function CustomerDetail() {
               ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
               ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
             };
-            // Build target_account_context as a flattened object from the current customer profile's firmographics (if available)
+            // Build target_account_context as a flattened object from the current target account's firmographics (if available)
             let target_account_context = undefined;
-            const profiles = getStoredCustomerProfiles();
-            const profile = profiles.find((p: any) => p.id === id);
-            if (profile && profile.firmographics) {
-              const firmo = profile.firmographics;
+            const accounts = getStoredTargetAccounts();
+            const account = accounts.find((p: any) => p.id === id);
+            if (account && account.firmographics) {
+              const firmo = account.firmographics;
               target_account_context = {
                 ...firmo,
                 ...(firmo.company_size || {}), // flatten company_size fields
-                target_account_name: customerDetail.title || "",
-                target_account_description: customerDetail.description || "",
+                target_account_name: accountDetail.title || "",
+                target_account_description: accountDetail.description || "",
               };
             }
             // Debug: log all context objects before API call
@@ -368,8 +368,8 @@ export default function CustomerDetail() {
               whyWeMatter: response.why_we_matter,
               buyingSignals: response.persona_buying_signals,
             };
-            addPersonaToCustomer(id!, newPersona);
-            setPersonas(getPersonasForCustomer(id!));
+            addPersonaToTargetAccount(id!, newPersona);
+            setPersonas(getPersonasForTargetAccount(id!));
             setPersonaModalOpen(false);
           } catch (err: any) {
             setPersonaError(err?.body?.error || err.message || "Failed to generate persona.");
