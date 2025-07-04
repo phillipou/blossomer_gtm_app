@@ -98,7 +98,7 @@ export default function PersonaDetail() {
         {/* Overview Card */}
         <OverviewCard
           title={persona.name}
-          subtitle={persona.createdAt}
+          subtitle={"Account: " + accountName}
           bodyTitle="Persona Overview"
           bodyText={persona.description}
           showButton={false}

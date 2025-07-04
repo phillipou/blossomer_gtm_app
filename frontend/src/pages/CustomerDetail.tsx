@@ -145,7 +145,8 @@ export default function CustomerDetail() {
             <OverviewCard
               title={customerDetail.title}
               bodyText={customerDetail.description}
-              showButton={false}
+              showButton={true}
+              buttonTitle={"Update"}
             />
             {/* Firmographics and Why Good Fit Row */}
             <div className="flex flex-col md:flex-row gap-6">
