@@ -87,8 +87,8 @@ export default function PersonaDetail() {
       <SubNav
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Customers", href: "/customers" },
-          { label: accountName, href: `/customers/${accountId}` },
+          { label: "Target Accounts", href: "/target-accounts" },
+          { label: accountName, href: `/target-accounts/${accountId}` },
           { label: persona.name },
         ]}
         activeSubTab=""

@@ -58,7 +58,7 @@ export default function CustomerDetail() {
 
   const handlePersonaClick = (personaId: string) => {
     console.log('Navigating to persona:', personaId, 'for account:', id);
-    navigate(`/customers/${id}/personas/${personaId}`);
+    navigate(`/target-accounts/${id}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: TargetPersonaResponse) => {
@@ -111,9 +111,9 @@ export default function CustomerDetail() {
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
             <p className="text-red-600 mb-4">{error || "Profile not found"}</p>
-            <Button onClick={() => navigate('/customers')}>
+            <Button onClick={() => navigate('/target-accounts')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Customers
+              Back to Target Accounts
             </Button>
           </CardContent>
         </Card>
@@ -129,14 +129,13 @@ export default function CustomerDetail() {
       <SubNav
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Customers", href: "/customers" },
+          { label: "Target Accounts", href: "/target-accounts" },
           { label: customerDetail?.title || "Target Account" }
         ]}
         activeSubTab={activeTab}
         setActiveSubTab={setActiveTab}
         subTabs={[
-          { label: "Accounts", value: "accounts" },
-          { label: "Personas", value: "personas" },
+          { label: "Account Details", value: "accounts" },
         ]}
       />
       {/* Content */}
@@ -235,9 +234,9 @@ export default function CustomerDetail() {
                 )}
               </CardContent>
             </Card>
-            {/* Personas Section (also shown in accounts tab) */}
+            {/* Personas Section (only show account-specific personas) */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">Personas</h2>
+              <h2 className="text-lg font-semibold mb-4">Personas for this Account</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {personas.map((persona) => (
                   <SummaryCard
@@ -273,44 +272,6 @@ export default function CustomerDetail() {
               </div>
             </div>
           </>
-        )}
-        {activeTab === "personas" && (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Personas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {personas.map((persona) => (
-                <SummaryCard
-                  key={persona.id}
-                  title={persona.name}
-                  description={persona.description}
-                  parents={[
-                    { name: customerDetail?.title || "Account", color: "bg-red-400", label: "Account" },
-                    { name: overview.company_name, color: "bg-green-400", label: "Company" },
-                  ]}
-                  onClick={() => handlePersonaClick(persona.id)}
-                >
-                  <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                    <Edit3 className="w-5 h-5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </SummaryCard>
-              ))}
-              {/* Add New Persona Card */}
-              <SummaryCard
-                title="Add New"
-                description=""
-                className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
-                onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
-              >
-                <div className="flex flex-col items-center">
-                  <Plus className="w-8 h-8 text-blue-500 mb-2" />
-                  <span className="text-blue-600 font-medium">Add New</span>
-                </div>
-              </SummaryCard>
-            </div>
-          </div>
         )}
       </div>
       {/* Buying Signal Modal */}

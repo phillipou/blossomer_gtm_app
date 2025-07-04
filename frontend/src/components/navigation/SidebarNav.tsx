@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Building2, Users, TrendingUp, Home, Settings } from "lucide-react";
+import { Building2, Users, TrendingUp, Home, Settings, UserCheck } from "lucide-react";
 import { Sparkles } from "lucide-react";
 
 interface SidebarNavProps {
@@ -13,8 +13,10 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
   const activeTab =
     location.pathname.startsWith("/dashboard")
       ? "company"
-      : location.pathname.startsWith("/customers")
-      ? "customers"
+      : location.pathname.startsWith("/target-accounts")
+      ? "target-accounts"
+      : location.pathname.startsWith("/target-personas")
+      ? "target-personas"
       : location.pathname.startsWith("/campaigns")
       ? "campaigns"
       : "";
@@ -38,16 +40,24 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
             onClick={() => navigate("/dashboard")}
           >
             <Building2 className="w-5 h-5" />
-            <span>Company</span>
+            <span>Your Company</span>
             {activeTab === "company" && <div className="absolute right-2 w-2 h-2 bg-orange-500 rounded-full"></div>}
           </Button>
           <Button
-            variant={activeTab === "customers" ? "secondary" : "ghost"}
-            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "customers" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => navigate("/customers")}
+            variant={activeTab === "target-accounts" ? "secondary" : "ghost"}
+            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "target-accounts" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={() => navigate("/target-accounts")}
           >
             <Users className="w-5 h-5" />
-            <span>Customers</span>
+            <span>Target Accounts</span>
+          </Button>
+          <Button
+            variant={activeTab === "target-personas" ? "secondary" : "ghost"}
+            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "target-personas" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={() => navigate("/target-personas")}
+          >
+            <UserCheck className="w-5 h-5" />
+            <span>Target Personas</span>
           </Button>
           <Button
             variant={activeTab === "campaigns" ? "secondary" : "ghost"}

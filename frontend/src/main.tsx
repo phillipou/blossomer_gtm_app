@@ -5,9 +5,10 @@ import './index.css'
 import './App.css'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
-import CustomersList from './pages/CustomersList'
-import CustomerDetail from './pages/CustomerDetail'
+import Accounts from './pages/Accounts'
+import AccountDetail from './pages/AccountDetail'
 import PersonaDetail from './pages/PersonaDetail'
+import Personas from './pages/Personas'
 import Campaigns from './pages/Campaigns'
 import MainLayout from './components/layout/MainLayout'
 // Stagewise import
@@ -29,9 +30,10 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<LandingPage />} />
         <Route element={<MainLayout />}>
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="customers" element={<CustomersList />} />
-          <Route path="customers/:id" element={<CustomerDetail />} />
-          <Route path="customers/:id/personas/:personaId" element={<PersonaDetail />} />
+          <Route path="target-accounts" element={<Accounts />} />
+          <Route path="target-accounts/:id" element={<AccountDetail />} />
+          <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+          <Route path="target-personas" element={<Personas />} />
           <Route path="campaigns" element={<Campaigns />} />
           {/* Add other routes here */}
         </Route>

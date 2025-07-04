@@ -16,6 +16,7 @@ import {
 import type { CustomerProfile } from "../types/api";
 import CardParentFooter from "../components/cards/CardParentFooter";
 import SummaryCard from "../components/cards/SummaryCard";
+import PageHeader from "../components/navigation/PageHeader";
 
 function CustomerProfileCard({ profile, onEdit, onDelete, companyName }: any) {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function CustomerProfileCard({ profile, onEdit, onDelete, companyName }: any) {
       title={profile.name}
       description={profile.description}
       parents={[{ name: companyName, color: "bg-green-400", label: "Company" }]}
-      onClick={() => navigate(`/customers/${profile.id}`)}
+      onClick={() => navigate(`/target-accounts/${profile.id}`)}
     >
       <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(profile); }} className="text-blue-600">
         <Edit3 className="w-5 h-5" />
@@ -146,8 +147,18 @@ export default function CustomersList() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        title="Target Accounts"
+        subtitle="Identify and manage your ideal customer profiles"
+        primaryAction={{
+          label: "Add Target Account",
+          onClick: () => { setIsAddModalOpen(true); setEditingProfile(null); }
+        }}
+      />
+
+      {/* Content */}
+      <div className="flex-1 p-8 space-y-8">
         <OverviewCard 
           title={overview.company_name}
           subtitle={overview.company_url}
@@ -159,6 +170,13 @@ export default function CustomersList() {
         {error && (
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
         )}
+        {/* All Accounts Section Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">All Accounts</h2>
+          <p className="text-sm text-gray-500">
+            {customerProfiles.length} account{customerProfiles.length !== 1 ? 's' : ''} created
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {customerProfiles.map((profile) => {
             return (

@@ -112,6 +112,26 @@ export function deletePersonaFromCustomer(customerId: string, personaId: string)
   saveCustomerProfile(profile);
 }
 
+// Get all personas across all customers for company-wide view
+export function getAllPersonas(): Array<{ persona: TargetPersonaResponse; customerId: string; customerName: string }> {
+  const profiles = getStoredCustomerProfiles();
+  const allPersonas: Array<{ persona: TargetPersonaResponse; customerId: string; customerName: string }> = [];
+  
+  profiles.forEach(profile => {
+    if (profile.personas) {
+      profile.personas.forEach(persona => {
+        allPersonas.push({
+          persona,
+          customerId: profile.id,
+          customerName: profile.name
+        });
+      });
+    }
+  });
+  
+  return allPersonas;
+}
+
 export function transformBuyingSignals(raw: any[]): { id: string; label: string; description: string; enabled: boolean }[] {
   return (Array.isArray(raw) ? raw : []).map((s, idx) =>
     typeof s === 'string'

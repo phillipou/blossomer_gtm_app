@@ -6,6 +6,7 @@ import { Wand2, Plus, Bell } from "lucide-react"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
 import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailHistory } from "../components/campaigns/EmailHistory"
+import PageHeader from "../components/navigation/PageHeader"
 
 // Mock data - in real app this would come from API
 // const targetAccounts = [
@@ -255,28 +256,15 @@ Best,
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Email Campaigns</h1>
-            <p className="text-sm text-gray-500">Generate personalized outreach emails</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-              blossomer.io
-            </Badge>
-            <Button size="sm" variant="outline">
-              <Bell className="w-4 h-4 mr-2" />
-              Invite Team
-            </Button>
-            <Button onClick={handleOpenCreateWizard} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              New Email
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Email Campaigns"
+        subtitle="Generate personalized outreach emails"
+        primaryAction={{
+          label: "New Email",
+          onClick: handleOpenCreateWizard,
+          icon: <Plus className="w-4 h-4 mr-2" />
+        }}
+      />
 
       {/* Content Layout */}
       <div className="flex-1 flex flex-col overflow-hidden">

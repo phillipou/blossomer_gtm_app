@@ -1,11 +1,10 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import SubNav from "../components/navigation/SubNav";
 import InfoCard from "../components/cards/InfoCard";
 import { Button } from "../components/ui/button";
 import { Check, X } from "lucide-react";
-import CustomersList from "./CustomersList";
+import CustomersList from "./Accounts";
 import OverviewCard from "../components/cards/OverviewCard";
 import { Textarea } from "../components/ui/textarea";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
@@ -13,6 +12,7 @@ import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
 import type { ApiError, AnalysisState } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
+import PageHeader from "../components/navigation/PageHeader";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -80,7 +80,6 @@ export default function Dashboard() {
   });
   const [progressStage, setProgressStage] = useState(0);
   const [activeTab, setActiveTab] = useState("company");
-  const [activeSubTab, setActiveSubTab] = useState("overview");
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const initialMount = useRef(true);
@@ -262,12 +261,6 @@ export default function Dashboard() {
     });
   };
 
-  // Define subTabs for company section
-  const subTabs = [
-    { label: "Company Overview", value: "overview" },
-    { label: "Market Overview", value: "market" },
-  ];
-
   return (
     <>
       <style>{`
@@ -275,73 +268,56 @@ export default function Dashboard() {
           color: #2563eb;
         }
       `}</style>
-      <div className="flex flex-col">
+      <div className="flex flex-col h-full">
+        <PageHeader
+          title="Your Company"
+          subtitle="Company analysis and insights"
+        />
+        
         {/* Remove SidebarNav and HeaderBar, only render main content */}
         {activeTab === "company" && (
-          <>
-            <SubNav
-              breadcrumbs={[
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Company", href: "/dashboard" },
-                { label: subTabs.find((tab) => tab.value === activeSubTab)?.label || "" },
-              ]}
-              activeSubTab={activeSubTab}
-              setActiveSubTab={setActiveSubTab}
-              subTabs={subTabs}
+          <div className="flex-1 p-8 space-y-8">
+            {/* Overview Block */}
+            <OverviewCard
+              title={companyName}
+              subtitle={domain}
+              bodyTitle="Company Overview"
+              bodyText={overview?.company_overview || overview?.product_description}
+              showButton={true}
+              buttonTitle="View Details"
             />
-            <div className="flex-1 p-8 space-y-8">
-              {/* Overview Block */}
-              <OverviewCard
-                title={companyName}
-                subtitle={domain}
-                bodyTitle="Company Overview"
-                bodyText={overview?.company_overview || overview?.product_description}
-                showButton={true}
-                buttonTitle="View Details"
-              />
-              {/* New Info Cards Row 1 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {cardConfigs.map(({ key, title, label }) => (
-                  <ListInfoCard
-                    key={key}
-                    title={title}
-                    items={overview?.[key] || []}
-                    onEdit={handleListEdit(key)}
-                    renderItem={(item: string, idx: number) => (
-                      <li
-                        key={idx}
-                        className="list-disc list-inside text-sm text-gray-700 blue-bullet"
-                      >
-                        {item}
-                      </li>
-                    )}
-                    editModalSubtitle={
-                      key === "capabilities" ? "Core features and strengths of the company/product."
-                      : key === "business_model" ? "How the company generates revenue."
-                      : key === "alternatives" ? "Competing solutions or approaches."
-                      : key === "differentiated_value" ? "Unique value propositions that set this company apart."
-                      : key === "testimonials" ? "Customer quotes or endorsements."
-                      : key === "customer_benefits" ? "Key benefits customers receive."
-                      : undefined
-                    }
-                  />
-                ))}
-              </div>
+            {/* New Info Cards Row 1 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {cardConfigs.map(({ key, title, label }) => (
+                <ListInfoCard
+                  key={key}
+                  title={title}
+                  items={overview?.[key] || []}
+                  onEdit={handleListEdit(key)}
+                  renderItem={(item: string, idx: number) => (
+                    <li
+                      key={idx}
+                      className="list-disc list-inside text-sm text-gray-700 blue-bullet"
+                    >
+                      {item}
+                    </li>
+                  )}
+                  editModalSubtitle={
+                    key === "capabilities" ? "Core features and strengths of the company/product."
+                    : key === "business_model" ? "How the company generates revenue."
+                    : key === "alternatives" ? "Competing solutions or approaches."
+                    : key === "differentiated_value" ? "Unique value propositions that set this company apart."
+                    : key === "testimonials" ? "Customer quotes or endorsements."
+                    : key === "customer_benefits" ? "Key benefits customers receive."
+                    : undefined
+                  }
+                />
+              ))}
             </div>
-          </>
+          </div>
         )}
-        {activeTab === "customers" && (
+        {activeTab === "target-accounts" && (
           <div className="flex-1 p-8">
-            {/* Add SubNav for Customers */}
-            <SubNav
-              breadcrumbs={[
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Customers", href: "/customers" },
-              ]}
-              activeSubTab={"list"}
-              setActiveSubTab={() => {}}
-              subTabs={[]}
-            />
             <CustomersList />
           </div>
         )}

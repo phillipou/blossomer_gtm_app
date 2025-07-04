@@ -75,7 +75,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Transform your website URL into a complete Go-to-Market strategy. Get company insights, target customers, and campaign ideas powered by AI.
+            Transform your website URL into a complete Go-to-Market strategy. Get company insights, target accounts, and campaign ideas powered by AI.
           </p>
           {/* Sandbox Form */}
           <Card className="max-w-2xl mx-auto p-8 shadow-lg border-0 bg-gray-50">
@@ -165,7 +165,7 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-blue-600" />
                 </div>
-                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Target Customers</CardTitle>
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Target Accounts</CardTitle>
                 <CardDescription className="text-gray-600">Identify ideal customer profiles, personas, and prospecting sources</CardDescription>
               </CardHeader>
             </Card>
