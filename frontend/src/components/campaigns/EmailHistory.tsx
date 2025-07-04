@@ -23,9 +23,10 @@ interface EmailHistoryProps {
   onSendEmail: (email: GeneratedEmail) => void
   onEditEmail: (email: GeneratedEmail) => void
   onDeleteEmail: (email: GeneratedEmail) => void
+  extraItem?: React.ReactNode;
 }
 
-export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, onEditEmail, onDeleteEmail }: EmailHistoryProps) {
+export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, onEditEmail, onDeleteEmail, extraItem }: EmailHistoryProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterBy, setFilterBy] = useState("all")
   // const [viewMode, setViewMode] = useState("grid") // "grid" or "list"
@@ -158,6 +159,7 @@ export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, 
             </SummaryCard>
           );
         })}
+        {extraItem}
       </div>
 
       {filteredEmails.length === 0 && searchTerm && (

@@ -10,16 +10,20 @@ interface SidebarNavProps {
 export default function SidebarNav({ companyName }: SidebarNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const activeTab =
-    location.pathname.startsWith("/dashboard")
-      ? "company"
-      : location.pathname.startsWith("/target-accounts")
-      ? "target-accounts"
-      : location.pathname.startsWith("/target-personas")
-      ? "target-personas"
-      : location.pathname.startsWith("/campaigns")
-      ? "campaigns"
-      : "";
+  // Robustly determine active tab
+  let activeTab = "";
+  if (/^\/dashboard/.test(location.pathname)) {
+    activeTab = "company";
+  } else if (/^\/target-accounts\/[^/]+\/personas\//.test(location.pathname)) {
+    // Persona detail route
+    activeTab = "target-personas";
+  } else if (location.pathname.startsWith("/target-accounts")) {
+    activeTab = "target-accounts";
+  } else if (location.pathname.startsWith("/target-personas")) {
+    activeTab = "target-personas";
+  } else if (location.pathname.startsWith("/campaigns")) {
+    activeTab = "campaigns";
+  }
   return (
     <div className="bg-white border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0">
       {/* Logo */}

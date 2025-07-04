@@ -9,7 +9,7 @@ import ListInfoCard from "../components/cards/ListInfoCard";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
-import { getPersonasForCustomer, transformBuyingSignals, getStoredCustomerProfiles } from "../lib/customerService";
+import { getPersonasForCustomer, transformBuyingSignals, getStoredCustomerProfiles, updatePersonaForCustomer } from "../lib/customerService";
 import type { TargetPersonaResponse } from "../types/api";
 import CardParentFooter from "../components/cards/CardParentFooter";
 
@@ -103,6 +103,19 @@ export default function PersonaDetail() {
           bodyTitle="Persona Overview"
           bodyText={persona.description}
           showButton={false}
+          onEdit={({ name, description }) => {
+            setPersona(prev => prev ? {
+              ...prev,
+              name: name,
+              description: description
+            } : null);
+            // Also update the stored persona
+            if (accountId && persona) {
+              const updatedPersona = { ...persona, name: name, description: description };
+              // Use the helper function to update the persona in the customer profile
+              updatePersonaForCustomer(accountId, updatedPersona);
+            }
+          }}
         >
           {/* Show parent company/account in the card footer */}
           <CardParentFooter

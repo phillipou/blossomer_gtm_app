@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Plus, Edit3, Trash2, Building2 } from "lucide-react";
+import { Plus, Edit3, Trash2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import OverviewCard from "../components/cards/OverviewCard";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
@@ -14,7 +14,7 @@ import {
   generateCustomerProfileId,
 } from "../lib/customerService";
 import type { CustomerProfile } from "../types/api";
-import CardParentFooter from "../components/cards/CardParentFooter";
+
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
 
@@ -130,9 +130,19 @@ export default function CustomersList() {
     setIsAddModalOpen(true);
   };
 
-  // TODO: Implement API call for updating profile
-  const handleUpdateProfile = async () => {
-    // TODO: Re-run generateTargetCompany with updated info and update localStorage
+  const handleUpdateProfile = async ({ name, description }: { name: string; description: string }) => {
+    if (!editingProfile) return;
+    
+    // Update only the metadata (name and description) of the existing profile
+    const updatedProfile: CustomerProfile = {
+      ...editingProfile,
+      name: name.trim(),
+      description: description.trim(),
+    };
+    
+    // Save the updated profile to localStorage
+    saveCustomerProfile(updatedProfile);
+    setCustomerProfiles(getStoredCustomerProfiles());
     setIsAddModalOpen(false);
     setEditingProfile(null);
   };
@@ -197,16 +207,16 @@ export default function CustomersList() {
         onClose={() => { setIsAddModalOpen(false); setEditingProfile(null); }}
         onSubmit={editingProfile ? handleUpdateProfile : handleAddProfile}
         title={editingProfile ? "Edit Target Account" : "Describe Your Ideal Customer Profile (ICP)"}
-        subtitle={editingProfile ? "Update the details for this target account." : "What types of companies do you believe fit your ICP?"}
+        subtitle={editingProfile ? "Update the name and description for this target account." : "What types of companies do you believe fit your ICP?"}
         nameLabel="Target Account Name"
         namePlaceholder="e.g. SaaS Startups, B2B Fintech Companies, etc."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe the characteristics, size, industry, or other traits that define your ideal target accounts."
-        submitLabel={editingProfile ? "Update Profile" : isGenerating ? "Generating..." : "Generate"}
+        submitLabel={editingProfile ? "Update" : isGenerating ? "Generating..." : "Generate"}
         cancelLabel="Cancel"
         defaultName={editingProfile ? editingProfile.name : ""}
         defaultDescription={editingProfile ? editingProfile.description : ""}
-        isLoading={isGenerating}
+        isLoading={editingProfile ? false : isGenerating}
       />
     </div>
   );

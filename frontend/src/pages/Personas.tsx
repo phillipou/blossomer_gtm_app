@@ -1,21 +1,28 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Loader2, Plus, Edit3, Trash2 } from "lucide-react";
 import OverviewCard from "../components/cards/OverviewCard";
-import { getAllPersonas, deletePersonaFromCustomer } from "../lib/customerService";
+import { getAllPersonas, deletePersonaFromCustomer, updatePersonaForCustomer, addPersonaToCustomer, generateTargetPersona } from "../lib/customerService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
-import CardParentFooter from "../components/cards/CardParentFooter";
+
 import SummaryCard from "../components/cards/SummaryCard";
 import type { TargetPersonaResponse } from "../types/api";
 import PageHeader from "../components/navigation/PageHeader";
+import AddCard from "../components/ui/AddCard";
+import InputModal from "../components/modals/InputModal";
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
   const [personas, setPersonas] = useState<Array<{ persona: TargetPersonaResponse; customerId: string; customerName: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingPersona, setEditingPersona] = useState<{ persona: TargetPersonaResponse; customerId: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addPersonaLoading, setAddPersonaLoading] = useState(false);
 
   // Use the analyzed company website from the overview hook
   const overview = useCompanyOverview();
@@ -38,8 +45,35 @@ export default function TargetPersonas() {
   };
 
   const handleEditPersona = (persona: TargetPersonaResponse, customerId: string) => {
-    // Navigate to the customer detail page with persona editing
-    navigate(`/target-accounts/${customerId}`, { state: { editPersona: persona } });
+    setEditingPersona({ persona, customerId });
+    setEditModalOpen(true);
+  };
+
+  const handleSavePersona = async ({ name, description }: { name: string; description: string }) => {
+    if (!editingPersona) return;
+    
+    setIsSaving(true);
+    try {
+      const updatedPersona: TargetPersonaResponse = {
+        ...editingPersona.persona,
+        name: name.trim(),
+        description: description.trim(),
+      };
+      updatePersonaForCustomer(editingPersona.customerId, updatedPersona);
+      // Refresh the list
+      setPersonas(getAllPersonas());
+      setEditModalOpen(false);
+      setEditingPersona(null);
+    } catch (err) {
+      console.error("Error updating persona:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditingPersona(null);
   };
 
   const handleDeletePersona = (personaId: string, customerId: string) => {
@@ -89,6 +123,9 @@ export default function TargetPersonas() {
           bodyText={overview?.company_overview || overview?.product_description}
           showButton={false}
         />
+        {error && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
+        )}
 
         {/* Personas Section */}
         <div>
@@ -136,6 +173,7 @@ export default function TargetPersonas() {
                   </Button>
                 </SummaryCard>
               ))}
+              <AddCard onClick={() => setAddModalOpen(true)} label="Add New" />
             </div>
           ) : (
             <div className="text-center py-12">
@@ -151,6 +189,108 @@ export default function TargetPersonas() {
           )}
         </div>
       </div>
+
+      {/* Edit Persona Modal */}
+      <InputModal
+        isOpen={editModalOpen}
+        onClose={handleCloseEditModal}
+        onSubmit={handleSavePersona}
+        title="Edit Persona"
+        subtitle="Update the name and description for this buyer persona."
+        nameLabel="Persona Name"
+        namePlaceholder="e.g., Marketing Director, Sales Manager..."
+        descriptionLabel="Description"
+        descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
+        submitLabel={isSaving ? "Saving..." : "Update"}
+        cancelLabel="Cancel"
+        defaultName={editingPersona?.persona?.name || ""}
+        defaultDescription={editingPersona?.persona?.description || ""}
+        isLoading={isSaving}
+      />
+
+      {/* Add Persona Modal */}
+      <InputModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={async ({ name, description }) => {
+          if (personas.length === 0) return; // No accounts to add to
+          if (!overview?.company_url || !overview.company_url.trim()) {
+            setError("Company website URL is missing from overview. Cannot generate persona.");
+            return;
+          }
+          setAddPersonaLoading(true);
+          try {
+            const customerId = personas[0].customerId; // Default to first account
+            const customerName = personas[0].customerName;
+            
+            // Build user_inputted_context as an object
+            const user_inputted_context = {
+              target_persona_name: name,
+              target_persona_description: description,
+            };
+            
+            // Build company_context as an object
+            const company_context = {
+              company_name: overview.company_name || '',
+              company_url: overview.company_url || '',
+              ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
+              ...(overview.product_description ? { product_description: overview.product_description } : {}),
+              ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
+              ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
+              ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
+              ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+            };
+            
+            // Build target_account_context as an object
+            const target_account_context = {
+              target_company_name: customerName,
+            };
+            
+            const response = await generateTargetPersona(
+              overview.company_url.trim(),
+              user_inputted_context,
+              company_context,
+              target_account_context
+            );
+            
+            const newPersona: TargetPersonaResponse = {
+              id: String(Date.now()),
+              name: response.target_persona_name || name,
+              description: response.target_persona_description || description,
+              createdAt: new Date().toLocaleDateString(),
+              overview: response.overview || "",
+              painPoints: response.pain_points || [],
+              profile: response.profile || [],
+              likelyJobTitles: response.likely_job_titles || [],
+              primaryResponsibilities: response.primary_responsibilities || [],
+              statusQuo: response.status_quo || [],
+              useCases: response.use_cases || [],
+              desiredOutcomes: response.desired_outcomes || [],
+              keyConcerns: response.key_concerns || [],
+              whyWeMatter: response.why_we_matter || [],
+              buyingSignals: response.buying_signals || [],
+            };
+            
+            addPersonaToCustomer(customerId, newPersona);
+            setPersonas(getAllPersonas());
+            setAddModalOpen(false);
+          } catch (err: any) {
+            console.error("Error generating persona:", err);
+            setError(err?.body?.error || err.message || "Failed to generate persona.");
+          } finally {
+            setAddPersonaLoading(false);
+          }
+        }}
+        title="Generate Target Persona"
+        subtitle="Describe a new buyer persona to generate detailed insights."
+        nameLabel="Persona Name"
+        namePlaceholder="e.g., Marketing Director, Sales Manager..."
+        descriptionLabel="Description"
+        descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
+        submitLabel={addPersonaLoading ? "Generating..." : "Generate"}
+        cancelLabel="Cancel"
+        isLoading={addPersonaLoading}
+      />
     </div>
   );
 } 

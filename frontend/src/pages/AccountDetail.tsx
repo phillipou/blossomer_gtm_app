@@ -18,6 +18,7 @@ import { generateTargetPersona } from "../lib/customerService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import CardParentFooter from "../components/cards/CardParentFooter";
 import SummaryCard from "../components/cards/SummaryCard";
+import AddCard from "../components/ui/AddCard";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -146,8 +147,20 @@ export default function CustomerDetail() {
             <OverviewCard
               title={customerDetail.title}
               bodyText={customerDetail.description}
-              showButton={true}
-              buttonTitle={"Update"}
+              showButton={false}
+              onEdit={({ name, description }) => {
+                setCustomerDetail((prev: any) => ({
+                  ...prev,
+                  title: name,
+                  description: description
+                }));
+                // Also update the stored profile
+                const profiles = getStoredCustomerProfiles();
+                const updatedProfiles = profiles.map((p: any) => 
+                  p.id === id ? { ...p, name: name, description: description } : p
+                );
+                localStorage.setItem('customer_profiles', JSON.stringify(updatedProfiles));
+              }}
             />
             {/* Firmographics and Why Good Fit Row */}
             <div className="flex flex-col md:flex-row gap-6">
@@ -258,17 +271,7 @@ export default function CustomerDetail() {
                   </SummaryCard>
                 ))}
                 {/* Add New Persona Card */}
-                <SummaryCard
-                  title="Add New"
-                  description=""
-                  className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
-                  onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Plus className="w-8 h-8 text-blue-500 mb-2" />
-                    <span className="text-blue-600 font-medium">Add New</span>
-                  </div>
-                </SummaryCard>
+                <AddCard onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }} label="Add New" />
               </div>
             </div>
           </>

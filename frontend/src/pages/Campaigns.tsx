@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
-import { Badge } from "../components/ui/badge"
-// import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Wand2, Plus, Bell } from "lucide-react"
+import { Wand2, Plus } from "lucide-react"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
-import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailHistory } from "../components/campaigns/EmailHistory"
 import PageHeader from "../components/navigation/PageHeader"
+import AddCard from "../components/ui/AddCard"
+import InputModal from "../components/modals/InputModal"
 
 // Mock data - in real app this would come from API
 // const targetAccounts = [
@@ -106,6 +105,9 @@ export default function CampaignsPage() {
     currentConfig: any
   } | null>(null)
   const [currentEmailConfig, setCurrentEmailConfig] = useState<any>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingEmail, setEditingEmail] = useState<GeneratedEmail | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Debug log to see emailHistory on every render
   console.log("Rendering CampaignsPage, emailHistory:", emailHistory)
@@ -257,7 +259,41 @@ Best,
   }
 
   const handleEditEmail = (email: GeneratedEmail) => {
-    navigate(`/campaigns/${email.id}`)
+    setEditingEmail(email)
+    setEditModalOpen(true)
+  }
+
+  const handleSaveEmailEdit = async ({ name, description }: { name: string; description: string }) => {
+    if (!editingEmail) return
+    
+    setIsSaving(true)
+    try {
+      const updatedEmail: GeneratedEmail = {
+        ...editingEmail,
+        subject: name.trim(),
+        body: description.trim(),
+      }
+      
+      setEmailHistory((prev) => {
+        const updated = prev.map(email => 
+          email.id === editingEmail.id ? updatedEmail : email
+        )
+        localStorage.setItem("emailHistory", JSON.stringify(updated))
+        return updated
+      })
+      
+      setEditModalOpen(false)
+      setEditingEmail(null)
+    } catch (err) {
+      console.error("Error updating email:", err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false)
+    setEditingEmail(null)
   }
 
   const handleDeleteEmail = (email: GeneratedEmail) => {
@@ -307,6 +343,9 @@ Best,
               onSelectEmail={handleSelectEmail}
               onEditEmail={handleEditEmail}
               onDeleteEmail={handleDeleteEmail}
+              onCopyEmail={handleCopyEmail}
+              onSendEmail={() => {}}
+              extraItem={<AddCard onClick={handleOpenCreateWizard} label="Add New" />}
             />
           )}
         </div>
@@ -320,6 +359,24 @@ Best,
         mode={wizardMode}
         editingComponent={editingComponent}
         initialConfig={currentEmailConfig}
+      />
+
+      {/* Edit Email Modal */}
+      <InputModal
+        isOpen={editModalOpen}
+        onClose={handleCloseEditModal}
+        onSubmit={handleSaveEmailEdit}
+        title="Edit Email"
+        subtitle="Update the subject and content of this email."
+        nameLabel="Subject Line"
+        namePlaceholder="Enter email subject..."
+        descriptionLabel="Email Content"
+        descriptionPlaceholder="Enter the email body content..."
+        submitLabel={isSaving ? "Saving..." : "Update Email"}
+        cancelLabel="Cancel"
+        defaultName={editingEmail?.subject || ""}
+        defaultDescription={editingEmail?.body || ""}
+        isLoading={isSaving}
       />
     </div>
   )
