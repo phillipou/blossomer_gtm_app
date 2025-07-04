@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useLayoutEffect } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save, Eye, EyeOff } from "lucide-react"
@@ -36,21 +36,57 @@ interface EmailPreviewProps {
   onEditComponent?: (componentType: string, email: GeneratedEmail) => void
 }
 
+interface Segment {
+  text: string;
+  type: string;
+  color: string;
+}
+
+interface BreakdownEntry {
+  label: string;
+  description: string;
+  color: string;
+}
+
+interface Breakdown {
+  [key: string]: BreakdownEntry;
+}
+
+// Replace enums with const objects for EditingMode and WizardMode
+const EditingMode = {
+  Breakdown: 'breakdown',
+  Body: 'body',
+} as const;
+type EditingMode = (typeof EditingMode)[keyof typeof EditingMode];
+
+const WizardMode = {
+  Create: 'create',
+  Edit: 'edit',
+} as const;
+type WizardMode = (typeof WizardMode)[keyof typeof WizardMode];
+
 export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditComponent }: EmailPreviewProps) {
   const [showBreakdown, setShowBreakdown] = useState(true)
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null)
   const [editingSubject, setEditingSubject] = useState(false)
   const [subjectValue, setSubjectValue] = useState(email.subject)
   const [editingSegment, setEditingSegment] = useState<number | null>(null)
+  const [segments, setSegments] = useState(email.segments)
+  const [breakdown, setBreakdown] = useState(email.breakdown)
   const [segmentValues, setSegmentValues] = useState(email.segments.map(s => s.text))
   const [editingBody, setEditingBody] = useState(false)
+  const [editingBodyActive, setEditingBodyActive] = useState(false)
   const [bodyValue, setBodyValue] = useState(email.segments.map(s => s.text).join('\n\n'))
   const subjectInputRef = useRef<HTMLInputElement>(null)
   const segmentInputRefs = useRef<(HTMLTextAreaElement | null)[]>([])
-  const [editingBodyActive, setEditingBodyActive] = useState(false)
   const bodyPreRef = useRef<HTMLPreElement>(null)
   const [bodyTextareaHeight, setBodyTextareaHeight] = useState<string | undefined>(undefined)
   const lastPreHeight = useRef<number>(0)
+  const [pendingBodyChanges, setPendingBodyChanges] = useState(false)
+  const [currentEditingSection, setCurrentEditingSection] = useState<number | null>(null)
+  const prevBodyValue = useRef(bodyValue);
+  const [editingMode, setEditingMode] = useState<EditingMode>(EditingMode.Breakdown);
+  const renderedBodyRef = useRef<HTMLDivElement>(null)
 
   // Save subject on blur or Enter
   const handleSubjectSave = () => {
@@ -64,12 +100,12 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     }
   }
 
-  // When a segment is edited, update the body
+  // When a segment is edited, update the body and segments
   const handleSegmentSave = (idx: number) => {
     setEditingSegment(null)
-    const newBody = segmentValues.join('\n\n')
-    setBodyValue(newBody)
-    // Optionally: propagate change to parent or API here
+    const newSegments = segments.map((s, i) => i === idx ? { ...s, text: segmentValues[i] } : s)
+    setSegments(newSegments)
+    setBodyValue(newSegments.map(s => s.text).join('\n\n'))
   }
 
   // Save segment on blur or Enter
@@ -80,13 +116,40 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     }
   }
 
-  // When the body is edited, update the segments
+  // Replace parseBodyIntoSegmentsNearest with a simpler chunk-to-section mapping
+  function parseBodyIntoSegmentsSimple(
+    newBody: string,
+    currentSegments: Segment[],
+    currentBreakdown: Breakdown
+  ): { newSegments: Segment[]; newBreakdown: Breakdown } {
+    const chunks = newBody.split(/\n\n+/).map(chunk => chunk.trim());
+    // Map chunks to existing segments in order
+    const newSegments = currentSegments.map((segment, i) => ({
+      ...segment,
+      text: chunks[i] || ""
+    }));
+    // Handle extra chunks (append to last section)
+    if (chunks.length > currentSegments.length && newSegments.length > 0) {
+      const extraContent = chunks.slice(currentSegments.length).join('\n\n');
+      newSegments[newSegments.length - 1].text += (newSegments[newSegments.length - 1].text ? '\n\n' : '') + extraContent;
+    }
+    return { newSegments, newBreakdown: { ...currentBreakdown } };
+  }
+
+  // When the body is edited, update the segments and breakdown
   const handleBodySave = () => {
-    setEditingBody(false)
-    // Split by double newlines, but keep the number of segments the same as before
-    const split = bodyValue.split(/\n\n+/)
-    setSegmentValues(vals => vals.map((v, i) => split[i] !== undefined ? split[i] : v))
-    // Optionally: propagate change to parent or API here
+    setEditingBody(false);
+    setEditingBodyActive(false);
+    setPendingBodyChanges(false);
+    // Use simple chunk-to-section mapping
+    const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
+      bodyValue,
+      segments,
+      breakdown
+    );
+    setSegments(newSegments);
+    setBreakdown(newBreakdown);
+    setSegmentValues(newSegments.map(s => s.text));
   }
   const handleBodyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && e.metaKey) {
@@ -101,47 +164,96 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
     setEditingBodyActive(false)
   }, [showBreakdown])
 
-  const renderColorCodedBody = () => {
-    return (
-      <div className="space-y-2">
-        {email.segments.map((segment, index) => (
-          <div
-            key={index}
-            className={`p-2 rounded border transition-all duration-200 cursor-pointer ${segment.color} ${
-              hoveredSegment === segment.type ? "ring-2 ring-blue-400" : ""
-            }`}
-            onMouseEnter={() => setHoveredSegment(segment.type)}
-            onMouseLeave={() => setHoveredSegment(null)}
-          >
-            <div className="flex items-start justify-between">
-              {editingSegment === index ? (
-                <textarea
-                  ref={el => { segmentInputRefs.current[index] = el; }}
-                  className="text-sm whitespace-pre-wrap font-sans flex-1 bg-white border rounded p-1"
-                  value={segmentValues[index]}
-                  onChange={e => setSegmentValues(vals => vals.map((v, i) => i === index ? e.target.value : v))}
-                  onBlur={() => handleSegmentSave(index)}
-                  onKeyDown={e => handleSegmentKeyDown(e, index)}
-                  rows={2}
-                  autoFocus
-                />
-              ) : (
-                <pre
-                  className="text-sm whitespace-pre-wrap font-sans flex-1"
-                  onClick={() => setEditingSegment(index)}
-                  tabIndex={0}
-                  style={{ cursor: "text" }}
-                >{segmentValues[index]}</pre>
-              )}
-              <Badge variant="secondary" className="ml-2 text-xs">
-                {email.breakdown[segment.type]?.label}
-              </Badge>
-            </div>
+  // Add a new type for custom segments
+  const getNextCustomType = () => `custom-${segments.length + 1}`;
+
+  // Mode switching handlers
+  const switchToBodyMode = () => {
+    setBodyValue(segmentValues.join('\n\n'));
+    // Measure the rendered body height and set textarea height
+    if (renderedBodyRef.current) {
+      const height = renderedBodyRef.current.offsetHeight;
+      setBodyTextareaHeight(height ? `${height}px` : undefined);
+    } else {
+      setBodyTextareaHeight(undefined);
+    }
+    setEditingMode(EditingMode.Body);
+  };
+  const switchToBreakdownMode = () => {
+    // Use simple chunk-to-section mapping
+    const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
+      bodyValue,
+      segments,
+      breakdown
+    );
+    setSegments(newSegments);
+    setBreakdown(newBreakdown);
+    setSegmentValues(newSegments.map(s => s.text));
+    setEditingMode(EditingMode.Breakdown);
+  };
+
+  const renderColorCodedBody = () => (
+    <div className="space-y-2">
+      {segmentValues.map((text, index) => (
+        <div
+          key={index}
+          className={`p-2 rounded border transition-all duration-200 cursor-pointer ${segments[index]?.color || ''} ${hoveredSegment === segments[index]?.type ? "ring-2 ring-blue-400" : ""}`}
+          onMouseEnter={() => setHoveredSegment(segments[index]?.type)}
+          onMouseLeave={() => setHoveredSegment(null)}
+        >
+          <div className="flex items-start justify-between">
+            {editingSegment === index ? (
+              <textarea
+                ref={el => { segmentInputRefs.current[index] = el; }}
+                className="w-full text-sm font-sans bg-white border rounded p-2"
+                value={segmentValues[index]}
+                onChange={e => {
+                  const newVals = [...segmentValues];
+                  newVals[index] = e.target.value;
+                  setSegmentValues(newVals);
+                }}
+                onBlur={() => handleSegmentSave(index)}
+                onKeyDown={e => handleSegmentKeyDown(e, index)}
+                autoFocus
+                rows={Math.max(2, segmentValues[index].split('\n').length)}
+              />
+            ) : (
+              <pre
+                className="text-sm whitespace-pre-wrap font-sans flex-1"
+                onClick={() => setEditingSegment(index)}
+                tabIndex={0}
+                style={{
+                  cursor: "text",
+                  minHeight: text ? undefined : '2rem',
+                  display: 'flex',
+                  alignItems: text ? 'flex-start' : 'center',
+                }}
+              >
+                {text || (
+                  <span className="text-gray-400 italic">Click to add content...</span>
+                )}
+              </pre>
+            )}
+            <Badge variant="secondary" className="ml-2 text-xs">
+              {breakdown[segments[index]?.type]?.label}
+            </Badge>
           </div>
-        ))}
-      </div>
-    )
-  }
+        </div>
+      ))}
+    </div>
+  );
+
+  const handleToggleBreakdown = () => {
+    if (showBreakdown) {
+      // Hiding breakdown: switch to body mode
+      setShowBreakdown(false);
+      switchToBodyMode();
+    } else {
+      // Showing breakdown: switch to breakdown mode
+      setShowBreakdown(true);
+      switchToBreakdownMode();
+    }
+  };
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
@@ -153,7 +265,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
             <p className="text-sm text-gray-500 mt-1">Generated on {email.timestamp}</p>
           </div>
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={() => setShowBreakdown(!showBreakdown)}>
+            <Button size="sm" variant="outline" onClick={handleToggleBreakdown}>
               {showBreakdown ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showBreakdown ? "Hide" : "Show"} Breakdown
             </Button>
@@ -201,36 +313,20 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
           <div>
             <Label className="text-sm font-medium text-gray-700">Email Body</Label>
             <div className="mt-1 p-4 bg-gray-50 rounded-lg border">
-              {editingBody ? (
-                editingBodyActive ? (
-                  <textarea
-                    className="email-body-textarea w-full text-sm font-sans bg-white border rounded p-2"
-                    style={bodyTextareaHeight ? { height: bodyTextareaHeight, resize: 'vertical' } : { minHeight: '120px', resize: 'vertical' }}
-                    value={bodyValue}
-                    onChange={e => setBodyValue(e.target.value)}
-                    onBlur={() => setEditingBodyActive(false)}
-                    onKeyDown={handleBodyKeyDown}
-                    autoFocus
-                  />
-                ) : (
-                  <pre
-                    ref={bodyPreRef}
-                    className="text-sm whitespace-pre-wrap font-sans w-full min-h-[120px] cursor-text"
-                    onClick={() => {
-                      if (bodyPreRef.current) {
-                        const h = Math.max(bodyPreRef.current.offsetHeight, 120)
-                        setBodyTextareaHeight(`${h}px`)
-                      }
-                      setEditingBodyActive(true)
-                    }}
-                    tabIndex={0}
-                    style={{ minHeight: '120px' }}
-                  >{bodyValue}</pre>
-                )
-              ) : showBreakdown ? (
-                renderColorCodedBody()
+              {editingMode === EditingMode.Body ? (
+                <textarea
+                  className="email-body-textarea w-full text-sm font-sans bg-white border rounded p-2"
+                  style={bodyTextareaHeight ? { height: bodyTextareaHeight, resize: 'vertical' } : { minHeight: '120px', resize: 'vertical' }}
+                  value={bodyValue}
+                  onChange={e => setBodyValue(e.target.value)}
+                  onBlur={() => setEditingBodyActive(false)}
+                  onKeyDown={handleBodyKeyDown}
+                  autoFocus
+                />
               ) : (
-                <pre className="text-sm whitespace-pre-wrap font-sans">{bodyValue}</pre>
+                <div ref={renderedBodyRef}>
+                  {renderColorCodedBody()}
+                </div>
               )}
             </div>
           </div>
@@ -251,28 +347,48 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
           </div>
           
           <div className="space-y-3">
-            {Object.entries(email.breakdown).map(([key, value]) => (
+            {segments.map((segment, index) => (
               <div
-                key={key}
-                className={`p-3 rounded border transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-blue-400 ${value.color} ${
-                  hoveredSegment === key ? "ring-2 ring-blue-400" : ""
+                key={segment.type}
+                className={`p-3 rounded border transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-blue-400 ${breakdown[segment.type]?.color || "bg-blue-50 border-blue-200"} ${
+                  hoveredSegment === segment.type ? "ring-2 ring-blue-400" : ""
                 }`}
-                onMouseEnter={() => setHoveredSegment(key)}
+                onMouseEnter={() => setHoveredSegment(segment.type)}
                 onMouseLeave={() => setHoveredSegment(null)}
-                onClick={() => onEditComponent?.(key, email)}
+                onClick={() => onEditComponent?.(segment.type, email)}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-sm font-medium text-gray-900">{value.label}</span>
-                    <p className="text-xs text-gray-600 mt-1">{value.description}</p>
+                    <span className="text-sm font-medium text-gray-900">{breakdown[segment.type]?.label || "Custom"}</span>
+                    <p className="text-xs text-gray-600 mt-1">{breakdown[segment.type]?.description || "Custom component"}</p>
                     <p className="text-xs text-blue-600 mt-1 font-medium">Click to edit</p>
                   </div>
                   <Badge variant="secondary" className="text-xs">
-                    {key}
+                    {segment.type}
                   </Badge>
                 </div>
               </div>
             ))}
+            {/* Add new component card */}
+            <div
+              className="p-3 rounded border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 text-center cursor-pointer hover:bg-blue-100 transition-all duration-200"
+              onClick={() => {
+                const newType = getNextCustomType();
+                setSegments(segs => [...segs, { text: "", type: newType, color: "bg-blue-50 border-blue-200" }]);
+                setBreakdown(bd => ({
+                  ...bd,
+                  [newType]: {
+                    label: "Custom",
+                    description: "Custom component",
+                    color: "bg-blue-50 border-blue-200",
+                  },
+                }));
+                setSegmentValues(vals => [...vals, ""]);
+                setEditingSegment(segments.length);
+              }}
+            >
+              + Add new component
+            </div>
           </div>
         </div>
       )}
