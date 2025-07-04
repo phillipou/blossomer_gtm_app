@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import CustomersList from './pages/CustomersList'
 import CustomerDetail from './pages/CustomerDetail'
 import PersonaDetail from './pages/PersonaDetail'
+import Campaigns from './pages/Campaigns'
 import MainLayout from './components/layout/MainLayout'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
@@ -31,7 +32,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="customers" element={<CustomersList />} />
           <Route path="customers/:id" element={<CustomerDetail />} />
           <Route path="customers/:id/personas/:personaId" element={<PersonaDetail />} />
-          {/* Add campaigns and other routes here */}
+          <Route path="campaigns" element={<Campaigns />} />
+          {/* Add other routes here */}
         </Route>
       </Routes>
     </BrowserRouter>

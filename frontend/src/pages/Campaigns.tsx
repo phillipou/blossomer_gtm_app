@@ -270,10 +270,10 @@ Best,
         )}
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex flex-1 gap-8 overflow-auto p-6">
           {activeView === "preview" ? (
             generatedEmail ? (
-              <div className="max-w-4xl mx-auto">
+              <div className="w-full">
                 <EmailPreview
                   email={generatedEmail}
                   onCreateVariant={handleCreateVariant}

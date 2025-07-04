@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save, Eye, EyeOff } from "lucide-react"
@@ -66,12 +65,12 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Email Preview */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <div className="w-full min-w-[500px] bg-white rounded-lg shadow border p-6">
+        <div className="flex flex-row items-center justify-between mb-6">
           <div>
-            <CardTitle>Generated Email</CardTitle>
+            <h3 className="text-lg font-semibold text-gray-900">Generated Email</h3>
             <p className="text-sm text-gray-500 mt-1">Generated on {email.timestamp}</p>
           </div>
           <div className="flex space-x-2">
@@ -88,8 +87,9 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
               Create Variant
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        
+        <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-gray-700">Subject Line</Label>
             <div className="mt-1 p-3 bg-gray-50 rounded-lg border">
@@ -112,17 +112,18 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
             <Save className="w-4 h-4 mr-2" />
             Save Email
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Breakdown */}
       {showBreakdown && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Breakdown</CardTitle>
+        <div className="w-full min-w-[500px] bg-white rounded-lg shadow border p-6">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Email Breakdown</h3>
             <p className="text-sm text-gray-500">Click on any component to edit it</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          </div>
+          
+          <div className="space-y-3">
             {Object.entries(email.breakdown).map(([key, value]) => (
               <div
                 key={key}
@@ -145,8 +146,8 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   )
