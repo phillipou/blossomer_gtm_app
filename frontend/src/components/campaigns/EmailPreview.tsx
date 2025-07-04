@@ -144,7 +144,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   }
 
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
       {/* Email Preview */}
       <div className="w-full min-w-[500px] bg-white rounded-lg shadow border p-6">
         <div className="flex flex-row items-center justify-between mb-6">
