@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 // import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -96,9 +97,8 @@ interface EmailBreakdown {
 }
 
 export default function CampaignsPage() {
-  const [generatedEmail, setGeneratedEmail] = useState<GeneratedEmail | null>(null)
+  const navigate = useNavigate()
   const [emailHistory, setEmailHistory] = useState<GeneratedEmail[]>([])
-  const [activeView, setActiveView] = useState<"preview" | "history">("preview")
   const [isWizardOpen, setIsWizardOpen] = useState(false)
   const [wizardMode, setWizardMode] = useState<"create" | "edit">("create")
   const [editingComponent, setEditingComponent] = useState<{
@@ -106,6 +106,15 @@ export default function CampaignsPage() {
     currentConfig: any
   } | null>(null)
   const [currentEmailConfig, setCurrentEmailConfig] = useState<any>(null)
+
+  // Debug log to see emailHistory on every render
+  console.log("Rendering CampaignsPage, emailHistory:", emailHistory)
+
+  // Load emailHistory from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("emailHistory")
+    if (stored) setEmailHistory(JSON.parse(stored))
+  }, [])
 
   const handleOpenCreateWizard = () => {
     setWizardMode("create")
@@ -125,6 +134,7 @@ export default function CampaignsPage() {
   }
 
   const handleWizardComplete = (config: any) => {
+    console.log("Wizard complete! Config:", config);
     // Generate email data based on config
     const emailData = generateEmailFromConfig(config)
 
@@ -135,22 +145,15 @@ export default function CampaignsPage() {
       ...emailData,
     }
 
-    if (wizardMode === "create") {
-      // Add new email to history
-      setEmailHistory((prev) => [newEmail, ...prev])
-      setGeneratedEmail(newEmail)
-      setActiveView("preview")
-    } else {
-      // Update existing email
-      setEmailHistory((prev) =>
-        prev.map((email) =>
-          email.id === generatedEmail?.id ? { ...email, ...newEmail, id: email.id, timestamp: email.timestamp } : email,
-        ),
-      )
-      setGeneratedEmail((prev) => prev ? { ...prev, ...newEmail, id: prev.id, timestamp: prev.timestamp } : null)
-    }
+    setEmailHistory((prev) => {
+      const updated = [newEmail, ...prev];
+      console.log("Updated emailHistory:", updated);
+      localStorage.setItem("emailHistory", JSON.stringify(updated));
+      return updated;
+    });
 
-    setIsWizardOpen(false)
+    setIsWizardOpen(false);
+    navigate(`/campaigns/${newEmail.id}`);
   }
 
   const generateEmailFromConfig = (_config: any): Omit<GeneratedEmail, 'id' | 'timestamp' | 'config'> => {
@@ -237,7 +240,6 @@ Best,
       subject: email.subject + " (Variant)",
     }
     setEmailHistory((prev) => [variant, ...prev])
-    setGeneratedEmail(variant)
   }
 
   const handleCopyEmail = (email: GeneratedEmail) => {
@@ -250,8 +252,8 @@ Best,
   }
 
   const handleSelectEmail = (email: GeneratedEmail) => {
-    setGeneratedEmail(email)
-    setActiveView("preview")
+    // Navigate to the campaign detail page
+    navigate(`/campaigns/${email.id}`)
   }
 
   return (
@@ -268,44 +270,12 @@ Best,
 
       {/* Content Layout */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* View Toggle */}
-        {emailHistory.length > 0 && (
-          <div className="bg-white border-b border-gray-200 px-6 py-3 flex-shrink-0">
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 w-fit">
-              <button
-                onClick={() => setActiveView("preview")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeView === "preview" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Preview {generatedEmail && `(Current)`}
-              </button>
-              <button
-                onClick={() => setActiveView("history")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeView === "history" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                All Emails ({emailHistory.length})
-              </button>
-            </div>
-          </div>
-        )}
+        {/* View Toggle - Removed since we're using separate pages now */}
 
         {/* Content Area */}
         <div className="flex flex-1 gap-8 overflow-auto p-6">
-          {activeView === "preview" ? (
-            generatedEmail ? (
-              <div className="w-full">
-                <EmailPreview
-                  email={generatedEmail}
-                  onCreateVariant={handleCreateVariant}
-                  onCopy={handleCopyEmail}
-                  onSend={handleSaveEmail}
-                  onEditComponent={handleOpenEditWizard}
-                />
-              </div>
-            ) : (
+          <div className="max-w-6xl mx-auto w-full">
+            {emailHistory.length === 0 ? (
               <div className="flex items-center justify-center h-full w-full">
                 <div className="text-center text-gray-500 max-w-md">
                   <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
@@ -320,17 +290,15 @@ Best,
                   </Button>
                 </div>
               </div>
-            )
-          ) : (
-            <div className="max-w-6xl mx-auto">
+            ) : (
               <EmailHistory
                 emails={emailHistory}
                 onSelectEmail={handleSelectEmail}
                 onCopyEmail={handleCopyEmail}
                 onSendEmail={handleSaveEmail}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
