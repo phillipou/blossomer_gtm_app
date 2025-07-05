@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { EditDialog as Dialog, EditDialogContent as DialogContent, EditDialogHeader as DialogHeader, EditDialogTitle as DialogTitle, EditDialogFooter as DialogFooter } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Edit3, X, Plus, Trash2 } from "lucide-react";
-// If FirmographicRow is a type, import it from the appropriate location, e.g.:
-// import type { FirmographicRow } from "../types";
 
-// Define FirmographicRow type if not imported
 interface FirmographicValue {
   text: string;
   color: string;
@@ -18,9 +15,15 @@ interface FirmographicRow {
   values: FirmographicValue[];
 }
 
+interface EditFirmographicsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (rows: FirmographicRow[]) => void;
+  initialRows: FirmographicRow[];
+}
+
 const colorOptions: string[] = ["yellow", "blue", "red", "gray", "green", "purple"];
 
-// Define getColorClass if missing
 const getColorClass = (color: string) => {
   switch (color) {
     case "yellow":

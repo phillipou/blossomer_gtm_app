@@ -22,7 +22,6 @@
 ### **Connect Frontend to Improved APIs**
 - [ ] **Test landing page integration** - Ensure frontend properly handles improved AI responses
 - [ ] **Validate error handling** - Check that frontend gracefully handles any new response formats
-- [ ] **Update confidence display** - Make sure confidence scores are clearly shown to users
 
 ---
 

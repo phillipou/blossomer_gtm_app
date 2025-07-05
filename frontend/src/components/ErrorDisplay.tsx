@@ -1,5 +1,13 @@
-import { Button } from "@/components/ui/button";
-import type { ApiError } from "@/types/api";
+import { Button } from "./ui/button";
+
+interface ApiError {
+  error_code: string;
+  message: string;
+  details?: {
+    suggestions?: string[];
+  };
+  retry_recommended?: boolean;
+}
 
 interface ErrorDisplayProps {
   error: ApiError;

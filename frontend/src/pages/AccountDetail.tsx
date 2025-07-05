@@ -9,14 +9,13 @@ import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount, transformBuyingSignals } from "../lib/accountService";
 import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
-import type { TargetAccount, TargetPersonaResponse } from "../types/api";
+import type { TargetPersonaResponse } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
 import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
 import InputModal from "../components/modals/InputModal";
 import { generateTargetPersona } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
-import CardParentFooter from "../components/cards/CardParentFooter";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 
@@ -39,7 +38,6 @@ export default function AccountDetail() {
   const [rationale, setRationale] = useState("");
   const [editingRationale, setEditingRationale] = useState(false);
   const [editRationaleContent, setEditRationaleContent] = useState("");
-  const [hoveredRationale, setHoveredRationale] = useState(false);
 
   // Tab state for sub navigation
   const [activeTab, setActiveTab] = useState<string>("accounts");
@@ -209,8 +207,6 @@ export default function AccountDetail() {
                 ) : (
                   <div
                     className="group relative h-full"
-                    onMouseEnter={() => setHoveredRationale(true)}
-                    onMouseLeave={() => setHoveredRationale(false)}
                   >
                     <InfoCard
                       title={"Why they're a good fit"}
@@ -238,7 +234,6 @@ export default function AccountDetail() {
                     signals={buyingSignals}
                     onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
                     onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-                    onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
                   />
                 ) : (
                   <div className="text-center py-8 text-gray-500">

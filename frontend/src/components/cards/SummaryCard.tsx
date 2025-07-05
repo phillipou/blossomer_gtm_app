@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardHeader, CardContent } from "../ui/card";
+import { Card, CardHeader } from "../ui/card";
 import CardParentFooter from "./CardParentFooter";
 
 interface SummaryCardProps {

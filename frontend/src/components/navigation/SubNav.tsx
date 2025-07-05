@@ -1,3 +1,10 @@
+interface SubNavProps {
+  breadcrumbs: { label: string; href?: string }[];
+  activeSubTab: string;
+  setActiveSubTab: (tab: string) => void;
+  subTabs: { label: string; value: string }[];
+}
+
 export default function SubNav({ breadcrumbs, activeSubTab, setActiveSubTab, subTabs }: SubNavProps) {
   return (
     <div className="bg-white border-b border-gray-200 px-8">

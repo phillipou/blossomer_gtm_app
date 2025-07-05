@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import SubNav from "../components/navigation/SubNav";
 import InfoCard from "../components/cards/InfoCard";
 import React from "react";
@@ -11,11 +11,10 @@ import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
 import { getPersonasForTargetAccount, transformBuyingSignals, getStoredTargetAccounts, updatePersonaForTargetAccount } from "../lib/accountService";
 import type { TargetPersonaResponse } from "../types/api";
-import CardParentFooter from "../components/cards/CardParentFooter";
 
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
-  const navigate = useNavigate();
+
   const [persona, setPersona] = React.useState<TargetPersonaResponse | null>(null);
   const [accountName, setAccountName] = React.useState<string>("");
   const [editingBlock, setEditingBlock] = React.useState<string | null>(null);
@@ -117,13 +116,6 @@ export default function PersonaDetail() {
             }
           }}
         >
-          {/* Show parent company/account in the card footer */}
-          <CardParentFooter
-            parents={[
-              { name: accountName, color: "bg-red-400", label: "Account" },
-              { name: "Your Company", color: "bg-green-400", label: "Company" },
-            ]}
-          />
         </OverviewCard>
         {/* Info Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -174,7 +166,6 @@ export default function PersonaDetail() {
                   signals={buyingSignals}
                   onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
                   onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-                  onAdd={() => { setModalEditingSignal(null); setModalOpen(true); }}
                 />
               ) : (
                 <div className="text-center py-8 text-gray-500">

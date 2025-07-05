@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useLayoutEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { Copy, RefreshCw, Save, Eye, EyeOff, Pencil, LayoutGrid } from "lucide-react"
+import { Copy, RefreshCw, Save } from "lucide-react"
 import { Label } from "../ui/label"
 import InputModal from "../modals/InputModal"
 import {
@@ -51,7 +51,6 @@ interface EmailPreviewProps {
   onCreateVariant: (email: GeneratedEmail) => void
   onCopy: (email: GeneratedEmail) => void
   onSend: (email: GeneratedEmail) => void
-  onEditComponent?: (componentType: string, email: GeneratedEmail) => void
   editingMode: EditingMode
   setEditingMode: (mode: EditingMode) => void
 }
@@ -78,12 +77,6 @@ const EditingMode = {
   Writing: 'writing',
 } as const;
 type EditingMode = (typeof EditingMode)[keyof typeof EditingMode];
-
-const WizardMode = {
-  Create: 'create',
-  Edit: 'edit',
-} as const;
-type WizardMode = (typeof WizardMode)[keyof typeof WizardMode];
 
 // NOTE: If you see module not found errors for @dnd-kit/*, run:
 // npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
@@ -159,8 +152,7 @@ function SortableSegment({ segment, index, breakdown, hoveredSegment, setHovered
   );
 }
 
-export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditComponent, editingMode, setEditingMode }: EmailPreviewProps) {
-  const [showBreakdown, setShowBreakdown] = useState(true)
+export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMode }: EmailPreviewProps) {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null)
   const [editingSubject, setEditingSubject] = useState(false)
   const [subjectValue, setSubjectValue] = useState(email.subject)
@@ -168,20 +160,18 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
   const [segments, setSegments] = useState(email.segments)
   const [breakdown, setBreakdown] = useState(email.breakdown)
   const [segmentValues, setSegmentValues] = useState(email.segments.map(s => s.text))
-  const [editingBody, setEditingBody] = useState(false)
-  const [editingBodyActive, setEditingBodyActive] = useState(false)
   const [bodyValue, setBodyValue] = useState(email.segments.map(s => s.text).join('\n\n'))
   const subjectInputRef = useRef<HTMLInputElement>(null)
   const segmentInputRefs = useRef<(HTMLTextAreaElement | null)[]>([])
-  const bodyPreRef = useRef<HTMLPreElement>(null)
   const [bodyTextareaHeight, setBodyTextareaHeight] = useState<string | undefined>(undefined)
-  const lastPreHeight = useRef<number>(0)
-  const [pendingBodyChanges, setPendingBodyChanges] = useState(false)
-  const [currentEditingSection, setCurrentEditingSection] = useState<number | null>(null)
-  const prevBodyValue = useRef(bodyValue);
   const renderedBodyRef = useRef<HTMLDivElement>(null)
   const [editingLabelIndex, setEditingLabelIndex] = useState<number | null>(null);
   const [inputModalOpen, setInputModalOpen] = useState(false);
+
+  const getNextCustomType = () => {
+    const customTypes = segments.filter(s => s.type.startsWith('custom-'));
+    return `custom-${customTypes.length + 1}`;
+  };
 
   // DnD sensors
   const sensors = useSensors(
@@ -255,9 +245,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
 
   // When the body is edited, update the segments and breakdown
   const handleBodySave = () => {
-    setEditingBody(false);
-    setEditingBodyActive(false);
-    setPendingBodyChanges(false);
     // Use simple chunk-to-section mapping
     const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
       bodyValue,
@@ -274,29 +261,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
       handleBodySave()
     }
   }
-
-  // Mode switching handlers
-  const switchToWritingMode = () => {
-    setBodyValue(segmentValues.join('\n\n'));
-    if (renderedBodyRef.current) {
-      const height = renderedBodyRef.current.offsetHeight;
-      setBodyTextareaHeight(height ? `${height}px` : undefined);
-    } else {
-      setBodyTextareaHeight(undefined);
-    }
-    setEditingMode(EditingMode.Writing);
-  };
-  const switchToComponentMode = () => {
-    const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
-      bodyValue,
-      segments,
-      breakdown
-    );
-    setSegments(newSegments);
-    setBreakdown(newBreakdown);
-    setSegmentValues(newSegments.map(s => s.text));
-    setEditingMode(EditingMode.Component);
-  };
 
   // Handler to open InputModal for editing label
   const handleEditLabel = (index: number) => {
@@ -382,7 +346,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
       const lineCount = joined.split('\n').length;
       const estimatedHeight = Math.max(120, lineCount * 20 + 40);
       setBodyTextareaHeight(`${estimatedHeight}px`);
-      setShowBreakdown(false);
     } else {
       // Switch to component mode: parse body, show breakdown
       const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
@@ -393,7 +356,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
       setSegments(newSegments);
       setBreakdown(newBreakdown);
       setSegmentValues(newSegments.map(s => s.text));
-      setShowBreakdown(true);
       setBodyTextareaHeight(undefined);
     }
     // eslint-disable-next-line
@@ -458,7 +420,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, onEditCom
                   style={bodyTextareaHeight ? { height: bodyTextareaHeight, resize: 'vertical' } : { minHeight: '120px', resize: 'vertical' }}
                   value={bodyValue}
                   onChange={e => setBodyValue(e.target.value)}
-                  onBlur={() => setEditingBodyActive(false)}
                   onKeyDown={handleBodyKeyDown}
                   autoFocus
                 />

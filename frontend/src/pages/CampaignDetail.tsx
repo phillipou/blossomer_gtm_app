@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button } from "../components/ui/button"
-import { ArrowLeft, LayoutGrid, Pencil } from "lucide-react"
+import { LayoutGrid, Pencil } from "lucide-react"
 import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
-import PageHeader from "../components/navigation/PageHeader"
 import SubNav from "../components/navigation/SubNav"
 import CampaignDetailHeader, { type EditingMode as HeaderEditingMode } from "../components/campaigns/CampaignDetailHeader"
 
@@ -42,7 +40,7 @@ export default function CampaignDetail() {
   const navigate = useNavigate()
   const [email, setEmail] = useState<GeneratedEmail | null>(null)
   const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [editingComponent, setEditingComponent] = useState<{
+  const [editingComponent] = useState<{
     type: string
     currentConfig: any
   } | null>(null)
@@ -138,13 +136,7 @@ Best,
     }
   }, [campaignId])
 
-  const handleOpenEditWizard = (componentType: string) => {
-    setEditingComponent({
-      type: componentType,
-      currentConfig: email?.config,
-    })
-    setIsWizardOpen(true)
-  }
+
 
   const handleWizardComplete = (config: any) => {
     // Update the email with new config
@@ -193,7 +185,7 @@ Best,
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Campaigns", href: "/campaigns" },
-          { label: email.subject || campaignId }
+          { label: email.subject || campaignId || "Campaign" }
         ]}
         activeSubTab=""
         setActiveSubTab={() => {}}
@@ -217,7 +209,6 @@ Best,
             onCreateVariant={handleCreateVariant}
             onCopy={handleCopyEmail}
             onSend={handleSaveEmail}
-            onEditComponent={handleOpenEditWizard}
             editingMode={editingMode}
             setEditingMode={setEditingMode}
           />

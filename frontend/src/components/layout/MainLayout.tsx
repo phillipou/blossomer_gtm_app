@@ -1,7 +1,6 @@
 import SidebarNav from "../navigation/SidebarNav";
 import { Button } from "../ui/button";
 import { Sparkles } from "lucide-react";
-import React from "react";
 import { Outlet } from "react-router-dom";
 
 export default function MainLayout() {

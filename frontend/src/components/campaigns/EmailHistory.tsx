@@ -1,9 +1,8 @@
 import { useState } from "react"
-import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Clock, Search, Copy, Send, Eye, Filter, Pencil, Trash } from "lucide-react"
+import { Clock, Search, Filter, Pencil, Trash } from "lucide-react"
 import SummaryCard from "../cards/SummaryCard"
 
 interface GeneratedEmail {
@@ -11,25 +10,36 @@ interface GeneratedEmail {
   timestamp: string
   subject: string
   body: string
-  segments: any[]
-  breakdown: any
+  segments: EmailSegment[]
+  breakdown: EmailBreakdown
   config?: any
+}
+
+interface EmailSegment {
+  text: string
+  type: string
+  color: string
+}
+
+interface EmailBreakdown {
+  [key: string]: {
+    label: string
+    description: string
+    color: string
+  }
 }
 
 interface EmailHistoryProps {
   emails: GeneratedEmail[]
   onSelectEmail: (email: GeneratedEmail) => void
-  onCopyEmail: (email: GeneratedEmail) => void
-  onSendEmail: (email: GeneratedEmail) => void
   onEditEmail: (email: GeneratedEmail) => void
   onDeleteEmail: (email: GeneratedEmail) => void
   extraItem?: React.ReactNode;
 }
 
-export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, onEditEmail, onDeleteEmail, extraItem }: EmailHistoryProps) {
+export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail, extraItem }: EmailHistoryProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterBy, setFilterBy] = useState("all")
-  // const [viewMode, setViewMode] = useState("grid") // "grid" or "list"
 
   const filteredEmails = emails.filter((email) => {
     const matchesSearch =
@@ -39,29 +49,6 @@ export function EmailHistory({ emails, onSelectEmail, onCopyEmail, onSendEmail, 
     if (filterBy === "all") return matchesSearch
     return matchesSearch
   })
-
-  const getConfigSummary = (config: any) => {
-    if (!config) return "Unknown configuration"
-
-    const parts = []
-    if (config.selectedUseCase === "1") parts.push("Scaling Sales")
-    if (config.selectedUseCase === "2") parts.push("Time Optimization")
-    if (config.emphasis === "pain-point") parts.push("Pain Point")
-    if (config.emphasis === "capabilities") parts.push("Capabilities")
-    if (config.emphasis === "desired-outcome") parts.push("Desired Outcome")
-
-    return parts.join(" • ") || "Custom configuration"
-  }
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-
-    if (diffInHours < 1) return "Just now"
-    if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`
-    return date.toLocaleDateString()
-  }
 
   if (emails.length === 0) {
     return (

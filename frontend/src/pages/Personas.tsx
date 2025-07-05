@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Loader2, Plus, Edit3, Trash2, Wand2 } from "lucide-react";
+import { Loader2, Edit3, Trash2, Wand2 } from "lucide-react";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getAllPersonas, deletePersonaFromTargetAccount, updatePersonaForTargetAccount, addPersonaToTargetAccount, generateTargetPersona, getStoredTargetAccounts } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
@@ -272,7 +272,6 @@ export default function TargetPersonas() {
             const account = getStoredTargetAccounts().find(acc => acc.id === accountId);
             if (!account) throw new Error("Selected account not found");
             const accountIdFinal = account.id;
-            const accountName = account.name;
             // Build user_inputted_context as an object
             const user_inputted_context = {
               persona_name: name,

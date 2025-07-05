@@ -8,39 +8,6 @@ import PageHeader from "../components/navigation/PageHeader"
 import AddCard from "../components/ui/AddCard"
 import InputModal from "../components/modals/InputModal"
 
-// Mock data - in real app this would come from API
-// const targetAccounts = [
-//   { id: "1", name: "Technical B2B SaaS Founder-Led Startups" },
-//   { id: "2", name: "Marketing Directors at Mid-Market Companies" },
-// ]
-
-// const targetPersonas = [
-//   { id: "1", name: "Startup Founder", accountId: "1" },
-//   { id: "2", name: "Technical Co-founder", accountId: "1" },
-//   { id: "3", name: "Marketing Director", accountId: "2" },
-// ]
-
-// const useCases = [
-//   {
-//     id: "1",
-//     title: "Scaling Sales Without Hiring",
-//     description: "Help founders establish sales processes before building a team",
-//     personaIds: ["1", "2"],
-//   },
-//   {
-//     id: "2",
-//     title: "Founder Time Optimization",
-//     description: "Reduce manual sales tasks to focus on product development",
-//     personaIds: ["1", "2"],
-//   },
-//   {
-//     id: "3",
-//     title: "Predictable Revenue Generation",
-//     description: "Build repeatable systems for consistent customer acquisition",
-//     personaIds: ["1", "3"],
-//   },
-// ]
-
 interface GeneratedEmail {
   id: string
   timestamp: string
@@ -122,16 +89,6 @@ export default function CampaignsPage() {
     setWizardMode("create")
     setEditingComponent(null)
     setCurrentEmailConfig(null)
-    setIsWizardOpen(true)
-  }
-
-  const handleOpenEditWizard = (componentType: string, email: GeneratedEmail) => {
-    setWizardMode("edit")
-    setEditingComponent({
-      type: componentType,
-      currentConfig: email.config,
-    })
-    setCurrentEmailConfig(email.config)
     setIsWizardOpen(true)
   }
 
@@ -234,25 +191,6 @@ Best,
     }
   }
 
-  const handleCreateVariant = (email: GeneratedEmail) => {
-    const variant: GeneratedEmail = {
-      ...email,
-      id: Date.now().toString(),
-      timestamp: new Date().toLocaleString(),
-      subject: email.subject + " (Variant)",
-    }
-    setEmailHistory((prev) => [variant, ...prev])
-  }
-
-  const handleCopyEmail = (email: GeneratedEmail) => {
-    navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`)
-  }
-
-  const handleSaveEmail = (email: GeneratedEmail) => {
-    console.log("Saving email:", email)
-    // TODO: Implement save functionality
-  }
-
   const handleSelectEmail = (email: GeneratedEmail) => {
     // Navigate to the campaign detail page
     navigate(`/campaigns/${email.id}`)
@@ -343,8 +281,6 @@ Best,
               onSelectEmail={handleSelectEmail}
               onEditEmail={handleEditEmail}
               onDeleteEmail={handleDeleteEmail}
-              onCopyEmail={handleCopyEmail}
-              onSendEmail={() => {}}
               extraItem={<AddCard onClick={handleOpenCreateWizard} label="Add New" />}
             />
           )}

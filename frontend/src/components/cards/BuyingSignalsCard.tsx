@@ -14,16 +14,13 @@ interface BuyingSignalsCardProps {
   signals: BuyingSignal[];
   onEdit: (signal: BuyingSignal) => void;
   onDelete: (id: string) => void;
-  onAdd: () => void;
 }
 
 export default function BuyingSignalsCard({
   signals,
   onEdit,
   onDelete,
-  onAdd,
 }: BuyingSignalsCardProps) {
-  const [hoveredSignal, setHoveredSignal] = useState<string | null>(null);
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set());
 
   const handleToggleExpand = (id: string) => {
@@ -46,8 +43,7 @@ export default function BuyingSignalsCard({
           <div
             key={signal.id}
             className="group flex flex-col border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden hover:bg-gray-50 cursor-pointer"
-            onMouseEnter={() => setHoveredSignal(signal.id)}
-            onMouseLeave={() => setHoveredSignal(null)}
+
             onClick={() => handleToggleExpand(signal.id)}
           >
             <div className="flex items-center justify-between p-3 gap-2">

@@ -1,5 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import EditDialogModal from "./EditDialogModal";
+
+interface EditBuyingSignalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: { label: string; description: string }) => void;
+  editingSignal?: any;
+}
 
 export default function EditBuyingSignalModal({ isOpen, onClose, onSave, editingSignal }: EditBuyingSignalModalProps) {
   const [isLoading, setIsLoading] = useState(false);

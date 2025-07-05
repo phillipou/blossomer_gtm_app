@@ -1,12 +1,9 @@
 // Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import InfoCard from "../components/cards/InfoCard";
 import { Button } from "../components/ui/button";
-import { Check, X } from "lucide-react";
 import CustomersList from "./Accounts";
 import OverviewCard from "../components/cards/OverviewCard";
-import { Textarea } from "../components/ui/textarea";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
 import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
@@ -79,9 +76,7 @@ export default function Dashboard() {
     };
   });
   const [progressStage, setProgressStage] = useState(0);
-  const [activeTab, setActiveTab] = useState("company");
-  const [editingBlock, setEditingBlock] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
+  const [activeTab] = useState("company");
   const initialMount = useRef(true);
 
   // Generate unique analysis ID
@@ -205,7 +200,6 @@ export default function Dashboard() {
   // Retry function
   const handleRetry = useCallback(() => {
     const url = location.state?.url;
-    const icp = location.state?.icp;
     if (url) {
       setAnalysisState(prev => ({
         ...prev,
@@ -213,7 +207,7 @@ export default function Dashboard() {
         error: null
       }));
     }
-  }, [location.state?.url, location.state?.icp]);
+  }, [location.state?.url]);
 
   // Loading state
   if (analysisState.loading) {
@@ -288,7 +282,7 @@ export default function Dashboard() {
             />
             {/* New Info Cards Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {cardConfigs.map(({ key, title, label }) => (
+              {cardConfigs.map(({ key, title }) => (
                 <ListInfoCard
                   key={key}
                   title={title}
