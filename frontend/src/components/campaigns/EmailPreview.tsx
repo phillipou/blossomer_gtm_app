@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save } from "lucide-react"
 import { Label } from "../ui/label"
 import InputModal from "../modals/InputModal"
-import type { GeneratedEmail, EmailConfig } from "../../types/api"
+import type { GeneratedEmail } from "../../types/api"
 import {
   DndContext,
   closestCenter,
@@ -22,20 +22,6 @@ import {
 } from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
 import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
-
-interface EmailSegment {
-  text: string
-  type: string
-  color: string
-}
-
-interface EmailBreakdown {
-  [key: string]: {
-    label: string
-    description: string
-    color: string
-  }
-}
 
 interface EmailPreviewProps {
   email: GeneratedEmail

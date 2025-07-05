@@ -4,34 +4,7 @@ import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Clock, Search, Filter, Pencil, Trash } from "lucide-react"
 import SummaryCard from "../cards/SummaryCard"
-
-interface GeneratedEmail {
-  id: string
-  timestamp: string
-  subject: string
-  body: string
-  segments: EmailSegment[]
-  breakdown: EmailBreakdown
-  config?: {
-    companyName?: string;
-    accountName?: string;
-    personaName?: string;
-  }
-}
-
-interface EmailSegment {
-  text: string
-  type: string
-  color: string
-}
-
-interface EmailBreakdown {
-  [key: string]: {
-    label: string
-    description: string
-    color: string
-  }
-}
+import type { GeneratedEmail } from "../../types/api"
 
 interface EmailHistoryProps {
   emails: GeneratedEmail[]
