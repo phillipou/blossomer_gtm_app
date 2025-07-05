@@ -363,6 +363,38 @@ This document captures key architectural decisions made during the development o
 
 ---
 
+### **Decision 19: API Casing Convention (July 2025)**
+
+**What**: Standardize on snake_case for backend APIs, camelCase for frontend, with transformation layer.
+
+**Why**:
+- **Language conventions**: snake_case is Python standard, camelCase is JavaScript standard
+- **Consistency**: Each layer uses idiomatic naming for its language
+- **Maintainability**: Eliminates dual-case handling (checking both `painPoints` and `pain_points`)
+- **Code quality**: Reduces lint errors and improves type safety
+
+**Current Problem**: Frontend handles both cases with fallback patterns like:
+```typescript
+painPoints: (response as any).painPoints || (response as any).pain_points
+```
+
+**Solution**: 
+- Backend APIs use consistent snake_case
+- Frontend uses camelCase internally 
+- API response transformation layer converts snake_case to camelCase at boundaries
+- Remove all dual-case handling patterns
+
+**Trade-offs**:
+- ✅ Cleaner code, better maintainability, follows language conventions
+- ❌ One-time refactoring effort, need to implement transformation layer
+- ❌ Potential for bugs during transition
+
+**Implementation**: Transform API responses at service layer boundaries, update all frontend code to use camelCase consistently.
+
+**Status**: ✅ **COMPLETED** - Transformation layer implemented across all API responses, frontend code updated to use consistent camelCase, dual-case handling patterns removed.
+
+---
+
 ## Evolution and Future Decisions
 
 ### **What We'd Do Differently**
@@ -380,6 +412,7 @@ This document captures key architectural decisions made during the development o
 3. **Rate limiting approach**: Considering more sophisticated usage-based pricing
 4. **Frontend deployment**: Evaluating Vercel vs Render for static site hosting
 5. **Code quality timing**: Decided to do immediate cleanup (2-3 days) before feature work
+6. **API casing convention**: Standardizing on snake_case backend, camelCase frontend with transformation layer
 
 ### **Recent Decision: Tech Debt Management (July 2025)**
 

@@ -10,6 +10,9 @@
 - [x] **Remove dead code** - Delete unused App.tsx and clean up unused imports (15 min) ✅ **COMPLETED**
 - [x] **Fix critical build issues** - Resolved TypeScript errors and runtime data structure mismatches ✅ **COMPLETED**
 - [x] **Implement missing functions** - Added getNextCustomType() function to EmailPreview.tsx ✅ **COMPLETED**
+- [x] **Fix API casing inconsistency** - Implement snake_case to camelCase transformation layer (1-2 hours) ✅ **COMPLETED**
+- [x] **Improve buying signals transformation** - Enhanced data processing and transformation patterns ✅ **COMPLETED**
+- [x] **Fix linter errors** - Resolved all ESLint and TypeScript issues ✅ **COMPLETED**
 - [ ] **Consolidate LLM clients** - Create shared LLM client instance instead of per-route instances (1-2 hours)
 - [ ] **Standardize error handling** - Make error handling consistent across company.py and customers.py routes (1 hour)
 - [ ] **Fix router duplication** - Refactor dual router registration pattern in main.py (30 min)
@@ -171,10 +174,10 @@
 ## Current Blockers & Dependencies
 
 ### **No Current Blockers** 
-✅ All core infrastructure is working
-✅ Backend is deployed and stable  
-✅ Frontend is fully functional in development
-✅ AI processing pipeline is working well
+[x] All core infrastructure is working
+[x] Backend is deployed and stable  
+[x] Frontend is fully functional in development
+[x] AI processing pipeline is working well
 
 ### **External Dependencies**
 - **Firecrawl.dev API** - Website scraping service (working well)
@@ -195,14 +198,20 @@
 - **Build system fixes** - Resolved all TypeScript compilation errors
 - **Runtime error fixes** - Fixed FirmographicsTable and EditFirmographicsModal data structure issues
 - **Code cleanup** - Removed unused imports and dead code from main.tsx, EmailPreview.tsx
+- **API casing convention** - Implemented snake_case to camelCase transformation layer
+- **Buying signals transformation** - Enhanced data processing and transformation patterns
+- **Linter fixes** - Resolved all ESLint and TypeScript issues
 - **Git workflow** - Established backup-today branch strategy for safe development
 
 ### **🏃 Currently Working On**
-- ✅ **COMPLETED**: Build fixes and unused import cleanup
-- ✅ **COMPLETED**: Runtime error fixes for FirmographicsTable and EditFirmographicsModal
-- ✅ **COMPLETED**: Data structure transformation fixes
-- Minor cleanup tasks (eslint.config.js, Campaigns.tsx)
-- Planning next phase: prompt template improvements
+- [x] **COMPLETED**: Build fixes and unused import cleanup
+- [x] **COMPLETED**: Runtime error fixes for FirmographicsTable and EditFirmographicsModal
+- [x] **COMPLETED**: Data structure transformation fixes
+- [x] **COMPLETED**: API casing convention transformation layer implementation
+- [x] **COMPLETED**: Buying signals transformation improvements
+- [x] **COMPLETED**: Linter error fixes
+- **NEXT**: Finish remaining cleanup tasks (LLM client consolidation, error handling standardization)
+- **THEN**: Move to prompt template improvements phase
 
 ### **📋 Up Next**
 - Frontend production deployment
