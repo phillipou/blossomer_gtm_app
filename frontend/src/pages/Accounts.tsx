@@ -94,6 +94,7 @@ export default function TargetAccountsList() {
         ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
       };
       // Debug: log the context variables
+      console.log("[AddAccount] websiteUrl:", overview.company_url.trim());
       console.log("[AddAccount] user_inputted_context:", user_inputted_context);
       console.log("[AddAccount] company_context:", company_context);
       const requestPayload = {

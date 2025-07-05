@@ -61,9 +61,14 @@ Analyze the provided website and context to extract a clear, actionable profile 
   "metadata": {
     "parsed_website_content": {{ 'true' if website_content else 'false' }},
     "primary_context_source": "{{ 'website' if website_content else primary_context_source|default('user') }}",
-    "inference_level": "high|medium|low",
     "context_quality": "high|medium|low",
-    "assessment_summary": "Highlight if company_context and user_inputted_context were sufficient or if LLM had to infer heavily. List sources_used: website, user input, company context. Reference context_quality and recommend website data if context_quality is low."
+    "assessment_summary": "Sufficient company and target account context provided. Website data used for enrichment.",
+    "sources_used": [
+      {% if website_content %}"website", {% endif %}
+      {% if user_inputted_context %}"user input", {% endif %}
+      {% if company_context %}"company context", {% endif %}
+      {% if target_account_context %}"target account context", {% endif %}
+    ]
   }
 }
 

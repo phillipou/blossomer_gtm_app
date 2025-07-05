@@ -263,6 +263,10 @@ export default function TargetPersonas() {
             setError("Company website URL is missing from overview. Cannot generate persona.");
             return;
           }
+          if (!overview?.company_name) {
+            setError("Company name is missing from overview. Cannot generate persona.");
+            return;
+          }
           setAddPersonaLoading(true);
           try {
             const account = getStoredTargetAccounts().find(acc => acc.id === accountId);
@@ -287,12 +291,19 @@ export default function TargetPersonas() {
             };
             // Pass the full target account as target_account_context
             const target_account_context = account;
+            // Debug: log all context objects before API call
+            console.log('[Persona Generation] websiteUrl:', overview.company_url.trim());
+            console.log('[Persona Generation] user_inputted_context:', user_inputted_context);
+            console.log('[Persona Generation] company_context:', company_context);
+            console.log('[Persona Generation] target_account_context:', target_account_context);
             const response = await generateTargetPersona(
               overview.company_url.trim(),
               user_inputted_context,
               company_context,
               target_account_context
             );
+            console.log('[Persona Generation RESPONSE] response:', response);
+
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
               name: response.persona_name || name,

@@ -315,6 +315,11 @@ export default function AccountDetail() {
               setPersonaLoading(false);
               return;
             }
+            if (!overview?.company_name) {
+              setPersonaError("Company name is missing from overview. Cannot generate persona.");
+              setPersonaLoading(false);
+              return;
+            }
             // Construct user_inputted_context as an object
             const user_inputted_context = {
               persona_name: name,
@@ -331,15 +336,13 @@ export default function AccountDetail() {
               ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
               ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
             };
-            // Build target_account_context as a flattened object from the current target account's firmographics (if available)
+            // Pass the full target account as target_account_context
             let target_account_context = undefined;
             const accounts = getStoredTargetAccounts();
             const account = accounts.find((p: any) => p.id === id);
-            if (account && account.firmographics) {
-              const firmo = account.firmographics;
+            if (account) {
               target_account_context = {
-                ...firmo,
-                ...(firmo.company_size || {}), // flatten company_size fields
+                ...account, // Send the full account object
                 target_account_name: accountDetail.title || "",
                 target_account_description: accountDetail.description || "",
               };
