@@ -72,20 +72,29 @@ export function transformFirmographicsToTable(firmographics: Record<string, stri
   });
 }
 
-export function transformBuyingSignalsToCards(buyingSignals: Record<string, string[]>): BuyingSignal[] {
-  const signals: BuyingSignal[] = [];
-  let signalId = 0;
+export function transformBuyingSignalsToCards(buyingSignals: Record<string, string[]> | BuyingSignal[]): BuyingSignal[] {
+  // If it's already an array of BuyingSignal objects, return as is
+  if (Array.isArray(buyingSignals) && buyingSignals.length > 0 && 'id' in buyingSignals[0]) {
+    return buyingSignals;
+  }
 
-  Object.entries(buyingSignals).forEach(([, items]) => {
-    items.forEach(signal => {
-      signals.push({
-        id: String(signalId++),
-        label: signal,
-        description: "", // Keep simple - no descriptions needed
-        enabled: true,
-      });
+  const signals: BuyingSignal[] = [];
+  
+  // Handle nested object structure
+  if (!Array.isArray(buyingSignals)) {
+    Object.entries(buyingSignals).forEach(([category, items]) => {
+      if (Array.isArray(items)) {
+        items.forEach(signal => {
+          signals.push({
+            id: `${category}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            label: signal,
+            description: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}: ${signal}`,
+            enabled: true,
+          });
+        });
+      }
     });
-  });
+  }
 
   return signals;
 } 

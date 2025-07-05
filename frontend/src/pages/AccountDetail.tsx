@@ -8,7 +8,7 @@ import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount } from "../lib/accountService";
-import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
+import { transformTargetAccountToDetail, transformBuyingSignalsToCards } from "../utils/targetAccountTransforms";
 import type { TargetPersonaResponse, TargetAccount, FirmographicRow, BuyingSignal, TargetAccountDetail, ApiError } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
@@ -75,7 +75,7 @@ export default function AccountDetail() {
       if (account) {
         const detailData = transformTargetAccountToDetail(account);
         setAccountDetail(detailData);
-        setBuyingSignals(detailData.buyingSignals);
+        setBuyingSignals(transformBuyingSignalsToCards(detailData.buyingSignals));
         const firmographicsData = Array.isArray(detailData.firmographics) ? detailData.firmographics : [];
         setFirmographics(firmographicsData);
         setRationale(detailData.rationale || "");
@@ -352,7 +352,7 @@ export default function AccountDetail() {
             console.log('[Persona Generation] userInputtedContext:', userInputtedContext);
             console.log('[Persona Generation] companyContext:', companyContext);
             console.log('[Persona Generation] targetAccountContext (flattened):', targetAccountContext);
-            const response = await generateTargetPersona(websiteUrl, userInputtedContext, companyContext, targetAccountContext as Record<string, string | string[]>);
+            const response = await generateTargetPersona(websiteUrl, userInputtedContext, companyContext, targetAccountContext as unknown as Record<string, string | string[]>);
             console.log('[Persona Generation] API response:', response);
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
