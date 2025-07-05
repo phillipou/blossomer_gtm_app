@@ -4,6 +4,15 @@
 
 ## 🎯 Today's Focus (Immediate)
 
+### **Code Quality Cleanup (2-3 days) - HIGH PRIORITY**
+*Tech debt assessment completed - manageable cleanup needed before feature work*
+
+- [ ] **Remove dead code** - Delete unused App.tsx and clean up unused imports (15 min)
+- [ ] **Consolidate LLM clients** - Create shared LLM client instance instead of per-route instances (1-2 hours)
+- [ ] **Standardize error handling** - Make error handling consistent across company.py and customers.py routes (1 hour)
+- [ ] **Fix router duplication** - Refactor dual router registration pattern in main.py (30 min)
+- [ ] **Clean up unused imports** - Remove unused imports across backend and frontend (1 hour)
+
 ### **Improve Prompt Templates for Better AI Output**
 - [ ] **Update product_overview.jinja2** - Add more specific guidance for extracting capabilities and competitive positioning
 - [ ] **Enhance target_account.jinja2** - Include more detailed buying signals and firmographic criteria  
@@ -76,6 +85,23 @@
 - [ ] **CSV export for accounts/personas** - Downloadable prospecting data
 - [ ] **CRM integration hooks** - Connect to HubSpot, Salesforce, etc.
 - [ ] **Webhook system** - Allow external tools to receive analysis updates
+
+---
+
+## 🔧 Code Quality & Technical Debt (Medium Priority)
+
+### **File Organization & Architecture**
+*Defer until after prompt improvements and campaign backend are complete*
+
+- [ ] **Split large files** - Break down 500+ line files (context_orchestrator_agent.py, EmailWizardModal.tsx, EmailPreview.tsx)
+- [ ] **Add error boundaries** - Implement proper React error boundary patterns
+- [ ] **Improve documentation** - Add comprehensive docstrings to complex functions
+- [ ] **Configuration consistency** - Align dependency versioning strategies
+
+### **Code Quality Improvements**
+- [ ] **Type safety enhancements** - Strengthen TypeScript usage in frontend
+- [ ] **Performance review** - Optimize large component rendering patterns
+- [ ] **Testing expansion** - Add more integration tests for critical paths
 
 ---
 

@@ -371,6 +371,7 @@ This document captures key architectural decisions made during the development o
 2. **More upfront prompt engineering**: Underestimated complexity of structured AI outputs
 3. **Frontend state management**: Would consider Redux/Zustand earlier for complex state
 4. **API versioning**: Should have planned versioning strategy from the beginning
+5. **Code organization patterns**: Would establish shared client patterns earlier to avoid duplication
 
 ### **Decisions Under Review**
 
@@ -378,6 +379,26 @@ This document captures key architectural decisions made during the development o
 2. **Monolith vs Microservices**: May extract AI processing as usage scales
 3. **Rate limiting approach**: Considering more sophisticated usage-based pricing
 4. **Frontend deployment**: Evaluating Vercel vs Render for static site hosting
+5. **Code quality timing**: Decided to do immediate cleanup (2-3 days) before feature work
+
+### **Recent Decision: Tech Debt Management (July 2025)**
+
+**Context**: Codebase analysis revealed manageable technical debt - duplicate LLM clients, inconsistent error handling, dead code, and some large files.
+
+**Decision**: Implement immediate cleanup (2-3 days) before continuing with prompt improvements and campaign backend.
+
+**Rationale**:
+- **Perfect timing**: About to work on LLM code anyway, so fixing client duplication makes sense
+- **Low effort, high impact**: Only 2-3 days of work for significant quality improvement
+- **Prevents accumulation**: Addressing now keeps debt manageable
+- **Velocity enhancement**: Cleaner code will make future feature work faster
+
+**Implementation Plan**:
+1. **Phase 1 (Now)**: Remove dead code, consolidate LLM clients, standardize error handling
+2. **Phase 2 (Post-features)**: File organization, error boundaries, documentation
+3. **Phase 3 (Maintenance)**: Performance optimizations, advanced testing
+
+**Success Metrics**: Zero unused imports, single LLM client pattern, consistent error handling, no dead code
 
 ### **Principles for Future Decisions**
 
