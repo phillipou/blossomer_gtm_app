@@ -50,7 +50,7 @@ export default function AccountDetail() {
 
   // Use the analyzed company website from the overview hook (matches CustomersList.tsx)
   const overview = useCompanyOverview();
-  let websiteUrl = overview?.company_url || "";
+  let websiteUrl = overview?.companyUrl || "";
   if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
     websiteUrl = `https://${websiteUrl}`;
   }
@@ -256,7 +256,7 @@ export default function AccountDetail() {
                     title={persona.name}
                     description={persona.description}
                     parents={[
-                      { name: overview?.company_name || "", color: "bg-green-400", label: "Company" },
+                      { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
                       { name: accountDetail?.title || "Account", color: "bg-red-400", label: "Account" },
                     ]}
                     onClick={() => handlePersonaClick(persona.id)}
@@ -315,64 +315,64 @@ export default function AccountDetail() {
               setPersonaLoading(false);
               return;
             }
-            if (!overview?.company_name) {
+            if (!overview?.companyName) {
               setPersonaError("Company name is missing from overview. Cannot generate persona.");
               setPersonaLoading(false);
               return;
             }
-            // Construct user_inputted_context as an object
-            const user_inputted_context = {
-              persona_name: name,
-              persona_description: description,
+            // Construct userInputtedContext as an object
+            const userInputtedContext = {
+              personaName: name,
+              personaDescription: description,
             };
-            // Build company_context from overview (as in CustomersList.tsx)
-            const company_context = {
-              company_name: overview.company_name || '',
-              company_url: overview.company_url || '',
-              ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
-              ...(overview.product_description ? { product_description: overview.product_description } : {}),
+            // Build companyContext from overview (as in CustomersList.tsx)
+            const companyContext = {
+              companyName: overview.companyName || '',
+              companyUrl: overview.companyUrl || '',
+              ...(overview.companyOverview ? { companyOverview: overview.companyOverview } : {}),
+              ...(overview.productDescription ? { productDescription: overview.productDescription } : {}),
               ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
-              ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
-              ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
-              ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+              ...(overview.businessModel && overview.businessModel.length ? { businessModel: overview.businessModel } : {}),
+              ...(overview.differentiatedValue && overview.differentiatedValue.length ? { differentiatedValue: overview.differentiatedValue } : {}),
+              ...(overview.customerBenefits && overview.customerBenefits.length ? { customerBenefits: overview.customerBenefits } : {}),
             };
-            // Pass the full target account as target_account_context
-            let target_account_context = undefined;
+            // Pass the full target account as targetAccountContext
+            let targetAccountContext = undefined;
             const accounts = getStoredTargetAccounts();
             const account = accounts.find((p: TargetAccount) => p.id === id);
             if (account) {
-              target_account_context = {
+              targetAccountContext = {
                 ...account, // Send the full account object
-                target_account_name: accountDetail.title || "",
-                target_account_description: accountDetail.description || "",
+                targetAccountName: accountDetail.title || "",
+                targetAccountDescription: accountDetail.description || "",
               };
             }
             // Debug: log all context objects before API call
             console.log('[Persona Generation] websiteUrl:', websiteUrl);
-            console.log('[Persona Generation] user_inputted_context:', user_inputted_context);
-            console.log('[Persona Generation] company_context:', company_context);
-            console.log('[Persona Generation] target_account_context (flattened):', target_account_context);
-            const response = await generateTargetPersona(websiteUrl, user_inputted_context, company_context, target_account_context as any);
+            console.log('[Persona Generation] userInputtedContext:', userInputtedContext);
+            console.log('[Persona Generation] companyContext:', companyContext);
+            console.log('[Persona Generation] targetAccountContext (flattened):', targetAccountContext);
+            const response = await generateTargetPersona(websiteUrl, userInputtedContext, companyContext, targetAccountContext as Record<string, string | string[]>);
             console.log('[Persona Generation] API response:', response);
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
-              name: response.persona_name,
-              description: response.persona_description,
+              name: response.personaName,
+              description: response.personaDescription,
               createdAt: new Date().toLocaleDateString(),
               overview: response.overview,
-              painPoints: (response as any).painPoints || (response as any).pain_points,
+              painPoints: response.painPoints,
               profile: response.profile,
-              likelyJobTitles: (response as any).likelyJobTitles || (response as any).likely_job_titles,
-              primaryResponsibilities: (response as any).primaryResponsibilities || (response as any).primary_responsibilities,
-              statusQuo: (response as any).statusQuo || (response as any).status_quo,
-              useCases: (response as any).useCases || (response as any).use_cases,
-              desiredOutcomes: (response as any).desiredOutcomes || (response as any).desired_outcomes,
-              keyConcerns: (response as any).keyConcerns || (response as any).key_concerns,
-              whyWeMatter: (response as any).whyWeMatter || (response as any).why_we_matter,
-              buyingSignals: (response as any).persona_buying_signals || (response as any).buying_signals || [],
+              likelyJobTitles: response.likelyJobTitles,
+              primaryResponsibilities: response.primaryResponsibilities,
+              statusQuo: response.statusQuo,
+              useCases: response.useCases,
+              desiredOutcomes: response.desiredOutcomes,
+              keyConcerns: response.keyConcerns,
+              whyWeMatter: response.whyWeMatter,
+              buyingSignals: response.personaBuyingSignals || response.buyingSignals || [],
               // Add the required API response properties
-              persona_name: response.persona_name,
-              persona_description: response.persona_description,
+              personaName: response.personaName,
+              personaDescription: response.personaDescription,
             };
             addPersonaToTargetAccount(id!, newPersona);
             setPersonas(getPersonasForTargetAccount(id!));

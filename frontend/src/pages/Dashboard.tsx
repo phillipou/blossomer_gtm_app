@@ -20,19 +20,19 @@ const STATUS_STAGES = [
 
 type CardKey =
   | "capabilities"
-  | "business_model"
+  | "businessModel"
   | "alternatives"
-  | "differentiated_value"
+  | "differentiatedValue"
   | "testimonials"
-  | "customer_benefits";
+  | "customerBenefits";
 
 const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: boolean }[] = [
   { key: "capabilities", title: "Capabilities", label: "Capabilities", bulleted: true },
-  { key: "business_model", title: "Business Model", label: "Business Model", bulleted: true },
+  { key: "businessModel", title: "Business Model", label: "Business Model", bulleted: true },
   { key: "alternatives", title: "Alternatives", label: "Alternatives", bulleted: true },
-  { key: "differentiated_value", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
+  { key: "differentiatedValue", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
   { key: "testimonials", title: "Testimonials", label: "Testimonials", bulleted: true },
-  { key: "customer_benefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
+  { key: "customerBenefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
 ];
 
 export default function Dashboard() {
@@ -109,7 +109,7 @@ export default function Dashboard() {
         if (prev.analysisId !== analysisId) return prev;
         return {
           ...prev,
-          data: response as any,
+          data: response as TargetCompanyResponse,
           loading: false,
           error: null
         };
@@ -128,25 +128,29 @@ export default function Dashboard() {
       }
     } catch (error: unknown) {
       let apiError: ApiError;
-      if (error instanceof Error && 'status' in error && (error as any).status === 422 && 'body' in error && (error as any).body?.error_code) {
-        apiError = (error as any).body;
-      } else if (error instanceof Error && 'status' in error && (error as any).status === 429) {
+      const hasStatusAndBody = (err: unknown): err is Error & { status: number; body?: ApiError } => {
+        return err instanceof Error && 'status' in err && typeof (err as Record<string, unknown>).status === 'number';
+      };
+      
+      if (hasStatusAndBody(error) && error.status === 422 && error.body?.errorCode) {
+        apiError = error.body;
+      } else if (hasStatusAndBody(error) && error.status === 429) {
         apiError = {
-          error_code: "RATE_LIMITED",
+          errorCode: "RATE_LIMITED",
           message: "Rate limit exceeded. Sign up for higher limits!",
-          retry_recommended: false
+          retryRecommended: false
         };
       } else if (error instanceof Error) {
         apiError = {
-          error_code: "NETWORK_ERROR",
+          errorCode: "NETWORK_ERROR",
           message: "Failed to analyze website. Please check your connection and try again.",
-          retry_recommended: true
+          retryRecommended: true
         };
       } else {
         apiError = {
-          error_code: "UNKNOWN_ERROR",
+          errorCode: "UNKNOWN_ERROR",
           message: "An unknown error occurred.",
-          retry_recommended: true
+          retryRecommended: true
         };
       }
       
@@ -245,8 +249,8 @@ export default function Dashboard() {
 
   // Success state - render dashboard with real data
   const overview = analysisState.data;
-  const companyName = overview?.company_name || "Company";
-  const domain = overview?.company_url || "";
+  const companyName = overview?.companyName || "Company";
+  const domain = overview?.companyUrl || "";
 
   // Edit logic for OverviewBlock
   const handleListEdit = (field: CardKey) => (newItems: string[]) => {
@@ -282,7 +286,7 @@ export default function Dashboard() {
               title={companyName}
               subtitle={domain}
               bodyTitle="Company Overview"
-              bodyText={overview?.company_overview || overview?.product_description}
+              bodyText={overview?.companyOverview || overview?.productDescription}
               showButton={true}
               buttonTitle="View Details"
             />
@@ -292,7 +296,7 @@ export default function Dashboard() {
                 <ListInfoCard
                   key={key}
                   title={title}
-                  items={(overview as any)?.[key] || []}
+                  items={overview ? (overview as unknown as Record<string, string[]>)[key] || [] : []}
                   onEdit={handleListEdit(key)}
                   renderItem={(item: string, idx: number) => (
                     <li
@@ -304,11 +308,11 @@ export default function Dashboard() {
                   )}
                   editModalSubtitle={
                     key === "capabilities" ? "Core features and strengths of the company/product."
-                    : key === "business_model" ? "How the company generates revenue."
+                    : key === "businessModel" ? "How the company generates revenue."
                     : key === "alternatives" ? "Competing solutions or approaches."
-                    : key === "differentiated_value" ? "Unique value propositions that set this company apart."
+                    : key === "differentiatedValue" ? "Unique value propositions that set this company apart."
                     : key === "testimonials" ? "Customer quotes or endorsements."
-                    : key === "customer_benefits" ? "Key benefits customers receive."
+                    : key === "customerBenefits" ? "Key benefits customers receive."
                     : undefined
                   }
                 />

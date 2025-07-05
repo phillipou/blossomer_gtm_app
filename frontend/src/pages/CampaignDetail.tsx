@@ -8,7 +8,7 @@ import CampaignDetailHeader, { type EditingMode as HeaderEditingMode } from "../
 import type { GeneratedEmail, EmailConfig } from "../types/api"
 
 interface EmailWizardModalProps {
-  editingComponent: any;
+  editingComponent: unknown;
 }
 
 
@@ -190,9 +190,9 @@ Best,
         <div className="overflow-auto p-0">
           <EmailPreview
             email={email}
-            onCreateVariant={handleCreateVariant as any}
-            onCopy={handleCopyEmail as any}
-            onSend={handleSaveEmail as any}
+            onCreateVariant={handleCreateVariant as (email: any) => void}
+            onCopy={handleCopyEmail as (email: any) => void}
+            onSend={handleSaveEmail as (email: any) => void}
             editingMode={editingMode}
             setEditingMode={setEditingMode}
           />
@@ -202,9 +202,9 @@ Best,
       <EmailWizardModal
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-        onComplete={handleWizardComplete as any}
+        onComplete={handleWizardComplete}
         mode="edit"
-        editingComponent={editingComponent}
+        editingComponent={editingComponent as { type: string; currentConfig: EmailConfig } | null}
         initialConfig={email.config}
       />
     </div>

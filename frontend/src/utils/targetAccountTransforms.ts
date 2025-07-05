@@ -18,7 +18,7 @@ export function transformTargetAccountToDetail(targetAccount: TargetAccount): Ta
     description: targetAccount.description,
     rationale: targetAccount.rationale || "",
     firmographics: firmographicsArray,
-    buyingSignals: targetAccount.buying_signals || [],
+    buyingSignals: targetAccount.buyingSignals || [],
   };
 }
 

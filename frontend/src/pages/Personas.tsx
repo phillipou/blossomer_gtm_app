@@ -136,10 +136,10 @@ export default function TargetPersonas() {
       <div className="flex-1 p-8 space-y-8">
         {/* Company Overview */}
         <OverviewCard
-          title={overview?.company_name || "Your Company"}
-          subtitle={overview?.company_url || ""}
+          title={overview?.companyName || "Your Company"}
+          subtitle={overview?.companyUrl || ""}
           bodyTitle="Company Overview"
-          bodyText={overview?.company_overview || overview?.product_description}
+          bodyText={overview?.companyOverview || overview?.productDescription}
           showButton={true}
           buttonTitle="View Details"
         />
@@ -186,7 +186,7 @@ export default function TargetPersonas() {
                     description={persona.description}
                     parents={[
                       { name: accountName, color: "bg-red-400", label: "Account" },
-                      { name: overview?.company_name || "Company", color: "bg-green-400", label: "Company" },
+                      { name: overview?.companyName || "Company", color: "bg-green-400", label: "Company" },
                     ]}
                     onClick={() => handlePersonaClick(accountId, persona.id)}
                   >
@@ -259,11 +259,11 @@ export default function TargetPersonas() {
         onClose={() => { setAddModalOpen(false); setSelectedAccountId(""); }}
         onSubmit={async ({ name, description, accountId }) => {
           if (!accountId) return; // Require account selection
-          if (!overview?.company_url || !overview.company_url.trim()) {
+          if (!overview?.companyUrl || !overview.companyUrl.trim()) {
             setError("Company website URL is missing from overview. Cannot generate persona.");
             return;
           }
-          if (!overview?.company_name) {
+          if (!overview?.companyName) {
             setError("Company name is missing from overview. Cannot generate persona.");
             return;
           }
@@ -272,56 +272,56 @@ export default function TargetPersonas() {
             const account = getStoredTargetAccounts().find(acc => acc.id === accountId);
             if (!account) throw new Error("Selected account not found");
             const accountIdFinal = account.id;
-            // Build user_inputted_context as an object
-            const user_inputted_context: Record<string, string> = {
-              persona_name: name,
-              persona_description: description,
+            // Build userInputtedContext as an object
+            const userInputtedContext: Record<string, string> = {
+              personaName: name,
+              personaDescription: description,
             };
-            // Build company_context as an object
-            const company_context: Record<string, string | string[]> = {
-              company_name: overview.company_name || '',
-              company_url: overview.company_url || '',
-              ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
-              ...(overview.product_description ? { product_description: overview.product_description } : {}),
+            // Build companyContext as an object
+            const companyContext: Record<string, string | string[]> = {
+              companyName: overview.companyName || '',
+              companyUrl: overview.companyUrl || '',
+              ...(overview.companyOverview ? { companyOverview: overview.companyOverview } : {}),
+              ...(overview.productDescription ? { productDescription: overview.productDescription } : {}),
               ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
-              ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
-              ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
-              ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+              ...(overview.businessModel && overview.businessModel.length ? { businessModel: overview.businessModel } : {}),
+              ...(overview.differentiatedValue && overview.differentiatedValue.length ? { differentiatedValue: overview.differentiatedValue } : {}),
+              ...(overview.customerBenefits && overview.customerBenefits.length ? { customerBenefits: overview.customerBenefits } : {}),
             };
-            // Pass the full target account as target_account_context
-            const target_account_context = account;
+            // Pass the full target account as targetAccountContext
+            const targetAccountContext = account;
             // Debug: log all context objects before API call
-            console.log('[Persona Generation] websiteUrl:', overview.company_url.trim());
-            console.log('[Persona Generation] user_inputted_context:', user_inputted_context);
-            console.log('[Persona Generation] company_context:', company_context);
-            console.log('[Persona Generation] target_account_context:', target_account_context);
+            console.log('[Persona Generation] websiteUrl:', overview.companyUrl.trim());
+            console.log('[Persona Generation] userInputtedContext:', userInputtedContext);
+            console.log('[Persona Generation] companyContext:', companyContext);
+            console.log('[Persona Generation] targetAccountContext:', targetAccountContext);
             const response = await generateTargetPersona(
-              overview.company_url.trim(),
-              user_inputted_context,
-              company_context,
-              target_account_context as any
+              overview.companyUrl.trim(),
+              userInputtedContext,
+              companyContext,
+              targetAccountContext as Record<string, string | string[]>
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
-              name: response.persona_name || name,
-              description: response.persona_description || description,
+              name: response.personaName || name,
+              description: response.personaDescription || description,
               createdAt: new Date().toLocaleDateString(),
               overview: response.overview || "",
-              painPoints: (response as any).painPoints || (response as any).pain_points || [],
+              painPoints: response.painPoints || [],
               profile: response.profile || [],
-              likelyJobTitles: (response as any).likelyJobTitles || (response as any).likely_job_titles || [],
-              primaryResponsibilities: (response as any).primaryResponsibilities || (response as any).primary_responsibilities || [],
-              statusQuo: (response as any).statusQuo || (response as any).status_quo || [],
-              useCases: (response as any).useCases || (response as any).use_cases || [],
-              desiredOutcomes: (response as any).desiredOutcomes || (response as any).desired_outcomes || [],
-              keyConcerns: (response as any).keyConcerns || (response as any).key_concerns || [],
-              whyWeMatter: (response as any).whyWeMatter || (response as any).why_we_matter || [],
-              buyingSignals: response.persona_buying_signals || [],
+              likelyJobTitles: response.likelyJobTitles || [],
+              primaryResponsibilities: response.primaryResponsibilities || [],
+              statusQuo: response.statusQuo || [],
+              useCases: response.useCases || [],
+              desiredOutcomes: response.desiredOutcomes || [],
+              keyConcerns: response.keyConcerns || [],
+              whyWeMatter: response.whyWeMatter || [],
+              buyingSignals: response.personaBuyingSignals || response.buyingSignals || [],
               // Add the required API response properties
-              persona_name: response.persona_name,
-              persona_description: response.persona_description,
+              personaName: response.personaName,
+              personaDescription: response.personaDescription,
             };
             addPersonaToTargetAccount(accountIdFinal, newPersona);
             setPersonas(getAllPersonas());

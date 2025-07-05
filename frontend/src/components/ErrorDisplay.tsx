@@ -1,13 +1,5 @@
 import { Button } from "./ui/button";
-
-interface ApiError {
-  error_code: string;
-  message: string;
-  details?: {
-    suggestions?: string[];
-  };
-  retry_recommended?: boolean;
-}
+import type { ApiError } from "../types/api";
 
 interface ErrorDisplayProps {
   error: ApiError;
@@ -42,7 +34,7 @@ export function ErrorDisplay({ error, onRetry, onHome }: ErrorDisplayProps) {
     }
   };
 
-  const config = getErrorConfig(error.error_code);
+  const config = getErrorConfig(error.errorCode);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -61,12 +53,12 @@ export function ErrorDisplay({ error, onRetry, onHome }: ErrorDisplayProps) {
           </div>
         )}
         <div className="space-y-3">
-          {error.retry_recommended && (
+          {error.retryRecommended && (
             <Button className="w-full" onClick={onRetry}>
               Try Again
             </Button>
           )}
-          {error.error_code === "RATE_LIMITED" && (
+          {error.errorCode === "RATE_LIMITED" && (
             <Button className="w-full mb-3 bg-blue-600 hover:bg-blue-700" asChild>
               <a href="/signup">Sign Up for More Requests</a>
             </Button>

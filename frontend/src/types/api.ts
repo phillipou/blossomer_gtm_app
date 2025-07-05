@@ -17,13 +17,13 @@ export interface BuyingSignal {
 }
 
 export interface ApiError {
-  error_code: string;
+  errorCode: string;
   message: string;
   details?: {
     reason?: string;
     suggestions?: string[];
   };
-  retry_recommended?: boolean;
+  retryRecommended?: boolean;
 }
 
 export interface AnalysisState {
@@ -35,35 +35,35 @@ export interface AnalysisState {
 }
 
 export interface TargetCompanyRequest {
-  website_url: string;
-  user_inputted_context?: Record<string, string | string[]>;
-  company_context?: Record<string, string | string[]>;
+  websiteUrl: string;
+  userInputtedContext?: Record<string, string | string[]>;
+  companyContext?: Record<string, string | string[]>;
 }
 
 export interface TargetCompanyResponse {
-  target_company_name: string;
-  target_company_description: string;
+  targetCompanyName: string;
+  targetCompanyDescription: string;
   firmographics: FirmographicRow[];
-  buying_signals: BuyingSignal[];
+  buyingSignals: BuyingSignal[];
   rationale: string;
-  confidence_scores: Record<string, number>;
+  confidenceScores: Record<string, number>;
   metadata: Record<string, unknown>;
   // Added properties for useCompanyOverview
-  company_name: string;
-  company_url: string;
-  company_overview?: string;
-  product_description?: string;
+  companyName: string;
+  companyUrl: string;
+  companyOverview?: string;
+  productDescription?: string;
   capabilities?: string[];
-  business_model?: string[];
-  differentiated_value?: string[];
-  customer_benefits?: string[];
+  businessModel?: string[];
+  differentiatedValue?: string[];
+  customerBenefits?: string[];
 }
 
 export interface TargetPersonaRequest {
-  website_url: string;
-  user_inputted_context?: Record<string, string | string[]>;
-  company_context?: Record<string, string | string[]>;
-  target_account_context?: TargetAccount | Record<string, string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown>; // Added index signature
+  websiteUrl: string;
+  userInputtedContext?: Record<string, string | string[]>;
+  companyContext?: Record<string, string | string[]>;
+  targetAccountContext?: TargetAccount | Record<string, string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown>; // Added index signature
 }
 
 export interface TargetPersonaResponse {
@@ -83,9 +83,9 @@ export interface TargetPersonaResponse {
   whyWeMatter?: string[];
   buyingSignals?: BuyingSignal[];
   // Added properties for API response consistency
-  persona_name: string;
-  persona_description: string;
-  persona_buying_signals?: BuyingSignal[];
+  personaName: string;
+  personaDescription: string;
+  personaBuyingSignals?: BuyingSignal[];
 }
 
 export interface TargetAccount {
@@ -94,11 +94,11 @@ export interface TargetAccount {
   role: string;
   description: string;
   firmographics?: FirmographicRow[] | Record<string, string | string[] | Record<string, string>>;
-  buying_signals?: BuyingSignal[];
+  buyingSignals?: BuyingSignal[];
   rationale?: string;
-  confidence_scores?: Record<string, number>;
+  confidenceScores?: Record<string, number>;
   metadata?: Record<string, unknown>;
-  created_at?: string;
+  createdAt?: string;
   personas?: TargetPersonaResponse[];
   [key: string]: string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown; // Added index signature
 }

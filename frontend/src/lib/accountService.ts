@@ -9,14 +9,14 @@ import type {
 
 // API service functions
 export async function generateTargetCompany(
-  website_url: string,
-  user_inputted_context: Record<string, string>,
-  company_context?: Record<string, string | string[]> // Allow string or string[] for context values
+  websiteUrl: string,
+  userInputtedContext: Record<string, string>,
+  companyContext?: Record<string, string | string[]> // Allow string or string[] for context values
 ): Promise<TargetCompanyResponse> {
   const request: TargetCompanyRequest = {
-    website_url,
-    user_inputted_context,
-    ...(company_context ? { company_context } : {}),
+    websiteUrl,
+    userInputtedContext,
+    ...(companyContext ? { companyContext } : {}),
   };
 
   // Use demo endpoint for now (no API key required)
@@ -27,16 +27,16 @@ export async function generateTargetCompany(
 }
 
 export async function generateTargetPersona(
-  website_url: string,
-  user_inputted_context: Record<string, string>,
-  company_context?: Record<string, string | string[]>,
-  target_account_context?: Record<string, string | string[]>
+  websiteUrl: string,
+  userInputtedContext: Record<string, string>,
+  companyContext?: Record<string, string | string[]>,
+  targetAccountContext?: Record<string, string | string[]>
 ): Promise<TargetPersonaResponse> {
   const request: TargetPersonaRequest = {
-    website_url,
-    user_inputted_context,
-    ...(company_context ? { company_context } : {}),
-    ...(target_account_context ? { target_account_context } : {}),
+    websiteUrl,
+    userInputtedContext,
+    ...(companyContext ? { companyContext } : {}),
+    ...(targetAccountContext ? { targetAccountContext } : {}),
   };
   // Use demo endpoint for now (no API key required)
   return apiFetch('/demo/customers/target_personas', {

@@ -78,54 +78,48 @@ export default function TargetAccountsList() {
 
   const handleAddAccount = async ({ name, description }: { name: string; description: string }) => {
     setError(null);
-    if (!overview?.company_url || !overview.company_url.trim()) {
+    if (!overview?.companyUrl || !overview.companyUrl.trim()) {
       setError("Company website URL is missing from overview. Cannot generate account.");
       return;
     }
     setIsGenerating(true);
     try {
-      // Build user_inputted_context as an object
-      const user_inputted_context: Record<string, string> = {
-        target_company_name: name,
-        target_company_description: description,
+      // Build userInputtedContext as an object
+      const userInputtedContext: Record<string, string> = {
+        targetCompanyName: name,
+        targetCompanyDescription: description,
       };
-      // Build company_context as an object
-      const company_context: Record<string, string | string[]> = {
-        company_name: company_name,
-        company_url: company_url,
-        ...(company_overview ? { company_overview: company_overview } : {}),
-        ...(product_description ? { product_description: product_description } : {}),
+      // Build companyContext as an object
+      const companyContext: Record<string, string | string[]> = {
+        companyName: company_name,
+        companyUrl: company_url,
+        ...(company_overview ? { companyOverview: company_overview } : {}),
+        ...(product_description ? { productDescription: product_description } : {}),
         ...(capabilities && capabilities.length ? { capabilities: capabilities } : {}),
-        ...(business_model && business_model.length ? { business_model: business_model } : {}),
-        ...(differentiated_value && differentiated_value.length ? { differentiated_value: differentiated_value } : {}),
-        ...(customer_benefits && customer_benefits.length ? { customer_benefits: customer_benefits } : {}),
+        ...(business_model && business_model.length ? { businessModel: business_model } : {}),
+        ...(differentiated_value && differentiated_value.length ? { differentiatedValue: differentiated_value } : {}),
+        ...(customer_benefits && customer_benefits.length ? { customerBenefits: customer_benefits } : {}),
       };
       // Debug: log the context variables
       console.log("[AddAccount] websiteUrl:", company_url.trim());
-      console.log("[AddAccount] user_inputted_context:", user_inputted_context);
-      console.log("[AddAccount] company_context:", company_context);
-      const requestPayload = {
-        website_url: overview?.company_url.trim() || '',
-        user_inputted_context,
-        company_context,
-      };
-      console.log("[AddAccount] API request payload:", requestPayload);
+      console.log("[AddAccount] userInputtedContext:", userInputtedContext);
+      console.log("[AddAccount] companyContext:", companyContext);
       const response = await generateTargetCompany(
-        requestPayload.website_url,
-        requestPayload.user_inputted_context,
-        requestPayload.company_context
+        overview?.companyUrl.trim() || '',
+        userInputtedContext,
+        companyContext
       );
       console.log("[AddAccount] API response:", response);
       const newAccount: TargetAccount = {
         id: generateTargetAccountId(),
-        name: response.target_company_name,
+        name: response.targetCompanyName,
         role: "Target Account",
-        description: response.target_company_description || description,
+        description: response.targetCompanyDescription || description,
         firmographics: response.firmographics,
-        buying_signals: response.buying_signals,
+        buyingSignals: response.buyingSignals,
         rationale: response.rationale,
         metadata: response.metadata,
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
       saveTargetAccount(newAccount);
       setTargetAccounts(getStoredTargetAccounts());
@@ -180,14 +174,14 @@ export default function TargetAccountsList() {
     return <div>Loading...</div>;
   }
 
-  const company_name = overview?.company_name || '';
-  const company_url = overview?.company_url || '';
-  const company_overview = overview?.company_overview;
-  const product_description = overview?.product_description;
+  const company_name = overview?.companyName || '';
+  const company_url = overview?.companyUrl || '';
+  const company_overview = overview?.companyOverview;
+  const product_description = overview?.productDescription;
   const capabilities = overview?.capabilities;
-  const business_model = overview?.business_model;
-  const differentiated_value = overview?.differentiated_value;
-  const customer_benefits = overview?.customer_benefits;
+  const business_model = overview?.businessModel;
+  const differentiated_value = overview?.differentiatedValue;
+  const customer_benefits = overview?.customerBenefits;
 
   return (
     <div className="flex flex-col h-full">
@@ -203,10 +197,10 @@ export default function TargetAccountsList() {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden p-8 space-y-8">
         <OverviewCard 
-          title={overview.company_name}
-          subtitle={overview.company_url}
+          title={overview.companyName}
+          subtitle={overview.companyUrl}
           bodyTitle="Company Overview"
-          bodyText={overview.company_overview || overview.product_description}
+          bodyText={overview.companyOverview || overview.productDescription}
           showButton={true}
           buttonTitle="View Details"
         />
@@ -265,7 +259,7 @@ export default function TargetAccountsList() {
                       targetAccount={account}
                       onEdit={handleEditAccount}
                       onDelete={handleDeleteAccount}
-                      companyName={overview.company_name}
+                      companyName={overview.companyName}
                     />
                   );
                 })}
