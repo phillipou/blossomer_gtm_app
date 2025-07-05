@@ -9,8 +9,6 @@ import AddCard from "../components/ui/AddCard"
 import InputModal from "../components/modals/InputModal"
 import type { GeneratedEmail, EmailConfig } from "../types/api";
 
-
-
 export default function CampaignsPage() {
   const navigate = useNavigate()
   const [emailHistory, setEmailHistory] = useState<GeneratedEmail[]>([])
@@ -40,8 +38,6 @@ export default function CampaignsPage() {
     setCurrentEmailConfig(null)
     setIsWizardOpen(true)
   }
-
-  
 
   const handleWizardComplete = (config: EmailConfig) => {
     
