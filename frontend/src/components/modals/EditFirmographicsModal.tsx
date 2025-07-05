@@ -19,7 +19,7 @@ interface EditFirmographicsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (rows: FirmographicRow[]) => void;
-  initialRows: FirmographicRow[];
+  initialRows: FirmographicRow[] | undefined;
 }
 
 const colorOptions: string[] = ["yellow", "blue", "red", "gray", "green", "purple"];
@@ -51,14 +51,19 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && initialRows) {
-      setRows(
-        initialRows.map((row, idx) => ({
-          ...row,
-          id: row.id || String(idx) + "-" + (row.label || "row"),
-          values: [...row.values],
-        }))
-      );
+    if (isOpen) {
+      if (initialRows && Array.isArray(initialRows)) {
+        setRows(
+          initialRows.map((row, idx) => ({
+            ...row,
+            id: row.id || String(idx) + "-" + (row.label || "row"),
+            values: Array.isArray(row.values) ? [...row.values] : [],
+          }))
+        );
+      } else {
+        // Fallback to empty array if initialRows is not provided
+        setRows([]);
+      }
       setEditingLabel(null);
       setEditingValue(null);
       setNewTagValue("");
@@ -92,7 +97,7 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
         if (row.id === rowId) {
           return {
             ...row,
-            values: row.values.filter((_: any, index: number) => index !== valueIndex),
+            values: row.values.filter((_: FirmographicValue, index: number) => index !== valueIndex),
           };
         }
         return row;

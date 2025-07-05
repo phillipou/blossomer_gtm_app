@@ -43,7 +43,13 @@ interface GeneratedEmail {
   body: string
   segments: EmailSegment[]
   breakdown: EmailBreakdown
-  config?: any
+  config?: EmailConfig
+}
+
+interface EmailConfig {
+  companyName?: string;
+  accountName?: string;
+  personaName?: string;
 }
 
 interface EmailPreviewProps {

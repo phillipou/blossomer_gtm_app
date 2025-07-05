@@ -3,8 +3,6 @@ import { Badge } from "../ui/badge";
 interface Value {
   text: string;
   color: string;
-  // Optionally allow subcategory keys (e.g., employees, revenue)
-  [key: string]: any;
 }
 interface Row {
   label: string;
@@ -14,21 +12,16 @@ interface Row {
 // Helper to flatten company size subcategories
 function flattenFirmographicsData(data: Row[]): Row[] {
   const result: Row[] = [];
+  if (!data || !Array.isArray(data)) {
+    return result;
+  }
   data.forEach((row) => {
     if (row.label.toLowerCase() === "company size") {
-      row.values.forEach((v) => {
-        if (v.employees) {
-          result.push({
-            label: "Employees",
-            values: [{ text: v.employees, color: v.color || "gray" }],
-          });
-        }
-        if (v.revenue) {
-          result.push({
-            label: "Revenue",
-            values: [{ text: v.revenue, color: v.color || "gray" }],
-          });
-        }
+      row.values.forEach((v: Value) => {
+        result.push({
+          label: row.label,
+          values: [{ text: v.text, color: v.color || "gray" }],
+        });
       });
     } else {
       result.push(row);
@@ -37,14 +30,14 @@ function flattenFirmographicsData(data: Row[]): Row[] {
   return result;
 }
 
-export function FirmographicsTable({ data }: { data: Row[] }) {
+export function FirmographicsTable({ data }: { data: Row[] | undefined }) {
   const colorMap: Record<string, string> = {
     yellow: "bg-yellow-100 text-yellow-800",
     blue: "bg-blue-100 text-blue-800",
     red: "bg-red-100 text-red-700",
     gray: "bg-gray-100 text-gray-800",
   };
-  const flatData = flattenFirmographicsData(data);
+  const flatData = flattenFirmographicsData(data || []);
   return (
     <div className="space-y-3">
       {flatData.map((row: Row) => (

@@ -39,15 +39,15 @@ export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   // Helper to get cached overview
-  const getCachedOverview = () => {
+  const getCachedOverview = useCallback(() => {
     const stored = localStorage.getItem("dashboard_overview");
     return stored ? JSON.parse(stored) : null;
-  };
+  }, []);
   // Helper to get cached URL
-  const getCachedUrl = () => {
+  const getCachedUrl = useCallback(() => {
     const cached = getCachedOverview();
     return cached?._input_url || null;
-  };
+  }, [getCachedOverview]);
   // Helper to normalize URLs for comparison
   function normalizeUrl(url?: string | null): string {
     if (!url) return "";
@@ -109,7 +109,7 @@ export default function Dashboard() {
         if (prev.analysisId !== analysisId) return prev;
         return {
           ...prev,
-          data: response,
+          data: response as any,
           loading: false,
           error: null
         };
@@ -126,20 +126,26 @@ export default function Dashboard() {
           JSON.stringify({ _input_url: url, value: response })
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       let apiError: ApiError;
-      if (error.status === 422 && error.body?.error_code) {
-        apiError = error.body;
-      } else if (error.status === 429) {
+      if (error instanceof Error && 'status' in error && (error as any).status === 422 && 'body' in error && (error as any).body?.error_code) {
+        apiError = (error as any).body;
+      } else if (error instanceof Error && 'status' in error && (error as any).status === 429) {
         apiError = {
           error_code: "RATE_LIMITED",
           message: "Rate limit exceeded. Sign up for higher limits!",
           retry_recommended: false
         };
-      } else {
+      } else if (error instanceof Error) {
         apiError = {
           error_code: "NETWORK_ERROR",
           message: "Failed to analyze website. Please check your connection and try again.",
+          retry_recommended: true
+        };
+      } else {
+        apiError = {
+          error_code: "UNKNOWN_ERROR",
+          message: "An unknown error occurred.",
           retry_recommended: true
         };
       }
@@ -174,7 +180,7 @@ export default function Dashboard() {
     ) {
       startAnalysis(url, icp);
     }
-  }, [location.state, startAnalysis]);
+  }, [location.state, startAnalysis, analysisState.loading, getCachedUrl]);
 
   // Reset progress when loading starts
   useEffect(() => {
@@ -286,7 +292,7 @@ export default function Dashboard() {
                 <ListInfoCard
                   key={key}
                   title={title}
-                  items={overview?.[key] || []}
+                  items={(overview as any)?.[key] || []}
                   onEdit={handleListEdit(key)}
                   renderItem={(item: string, idx: number) => (
                     <li

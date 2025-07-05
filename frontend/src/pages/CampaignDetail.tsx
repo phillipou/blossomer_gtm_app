@@ -5,30 +5,12 @@ import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
 import SubNav from "../components/navigation/SubNav"
 import CampaignDetailHeader, { type EditingMode as HeaderEditingMode } from "../components/campaigns/CampaignDetailHeader"
+import type { GeneratedEmail, EmailConfig } from "../types/api"
 
-interface GeneratedEmail {
-  id: string
-  timestamp: string
-  subject: string
-  body: string
-  segments: EmailSegment[]
-  breakdown: EmailBreakdown
-  config?: any
+interface EmailWizardModalProps {
+  editingComponent: any;
 }
 
-interface EmailSegment {
-  text: string
-  type: string
-  color: string
-}
-
-interface EmailBreakdown {
-  [key: string]: {
-    label: string
-    description: string
-    color: string
-  }
-}
 
 const EditingMode = {
   Component: "component" as HeaderEditingMode,
@@ -40,10 +22,7 @@ export default function CampaignDetail() {
   const navigate = useNavigate()
   const [email, setEmail] = useState<GeneratedEmail | null>(null)
   const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [editingComponent] = useState<{
-    type: string
-    currentConfig: any
-  } | null>(null)
+  const [editingComponent] = useState<EmailWizardModalProps['editingComponent']>(null)
   const [editingMode, setEditingMode] = useState<HeaderEditingMode>(EditingMode.Component)
 
   useEffect(() => {
@@ -125,8 +104,13 @@ Best,
           signature: { label: "Signature", description: "Professional closing", color: "bg-gray-100 border-gray-200" },
         },
         config: {
+          selectedAccount: "1",
+          selectedPersona: "1", 
           selectedUseCase: "1",
           emphasis: "pain-point",
+          template: "professional",
+          openingLine: "custom",
+          ctaSetting: "meeting",
           companyName: "Demo Company",
           accountName: "Demo Account",
           personaName: "Demo Persona",
@@ -138,7 +122,7 @@ Best,
 
 
 
-  const handleWizardComplete = (config: any) => {
+  const handleWizardComplete = (config: EmailConfig) => {
     // Update the email with new config
     if (email) {
       setEmail({
@@ -206,9 +190,9 @@ Best,
         <div className="overflow-auto p-0">
           <EmailPreview
             email={email}
-            onCreateVariant={handleCreateVariant}
-            onCopy={handleCopyEmail}
-            onSend={handleSaveEmail}
+            onCreateVariant={handleCreateVariant as any}
+            onCopy={handleCopyEmail as any}
+            onSend={handleSaveEmail as any}
             editingMode={editingMode}
             setEditingMode={setEditingMode}
           />
@@ -218,7 +202,7 @@ Best,
       <EmailWizardModal
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-        onComplete={handleWizardComplete}
+        onComplete={handleWizardComplete as any}
         mode="edit"
         editingComponent={editingComponent}
         initialConfig={email.config}

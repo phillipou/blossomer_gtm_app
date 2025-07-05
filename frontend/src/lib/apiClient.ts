@@ -1,3 +1,5 @@
+import type { ApiError } from "../types/api";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export async function apiFetch<T>(
@@ -13,22 +15,17 @@ export async function apiFetch<T>(
     },
   });
 
-  let body: any = null;
+  let data: T | ApiError;
   const text = await response.text();
   try {
-    body = text ? JSON.parse(text) : null;
+    data = text ? JSON.parse(text) : {};
   } catch {
-    body = text;
+    data = { message: text, error_code: "UNKNOWN_ERROR" } as ApiError;
   }
 
   if (!response.ok) {
-    const error: any = new Error(
-      `API error: ${response.status} ${response.statusText}`
-    );
-    error.status = response.status;
-    error.body = body;
-    throw error;
+    throw data as ApiError;
   }
 
-  return body;
+  return data as T;
 } 

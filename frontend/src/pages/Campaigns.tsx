@@ -7,60 +7,9 @@ import { EmailHistory } from "../components/campaigns/EmailHistory"
 import PageHeader from "../components/navigation/PageHeader"
 import AddCard from "../components/ui/AddCard"
 import InputModal from "../components/modals/InputModal"
+import type { GeneratedEmail, EmailConfig } from "../types/api";
 
-interface GeneratedEmail {
-  id: string
-  timestamp: string
-  subject: string
-  body: string
-  segments: EmailSegment[]
-  breakdown: EmailBreakdown
-  config?: any
-}
 
-interface EmailSegment {
-  text: string
-  type: string
-  color: string
-}
-
-interface EmailBreakdown {
-  subject: {
-    label: string
-    description: string
-    color: string
-  }
-  greeting: {
-    label: string
-    description: string
-    color: string
-  }
-  opening: {
-    label: string
-    description: string
-    color: string
-  }
-  "pain-point": {
-    label: string
-    description: string
-    color: string
-  }
-  solution: {
-    label: string
-    description: string
-    color: string
-  }
-  cta: {
-    label: string
-    description: string
-    color: string
-  }
-  signature: {
-    label: string
-    description: string
-    color: string
-  }
-}
 
 export default function CampaignsPage() {
   const navigate = useNavigate()
@@ -69,9 +18,9 @@ export default function CampaignsPage() {
   const [wizardMode, setWizardMode] = useState<"create" | "edit">("create")
   const [editingComponent, setEditingComponent] = useState<{
     type: string
-    currentConfig: any
+    currentConfig: EmailConfig
   } | null>(null)
-  const [currentEmailConfig, setCurrentEmailConfig] = useState<any>(null)
+  const [currentEmailConfig, setCurrentEmailConfig] = useState<EmailConfig | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingEmail, setEditingEmail] = useState<GeneratedEmail | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -92,10 +41,12 @@ export default function CampaignsPage() {
     setIsWizardOpen(true)
   }
 
-  const handleWizardComplete = (config: any) => {
-    console.log("Wizard complete! Config:", config);
+  
+
+  const handleWizardComplete = (config: EmailConfig) => {
+    
     // Generate email data based on config
-    const emailData = generateEmailFromConfig(config)
+    const emailData = generateEmailFromConfig()
 
     const newEmail: GeneratedEmail = {
       id: Date.now().toString(),
@@ -115,22 +66,11 @@ export default function CampaignsPage() {
     navigate(`/campaigns/${newEmail.id}`);
   }
 
-  const generateEmailFromConfig = (_config: any): Omit<GeneratedEmail, 'id' | 'timestamp' | 'config'> => {
+  const generateEmailFromConfig = (): Omit<GeneratedEmail, 'id' | 'timestamp' | 'config'> => {
     // This would normally call an API, but for demo we'll return mock data
     return {
       subject: "Quick question about scaling your sales process",
-      body: `Hi [First Name],
-
-I noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.
-
-Many technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.
-
-That's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.
-
-Would you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?
-
-Best,
-[Your Name]`,
+      body: `Hi [First Name],\n\nI noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.\n\nMany technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.\n\nThat's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.\n\nWould you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?\n\nBest,\n[Your Name]`,
       segments: [
         { text: "Hi [First Name],", type: "greeting", color: "bg-purple-100 border-purple-200" },
         {
@@ -278,9 +218,9 @@ Best,
           ) : (
             <EmailHistory
               emails={emailHistory}
-              onSelectEmail={handleSelectEmail}
-              onEditEmail={handleEditEmail}
-              onDeleteEmail={handleDeleteEmail}
+              onSelectEmail={handleSelectEmail as any}
+              onEditEmail={handleEditEmail as any}
+              onDeleteEmail={handleDeleteEmail as any}
               extraItem={<AddCard onClick={handleOpenCreateWizard} label="Add New" />}
             />
           )}
@@ -294,7 +234,7 @@ Best,
         onComplete={handleWizardComplete}
         mode={wizardMode}
         editingComponent={editingComponent}
-        initialConfig={currentEmailConfig}
+        initialConfig={currentEmailConfig || undefined}
       />
 
       {/* Edit Email Modal */}
@@ -316,4 +256,4 @@ Best,
       />
     </div>
   )
-} 
+}

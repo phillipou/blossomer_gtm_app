@@ -1,10 +1,15 @@
 import { Button } from "../ui/button";
 
+interface EditingProfile {
+  name?: string;
+  description?: string;
+}
+
 interface AddAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
-  editingProfile?: any;
+  editingProfile?: EditingProfile;
 }
 
 export default function AddAccountModal({ isOpen, onClose, onSave, editingProfile }: AddAccountModalProps) {

@@ -10,8 +10,8 @@ import type {
 // API service functions
 export async function generateTargetCompany(
   website_url: string,
-  user_inputted_context: Record<string, any>,
-  company_context?: Record<string, any>
+  user_inputted_context: Record<string, string>,
+  company_context?: Record<string, string | string[]> // Allow string or string[] for context values
 ): Promise<TargetCompanyResponse> {
   const request: TargetCompanyRequest = {
     website_url,
@@ -28,10 +28,10 @@ export async function generateTargetCompany(
 
 export async function generateTargetPersona(
   website_url: string,
-  user_inputted_context: Record<string, any>,
-  company_context?: Record<string, any>,
-  target_account_context?: Record<string, any>
-): Promise<any> {
+  user_inputted_context: Record<string, string>,
+  company_context?: Record<string, string | string[]>,
+  target_account_context?: Record<string, string | string[]>
+): Promise<TargetPersonaResponse> {
   const request: TargetPersonaRequest = {
     website_url,
     user_inputted_context,
@@ -132,7 +132,7 @@ export function getAllPersonas(): Array<{ persona: TargetPersonaResponse; accoun
   return allPersonas;
 }
 
-export function transformBuyingSignals(raw: any[]): { id: string; label: string; description: string; enabled: boolean }[] {
+export function transformBuyingSignals(raw: (string | { id?: string; label?: string; name?: string; description?: string; enabled?: boolean })[]): { id: string; label: string; description: string; enabled: boolean }[] {
   return (Array.isArray(raw) ? raw : []).map((s, idx) =>
     typeof s === 'string'
       ? { id: String(idx), label: s, description: '', enabled: true }

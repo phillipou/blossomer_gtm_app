@@ -1,6 +1,32 @@
-import type { TargetAccount } from "../types/api";
+import type { TargetAccount, TargetAccountDetail, FirmographicRow, BuyingSignal } from "../types/api";
 
-export function transformFirmographicsToTable(firmographics: Record<string, any>) {
+export function transformTargetAccountToDetail(targetAccount: TargetAccount): TargetAccountDetail {
+  // Transform firmographics from object to array format if needed
+  let firmographicsArray: FirmographicRow[] = [];
+  if (targetAccount.firmographics) {
+    if (Array.isArray(targetAccount.firmographics)) {
+      firmographicsArray = targetAccount.firmographics;
+    } else {
+      // Transform object format to array format
+      firmographicsArray = transformFirmographicsToTable(targetAccount.firmographics as Record<string, string | string[] | Record<string, string>>);
+    }
+  }
+
+  return {
+    id: targetAccount.id,
+    title: targetAccount.name,
+    description: targetAccount.description,
+    rationale: targetAccount.rationale || "",
+    firmographics: firmographicsArray,
+    buyingSignals: targetAccount.buying_signals || [],
+  };
+}
+
+// These functions are likely used elsewhere to transform raw data into the FirmographicRow[] and BuyingSignal[] formats.
+// They are not needed for transforming TargetAccount to TargetAccountDetail if TargetAccount already stores these as arrays.
+// Keeping them here for now as they might be used by other parts of the application.
+
+export function transformFirmographicsToTable(firmographics: Record<string, string | string[] | Record<string, string>>): FirmographicRow[] {
   const colorMap: { [key: string]: string } = {
     industry: "blue",
     company_size: "green", 
@@ -11,11 +37,16 @@ export function transformFirmographicsToTable(firmographics: Record<string, any>
 
   return Object.entries(firmographics).map(([key, values]) => {
     if (key === "company_size" && typeof values === "object" && values !== null) {
-      // Preserve subfields for flattening in the table
+      // Handle nested company size object with employees and revenue
+      const sizeObj = values as Record<string, string>;
+      const sizeValues = Object.entries(sizeObj).map(([subKey, subValue]) => ({
+        text: `${subKey.charAt(0).toUpperCase() + subKey.slice(1)}: ${subValue}`,
+        color: colorMap[key] || "gray"
+      }));
       return {
         id: key,
         label: "Company Size",
-        values: [{ ...values, color: colorMap[key] || "gray" }]
+        values: sizeValues
       };
     }
     return {
@@ -25,7 +56,7 @@ export function transformFirmographicsToTable(firmographics: Record<string, any>
       ).join(' '),
       values: Array.isArray(values)
         ? values.map(value => ({
-            text: value,
+            text: String(value),
             color: colorMap[key] || "gray"
           }))
         : typeof values === "object" && values !== null
@@ -41,34 +72,20 @@ export function transformFirmographicsToTable(firmographics: Record<string, any>
   });
 }
 
-export function transformBuyingSignalsToCards(buyingSignals: Record<string, string[]>) {
-  const signals: any[] = [];
+export function transformBuyingSignalsToCards(buyingSignals: Record<string, string[]>): BuyingSignal[] {
+  const signals: BuyingSignal[] = [];
   let signalId = 0;
 
-  Object.entries(buyingSignals).forEach(([category, items]) => {
+  Object.entries(buyingSignals).forEach(([, items]) => {
     items.forEach(signal => {
       signals.push({
         id: String(signalId++),
         label: signal,
         description: "", // Keep simple - no descriptions needed
         enabled: true,
-        category: category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
       });
     });
   });
 
   return signals;
-}
-
-export function transformTargetAccountToDetail(targetAccount: TargetAccount) {
-  return {
-    id: targetAccount.id,
-    title: targetAccount.name,
-    subtitle: `Target Account Profile`,
-    description: targetAccount.description,
-    rationale: targetAccount.rationale,
-    firmographics: transformFirmographicsToTable(targetAccount.firmographics || {}),
-    buyingSignals: transformBuyingSignalsToCards(targetAccount.buying_signals || {}),
-    createdAt: targetAccount.created_at
-  };
 } 

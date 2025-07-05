@@ -10,13 +10,26 @@ import { EditDialog, EditDialogContent, EditDialogHeader, EditDialogTitle } from
 interface EmailWizardModalProps {
   isOpen: boolean
   onClose: () => void
-  onComplete: (config: any) => void
+  onComplete: (config: EmailConfig) => void
   mode: "create" | "edit"
   editingComponent?: {
-    type: string
-    currentConfig: any
-  } | null
-  initialConfig?: any
+    type: string;
+    currentConfig: EmailConfig;
+  } | null;
+  initialConfig?: EmailConfig;
+}
+
+interface EmailConfig {
+  selectedAccount: string;
+  selectedPersona: string;
+  selectedUseCase: string;
+  emphasis: string;
+  template: string;
+  openingLine: string;
+  ctaSetting: string;
+  companyName?: string;
+  accountName?: string;
+  personaName?: string;
 }
 
 // Mock data - in real app this would come from API
@@ -62,7 +75,7 @@ export function EmailWizardModal({
 }: EmailWizardModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<EmailConfig>({
     selectedAccount: "",
     selectedPersona: "",
     selectedUseCase: "",

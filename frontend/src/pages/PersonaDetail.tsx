@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
 import { getPersonasForTargetAccount, transformBuyingSignals, getStoredTargetAccounts, updatePersonaForTargetAccount } from "../lib/accountService";
-import type { TargetPersonaResponse } from "../types/api";
+import type { TargetPersonaResponse, BuyingSignal } from "../types/api";
 
 export default function PersonaDetail() {
   const { id: accountId, personaId } = useParams();
@@ -22,8 +22,8 @@ export default function PersonaDetail() {
 
   // Buying signals modal state (copied from CustomerDetail)
   const [modalOpen, setModalOpen] = React.useState(false);
-  const [modalEditingSignal, setModalEditingSignal] = React.useState<any>(null);
-  const [buyingSignals, setBuyingSignals] = React.useState<any[]>([]);
+  const [modalEditingSignal, setModalEditingSignal] = React.useState<BuyingSignal | null>(null);
+  const [buyingSignals, setBuyingSignals] = React.useState<BuyingSignal[]>([]);
 
   const personaCardConfigs = [
     { key: "likelyJobTitles", title: "Likely Job Titles", editModalSubtitle: "Job titles this persona is likely to have." },
@@ -77,7 +77,7 @@ export default function PersonaDetail() {
     setEditContent("");
   };
 
-  const handleListEdit = (field: keyof TargetPersonaResponse) => (newItems: any[]) => {
+  const handleListEdit = (field: keyof TargetPersonaResponse) => (newItems: string[]) => {
     setPersona(persona => persona ? { ...persona, [field]: newItems } : persona);
   };
 
@@ -178,9 +178,10 @@ export default function PersonaDetail() {
         <EditBuyingSignalModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          editingSignal={modalEditingSignal}
-          onSave={(values: Record<string, any>) => {
-            const { label, description } = values;
+          editingSignal={modalEditingSignal || undefined}
+          onSave={(values: Record<string, string | boolean>) => {
+            const label = String(values.label || '').trim();
+            const description = String(values.description || '').trim();
             if (modalEditingSignal) {
               // Edit
               setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));

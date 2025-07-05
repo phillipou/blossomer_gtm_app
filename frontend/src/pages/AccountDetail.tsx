@@ -7,9 +7,9 @@ import { FirmographicsTable } from "../components/tables/FirmographicsTable";
 import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
-import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount, transformBuyingSignals } from "../lib/accountService";
+import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount } from "../lib/accountService";
 import { transformTargetAccountToDetail } from "../utils/targetAccountTransforms";
-import type { TargetPersonaResponse } from "../types/api";
+import type { TargetPersonaResponse, TargetAccount, FirmographicRow, BuyingSignal, TargetAccountDetail, ApiError } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
 import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
@@ -22,16 +22,16 @@ import AddCard from "../components/ui/AddCard";
 export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [accountDetail, setAccountDetail] = useState<any>(null);
+  const [accountDetail, setAccountDetail] = useState<TargetAccountDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Buying signals modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalEditingSignal, setModalEditingSignal] = useState<any>(null);
-  const [buyingSignals, setBuyingSignals] = useState<any[]>([]);
+  const [modalEditingSignal, setModalEditingSignal] = useState<BuyingSignal | null>(null);
+  const [buyingSignals, setBuyingSignals] = useState<BuyingSignal[]>([]);
 
-  const [firmographics, setFirmographics] = useState<any[]>([]);
+  const [firmographics, setFirmographics] = useState<FirmographicRow[]>([]);
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
   const [hoveredFirmo, setHoveredFirmo] = useState(false);
   // State for rationale editing
@@ -71,12 +71,13 @@ export default function AccountDetail() {
   useEffect(() => {
     try {
       const accounts = getStoredTargetAccounts();
-      const account = accounts.find((p: any) => p.id === id);
+      const account = accounts.find((p: TargetAccount) => p.id === id);
       if (account) {
         const detailData = transformTargetAccountToDetail(account);
         setAccountDetail(detailData);
-        setBuyingSignals(transformBuyingSignals(detailData.buyingSignals));
-        setFirmographics(detailData.firmographics || []);
+        setBuyingSignals(detailData.buyingSignals);
+        const firmographicsData = Array.isArray(detailData.firmographics) ? detailData.firmographics : [];
+        setFirmographics(firmographicsData);
         setRationale(detailData.rationale || "");
       } else {
         setError("Account not found");
@@ -147,14 +148,17 @@ export default function AccountDetail() {
               bodyText={accountDetail.description}
               showButton={false}
               onEdit={({ name, description }) => {
-                setAccountDetail((prev: any) => ({
-                  ...prev,
-                  title: name,
-                  description: description
-                }));
+                setAccountDetail((prev: TargetAccountDetail | null) => {
+                  if (!prev) return null;
+                  return {
+                    ...prev,
+                    title: name,
+                    description: description
+                  };
+                });
                 // Also update the stored account
                 const accounts = getStoredTargetAccounts();
-                const updatedAccounts = accounts.map((p: any) => 
+                const updatedAccounts = accounts.map((p: TargetAccount) => 
                   p.id === id ? { ...p, name: name, description: description } : p
                 );
                 localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
@@ -252,7 +256,7 @@ export default function AccountDetail() {
                     title={persona.name}
                     description={persona.description}
                     parents={[
-                      { name: overview.company_name, color: "bg-green-400", label: "Company" },
+                      { name: overview?.company_name || "", color: "bg-green-400", label: "Company" },
                       { name: accountDetail?.title || "Account", color: "bg-red-400", label: "Account" },
                     ]}
                     onClick={() => handlePersonaClick(persona.id)}
@@ -276,9 +280,10 @@ export default function AccountDetail() {
       <EditBuyingSignalModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        editingSignal={modalEditingSignal}
-        onSave={(values: Record<string, any>) => {
-          const { label, description } = values;
+        editingSignal={modalEditingSignal || undefined}
+        onSave={(values: Record<string, string | boolean>) => {
+          const label = String(values.label || '').trim();
+          const description = String(values.description || '').trim();
           if (modalEditingSignal) {
             // Edit
             setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));
@@ -334,7 +339,7 @@ export default function AccountDetail() {
             // Pass the full target account as target_account_context
             let target_account_context = undefined;
             const accounts = getStoredTargetAccounts();
-            const account = accounts.find((p: any) => p.id === id);
+            const account = accounts.find((p: TargetAccount) => p.id === id);
             if (account) {
               target_account_context = {
                 ...account, // Send the full account object
@@ -347,7 +352,7 @@ export default function AccountDetail() {
             console.log('[Persona Generation] user_inputted_context:', user_inputted_context);
             console.log('[Persona Generation] company_context:', company_context);
             console.log('[Persona Generation] target_account_context (flattened):', target_account_context);
-            const response = await generateTargetPersona(websiteUrl, user_inputted_context, company_context, target_account_context);
+            const response = await generateTargetPersona(websiteUrl, user_inputted_context, company_context, target_account_context as any);
             console.log('[Persona Generation] API response:', response);
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),
@@ -355,22 +360,25 @@ export default function AccountDetail() {
               description: response.persona_description,
               createdAt: new Date().toLocaleDateString(),
               overview: response.overview,
-              painPoints: response.pain_points,
+              painPoints: (response as any).painPoints || (response as any).pain_points,
               profile: response.profile,
-              likelyJobTitles: response.likely_job_titles,
-              primaryResponsibilities: response.primary_responsibilities,
-              statusQuo: response.status_quo,
-              useCases: response.use_cases,
-              desiredOutcomes: response.desired_outcomes,
-              keyConcerns: response.key_concerns,
-              whyWeMatter: response.why_we_matter,
-              buyingSignals: response.persona_buying_signals,
+              likelyJobTitles: (response as any).likelyJobTitles || (response as any).likely_job_titles,
+              primaryResponsibilities: (response as any).primaryResponsibilities || (response as any).primary_responsibilities,
+              statusQuo: (response as any).statusQuo || (response as any).status_quo,
+              useCases: (response as any).useCases || (response as any).use_cases,
+              desiredOutcomes: (response as any).desiredOutcomes || (response as any).desired_outcomes,
+              keyConcerns: (response as any).keyConcerns || (response as any).key_concerns,
+              whyWeMatter: (response as any).whyWeMatter || (response as any).why_we_matter,
+              buyingSignals: (response as any).persona_buying_signals || (response as any).buying_signals || [],
+              // Add the required API response properties
+              persona_name: response.persona_name,
+              persona_description: response.persona_description,
             };
             addPersonaToTargetAccount(id!, newPersona);
             setPersonas(getPersonasForTargetAccount(id!));
             setPersonaModalOpen(false);
-          } catch (err: any) {
-            setPersonaError(err?.body?.error || err.message || "Failed to generate persona.");
+          } catch (err: unknown) {
+            setPersonaError((err as ApiError)?.message || (err as Error).message || "Failed to generate persona.");
           } finally {
             setPersonaLoading(false);
           }

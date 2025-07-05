@@ -13,7 +13,7 @@ import {
   deleteTargetAccount,
   generateTargetAccountId,
 } from "../lib/accountService";
-import type { TargetAccount } from "../types/api";
+import type { TargetAccount, ApiError } from "../types/api";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
@@ -21,7 +21,14 @@ import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
 
-function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: any) {
+interface TargetAccountCardProps {
+  targetAccount: TargetAccount;
+  onEdit: (account: TargetAccount) => void;
+  onDelete: (id: string) => void;
+  companyName: string;
+}
+
+function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: TargetAccountCardProps) {
   const navigate = useNavigate();
   return (
     <SummaryCard
@@ -71,34 +78,34 @@ export default function TargetAccountsList() {
 
   const handleAddAccount = async ({ name, description }: { name: string; description: string }) => {
     setError(null);
-    if (!overview.company_url || !overview.company_url.trim()) {
+    if (!overview?.company_url || !overview.company_url.trim()) {
       setError("Company website URL is missing from overview. Cannot generate account.");
       return;
     }
     setIsGenerating(true);
     try {
       // Build user_inputted_context as an object
-      const user_inputted_context = {
+      const user_inputted_context: Record<string, string> = {
         target_company_name: name,
         target_company_description: description,
       };
       // Build company_context as an object
-      const company_context = {
-        company_name: overview.company_name || '',
-        company_url: overview.company_url || '',
-        ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
-        ...(overview.product_description ? { product_description: overview.product_description } : {}),
-        ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
-        ...(overview.business_model && overview.business_model.length ? { business_model: overview.business_model } : {}),
-        ...(overview.differentiated_value && overview.differentiated_value.length ? { differentiated_value: overview.differentiated_value } : {}),
-        ...(overview.customer_benefits && overview.customer_benefits.length ? { customer_benefits: overview.customer_benefits } : {}),
+      const company_context: Record<string, string | string[]> = {
+        company_name: company_name,
+        company_url: company_url,
+        ...(company_overview ? { company_overview: company_overview } : {}),
+        ...(product_description ? { product_description: product_description } : {}),
+        ...(capabilities && capabilities.length ? { capabilities: capabilities } : {}),
+        ...(business_model && business_model.length ? { business_model: business_model } : {}),
+        ...(differentiated_value && differentiated_value.length ? { differentiated_value: differentiated_value } : {}),
+        ...(customer_benefits && customer_benefits.length ? { customer_benefits: customer_benefits } : {}),
       };
       // Debug: log the context variables
-      console.log("[AddAccount] websiteUrl:", overview.company_url.trim());
+      console.log("[AddAccount] websiteUrl:", company_url.trim());
       console.log("[AddAccount] user_inputted_context:", user_inputted_context);
       console.log("[AddAccount] company_context:", company_context);
       const requestPayload = {
-        website_url: overview.company_url.trim(),
+        website_url: overview?.company_url.trim() || '',
         user_inputted_context,
         company_context,
       };
@@ -123,9 +130,9 @@ export default function TargetAccountsList() {
       saveTargetAccount(newAccount);
       setTargetAccounts(getStoredTargetAccounts());
       setIsAddModalOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AddAccount] API error:", err);
-      setError(err?.body?.error || err.message || "Failed to generate target account.");
+      setError((err as ApiError)?.message || (err as Error).message || "Failed to generate target account.");
     } finally {
       setIsGenerating(false);
     }
@@ -172,6 +179,15 @@ export default function TargetAccountsList() {
   if (!overview) {
     return <div>Loading...</div>;
   }
+
+  const company_name = overview?.company_name || '';
+  const company_url = overview?.company_url || '';
+  const company_overview = overview?.company_overview;
+  const product_description = overview?.product_description;
+  const capabilities = overview?.capabilities;
+  const business_model = overview?.business_model;
+  const differentiated_value = overview?.differentiated_value;
+  const customer_benefits = overview?.customer_benefits;
 
   return (
     <div className="flex flex-col h-full">

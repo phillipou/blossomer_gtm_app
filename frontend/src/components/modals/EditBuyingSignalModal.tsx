@@ -4,8 +4,15 @@ import EditDialogModal from "./EditDialogModal";
 interface EditBuyingSignalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { label: string; description: string }) => void;
-  editingSignal?: any;
+  onSave: (data: Record<string, string | boolean>) => void;
+  editingSignal?: BuyingSignal;
+}
+
+interface BuyingSignal {
+  id: string;
+  label: string;
+  description: string;
+  enabled?: boolean;
 }
 
 export default function EditBuyingSignalModal({ isOpen, onClose, onSave, editingSignal }: EditBuyingSignalModalProps) {
@@ -15,11 +22,11 @@ export default function EditBuyingSignalModal({ isOpen, onClose, onSave, editing
     ? { label: editingSignal.label, description: editingSignal.description }
     : { label: "", description: "" };
 
-  const handleSave = (values: Record<string, any>) => {
+  const handleSave = (values: Record<string, string | boolean>) => {
     setIsLoading(true);
     onSave({
-      label: values.label.trim(),
-      description: values.description.trim(),
+      label: String(values.label).trim(),
+      description: String(values.description).trim(),
     });
     setIsLoading(false);
     onClose();

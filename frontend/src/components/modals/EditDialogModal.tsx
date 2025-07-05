@@ -24,11 +24,11 @@ interface EditDialogField {
 interface EditDialogModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (values: Record<string, any>) => void;
+  onSave: (values: Record<string, string | boolean>) => void;
   title: string;
   description?: string;
   fields: EditDialogField[];
-  initialValues?: Record<string, any>;
+  initialValues?: Record<string, string | boolean>;
   isLoading?: boolean;
   saveLabel?: string;
   editLabel?: string;
@@ -48,13 +48,13 @@ export default function EditDialogModal({
   editLabel = "Update",
   editing = false,
 }: EditDialogModalProps) {
-  const [form, setForm] = useState<Record<string, any>>(initialValues);
+  const [form, setForm] = useState<Record<string, string | boolean>>(initialValues);
 
   useEffect(() => {
     setForm(initialValues);
   }, [initialValues, isOpen]);
 
-  const handleChange = (name: string, value: any) => {
+  const handleChange = (name: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -85,7 +85,7 @@ export default function EditDialogModal({
                 <Input
                   id={field.name}
                   placeholder={field.placeholder}
-                  value={form[field.name] || ""}
+                  value={String(form[field.name] || "")}
                   onChange={(e) => handleChange(field.name, e.target.value)}
                   className="focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -94,7 +94,7 @@ export default function EditDialogModal({
                 <Textarea
                   id={field.name}
                   placeholder={field.placeholder}
-                  value={form[field.name] || ""}
+                  value={String(form[field.name] || "")}
                   onChange={(e) => handleChange(field.name, e.target.value)}
                   className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
                 />

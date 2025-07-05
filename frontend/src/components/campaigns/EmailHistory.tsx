@@ -12,7 +12,11 @@ interface GeneratedEmail {
   body: string
   segments: EmailSegment[]
   breakdown: EmailBreakdown
-  config?: any
+  config?: {
+    companyName?: string;
+    accountName?: string;
+    personaName?: string;
+  }
 }
 
 interface EmailSegment {

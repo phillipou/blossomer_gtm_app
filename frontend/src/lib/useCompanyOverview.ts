@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import type { TargetCompanyResponse } from "../types/api";
 
 export function useCompanyOverview() {
-  const [overview, setOverview] = useState<any>(null);
+  const [overview, setOverview] = useState<TargetCompanyResponse | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("dashboard_overview");

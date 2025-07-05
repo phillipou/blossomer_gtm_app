@@ -8,7 +8,7 @@ import { getAllPersonas, deletePersonaFromTargetAccount, updatePersonaForTargetA
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 
 import SummaryCard from "../components/cards/SummaryCard";
-import type { TargetPersonaResponse } from "../types/api";
+import type { TargetPersonaResponse, ApiError } from "../types/api";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
 import InputModal from "../components/modals/InputModal";
@@ -273,12 +273,12 @@ export default function TargetPersonas() {
             if (!account) throw new Error("Selected account not found");
             const accountIdFinal = account.id;
             // Build user_inputted_context as an object
-            const user_inputted_context = {
+            const user_inputted_context: Record<string, string> = {
               persona_name: name,
               persona_description: description,
             };
             // Build company_context as an object
-            const company_context = {
+            const company_context: Record<string, string | string[]> = {
               company_name: overview.company_name || '',
               company_url: overview.company_url || '',
               ...(overview.company_overview ? { company_overview: overview.company_overview } : {}),
@@ -299,7 +299,7 @@ export default function TargetPersonas() {
               overview.company_url.trim(),
               user_inputted_context,
               company_context,
-              target_account_context
+              target_account_context as any
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 
@@ -309,24 +309,27 @@ export default function TargetPersonas() {
               description: response.persona_description || description,
               createdAt: new Date().toLocaleDateString(),
               overview: response.overview || "",
-              painPoints: response.pain_points || [],
+              painPoints: (response as any).painPoints || (response as any).pain_points || [],
               profile: response.profile || [],
-              likelyJobTitles: response.likely_job_titles || [],
-              primaryResponsibilities: response.primary_responsibilities || [],
-              statusQuo: response.status_quo || [],
-              useCases: response.use_cases || [],
-              desiredOutcomes: response.desired_outcomes || [],
-              keyConcerns: response.key_concerns || [],
-              whyWeMatter: response.why_we_matter || [],
+              likelyJobTitles: (response as any).likelyJobTitles || (response as any).likely_job_titles || [],
+              primaryResponsibilities: (response as any).primaryResponsibilities || (response as any).primary_responsibilities || [],
+              statusQuo: (response as any).statusQuo || (response as any).status_quo || [],
+              useCases: (response as any).useCases || (response as any).use_cases || [],
+              desiredOutcomes: (response as any).desiredOutcomes || (response as any).desired_outcomes || [],
+              keyConcerns: (response as any).keyConcerns || (response as any).key_concerns || [],
+              whyWeMatter: (response as any).whyWeMatter || (response as any).why_we_matter || [],
               buyingSignals: response.persona_buying_signals || [],
+              // Add the required API response properties
+              persona_name: response.persona_name,
+              persona_description: response.persona_description,
             };
             addPersonaToTargetAccount(accountIdFinal, newPersona);
             setPersonas(getAllPersonas());
             setAddModalOpen(false);
             setSelectedAccountId("");
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.error("Error generating persona:", err);
-            setError(err?.body?.error || err.message || "Failed to generate persona.");
+            setError((err as ApiError)?.message || (err as Error).message || "Failed to generate persona.");
           } finally {
             setAddPersonaLoading(false);
           }

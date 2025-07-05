@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 
 interface InfoCardProps {
   title: string;
-  items: any[];
+  items: string[];
   onEdit?: () => void;
-  renderItem?: (item: any, index: number) => ReactNode;
+  renderItem?: (item: string, index: number) => ReactNode;
 }
 
 export default function InfoCard({ title, items, onEdit, renderItem }: InfoCardProps) {
