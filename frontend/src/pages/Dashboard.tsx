@@ -7,7 +7,7 @@ import OverviewCard from "../components/cards/OverviewCard";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
 import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
-import type { ApiError, AnalysisState } from "../types/api";
+import type { ApiError, AnalysisState, TargetCompanyResponse } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
 import PageHeader from "../components/navigation/PageHeader";
 

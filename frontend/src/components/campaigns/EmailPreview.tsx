@@ -4,6 +4,7 @@ import { Badge } from "../ui/badge"
 import { Copy, RefreshCw, Save } from "lucide-react"
 import { Label } from "../ui/label"
 import InputModal from "../modals/InputModal"
+import type { GeneratedEmail, EmailConfig } from "../../types/api"
 import {
   DndContext,
   closestCenter,
@@ -34,22 +35,6 @@ interface EmailBreakdown {
     description: string
     color: string
   }
-}
-
-interface GeneratedEmail {
-  id: string
-  timestamp: string
-  subject: string
-  body: string
-  segments: EmailSegment[]
-  breakdown: EmailBreakdown
-  config?: EmailConfig
-}
-
-interface EmailConfig {
-  companyName?: string;
-  accountName?: string;
-  personaName?: string;
 }
 
 interface EmailPreviewProps {

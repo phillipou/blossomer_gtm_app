@@ -299,7 +299,7 @@ export default function TargetPersonas() {
               overview.companyUrl.trim(),
               userInputtedContext,
               companyContext,
-              targetAccountContext as Record<string, string | string[]>
+              targetAccountContext as unknown as Record<string, string | string[]>
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 

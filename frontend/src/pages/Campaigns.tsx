@@ -214,9 +214,9 @@ export default function CampaignsPage() {
           ) : (
             <EmailHistory
               emails={emailHistory}
-              onSelectEmail={handleSelectEmail as (email: any) => void}
-              onEditEmail={handleEditEmail as (email: any) => void}
-              onDeleteEmail={handleDeleteEmail as (email: any) => void}
+              onSelectEmail={handleSelectEmail}
+              onEditEmail={handleEditEmail}
+              onDeleteEmail={handleDeleteEmail}
               extraItem={<AddCard onClick={handleOpenCreateWizard} label="Add New" />}
             />
           )}
