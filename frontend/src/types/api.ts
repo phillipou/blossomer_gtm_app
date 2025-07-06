@@ -27,7 +27,7 @@ export interface ApiError {
 }
 
 export interface AnalysisState {
-  data: TargetCompanyResponse | null;
+  data: CompanyOverviewResponse | null;
   loading: boolean;
   error: ApiError | null;
   hasAttempted: boolean;
@@ -40,6 +40,44 @@ export interface TargetCompanyRequest {
   companyContext?: Record<string, string | string[]>;
 }
 
+// New API response structure for company overview (camelCase from API transformation)
+export interface BusinessProfile {
+  category: string;
+  businessModel: string;
+  existingCustomers: string;
+}
+
+export interface UseCaseAnalysis {
+  processImpact: string;
+  problemsAddressed: string;
+  howTheyDoItToday: string;
+}
+
+export interface Positioning {
+  keyMarketBelief: string;
+  uniqueApproach: string;
+  languageUsed: string;
+}
+
+export interface ICPHypothesis {
+  targetAccountHypothesis: string;
+  targetPersonaHypothesis: string;
+}
+
+export interface CompanyOverviewResponse {
+  companyName: string;
+  companyUrl: string;
+  description: string;
+  businessProfile: BusinessProfile;
+  capabilities: string[];
+  useCaseAnalysis: UseCaseAnalysis;
+  positioning: Positioning;
+  objections: string[];
+  icpHypothesis: ICPHypothesis;
+  metadata: Record<string, unknown>;
+}
+
+// Legacy interface for backward compatibility
 export interface TargetCompanyResponse {
   targetCompanyName: string;
   targetCompanyDescription: string;

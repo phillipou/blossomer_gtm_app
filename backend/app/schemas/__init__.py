@@ -23,10 +23,7 @@ class ProductOverviewRequest(BaseModel):
     )
 
 
-class CompanySummary(BaseModel):
-    description: str = Field(
-        ..., description="2-3 sentences on core identity and business model"
-    )
+class BusinessProfile(BaseModel):
     category: str = Field(..., description="5-6 words on product category")
     business_model: str = Field(
         ..., description="1-2 sentences on revenue streams and pricing"
@@ -66,8 +63,11 @@ class ICPHypothesis(BaseModel):
 class ProductOverviewResponse(BaseModel):
     company_name: str = Field(..., description="Official company name")
     company_url: str = Field(..., description="Canonical website URL")
-    company_summary: CompanySummary = Field(
-        ..., description="Company overview and positioning"
+    description: str = Field(
+        ..., description="2-3 sentences on core identity and what they do"
+    )
+    business_profile: BusinessProfile = Field(
+        ..., description="Business category, model, and customer evidence"
     )
     capabilities: List[str] = Field(..., description="Key features and capabilities")
     use_case_analysis: UseCaseAnalysis = Field(

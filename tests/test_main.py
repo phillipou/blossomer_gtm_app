@@ -3,7 +3,6 @@ from backend.app.api.main import app
 from backend.app.core.auth import rate_limit_dependency, authenticate_api_key
 import pytest
 import json
-from backend.app.prompts.models import CompanyOverviewResult
 
 client = TestClient(app)
 
@@ -122,46 +121,47 @@ def test_product_overview_endpoint_success(monkeypatch):
 
     # Patch llm_client.generate_structured_output in the actual endpoint module
     async def fake_generate_structured_output(prompt, response_model):
-        return CompanyOverviewResult(
+        from backend.app.schemas import (
+            ProductOverviewResponse,
+            BusinessProfile,
+            UseCaseAnalysis,
+            Positioning,
+            ICPHypothesis,
+        )
+
+        return ProductOverviewResponse(
             company_name="Example Inc.",
             company_url="https://example.com",
-            company_overview="A great company.",
-            capabilities=["AI", "Automation"],
-            business_model=["SaaS"],
-            differentiated_value=["Unique AI"],
-            customer_benefits=["Saves time"],
-            alternatives=["CompetitorX"],
-            testimonials=["Great product!"],
-            product_description="A SaaS platform for automation.",
-            key_features=["Fast", "Reliable"],
-            company_profiles=["Tech companies"],
-            persona_profiles=["CTO"],
-            use_cases=["Automate workflows"],
-            pain_points=["Manual work"],
-            pricing="Contact us",
-            confidence_scores={
-                "company_name": 0.95,
-                "company_url": 0.95,
-                "company_overview": 0.95,
-                "capabilities": 0.95,
-                "business_model": 0.95,
-                "differentiated_value": 0.95,
-                "customer_benefits": 0.95,
-                "alternatives": 0.95,
-                "testimonials": 0.95,
-                "product_description": 0.95,
-                "key_features": 0.95,
-                "company_profiles": 0.95,
-                "persona_profiles": 0.95,
-                "use_cases": 0.95,
-                "pain_points": 0.95,
-                "pricing": 0.95,
-            },
-            metadata={"context_quality": "high"},
+            description="A great company that does automation.",
+            business_profile=BusinessProfile(
+                category="AI-powered Automation Tool",
+                business_model="SaaS subscription targeting enterprises",
+                existing_customers="Tech companies and startups",
+            ),
+            capabilities=["AI: Automated workflows", "Integration: Seamless setup"],
+            use_case_analysis=UseCaseAnalysis(
+                process_impact="Streamlines manual workflows",
+                problems_addressed="Eliminates repetitive tasks",
+                how_they_do_it_today="Manual processes and spreadsheets",
+            ),
+            positioning=Positioning(
+                key_market_belief="Manual work is inefficient",
+                unique_approach="AI-first automation platform",
+                language_used="Smart automation, intelligent workflows",
+            ),
+            objections=[
+                "Cost: Higher than manual processes",
+                "Setup: Learning curve required",
+            ],
+            icp_hypothesis=ICPHypothesis(
+                target_account_hypothesis="Tech companies needing automation",
+                target_persona_hypothesis="CTOs and operations managers",
+            ),
+            metadata={"context_quality": "high", "sources_used": ["website"]},
         ).model_dump()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.company.llm_client.generate_structured_output",
+        "backend.app.services.context_orchestrator_service.llm_client.generate_structured_output",
         fake_generate_structured_output,
     )
 
@@ -211,7 +211,7 @@ def test_product_overview_endpoint_success(monkeypatch):
         return FakeResp()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.company.llm_client.generate",
+        "backend.app.services.context_orchestrator_service.llm_client.generate",
         fake_generate,
     )
 
@@ -220,8 +220,17 @@ def test_product_overview_endpoint_success(monkeypatch):
     data = response.json()
     assert data["company_name"] == "Example Inc."
     assert data["company_url"] == "https://example.com"
-    assert data["company_overview"] == "A great company."
-    assert data["capabilities"] == ["AI", "Automation"]
+    assert data["description"] == "A great company that does automation."
+    assert data["business_profile"]["category"] == "AI-powered Automation Tool"
+    assert data["capabilities"] == [
+        "AI: Automated workflows",
+        "Integration: Seamless setup",
+    ]
+    assert data["positioning"]["key_market_belief"] == "Manual work is inefficient"
+    assert data["objections"] == [
+        "Cost: Higher than manual processes",
+        "Setup: Learning curve required",
+    ]
     assert data["metadata"]["context_quality"] == "high"
 
 

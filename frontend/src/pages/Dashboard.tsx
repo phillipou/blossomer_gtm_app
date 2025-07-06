@@ -7,7 +7,7 @@ import OverviewCard from "../components/cards/OverviewCard";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
 import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
-import type { ApiError, AnalysisState, TargetCompanyResponse } from "../types/api";
+import type { ApiError, AnalysisState, CompanyOverviewResponse } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
 import PageHeader from "../components/navigation/PageHeader";
 
@@ -19,20 +19,77 @@ const STATUS_STAGES = [
 ];
 
 type CardKey =
+  | "business_profile"
   | "capabilities"
-  | "businessModel"
-  | "alternatives"
-  | "differentiatedValue"
-  | "testimonials"
-  | "customerBenefits";
+  | "positioning_insights"
+  | "use_case_insights"
+  | "target_customer_insights"
+  | "objections";
 
-const cardConfigs: { key: CardKey; title: string; label: string; bulleted?: boolean }[] = [
-  { key: "capabilities", title: "Capabilities", label: "Capabilities", bulleted: true },
-  { key: "businessModel", title: "Business Model", label: "Business Model", bulleted: true },
-  { key: "alternatives", title: "Alternatives", label: "Alternatives", bulleted: true },
-  { key: "differentiatedValue", title: "Differentiated Value", label: "Differentiated Value", bulleted: true },
-  { key: "testimonials", title: "Testimonials", label: "Testimonials", bulleted: true },
-  { key: "customerBenefits", title: "Customer Benefits", label: "Customer Benefits", bulleted: true },
+const cardConfigs: { 
+  key: CardKey; 
+  label: string; 
+  bulleted?: boolean;
+  getItems: (overview: CompanyOverviewResponse) => string[];
+  subtitle: string;
+}[] = [
+  { 
+    key: "business_profile", 
+    label: "Business Profile", 
+    bulleted: true,
+    getItems: (overview) => [
+      `Category: ${overview.businessProfile?.category || 'N/A'}`,
+      `Business Model: ${overview.businessProfile?.businessModel || 'N/A'}`,
+      `Existing Customers: ${overview.businessProfile?.existingCustomers || 'N/A'}`
+    ],
+    subtitle: "Core business information and customer profile."
+  },
+  { 
+    key: "capabilities", 
+    label: "Key Features & Capabilities", 
+    bulleted: true,
+    getItems: (overview) => overview.capabilities || [],
+    subtitle: "Core features and strengths of the company/product."
+  },
+  { 
+    key: "positioning_insights", 
+    label: "Positioning", 
+    bulleted: true,
+    getItems: (overview) => [
+      `Market Belief: ${overview.positioning?.keyMarketBelief || 'N/A'}`,
+      `Unique Approach: ${overview.positioning?.uniqueApproach || 'N/A'}`,
+      `Language Used: ${overview.positioning?.languageUsed || 'N/A'}`
+    ],
+    subtitle: "How they position themselves in the market."
+  },
+  { 
+    key: "use_case_insights", 
+    label: "Process & Impact Analysis", 
+    bulleted: true,
+    getItems: (overview) => [
+      `Process Impact: ${overview.useCaseAnalysis?.processImpact || 'N/A'}`,
+      `Problems Addressed: ${overview.useCaseAnalysis?.problemsAddressed || 'N/A'}`,
+      `Current State: ${overview.useCaseAnalysis?.howTheyDoItToday || 'N/A'}`
+    ],
+    subtitle: "Analysis of processes and problems this solution addresses."
+  },
+  { 
+    key: "target_customer_insights", 
+    label: "Target Customer Insights", 
+    bulleted: true,
+    getItems: (overview) => [
+      `Target Accounts: ${overview.icpHypothesis?.targetAccountHypothesis || 'N/A'}`,
+      `Key Personas: ${overview.icpHypothesis?.targetPersonaHypothesis || 'N/A'}`
+    ],
+    subtitle: "Ideal customer profile and decision-maker insights."
+  },
+  { 
+    key: "objections", 
+    label: "Potential Concerns", 
+    bulleted: true,
+    getItems: (overview) => overview.objections || [],
+    subtitle: "Common concerns prospects might have about this solution."
+  },
 ];
 
 export default function Dashboard() {
@@ -109,7 +166,7 @@ export default function Dashboard() {
         if (prev.analysisId !== analysisId) return prev;
         return {
           ...prev,
-          data: response as TargetCompanyResponse,
+          data: response as CompanyOverviewResponse,
           loading: false,
           error: null
         };
@@ -256,10 +313,70 @@ export default function Dashboard() {
   const handleListEdit = (field: CardKey) => (newItems: string[]) => {
     setAnalysisState((prev: AnalysisState) => {
       if (!prev.data) return prev;
-      const updated = {
-        ...prev.data,
-        [field]: newItems,
-      };
+      
+      // Update the specific field based on the card type
+      let updated = { ...prev.data };
+      
+      if (field === "business_profile") {
+        // For business profile, parse the formatted strings back to individual fields
+        const category = newItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
+        const businessModel = newItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
+        const existingCustomers = newItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
+        
+        updated = {
+          ...updated,
+          businessProfile: {
+            category,
+            businessModel,
+            existingCustomers
+          }
+        };
+      } else if (field === "capabilities") {
+        updated = { ...updated, capabilities: newItems };
+      } else if (field === "positioning_insights") {
+        // For positioning insights, we need to parse the formatted strings back to individual fields
+        const keyMarketBelief = newItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
+        const uniqueApproach = newItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
+        const languageUsed = newItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
+        
+        updated = {
+          ...updated,
+          positioning: {
+            keyMarketBelief,
+            uniqueApproach,
+            languageUsed
+          }
+        };
+      } else if (field === "use_case_insights") {
+        // For use case insights, parse the formatted strings back to individual fields
+        const processImpact = newItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
+        const problemsAddressed = newItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
+        const howTheyDoItToday = newItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
+        
+        updated = {
+          ...updated,
+          useCaseAnalysis: {
+            processImpact,
+            problemsAddressed,
+            howTheyDoItToday
+          }
+        };
+      } else if (field === "target_customer_insights") {
+        // For target customer insights, parse the formatted strings back to individual fields
+        const targetAccountHypothesis = newItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
+        const targetPersonaHypothesis = newItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
+        
+        updated = {
+          ...updated,
+          icpHypothesis: {
+            targetAccountHypothesis,
+            targetPersonaHypothesis
+          }
+        };
+      } else if (field === "objections") {
+        updated = { ...updated, objections: newItems };
+      }
+      
       localStorage.setItem("dashboard_overview", JSON.stringify(updated));
       return { ...prev, data: updated };
     });
@@ -286,37 +403,44 @@ export default function Dashboard() {
               title={companyName}
               subtitle={domain}
               bodyTitle="Company Overview"
-              bodyText={overview?.companyOverview || overview?.productDescription}
+              bodyText={overview?.description || "No description available"}
               showButton={true}
               buttonTitle="View Details"
             />
-            {/* New Info Cards Row 1 */}
+            
+            {/* Analysis Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {cardConfigs.map(({ key, title }) => (
-                <ListInfoCard
-                  key={key}
-                  title={title}
-                  items={overview ? (overview as unknown as Record<string, string[]>)[key] || [] : []}
-                  onEdit={handleListEdit(key)}
-                  renderItem={(item: string, idx: number) => (
-                    <li
-                      key={idx}
-                      className="list-disc list-inside text-sm text-gray-700 blue-bullet"
-                    >
-                      {item}
-                    </li>
-                  )}
-                  editModalSubtitle={
-                    key === "capabilities" ? "Core features and strengths of the company/product."
-                    : key === "businessModel" ? "How the company generates revenue."
-                    : key === "alternatives" ? "Competing solutions or approaches."
-                    : key === "differentiatedValue" ? "Unique value propositions that set this company apart."
-                    : key === "testimonials" ? "Customer quotes or endorsements."
-                    : key === "customerBenefits" ? "Key benefits customers receive."
-                    : undefined
-                  }
-                />
-              ))}
+              {cardConfigs.map(({ key, label, getItems, subtitle, bulleted }) => {
+                const items = overview ? getItems(overview) : [];
+                const isEditable = true; // All cards are now editable
+                
+                return (
+                  <ListInfoCard
+                    key={key}
+                    title={label}
+                    items={items}
+                    onEdit={isEditable ? handleListEdit(key) : undefined}
+                    renderItem={(item: string, idx: number) => (
+                      bulleted ? (
+                        <li
+                          key={idx}
+                          className="list-disc list-inside text-sm text-gray-700 blue-bullet mb-2"
+                        >
+                          {item}
+                        </li>
+                      ) : (
+                        <div
+                          key={idx}
+                          className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded border-l-4 border-blue-200"
+                        >
+                          {item}
+                        </div>
+                      )
+                    )}
+                    editModalSubtitle={subtitle}
+                  />
+                );
+              })}
             </div>
           </div>
         )}

@@ -67,8 +67,8 @@ Before finalizing any section, verify:
 {
   "company_name": "string - Official company name",
   "company_url": "{{ input_website_url }}",
-  "company_summary": {
-    "description": "string - 2-3 sentences on their core identity, what they do, and their business model",
+  "description": "string - 2-3 sentences on their core identity and what they do",
+  "business_profile": {
     "category": "string - 5-6 words on what category this product falls under (e.g. AI-powered Sales Tool)",
     "business_model": "string - 1-2 sentences summarizing how they make money, pricing approach, target market size, sales model, and revenue stream",
     "existing_customers": "string - 1-3 sentences summarizing what customers have used their products, testimonials, and the general profile of companies and end-users who have used the product based on evidence from the website"
@@ -109,8 +109,12 @@ Before finalizing any section, verify:
 
 # Detailed Field Guidelines
 
-## Company Summary
-- Description: Focus on core identity, mission, and primary business function - what makes them unique
+## Core Description
+- Focus on core identity, mission, and primary business function - what makes them unique
+- Keep it concise but informative (2-3 sentences)
+- Don't include business model details here - those go in business_profile
+
+## Business Profile
 - Category: Be specific but concise (e.g., "AI-powered Customer Support Platform" not just "SaaS Tool")
 - Business Model: Include revenue streams, pricing approach, and sales model if evident
 - Existing Customers: Extract evidence from testimonials, case studies, logos, or customer stories

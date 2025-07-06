@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import TextareaAutosize from "react-textarea-autosize";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import {
   EditDialog,
@@ -186,60 +187,60 @@ export default function ListInfoCardEditModal({
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              <div className="flex items-start space-x-3 p-3">
-                {/* Blue Circle Bullet */}
-                <div className="flex-shrink-0 mt-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                </div>
+              <div className="flex items-center space-x-3 p-3">
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   {editingId === item.id ? (
-                    <Textarea
+                    <TextareaAutosize
                       ref={textareaRef}
                       value={item.text}
                       onChange={(e) => handleItemChange(item.id, e.target.value)}
                       onBlur={handleFinishEdit}
                       onKeyDown={(e) => handleKeyPress(e, handleFinishEdit)}
-                      className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
+                      minRows={3}
+                      maxRows={10}
+                      className="w-full resize-none border-none py-3 px-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
                       style={{ boxShadow: "none" }}
                     />
                   ) : (
-                    <p className="text-gray-700 leading-relaxed cursor-text text-base md:text-base" onClick={() => handleStartEdit(item.id)}>
+                    <p className="text-gray-700 leading-relaxed cursor-text text-base md:text-base py-3 px-0" onClick={() => handleStartEdit(item.id)}>
                       {item.text}
                     </p>
                   )}
                 </div>
-                {/* Hover Controls */}
-                {(hoveredId === item.id || editingId === item.id) && editingId !== item.id && (
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveItem(item.id, "up")}
-                      disabled={index === 0}
-                      className="h-6 w-6 p-0 hover:bg-gray-200"
-                    >
-                      <ArrowUp className="w-3 h-3 text-gray-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveItem(item.id, "down")}
-                      disabled={index === localItems.length - 1}
-                      className="h-6 w-6 p-0 hover:bg-gray-200"
-                    >
-                      <ArrowDown className="w-3 h-3 text-gray-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
+                {/* Persistent Controls Area */}
+                <div className="flex items-center space-x-1 min-w-[90px] h-8 justify-end">
+                  {(hoveredId === item.id || editingId === item.id) && editingId !== item.id ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveItem(item.id, "up")}
+                        disabled={index === 0}
+                        className="h-6 w-6 p-0 hover:bg-gray-200"
+                      >
+                        <ArrowUp className="w-3 h-3 text-gray-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveItem(item.id, "down")}
+                        disabled={index === localItems.length - 1}
+                        className="h-6 w-6 p-0 hover:bg-gray-200"
+                      >
+                        <ArrowDown className="w-3 h-3 text-gray-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
           ))}
@@ -247,11 +248,9 @@ export default function ListInfoCardEditModal({
           <div className="pt-2">
             {isAddingNew ? (
               <div className="flex items-start space-x-3 p-3 bg-white shadow-sm rounded-lg">
-                <div className="flex-shrink-0 mt-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                </div>
+                {/* No bullet when adding a new item */}
                 <div className="flex-1">
-                  <Textarea
+                  <TextareaAutosize
                     ref={newItemRef}
                     value={newItemText}
                     onChange={(e) => setNewItemText(e.target.value)}
@@ -264,10 +263,14 @@ export default function ListInfoCardEditModal({
                     }}
                     onKeyDown={(e) => handleKeyPress(e, handleAddNewItem)}
                     placeholder="Enter new item..."
-                    className="min-h-[60px] resize-none border-none p-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
+                    minRows={3}
+                    maxRows={10}
+                    className="w-full resize-none border-none py-3 px-0 focus:ring-0 focus:border-none bg-transparent text-gray-700 leading-relaxed text-base md:text-base"
                     style={{ boxShadow: "none" }}
                   />
                 </div>
+                {/* Persistent Controls Area for Add New (empty, but reserves space) */}
+                <div className="min-w-[90px] h-8"></div>
               </div>
             ) : (
               <div
