@@ -159,51 +159,39 @@ Generate ideal customer account profiles with firmographics and buying signals.
 **Request Body**:
 ```json
 {
-  "website_url": "https://example.com",
-  "user_inputted_context": "Optional ICP description",
-  "company_context": "Optional company analysis data"
+  "account_profile_name": "Mid-market SaaS companies",
+  "hypothesis": "User's reasoning about the profile",
+  "additional_context": "Optional additional context"
 }
 ```
 
 **Response**:
 ```json
 {
-  "target_company": "Mid-Market SaaS Companies",
-  "company_attributes": [
-    "SaaS or software-as-a-service business model",
-    "100-500 employees",
-    "Tech-forward engineering culture",
-    "Annual revenue $10M-$100M"
-  ],
-  "buying_signals": {
-    "growth_signals": [
-      "Recently raised Series A or B funding",
-      "Hiring engineering managers or VPs",
-      "Expanding into new markets"
-    ],
-    "technology_signals": [
-      "Using modern development tools",
-      "Investing in DevOps automation",
-      "Migrating to cloud infrastructure"
-    ],
-    "organizational_signals": [
-      "Building dedicated engineering teams",
-      "Implementing formal development processes",
-      "Seeking operational efficiency tools"
-    ],
-    "market_signals": [
-      "Competitive pressure for faster delivery",
-      "Customer demands for reliability",
-      "Regulatory compliance requirements"
-    ]
+  "targetCompanyName": "Mid-Market SaaS Companies",
+  "targetCompanyDescription": "A brief description of the target company profile.",
+  "firmographics": {
+    "industry": ["SaaS", "Software"],
+    "companySize": {
+      "employees": "100-500",
+      "revenue": "$10M-$50M"
+    },
+    "geography": ["North America", "Europe"],
+    "businessModel": ["B2B", "Subscription"],
+    "fundingStage": ["Series A", "Series B"]
   },
-  "rationale": "These companies are ideal because they have the technical sophistication to evaluate and implement the solution, sufficient budget for enterprise tools, and clear pain points around the specific problems the product addresses.",
+  "buyingSignals": {
+    "growthIndicators": ["Recent funding", "Hiring key roles"],
+    "technologySignals": ["Using specific tech stack"],
+    "organizationalSignals": ["New executive leadership"],
+    "marketSignals": ["Regulatory changes"]
+  },
+  "rationale": "A detailed explanation of why this profile is a good target.",
   "metadata": {
-    "parsed_website_content": true,
-    "primary_context_source": "website",
     "context_quality": "high",
-    "assessment_summary": "Strong website data with clear target market indicators",
-    "sources_used": ["website", "user_input"]
+    "primary_context_source": "user",
+    "assessment_summary": "Summary of the context assessment.",
+    "sources_used": ["user_input", "company_context"]
   }
 }
 ```
