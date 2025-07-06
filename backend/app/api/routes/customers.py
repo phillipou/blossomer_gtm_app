@@ -11,7 +11,6 @@ from backend.app.core.auth import rate_limit_dependency
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 from backend.app.core.database import get_db
 from backend.app.models import APIKey
-from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from sqlalchemy.orm import Session
 
 
@@ -21,9 +20,9 @@ router = APIRouter()
 @router.post(
     "/demo/customers/target_accounts",
     response_model=TargetAccountResponse,
-    summary="[DEMO] Generate Target Account Profile (firmographics, buying signals, rationale)",
+    summary="[DEMO] Generate Target Account Profile (discovery call preparation)",
     tags=["Demo", "Customers", "Target Accounts", "AI"],
-    response_description="A structured target account profile for the given company context.",
+    response_description="A structured discovery call preparation report with company analysis and ICP hypothesis.",
 )
 async def demo_generate_target_account(
     data: TargetAccountRequest,
@@ -35,9 +34,8 @@ async def demo_generate_target_account(
     """
     Generate a target account profile for demo users, with IP-based rate limiting.
     """
-    orchestrator = ContextOrchestrator()
     try:
-        result = await generate_target_account_profile(data, orchestrator)
+        result = await generate_target_account_profile(data)
         return result
     except HTTPException:
         raise
@@ -48,9 +46,9 @@ async def demo_generate_target_account(
 @router.post(
     "/target_accounts",
     response_model=TargetAccountResponse,
-    summary="Generate Target Account Profile (firmographics, buying signals, rationale)",
+    summary="Generate Target Account Profile (discovery call preparation)",
     tags=["Customers", "Target Accounts", "AI"],
-    response_description="A structured target account profile for the given company context.",
+    response_description="A structured discovery call preparation report with company analysis and ICP hypothesis.",
 )
 async def prod_generate_target_account(
     data: TargetAccountRequest,
@@ -60,9 +58,8 @@ async def prod_generate_target_account(
     """
     Generate a target account profile for authenticated users (API key required).
     """
-    orchestrator = ContextOrchestrator()
     try:
-        result = await generate_target_account_profile(data, orchestrator)
+        result = await generate_target_account_profile(data)
         return result
     except HTTPException:
         raise

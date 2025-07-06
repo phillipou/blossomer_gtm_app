@@ -6,6 +6,7 @@ This module defines JSON schemas for LLM structured outputs, enabling reuse and 
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from enum import Enum
 
 
 class ProductOverviewRequest(BaseModel):
@@ -87,55 +88,141 @@ class ProductOverviewResponse(BaseModel):
 
 class TargetAccountRequest(BaseModel):
     website_url: str = Field(..., description="Company website or landing page URL")
-    user_inputted_context: Optional[Dict[str, Any]] = Field(
+    account_profile_name: Optional[str] = Field(
         None,
-        description="Flexible user-provided context for target account generation (JSON object)",
+        description=(
+            "Name of the target account profile "
+            "(e.g., 'Mid-market SaaS companies', 'Enterprise healthcare organizations')"
+        ),
+    )
+    hypothesis: Optional[str] = Field(
+        None,
+        description="User's hypothesis about why this account profile is ideal for the solution",
+    )
+    additional_context: Optional[str] = Field(
+        None,
+        description="Additional user-provided context for target account generation",
     )
     company_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Flexible company context for target account generation (JSON object)",
+        description="Company context from previous endpoints (e.g., company/generate output)",
+    )
+
+
+class CompanySize(BaseModel):
+    employees: Optional[str] = Field(
+        None, description="Employee count range (e.g., '50-500')"
+    )
+    department_size: Optional[str] = Field(
+        None, description="Relevant department size if applicable"
+    )
+    revenue: Optional[str] = Field(None, description="Revenue range if relevant")
+
+
+class Firmographics(BaseModel):
+    industry: List[str] = Field(
+        ..., description="Exact industry names from Clay taxonomy"
+    )
+    employees: Optional[str] = Field(None, description="Exact range (e.g., '50-500')")
+    department_size: Optional[str] = Field(
+        None, description="Relevant dept size if applicable"
+    )
+    revenue: Optional[str] = Field(None, description="Revenue range if relevant")
+    geography: Optional[List[str]] = Field(
+        None, description="Geographic markets if relevant"
+    )
+    business_model: Optional[List[str]] = Field(
+        None, description="Clay-searchable business model keywords"
+    )
+    funding_stage: Optional[List[str]] = Field(
+        None, description="Exact funding stage names"
+    )
+    company_type: Optional[List[str]] = Field(
+        None, description="Public/Private/PE-backed etc."
+    )
+    keywords: List[str] = Field(
+        ...,
+        description=(
+            "3-5 sophisticated company description keywords that indicate implicit need - "
+            "avoid obvious solution terms"
+        ),
+    )
+
+
+# Enum for BuyingSignal priority
+class PriorityEnum(str, Enum):
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
+
+
+class BuyingSignal(BaseModel):
+    title: str = Field(..., description="Concise signal name (3-5 words)")
+    description: str = Field(
+        ...,
+        description="1-2 sentences explaining why this signal indicates buying readiness",
+    )
+    type: str = Field(
+        ..., description="Company Data|Website|Tech Stack|News|Social Media|Other"
+    )
+    priority: PriorityEnum = Field(..., description="Low|Medium|High")
+    detection_method: str = Field(
+        ...,
+        description=("Specific Clay enrichment or data source"),
+    )
+
+
+class ConfidenceAssessment(BaseModel):
+    overall_confidence: str = Field(..., description="high|medium|low")
+    data_quality: str = Field(..., description="high|medium|low")
+    inference_level: str = Field(..., description="minimal|moderate|significant")
+    recommended_improvements: List[str] = Field(
+        ..., description="What additional data would help"
+    )
+
+
+class ICPMetadata(BaseModel):
+    primary_context_source: str = Field(
+        ..., description="user_input|company_context|website_content"
+    )
+    sources_used: List[str] = Field(..., description="List of context sources utilized")
+    confidence_assessment: ConfidenceAssessment = Field(
+        ..., description="Confidence metrics"
+    )
+    processing_notes: Optional[str] = Field(
+        None, description="Any important notes about analysis approach"
     )
 
 
 class TargetAccountResponse(BaseModel):
     """
-    Response model for the /customers/target_accounts endpoint (matches new prompt output).
+    Response model for the /customers/target_accounts endpoint
+    (ICP analysis with Clay-ready filters).
     """
 
-    target_company_name: str = Field(
+    target_account_name: str = Field(
+        ..., description="Short descriptive name for this customer segment"
+    )
+    target_account_description: str = Field(
+        ..., description="1-2 sentences: who they are and why they need this solution"
+    )
+    target_account_rationale: List[str] = Field(
+        ...,
+        description="3-5 bullets explaining the overall logic behind these targeting filters",
+    )
+    firmographics: Firmographics = Field(..., description="Clay-ready prospect filters")
+    buying_signals: List[BuyingSignal] = Field(
+        ..., description="Detectable buying signals with specific data sources"
+    )
+    buying_signals_rationale: List[str] = Field(
         ...,
         description=(
-            "Short name for the target account (5 words max, from user context or inferred)"
+            "3-5 bullets explaining the overall logic behind these buying signal choices"
         ),
     )
-    target_company_description: str = Field(
-        ..., description="Ideal account type and why they need this solution"
-    )
-    firmographics: Dict[str, Any] = Field(
+    metadata: ICPMetadata = Field(
         ...,
-        description=(
-            "Firmographic attributes: industry, company_size, geography, business_model, "
-            "funding_stage"
-        ),
-    )
-    buying_signals: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Buying signals: growth_indicators, technology_signals, organizational_signals, "
-            "market_signals"
-        ),
-    )
-    rationale: str = Field(
-        ..., description="Explanation of why these accounts are ideal customers"
-    )
-    metadata: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Additional metadata (primary_context_source, inference_level, context_quality, "
-            "assessment_summary, etc.). "
-            "Includes 'parsed_website_content' (true if website_content was parsed, false otherwise). "
-            "primary_context_source is set to 'website' if parsed_website_content is true."
-        ),
+        description=("Analysis metadata and quality scores"),
     )
 
 

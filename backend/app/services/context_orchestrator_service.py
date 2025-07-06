@@ -196,15 +196,18 @@ class ContextOrchestratorService:
             t4 = time.monotonic()
             prompt_vars_kwargs = dict(
                 website_content=website_content,
-                user_inputted_context=getattr(
-                    request_data, "user_inputted_context", None
-                ),
             )
             if analysis_type == "product_overview":
                 prompt_vars_kwargs["input_website_url"] = getattr(
                     request_data, "website_url", None
                 )
+                prompt_vars_kwargs["user_inputted_context"] = getattr(
+                    request_data, "user_inputted_context", None
+                )
             if analysis_type == "target_persona":
+                prompt_vars_kwargs["user_inputted_context"] = getattr(
+                    request_data, "user_inputted_context", None
+                )
                 prompt_vars_kwargs["company_context"] = getattr(
                     request_data, "company_context", None
                 )
@@ -214,6 +217,15 @@ class ContextOrchestratorService:
             if analysis_type == "target_account":
                 prompt_vars_kwargs["company_context"] = getattr(
                     request_data, "company_context", None
+                )
+                prompt_vars_kwargs["account_profile_name"] = getattr(
+                    request_data, "account_profile_name", None
+                )
+                prompt_vars_kwargs["hypothesis"] = getattr(
+                    request_data, "hypothesis", None
+                )
+                prompt_vars_kwargs["additional_context"] = getattr(
+                    request_data, "additional_context", None
                 )
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
             prompt = render_prompt(prompt_template, prompt_vars)
