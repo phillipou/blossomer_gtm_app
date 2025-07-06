@@ -1,8 +1,8 @@
 
+/// <reference types="vitest/globals" />
 import { render, screen } from '@testing-library/react';
 import Accounts from './Accounts';
 import * as accountService from '../lib/accountService';
-import { useCompanyOverview } from '../lib/useCompanyOverview';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock the useCompanyOverview hook

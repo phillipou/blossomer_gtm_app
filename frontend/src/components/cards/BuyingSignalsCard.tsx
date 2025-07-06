@@ -1,6 +1,5 @@
 import { Button } from "../ui/button";
-import { Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { Edit3, Trash2 } from "lucide-react";
 
 interface BuyingSignal {
   id: string;

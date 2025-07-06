@@ -31,13 +31,17 @@ export async function generateTargetCompany(
 
 export async function generateTargetPersona(
   websiteUrl: string,
-  userInputtedContext: Record<string, string>,
+  personaProfileName?: string,
+  hypothesis?: string,
+  additionalContext?: string,
   companyContext?: Record<string, string | string[]>,
-  targetAccountContext?: Record<string, string | string[]>
+  targetAccountContext?: Record<string, any>
 ): Promise<TargetPersonaResponse> {
   const request: TargetPersonaRequest = {
     websiteUrl,
-    userInputtedContext,
+    ...(personaProfileName ? { personaProfileName } : {}),
+    ...(hypothesis ? { hypothesis } : {}),
+    ...(additionalContext ? { additionalContext } : {}),
     ...(companyContext ? { companyContext } : {}),
     ...(targetAccountContext ? { targetAccountContext } : {}),
   };
@@ -48,16 +52,6 @@ export async function generateTargetPersona(
   });
 }
 
-// Type guard for canonical TargetAccountResponse shape
-function isCanonicalTargetAccount(obj: any): obj is TargetAccountResponse & { id: string; createdAt: string } {
-  return obj &&
-    typeof obj.targetAccountName === 'string' &&
-    typeof obj.targetAccountDescription === 'string' &&
-    Array.isArray(obj.targetAccountRationale) &&
-    Array.isArray(obj.buyingSignalsRationale) &&
-    typeof obj.id === 'string' &&
-    typeof obj.createdAt === 'string';
-}
 
 // Local storage service functions for canonical target accounts
 export function getStoredTargetAccounts(): (TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] })[] {

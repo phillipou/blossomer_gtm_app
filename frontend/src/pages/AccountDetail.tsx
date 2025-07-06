@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Loader2, ArrowLeft, Plus, Edit3, Check, X, Trash2 } from "lucide-react";
-import { FirmographicsTable } from "../components/tables/FirmographicsTable";
+import { Loader2, ArrowLeft, Plus, Edit3, Trash2 } from "lucide-react";
+import { CriteriaTable } from "../components/tables/CriteriaTable";
 import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
@@ -12,14 +12,12 @@ import { transformFirmographicsToTable, transformBuyingSignalsToCards } from "..
 import { transformKeysToCamelCase } from "../lib/utils";
 import type { TargetPersonaResponse, FirmographicRow, BuyingSignal, ApiError, TargetAccountResponse } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
-import InfoCard from "../components/cards/InfoCard";
-import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
+import EditCriteriaModal from "../components/modals/EditCriteriaModal";
 import InputModal from "../components/modals/InputModal";
 import { generateTargetPersona } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
-import ListInfoCard from "../components/cards/ListInfoCard";
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -35,11 +33,7 @@ export default function AccountDetail() {
 
   const [firmographics, setFirmographics] = useState<FirmographicRow[]>([]);
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
-  const [hoveredFirmo, setHoveredFirmo] = useState(false);
-  // State for rationale editing
   const [rationale, setRationale] = useState<string[]>([]);
-  const [editingRationale, setEditingRationale] = useState(false);
-  const [editRationaleContent, setEditRationaleContent] = useState<string[]>([]);
 
   // Tab state for sub navigation
   const [activeTab, setActiveTab] = useState<string>("accounts");
@@ -180,26 +174,17 @@ export default function AccountDetail() {
             {/* Firmographics and Why Good Fit Row */}
             <div className="flex flex-col md:flex-row gap-6">
               {/* Firmographics Card with edit affordance */}
-              <Card
-                className="group relative flex-1"
-                onMouseEnter={() => setHoveredFirmo(true)}
-                onMouseLeave={() => setHoveredFirmo(false)}
-              >
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className="flex-1">
+                <CardHeader>
                   <CardTitle>Firmographics</CardTitle>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setFirmoModalOpen(true)}
-                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
-                    tabIndex={-1}
-                    style={{ pointerEvents: hoveredFirmo ? "auto" : "none" }}
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </Button>
+                  <div className="text-sm text-gray-500">Targeting criteria for prospecting tools</div>
                 </CardHeader>
                 <CardContent>
-                  <FirmographicsTable data={firmographics} />
+                  <CriteriaTable 
+                    data={firmographics} 
+                    editable={true}
+                    onEdit={() => setFirmoModalOpen(true)}
+                  />
                 </CardContent>
               </Card>
               {/* Why they're a good fit InfoCard with edit affordance */}
@@ -267,8 +252,8 @@ export default function AccountDetail() {
                 {personas.map((persona) => (
                   <SummaryCard
                     key={persona.id}
-                    title={persona.name}
-                    description={persona.description}
+                    title={persona.targetPersonaName}
+                    description={persona.targetPersonaDescription}
                     parents={[
                       { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
                       { name: accountDetail?.targetAccountName || "Account", color: "bg-red-400", label: "Account" },
@@ -344,11 +329,12 @@ export default function AccountDetail() {
           });
         }}
       />
-      <EditFirmographicsModal
+      <EditCriteriaModal
         isOpen={firmoModalOpen}
         onClose={() => setFirmoModalOpen(false)}
         initialRows={firmographics}
         onSave={setFirmographics}
+        title="Edit Firmographics"
       />
       {/* Persona Creation Modal */}
       <InputModal
@@ -409,25 +395,14 @@ export default function AccountDetail() {
               targetAccountContext // targetAccountContext as TargetAccountResponse
             );
             console.log('[Persona Generation] API response:', response);
+            // Transform the API response from snake_case to camelCase
+            const transformedResponse = transformKeysToCamelCase<TargetPersonaResponse>(response);
             const newPersona: TargetPersonaResponse = {
+              ...transformedResponse,
               id: String(Date.now()),
-              name: response.personaName,
-              description: response.personaDescription,
               createdAt: new Date().toLocaleDateString(),
-              overview: response.overview,
-              painPoints: response.painPoints,
-              profile: response.profile,
-              likelyJobTitles: response.likelyJobTitles,
-              primaryResponsibilities: response.primaryResponsibilities,
-              statusQuo: response.statusQuo,
-              useCases: response.useCases,
-              desiredOutcomes: response.desiredOutcomes,
-              keyConcerns: response.keyConcerns,
-              whyWeMatter: response.whyWeMatter,
-              buyingSignals: response.personaBuyingSignals || response.buyingSignals || [],
-              // Add the required API response properties
-              personaName: response.personaName,
-              personaDescription: response.personaDescription,
+              targetPersonaName: transformedResponse.targetPersonaName || '',
+              targetPersonaDescription: transformedResponse.targetPersonaDescription || '',
             };
             addPersonaToTargetAccount(id!, newPersona);
             setPersonas(getPersonasForTargetAccount(id!));
@@ -447,8 +422,8 @@ export default function AccountDetail() {
         submitLabel={personaLoading ? "Generating..." : "Generate Persona"}
         cancelLabel="Cancel"
         isLoading={personaLoading}
-        defaultName={editingPersona ? editingPersona.name : ""}
-        defaultDescription={editingPersona ? editingPersona.description : ""}
+        defaultName={editingPersona ? editingPersona.targetPersonaName : ""}
+        defaultDescription={editingPersona ? editingPersona.targetPersonaDescription : ""}
         error={personaError || undefined}
       />
     </div>

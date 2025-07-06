@@ -181,7 +181,9 @@ export default function TargetAccountsList() {
   };
 
   const handleDeleteAccount = (id: string) => {
-    // Implement delete logic
+    const filtered = targetAccounts.filter(account => account.id !== id);
+    localStorage.setItem('target_accounts', JSON.stringify(filtered));
+    setTargetAccounts(filtered);
   };
 
   // Filtered accounts based on search and filter
@@ -225,7 +227,7 @@ export default function TargetAccountsList() {
           title={overview.companyName}
           subtitle={overview.companyUrl}
           bodyTitle="Company Overview"
-          bodyText={overview.description}
+          bodyText={overview.companyOverview || ""}
           showButton={true}
           buttonTitle="View Details"
         />
