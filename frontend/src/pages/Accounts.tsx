@@ -195,7 +195,7 @@ export default function TargetAccountsList() {
       />
 
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden p-8 space-y-8">
+      <div className="flex-1 p-8 space-y-8">
         <OverviewCard 
           title={overview.companyName}
           subtitle={overview.companyUrl}
