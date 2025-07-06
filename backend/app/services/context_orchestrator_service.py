@@ -177,9 +177,7 @@ class ContextOrchestratorService:
                 # Directly extract context from request_data
                 website_content = getattr(request_data, "website_content", None)
             t1 = time.monotonic()
-            print(
-                f"[{analysis_type}] Context resolution took {t1 - t0:.2f}s"
-            )
+            print(f"[{analysis_type}] Context resolution took {t1 - t0:.2f}s")
             # 2. Preprocessing (if enabled and website content present)
             t2 = time.monotonic()
             if use_preprocessing and website_content and self.preprocessing_pipeline:
