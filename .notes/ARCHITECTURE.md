@@ -158,7 +158,7 @@ src/
 
 ### **Prompt System**
 - **Jinja2 Templates**: Structured prompt templates with variable injection
-- **System/User Prompt Separation**: Clear separation between role definition (system) and task-specific instructions (user)
+- **System/User Prompt Separation**: Clear separation between role definition (system) and task-specific instructions (user) using a `{# User Prompt #}` delimiter in the Jinja2 templates.
 - **Template Registry**: Centralized management of prompt templates
 - **Context Injection**: Dynamic context based on available data sources
 - **Output Schemas**: Pydantic models for type-safe AI responses

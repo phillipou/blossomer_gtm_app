@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import Any, Type, Optional, Dict
 
 try:
@@ -13,7 +14,6 @@ try:
     from pydantic import BaseModel, ValidationError
 except ImportError:
     from pydantic.v1 import BaseModel, ValidationError
-import json
 import time
 
 logger = logging.getLogger(__name__)
@@ -148,9 +148,7 @@ class ContextOrchestratorService:
                 if not website_url:
                     raise HTTPException(
                         status_code=422,
-                        detail={
-                            "error": "website_url is required for product_overview"
-                        },
+                        detail="website_url is required for product_overview",
                     )
                 from backend.app.services.website_scraper import extract_website_content
 
@@ -205,18 +203,31 @@ class ContextOrchestratorService:
                     request_data, "user_inputted_context", None
                 )
             if analysis_type == "target_persona":
-                prompt_vars_kwargs["user_inputted_context"] = getattr(
-                    request_data, "user_inputted_context", None
+                prompt_vars_kwargs["persona_profile_name"] = getattr(
+                    request_data, "persona_profile_name", None
                 )
-                prompt_vars_kwargs["company_context"] = getattr(
-                    request_data, "company_context", None
+                prompt_vars_kwargs["hypothesis"] = getattr(
+                    request_data, "hypothesis", None
                 )
-                prompt_vars_kwargs["target_account_context"] = getattr(
+                prompt_vars_kwargs["additional_context"] = getattr(
+                    request_data, "additional_context", None
+                )
+                company_context = getattr(request_data, "company_context", None)
+                prompt_vars_kwargs["company_context"] = (
+                    json.dumps(company_context) if company_context else None
+                )
+                target_account_context = getattr(
                     request_data, "target_account_context", None
                 )
+                prompt_vars_kwargs["target_account_context"] = (
+                    json.dumps(target_account_context)
+                    if target_account_context
+                    else None
+                )
             if analysis_type == "target_account":
-                prompt_vars_kwargs["company_context"] = getattr(
-                    request_data, "company_context", None
+                company_context = getattr(request_data, "company_context", None)
+                prompt_vars_kwargs["company_context"] = (
+                    json.dumps(company_context) if company_context else None
                 )
                 prompt_vars_kwargs["account_profile_name"] = getattr(
                     request_data, "account_profile_name", None
@@ -243,11 +254,10 @@ class ContextOrchestratorService:
             except ValidationError as e:
                 raise HTTPException(
                     status_code=422,
-                    detail={
-                        "error": "LLM response validation failed",
-                        "analysis_type": analysis_type,
-                        "validation_errors": str(e),
-                    },
+                    detail=(
+                        f"LLM response validation failed | analysis_type: {analysis_type} | "
+                        f"validation_errors: {str(e)}"
+                    ),
                 )
             t7 = time.monotonic()
             print(f"[{analysis_type}] LLM call took {t7 - t6:.2f}s")
@@ -259,11 +269,10 @@ class ContextOrchestratorService:
         except Exception as e:
             raise HTTPException(
                 status_code=500,
-                detail={
-                    "error": "Analysis failed",
-                    "analysis_type": analysis_type,
-                    "error_details": str(e),
-                },
+                detail=(
+                    f"Analysis failed | analysis_type: {analysis_type} | "
+                    f"error_details: {str(e)}"
+                ),
             )
 
     async def _resolve_context(self, request_data: Any, analysis_type: str) -> dict:

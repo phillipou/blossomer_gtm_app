@@ -166,26 +166,26 @@ class TargetAccountPromptVars(BaseModel):
 class TargetPersonaPromptVars(BaseModel):
     """Variables for the target_persona.jinja2 prompt template."""
 
+    persona_profile_name: Optional[str] = Field(
+        None, description="Name of the target persona profile"
+    )
+    hypothesis: Optional[str] = Field(
+        None,
+        description="User's hypothesis about why this persona is ideal for the solution",
+    )
+    additional_context: Optional[str] = Field(
+        None,
+        description="Additional context or specifications about the target persona",
+    )
+    company_context: Optional[str] = Field(
+        None, description="Structured context about the analyzed company/product"
+    )
     website_content: Optional[str] = Field(
-        None, description="The preprocessed content from the company's website."
+        None, description="The preprocessed content from the company's website"
     )
-    user_inputted_context: Optional[Dict[str, Any]] = Field(
+    target_account_context: Optional[str] = Field(
         None,
-        description="Flexible user-provided context for persona generation (JSON object)",
-    )
-    company_context: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Structured context about the analyzed company/product (JSON object)",
-    )
-    target_account_context: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Structured context about the ideal customer/company type (JSON object)",
-    )
-    context_quality: Optional[str] = Field(
-        None, description="Optional context quality assessment for the prompt."
-    )
-    assessment_summary: Optional[str] = Field(
-        None, description="Optional summary of the context assessment."
+        description="Target account profile context - JSON string of the ideal customer company type this persona works for",
     )
 
 
@@ -214,3 +214,45 @@ class CompanyOverviewResult(BaseModel):
     pain_points: List[str]
     pricing: str
     metadata: Dict[str, Any]
+
+
+# ======================================================================
+# Target Persona Response Model
+# ======================================================================
+
+
+class TargetPersonaResponse(BaseModel):
+    """Model for the target_persona_response.jinja2 prompt template."""
+
+    id: int
+    persona_name: str
+    persona_description: str
+    buying_signals: List[str]
+    criteria: List[str]
+    use_cases: List[str]
+    created_at: str
+    updated_at: str
+
+
+def create_target_persona_response(persona):
+    """
+    Create a TargetPersonaResponse from a persona object.
+
+    Args:
+        persona: The persona object to convert to a TargetPersonaResponse.
+
+    Returns:
+        TargetPersonaResponse: The converted TargetPersonaResponse object.
+    """
+    if not persona:
+        return None
+    return TargetPersonaResponse(
+        id=persona.id,
+        persona_name=persona.persona_name,
+        persona_description=persona.persona_description,
+        buying_signals=persona.buying_signals,
+        criteria=persona.criteria,
+        use_cases=persona.use_cases,
+        created_at=persona.created_at,
+        updated_at=persona.updated_at,
+    )

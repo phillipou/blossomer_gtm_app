@@ -5,24 +5,26 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Edit3, X, Plus, Trash2 } from "lucide-react";
 
-interface FirmographicValue {
+interface CriteriaValue {
   text: string;
   color: string;
 }
-interface FirmographicRow {
+
+interface CriteriaRow {
   id: string;
   label: string;
-  values: FirmographicValue[];
+  values: CriteriaValue[];
 }
 
-interface EditFirmographicsModalProps {
+interface EditCriteriaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (rows: FirmographicRow[]) => void;
-  initialRows: FirmographicRow[] | undefined;
+  onSave: (rows: CriteriaRow[]) => void;
+  initialRows: CriteriaRow[] | undefined;
+  title?: string;
 }
 
-const colorOptions: string[] = ["yellow", "blue", "red", "gray", "green", "purple"];
+const colorOptions: string[] = ["yellow", "blue", "red", "gray", "green", "purple", "indigo"];
 
 const getColorClass = (color: string) => {
   switch (color) {
@@ -38,13 +40,15 @@ const getColorClass = (color: string) => {
       return "bg-green-100 text-green-800 border-green-200";
     case "purple":
       return "bg-purple-100 text-purple-800 border-purple-200";
+    case "indigo":
+      return "bg-indigo-100 text-indigo-800 border-indigo-200";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
-export default function EditFirmographicsModal({ isOpen, onClose, onSave, initialRows }: EditFirmographicsModalProps) {
-  const [rows, setRows] = useState<FirmographicRow[]>([]);
+export default function EditCriteriaModal({ isOpen, onClose, onSave, initialRows, title = "Edit Criteria" }: EditCriteriaModalProps) {
+  const [rows, setRows] = useState<CriteriaRow[]>([]);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<{ rowId: string; isNew: boolean } | null>(null);
   const [newTagValue, setNewTagValue] = useState("");
@@ -61,7 +65,6 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
           }))
         );
       } else {
-        // Fallback to empty array if initialRows is not provided
         setRows([]);
       }
       setEditingLabel(null);
@@ -97,7 +100,7 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
         if (row.id === rowId) {
           return {
             ...row,
-            values: row.values.filter((_: FirmographicValue, index: number) => index !== valueIndex),
+            values: row.values.filter((_: CriteriaValue, index: number) => index !== valueIndex),
           };
         }
         return row;
@@ -110,7 +113,7 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
   };
 
   const handleAddRow = () => {
-    const newRow: FirmographicRow = {
+    const newRow: CriteriaRow = {
       id: Date.now().toString(),
       label: "New Category",
       values: [],
@@ -160,7 +163,7 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto px-0 py-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>Edit Firmographics</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2 px-6">
@@ -200,7 +203,7 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
               {/* Values Column */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  {row.values.map((value: FirmographicValue, valueIndex: number) => (
+                  {row.values.map((value: CriteriaValue, valueIndex: number) => (
                     <Badge
                       key={valueIndex}
                       className={`${getColorClass(value.color)} border flex items-center gap-1 pr-1`}
@@ -297,4 +300,4 @@ export default function EditFirmographicsModal({ isOpen, onClose, onSave, initia
       </DialogContent>
     </Dialog>
   );
-} 
+}

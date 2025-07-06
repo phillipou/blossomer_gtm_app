@@ -6,6 +6,7 @@ import { Loader2, Edit3, Trash2, Wand2 } from "lucide-react";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getAllPersonas, deletePersonaFromTargetAccount, updatePersonaForTargetAccount, addPersonaToTargetAccount, generateTargetPersona, getStoredTargetAccounts } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
+import { transformKeysToCamelCase } from "../lib/utils";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import type { TargetPersonaResponse, ApiError } from "../types/api";
@@ -40,7 +41,7 @@ export default function TargetPersonas() {
       setPersonas(allPersonas);
               // Fetch all target accounts for the dropdown
       const accounts = getStoredTargetAccounts();
-      setTargetAccounts(accounts.map(p => ({ id: p.id, name: p.name })));
+      setTargetAccounts(accounts.map(p => ({ id: p.id, name: p.targetAccountName })));
     } catch (err) {
       console.error("Error loading personas:", err);
       setError("Failed to load personas");
@@ -66,8 +67,8 @@ export default function TargetPersonas() {
     try {
       const updatedPersona: TargetPersonaResponse = {
         ...editingPersona.persona,
-        name: name.trim(),
-        description: description.trim(),
+        targetPersonaName: name.trim(),
+        targetPersonaDescription: description.trim(),
       };
       updatePersonaForTargetAccount(editingPersona.accountId, updatedPersona);
       // Refresh the list
@@ -95,8 +96,8 @@ export default function TargetPersonas() {
   // Filtered personas based on search and filter
   const filteredPersonas = personas.filter(({ persona }) => {
     const matchesSearch =
-      persona.name.toLowerCase().includes(search.toLowerCase()) ||
-      (persona.description && persona.description.toLowerCase().includes(search.toLowerCase()));
+      persona.targetPersonaName?.toLowerCase().includes(search.toLowerCase()) ||
+      (persona.targetPersonaDescription && persona.targetPersonaDescription.toLowerCase().includes(search.toLowerCase()));
     if (filterBy === "all") return matchesSearch;
     return matchesSearch;
   });
@@ -139,7 +140,7 @@ export default function TargetPersonas() {
           title={overview?.companyName || "Your Company"}
           subtitle={overview?.companyUrl || ""}
           bodyTitle="Company Overview"
-          bodyText={overview?.companyOverview || overview?.productDescription}
+          bodyText={overview?.companyOverview || ""}
           showButton={true}
           buttonTitle="View Details"
         />
@@ -182,8 +183,8 @@ export default function TargetPersonas() {
                 {filteredPersonas.map(({ persona, accountId, accountName }) => (
                   <SummaryCard
                     key={`${accountId}-${persona.id}`}
-                    title={persona.name}
-                    description={persona.description}
+                    title={persona.targetPersonaName}
+                    description={persona.targetPersonaDescription}
                     parents={[
                       { name: accountName, color: "bg-red-400", label: "Account" },
                       { name: overview?.companyName || "Company", color: "bg-green-400", label: "Company" },
@@ -248,8 +249,8 @@ export default function TargetPersonas() {
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
         submitLabel={isSaving ? "Saving..." : "Update"}
         cancelLabel="Cancel"
-        defaultName={editingPersona?.persona?.name || ""}
-        defaultDescription={editingPersona?.persona?.description || ""}
+        defaultName={editingPersona?.persona?.targetPersonaName || ""}
+        defaultDescription={editingPersona?.persona?.targetPersonaDescription || ""}
         isLoading={isSaving}
       />
 
@@ -297,31 +298,22 @@ export default function TargetPersonas() {
             console.log('[Persona Generation] targetAccountContext:', targetAccountContext);
             const response = await generateTargetPersona(
               overview.companyUrl.trim(),
-              userInputtedContext,
+              userInputtedContext.personaName,
+              userInputtedContext.personaDescription,
+              undefined, // additionalContext
               companyContext,
-              targetAccountContext as unknown as Record<string, string | string[]>
+              targetAccountContext // targetAccountContext as TargetAccountResponse
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 
+            // Transform the API response from snake_case to camelCase
+            const transformedResponse = transformKeysToCamelCase<TargetPersonaResponse>(response);
             const newPersona: TargetPersonaResponse = {
+              ...transformedResponse,
               id: String(Date.now()),
-              name: response.personaName || name,
-              description: response.personaDescription || description,
               createdAt: new Date().toLocaleDateString(),
-              overview: response.overview || "",
-              painPoints: response.painPoints || [],
-              profile: response.profile || [],
-              likelyJobTitles: response.likelyJobTitles || [],
-              primaryResponsibilities: response.primaryResponsibilities || [],
-              statusQuo: response.statusQuo || [],
-              useCases: response.useCases || [],
-              desiredOutcomes: response.desiredOutcomes || [],
-              keyConcerns: response.keyConcerns || [],
-              whyWeMatter: response.whyWeMatter || [],
-              buyingSignals: response.personaBuyingSignals || response.buyingSignals || [],
-              // Add the required API response properties
-              personaName: response.personaName,
-              personaDescription: response.personaDescription,
+              targetPersonaName: transformedResponse.targetPersonaName || name,
+              targetPersonaDescription: transformedResponse.targetPersonaDescription || description,
             };
             addPersonaToTargetAccount(accountIdFinal, newPersona);
             setPersonas(getAllPersonas());

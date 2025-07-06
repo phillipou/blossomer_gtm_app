@@ -14,7 +14,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      '@': resolve(__dirname, 'src'),
+      'react': resolve(__dirname, 'node_modules/react'),
+      'react-dom': resolve(__dirname, 'node_modules/react-dom'),
     }
   },
   test: {

@@ -9,4 +9,4 @@ repos:
     hooks:
       - id: flake8
         language_version: python3.11
-        args: [--max-line-length=120] 
+        args: [--max-line-length=120, --ignore=F401] 

@@ -27,8 +27,7 @@ async def generate_target_persona_profile(
         response_model=TargetPersonaResponse,
         use_preprocessing=False,
     )
-    # Set persona_name and persona_description from user_inputted_context if present
-    if request.user_inputted_context:
-        if request.user_inputted_context.get("persona_name"):
-            response.persona_name = request.user_inputted_context["persona_name"]
+    # Set target_persona_name from persona_profile_name if present
+    if request.persona_profile_name:
+        response.target_persona_name = request.persona_profile_name
     return response

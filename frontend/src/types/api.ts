@@ -20,8 +20,8 @@ export interface APIBuyingSignal {
   title: string;
   description: string;
   type: string;
-  priority: string;
-  detectionMethod: string;
+  priority: "Low" | "Medium" | "High";
+  detection_method: string;
 }
 
 export interface ApiError {
@@ -161,31 +161,43 @@ export interface TargetCompanyResponse {
 
 export interface TargetPersonaRequest {
   websiteUrl: string;
-  userInputtedContext?: Record<string, string | string[]>;
+  personaProfileName?: string;
+  hypothesis?: string;
+  additionalContext?: string;
   companyContext?: Record<string, string | string[]>;
-  targetAccountContext?: TargetAccount | Record<string, string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown>; // Added index signature
+  targetAccountContext?: Record<string, any>;
+}
+
+export interface Demographics {
+  jobTitles?: string[];
+  departments?: string[];
+  seniority?: string[];
+  buyingRoles?: string[];
+  jobDescriptionKeywords?: string[];
+}
+
+export interface UseCase {
+  useCase: string;
+  painPoints: string;
+  capability: string;
+  desiredOutcome: string;
 }
 
 export interface TargetPersonaResponse {
   id: string;
-  name: string;
-  description: string;
   createdAt: string;
-  overview?: string;
-  painPoints?: string[];
-  profile?: string[];
-  likelyJobTitles?: string[];
-  primaryResponsibilities?: string[];
-  statusQuo?: string[];
-  useCases?: string[];
-  desiredOutcomes?: string[];
-  keyConcerns?: string[];
-  whyWeMatter?: string[];
-  buyingSignals?: BuyingSignal[];
-  // Added properties for API response consistency
-  personaName: string;
-  personaDescription: string;
-  personaBuyingSignals?: BuyingSignal[];
+  // New camelCase structure
+  targetPersonaName: string;
+  targetPersonaDescription: string;
+  targetPersonaRationale?: string[];
+  demographics?: Demographics;
+  useCases?: UseCase[];
+  buyingSignals?: APIBuyingSignal[];
+  buyingSignalsRationale?: string[];
+  objections?: string[];
+  goals?: string[];
+  purchaseJourney?: string[];
+  metadata?: Record<string, any>;
 }
 
 export interface TargetAccount {

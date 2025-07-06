@@ -1,4 +1,4 @@
-import type { TargetAccount, TargetAccountResponse, FirmographicRow, APIBuyingSignal, BuyingSignal } from "../types/api";
+import type { FirmographicRow, APIBuyingSignal, BuyingSignal } from "../types/api";
 
 // These functions are likely used elsewhere to transform raw data into the FirmographicRow[] and BuyingSignal[] formats.
 // They are not needed for transforming TargetAccount to TargetAccountDetail if TargetAccount already stores these as arrays.
@@ -55,6 +55,6 @@ export function transformBuyingSignalsToCards(buyingSignals: APIBuyingSignal[] |
     category: signal.type,
     type: signal.type,
     priority: signal.priority,
-    detectionMethod: signal.detectionMethod,
+    detectionMethod: signal.detection_method,
   }));
 } 
