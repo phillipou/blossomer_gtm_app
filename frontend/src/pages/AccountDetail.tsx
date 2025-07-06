@@ -220,21 +220,6 @@ export default function AccountDetail() {
                 </Card>
               </div>
             </div>
-            {/* Buying Signals Rationale Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Buying Signals Rationale</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul>
-                  {accountDetail.buyingSignalsRationale?.map((item: string, idx: number) => (
-                    <li key={idx} className="list-disc list-inside text-sm text-gray-700 mb-2">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
             {/* Buying Signals Block */}
             <Card>
               <CardHeader>
@@ -258,6 +243,21 @@ export default function AccountDetail() {
                     No buying signals identified
                   </div>
                 )}
+              </CardContent>
+            </Card>
+            {/* Buying Signals Rationale Card (moved below Buying Signals) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Buying Signals Rationale</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul>
+                  {accountDetail.buyingSignalsRationale?.map((item: string, idx: number) => (
+                    <li key={idx} className="list-disc list-inside text-sm text-gray-700 mb-2">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
             {/* Personas Section (only show account-specific personas) */}
@@ -314,13 +314,20 @@ export default function AccountDetail() {
               ];
             }
             // Map to APIBuyingSignal shape for localStorage
-            const apiBuyingSignals = updatedSignals.map(s => ({
-              title: s.label,
-              description: s.description,
-              type: 'type' in s && typeof s.type === 'string' ? s.type : "",
-              priority: 'priority' in s && typeof s.priority === 'string' ? s.priority : "",
-              detectionMethod: 'detectionMethod' in s && typeof s.detectionMethod === 'string' ? s.detectionMethod : "",
-            }));
+            const allowedPriorities = ["Low", "Medium", "High"];
+            const apiBuyingSignals = updatedSignals.map(s => {
+              let priority = 'priority' in s && typeof s.priority === 'string' ? s.priority : "Low";
+              if (!allowedPriorities.includes(priority)) {
+                priority = "Low";
+              }
+              return {
+                title: s.label,
+                description: s.description,
+                type: 'type' in s && typeof s.type === 'string' ? s.type : "",
+                priority: priority as "Low" | "Medium" | "High",
+                detection_method: 'detection_method' in s && typeof s.detection_method === 'string' ? s.detection_method : (('detectionMethod' in s && typeof s.detectionMethod === 'string') ? s.detectionMethod : ""),
+              };
+            });
             // Update localStorage for the account
             if (accountDetail && id) {
               const accounts = getStoredTargetAccounts();
@@ -393,7 +400,14 @@ export default function AccountDetail() {
             console.log('[Persona Generation] userInputtedContext:', userInputtedContext);
             console.log('[Persona Generation] companyContext:', companyContext);
             console.log('[Persona Generation] targetAccountContext (flattened):', targetAccountContext);
-            const response = await generateTargetPersona(websiteUrl, userInputtedContext, companyContext, targetAccountContext as unknown as Record<string, string | string[]>);
+            const response = await generateTargetPersona(
+              websiteUrl,
+              userInputtedContext.personaName,
+              userInputtedContext.personaDescription,
+              undefined, // additionalContext
+              companyContext,
+              targetAccountContext // targetAccountContext as TargetAccountResponse
+            );
             console.log('[Persona Generation] API response:', response);
             const newPersona: TargetPersonaResponse = {
               id: String(Date.now()),

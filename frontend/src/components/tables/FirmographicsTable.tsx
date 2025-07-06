@@ -41,8 +41,11 @@ export function FirmographicsTable({ data }: { data: Row[] | undefined }) {
   return (
     <div className="space-y-3">
       {flatData.map((row: Row) => (
-        <div key={row.label} className="flex items-center space-x-4">
-          <div className="w-32 text-sm text-gray-600 font-medium flex-shrink-0">{row.label}</div>
+        <div
+          key={row.label}
+          className="grid grid-cols-[minmax(140px,1fr)_3fr] gap-2 items-start"
+        >
+          <div className="text-sm text-gray-600 font-medium flex-shrink-0">{row.label}</div>
           <div className="flex flex-wrap gap-2">
             {row.values.map((v: Value, i: number) => (
               <Badge
