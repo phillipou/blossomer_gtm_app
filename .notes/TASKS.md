@@ -1,8 +1,79 @@
 # Current Tasks & Priorities
 
-*Last updated: July 5, 2025*
+*Last updated: July 6, 2025*
 
-## 🎯 Today's Focus (Immediate)
+## 🎯 Next Major Task: Target Account Improvements
+
+### **Target Account System Overhaul (3-4 days) - HIGH PRIORITY**
+*Apply same improvements made to product_overview to target_account system*
+
+**Context**: Successfully completed comprehensive overhaul of product_overview system with:
+- [x] Enhanced prompt template with system/user separation and detailed quality standards  
+- [x] New API schema structure separating core fields from nested objects
+- [x] Frontend Dashboard.tsx with improved card editing and field parsing
+- [x] Comprehensive test infrastructure with 11 unit tests
+- [x] Clean build pipeline and TypeScript compilation
+
+**Next Target**: Apply same systematic approach to target_account system:
+
+#### **Phase 1: Target Account Backend Improvements (1-2 days)**
+  - [ ] **Update target_account.jinja2** - Apply new, high performing system and user prompt
+  - [ ] **Update target_account.jinja2** - Apply enhanced prompt structure from product_overview
+  - [ ] Add system/user prompt separation with {# User Prompt #} delimiter
+  - [ ] Add detailed quality standards and analysis instructions  
+  - [ ] Enhance output schema with better structured firmographics and buying signals
+  - [ ] Add confidence scoring and metadata fields
+  - [ ] Include discovery gap identification and assumption tracking
+  - [ ] **Update TargetAccountResponse schema** - Restructure for better organization
+  - [ ] Separate core account info from detailed firmographics
+  - [ ] Enhance buying signals structure with categorization
+  - [ ] Add metadata fields for quality tracking
+  - [ ] Ensure camelCase frontend compatibility
+  - [ ] **Update backend tests** - Modify test assertions to match new schema structure
+
+#### **Phase 2: Frontend Integration (1-2 days)**
+- [ ] **Update Accounts.tsx** - Integrate with new API structure
+  - [ ] Update component to handle new response format
+  - [ ] Improve card rendering and data display
+  - [ ] Add editing capabilities for account details
+  - [ ] Enhance error handling and loading states
+- [ ] **Update AccountDetail.tsx** - Enhanced detail view with new data structure
+  - [ ] Display structured firmographics with better organization
+  - [ ] Show categorized buying signals with proper formatting
+  - [ ] Add editing capabilities for detailed account information
+  - [ ] Include confidence scores and quality indicators
+- [ ] **Update TypeScript interfaces** - Match new backend schema
+  - [ ] Update api.ts with new TargetAccountResponse structure
+  - [ ] Ensure proper camelCase transformation
+  - [ ] Add new nested interfaces for structured data
+
+#### **Phase 3: Testing & Polish (1 day)**
+  - [ ] **Add target account tests** - Create unit test suite similar to Dashboard
+  - [ ] Test account data processing and transformation
+  - [ ] Test editing functionality for account details
+  - [ ] Test error handling and edge cases
+  - [ ] Mock API responses for reliable testing
+  - [ ] **Integration testing** - Verify end-to-end flow works
+  - [ ] **Documentation updates** - Update relevant docs with new structure
+
+**Success Criteria**:
+- [x] Clean prompt template with detailed instructions and quality controls
+- [x] Well-structured API response with logical data organization  
+- [x] Enhanced frontend with editing capabilities and better UX
+- [x] Comprehensive test coverage preventing regressions
+- [x] Clean TypeScript compilation with no errors
+- [x] Consistent code quality across frontend and backend
+
+**Notes for Future Sessions**:
+- Follow exact same pattern used for product_overview improvements
+- Use Dashboard.tsx as reference for component structure and editing patterns
+- Leverage existing test infrastructure setup for quick test creation
+- Maintain backward compatibility during transition
+- Update all related documentation after completion
+
+---
+
+## 🎯 Recently Completed (Major Milestone)
 
 ### **Code Quality Cleanup (2-3 days) - HIGH PRIORITY**
 *Tech debt assessment completed - manageable cleanup needed before feature work*
@@ -20,7 +91,7 @@
   - [x] Added tests for LLM singleton
   - [x] Fixed error handling and validation
 
-### **Prompt Improvements (1-2 days) - MEDIUM PRIORITY**
+### **Prompt Improvements (1-2 days) - MEDIUM PRIORITY** ✅ COMPLETED
 *Enhance prompt quality and consistency across all endpoints*
 
 - [x] **Separate system and user prompts** - Split prompts into system and user parts for better results
@@ -35,47 +106,29 @@
   - [x] Enhanced error handling and validation
   - [x] Added more examples and guidance
   - [x] Updated documentation in ARCHITECTURE.md and DECISIONS.md
-- [ ] **Update target_account.jinja2** - Apply same improvements to target account prompt
-- [ ] **Update target_persona.jinja2** - Apply same improvements to target persona prompt
+- [x] **Update API schema structure** - Separated description from business_profile in ProductOverviewResponse
+- [x] **Frontend integration** - Updated Dashboard.tsx to use new API structure with enhanced card editing
+- [x] **Comprehensive testing** - Added unit test suite with 11 tests covering Dashboard logic
 
 ### **Testing and Documentation (1-2 days) - MEDIUM PRIORITY**
 *Ensure code quality and maintainability*
 
-- [ ] **Add missing tests** - Cover critical paths and edge cases
-- [ ] **Update documentation** - Keep docs in sync with code changes
+- [x] **Frontend test infrastructure** - Added vitest configuration with jsdom environment
+- [x] **Dashboard unit tests** - Created comprehensive test suite with 11 passing tests
+- [x] **Test automation** - Added test scripts (test, test:ui, test:coverage) to package.json
+- [x] **Mock setup** - Created proper mocks for API calls and browser APIs
+- [x] **Update documentation** - Keep docs in sync with code changes (ARCHITECTURE.md, DECISIONS.md)
 - [ ] **Add API documentation** - Document all endpoints and parameters
 - [ ] **Add examples** - Add more examples to documentation
-
-### **Feature Work (3-4 days) - LOW PRIORITY**
-*New features and improvements*
-
-- [ ] **Add email preview** - Add email preview functionality
-- [ ] **Add campaign wizard** - Add campaign wizard functionality
-- [ ] **Add campaign history** - Add campaign history functionality
-- [ ] **Add campaign analytics** - Add campaign analytics functionality
-
-#### **LLM Client Consolidation (1-2 hours)**
-- [ ] **Update llm_singleton.py** - Add configuration options and improve typing (15 min)
-- [ ] **Update service dependencies** - Modify services to use singleton (30 min):
-  - product_overview_service.py
-  - target_account_service.py
-  - target_persona_service.py
-  - context_orchestrator_service.py
-  - context_orchestrator_agent.py
-- [ ] **Update tests** - Modify tests to properly mock singleton (30 min)
-- [ ] **Add integration tests** - Test singleton pattern with circuit breakers (15 min)
-
-- [ ] **Standardize error handling** - Make error handling consistent across company.py and customers.py routes (1 hour)
-- [ ] **Fix router duplication** - Refactor dual router registration pattern in main.py (30 min)
-- [ ] **Finish minor cleanups** - Remove remaining unused imports in eslint.config.js, Campaigns.tsx (15 min)
+- [ ] **Backend integration tests** - Add tests for new API structure
 
 ### **Improve Prompt Templates for Better AI Output**
 
 #### **Update product_overview.jinja2 (1-2 hours)**
-- [ ] **Split system/user prompts** - Separate instructions into system and user sections
-- [ ] **Update JSON schema** - Add confidence scores and source attribution
-- [ ] **Add quality controls** - Implement validation checks and thresholds
-- [ ] **Test improvements** - Validate with sample websites
+- [x] **Split system/user prompts** - Separate instructions into system and user sections
+- [x] **Update JSON schema** - Add confidence scores and source attribution
+- [x] **Add quality controls** - Implement validation checks and thresholds
+- [x] **Test improvements** - Validate with sample websites
 
 #### **Enhance target_account.jinja2 & target_persona.jinja2**
 - [ ] **Enhance target_account.jinja2** - Include more detailed buying signals and firmographic criteria  
@@ -268,8 +321,13 @@
 - [x] **COMPLETED**: API casing convention transformation layer implementation
 - [x] **COMPLETED**: Buying signals transformation improvements
 - [x] **COMPLETED**: Linter error fixes
-- **NEXT**: Finish remaining cleanup tasks (LLM client consolidation, error handling standardization)
-- **THEN**: Move to prompt template improvements phase
+- [x] **COMPLETED**: LLM client consolidation and singleton pattern
+- [x] **COMPLETED**: Product overview prompt and API improvements
+- [x] **COMPLETED**: Dashboard frontend enhancements with comprehensive testing
+- [x] **COMPLETED**: Merged comprehensive test infrastructure to main branch
+- **NEXT**: Target account system improvements (prompt, API, frontend, tests)
+- **THEN**: Target persona system improvements
+- **THEN**: Campaign generation backend implementation
 
 ### **📋 Up Next**
 - Frontend production deployment
