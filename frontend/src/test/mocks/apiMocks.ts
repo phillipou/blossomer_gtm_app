@@ -1,4 +1,4 @@
-import { CompanyOverviewResponse } from '../../types/api'
+import type { CompanyOverviewResponse } from '../../types/api'
 
 export const mockCompanyOverview: CompanyOverviewResponse = {
   companyName: 'Test Company',
@@ -46,4 +46,5 @@ export const mockApiError = {
   retryRecommended: true
 }
 
-export const mockApiFetch = vi.fn()
+// Mock function placeholder - not used in unit tests
+export const mockApiFetch = () => {}

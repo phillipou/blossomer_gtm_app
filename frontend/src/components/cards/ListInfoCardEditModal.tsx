@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
 import TextareaAutosize from "react-textarea-autosize";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import {

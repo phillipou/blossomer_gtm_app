@@ -3,11 +3,16 @@ import '@testing-library/jest-dom'
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
+  root = null
+  rootMargin = ''
+  thresholds = [0]
+  
   constructor() {}
   disconnect() {}
   observe() {}
   unobserve() {}
-}
+  takeRecords() { return [] }
+} as any
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -26,12 +31,11 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock localStorage
 const localStorageMock = {
+  length: 0,
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
+  key: vi.fn(),
 }
-global.localStorage = localStorageMock
-
-// Mock React for testing environment
-global.React = {}
+global.localStorage = localStorageMock as any
