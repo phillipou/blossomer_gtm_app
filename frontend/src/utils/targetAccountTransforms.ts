@@ -35,41 +35,49 @@ export function transformFirmographicsToTable(firmographics: Record<string, stri
     funding_stage: "red"
   };
 
-  return Object.entries(firmographics).map(([key, values]) => {
-    if (key === "company_size" && typeof values === "object" && values !== null) {
-      // Handle nested company size object with employees and revenue
-      const sizeObj = values as Record<string, string>;
-      const sizeValues = Object.entries(sizeObj).map(([subKey, subValue]) => ({
-        text: `${subKey.charAt(0).toUpperCase() + subKey.slice(1)}: ${subValue}`,
-        color: colorMap[key] || "gray"
-      }));
+  return Object.entries(firmographics)
+    .flatMap(([key, values]) => {
+      if (key === "company_size" && typeof values === "object" && values !== null) {
+        // Render separate rows for Employees, Department Size, Revenue if available
+        const sizeObj = values as Record<string, string | null | undefined>;
+        const sizeFields = [
+          { label: "Employees", key: "employees" },
+          { label: "Department Size", key: "department_size" },
+          { label: "Revenue", key: "revenue" },
+        ];
+        return sizeFields
+          .map(({ label, key }) => {
+            const val = sizeObj[key];
+            return val && val !== "null" && val !== null && val !== undefined && val !== "" ? {
+              id: key,
+              label,
+              values: [{ text: val, color: colorMap[key] || "gray" }]
+            } : null;
+          })
+          .filter(Boolean) as FirmographicRow[];
+      }
       return {
         id: key,
-        label: "Company Size",
-        values: sizeValues
-      };
-    }
-    return {
-      id: key,
-      label: key.split('_').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' '),
-      values: Array.isArray(values)
-        ? values.map(value => ({
-            text: String(value),
-            color: colorMap[key] || "gray"
-          }))
-        : typeof values === "object" && values !== null
-          ? Object.values(values).map(value => ({
+        label: key.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' '),
+        values: Array.isArray(values)
+          ? values.map(value => ({
               text: String(value),
               color: colorMap[key] || "gray"
             }))
-          : [{
-              text: String(values),
-              color: colorMap[key] || "gray"
-            }]
-    };
-  });
+          : typeof values === "object" && values !== null
+            ? Object.values(values).map(value => ({
+                text: String(value),
+                color: colorMap[key] || "gray"
+              }))
+            : [{
+                text: String(values),
+                color: colorMap[key] || "gray"
+              }]
+      };
+    })
+    .filter((row): row is FirmographicRow => row !== null);
 }
 
 export function transformBuyingSignalsToCards(buyingSignals: Record<string, string[]> | BuyingSignal[]): BuyingSignal[] {
