@@ -6,6 +6,7 @@ This module defines JSON schemas for LLM structured outputs, enabling reuse and 
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from enum import Enum
 
 
 class ProductOverviewRequest(BaseModel):
@@ -122,7 +123,11 @@ class Firmographics(BaseModel):
     industry: List[str] = Field(
         ..., description="Exact industry names from Clay taxonomy"
     )
-    company_size: CompanySize = Field(..., description="Size criteria")
+    employees: Optional[str] = Field(None, description="Exact range (e.g., '50-500')")
+    department_size: Optional[str] = Field(
+        None, description="Relevant dept size if applicable"
+    )
+    revenue: Optional[str] = Field(None, description="Revenue range if relevant")
     geography: Optional[List[str]] = Field(
         None, description="Geographic markets if relevant"
     )
@@ -137,8 +142,18 @@ class Firmographics(BaseModel):
     )
     keywords: List[str] = Field(
         ...,
-        description="3-5 sophisticated company description keywords that indicate implicit need",
+        description=(
+            "3-5 sophisticated company description keywords that indicate implicit need - "
+            "avoid obvious solution terms"
+        ),
     )
+
+
+# Enum for BuyingSignal priority
+class PriorityEnum(str, Enum):
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
 
 
 class BuyingSignal(BaseModel):
@@ -150,12 +165,10 @@ class BuyingSignal(BaseModel):
     type: str = Field(
         ..., description="Company Data|Website|Tech Stack|News|Social Media|Other"
     )
-    priority: str = Field(..., description="low|med|hi")
+    priority: PriorityEnum = Field(..., description="Low|Medium|High")
     detection_method: str = Field(
-        ..., description="Specific Clay enrichment or data source"
-    )
-    keywords: List[str] = Field(
-        ..., description="Search terms or indicators to identify this signal"
+        ...,
+        description=("Specific Clay enrichment or data source"),
     )
 
 
@@ -173,9 +186,6 @@ class ICPMetadata(BaseModel):
         ..., description="user_input|company_context|website_content"
     )
     sources_used: List[str] = Field(..., description="List of context sources utilized")
-    context_sufficiency: str = Field(
-        ..., description="Context met 0.4 confidence threshold: true/false"
-    )
     confidence_assessment: ConfidenceAssessment = Field(
         ..., description="Confidence metrics"
     )
@@ -186,7 +196,8 @@ class ICPMetadata(BaseModel):
 
 class TargetAccountResponse(BaseModel):
     """
-    Response model for the /customers/target_accounts endpoint (ICP analysis with Clay-ready filters).
+    Response model for the /customers/target_accounts endpoint
+    (ICP analysis with Clay-ready filters).
     """
 
     target_account_name: str = Field(
@@ -205,10 +216,13 @@ class TargetAccountResponse(BaseModel):
     )
     buying_signals_rationale: List[str] = Field(
         ...,
-        description="3-5 bullets explaining the overall logic behind these buying signal choices",
+        description=(
+            "3-5 bullets explaining the overall logic behind these buying signal choices"
+        ),
     )
     metadata: ICPMetadata = Field(
-        ..., description="Analysis metadata and quality scores"
+        ...,
+        description=("Analysis metadata and quality scores"),
     )
 
 

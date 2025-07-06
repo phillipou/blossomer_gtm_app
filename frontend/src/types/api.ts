@@ -22,7 +22,6 @@ export interface APIBuyingSignal {
   type: string;
   priority: string;
   detectionMethod: string;
-  keywords: string[];
 }
 
 export interface ApiError {
@@ -97,7 +96,9 @@ export interface CompanySize {
 
 export interface Firmographics {
   industry: string[];
-  companySize: CompanySize;
+  employees?: string;
+  departmentSize?: string;
+  revenue?: string;
   geography?: string[];
   businessModel?: string[];
   fundingStage?: string[];
@@ -200,15 +201,6 @@ export interface TargetAccount {
   createdAt?: string;
   personas?: TargetPersonaResponse[];
   [key: string]: string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown; // Added index signature
-}
-
-export interface TargetAccountDetail {
-  id: string;
-  title: string;
-  description: string;
-  firmographics: FirmographicRow[];
-  buyingSignals: BuyingSignal[];
-  rationale: string;
 }
 
 export interface EmailSegment {

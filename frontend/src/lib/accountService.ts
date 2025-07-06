@@ -2,7 +2,6 @@ import { apiFetch } from './apiClient';
 import type {
   TargetCompanyRequest,
   TargetAccountResponse,
-  TargetAccount,
   TargetPersonaResponse,
   TargetPersonaRequest,
 } from '../types/api';
@@ -49,13 +48,26 @@ export async function generateTargetPersona(
   });
 }
 
-// Local storage service functions for target accounts
-export function getStoredTargetAccounts(): TargetAccount[] {
-  const stored = localStorage.getItem('target_accounts');
-  return stored ? JSON.parse(stored) : [];
+// Type guard for canonical TargetAccountResponse shape
+function isCanonicalTargetAccount(obj: any): obj is TargetAccountResponse & { id: string; createdAt: string } {
+  return obj &&
+    typeof obj.targetAccountName === 'string' &&
+    typeof obj.targetAccountDescription === 'string' &&
+    Array.isArray(obj.targetAccountRationale) &&
+    Array.isArray(obj.buyingSignalsRationale) &&
+    typeof obj.id === 'string' &&
+    typeof obj.createdAt === 'string';
 }
 
-export function saveTargetAccount(account: TargetAccount): void {
+// Local storage service functions for canonical target accounts
+export function getStoredTargetAccounts(): (TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] })[] {
+  const stored = localStorage.getItem('target_accounts');
+  if (!stored) return [];
+  const parsed = JSON.parse(stored);
+  return Array.isArray(parsed) ? parsed as (TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] })[] : [];
+}
+
+export function saveTargetAccount(account: TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] }): void {
   const accounts = getStoredTargetAccounts();
   const existingIndex = accounts.findIndex(p => p.id === account.id);
   
@@ -81,7 +93,7 @@ export function generateTargetAccountId(): string {
 export function getPersonasForTargetAccount(accountId: string): TargetPersonaResponse[] {
   const accounts = getStoredTargetAccounts();
   const account = accounts.find(p => p.id === accountId);
-  return account?.personas || [];
+  return account && Array.isArray(account.personas) ? account.personas : [];
 }
 
 export function addPersonaToTargetAccount(accountId: string, persona: TargetPersonaResponse): void {
@@ -89,9 +101,9 @@ export function addPersonaToTargetAccount(accountId: string, persona: TargetPers
   const idx = accounts.findIndex(p => p.id === accountId);
   if (idx === -1) return;
   const account = accounts[idx];
-  if (!account.personas) account.personas = [];
+  if (!Array.isArray(account.personas)) account.personas = [];
   account.personas.push(persona);
-  saveTargetAccount(account);
+  localStorage.setItem('target_accounts', JSON.stringify(accounts));
 }
 
 export function updatePersonaForTargetAccount(accountId: string, persona: TargetPersonaResponse): void {
@@ -99,11 +111,11 @@ export function updatePersonaForTargetAccount(accountId: string, persona: Target
   const idx = accounts.findIndex(p => p.id === accountId);
   if (idx === -1) return;
   const account = accounts[idx];
-  if (!account.personas) return;
-  const personaIdx = account.personas.findIndex(p => p.id === persona.id);
+  if (!Array.isArray(account.personas)) return;
+  const personaIdx = account.personas.findIndex((p: any) => p.id === persona.id);
   if (personaIdx === -1) return;
   account.personas[personaIdx] = persona;
-  saveTargetAccount(account);
+  localStorage.setItem('target_accounts', JSON.stringify(accounts));
 }
 
 export function deletePersonaFromTargetAccount(accountId: string, personaId: string): void {
@@ -111,9 +123,9 @@ export function deletePersonaFromTargetAccount(accountId: string, personaId: str
   const idx = accounts.findIndex(p => p.id === accountId);
   if (idx === -1) return;
   const account = accounts[idx];
-  if (!account.personas) return;
-  account.personas = account.personas.filter(p => p.id !== personaId);
-  saveTargetAccount(account);
+  if (!Array.isArray(account.personas)) return;
+  account.personas = account.personas.filter((p: any) => p.id !== personaId);
+  localStorage.setItem('target_accounts', JSON.stringify(accounts));
 }
 
 // Get all personas across all accounts for company-wide view
@@ -122,12 +134,12 @@ export function getAllPersonas(): Array<{ persona: TargetPersonaResponse; accoun
   const allPersonas: Array<{ persona: TargetPersonaResponse; accountId: string; accountName: string }> = [];
   
   accounts.forEach(account => {
-    if (account.personas) {
-      account.personas.forEach(persona => {
+    if (Array.isArray(account.personas)) {
+      account.personas.forEach((persona: TargetPersonaResponse) => {
         allPersonas.push({
           persona,
           accountId: account.id,
-          accountName: account.name
+          accountName: account.targetAccountName
         });
       });
     }

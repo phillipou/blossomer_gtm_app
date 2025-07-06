@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import {
   EditDialog,
   EditDialogContent,
@@ -12,13 +13,15 @@ import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select";
 
 interface EditDialogField {
   name: string;
   label: string;
-  type: "input" | "textarea" | "switch";
+  type: "input" | "textarea" | "switch" | "select";
   placeholder?: string;
   required?: boolean;
+  options?: { label: string; value: string }[];
 }
 
 interface EditDialogModalProps {
@@ -33,6 +36,7 @@ interface EditDialogModalProps {
   saveLabel?: string;
   editLabel?: string;
   editing?: boolean;
+  children?: ReactNode;
 }
 
 export default function EditDialogModal({
@@ -47,6 +51,7 @@ export default function EditDialogModal({
   saveLabel = "Save",
   editLabel = "Update",
   editing = false,
+  children,
 }: EditDialogModalProps) {
   const [form, setForm] = useState<Record<string, string | boolean>>(initialValues);
 
@@ -77,37 +82,51 @@ export default function EditDialogModal({
           <EditDialogTitle>{title}</EditDialogTitle>
           {description && <EditDialogDescription>{description}</EditDialogDescription>}
         </EditDialogHeader>
-        <div className="space-y-4 py-4 px-6">
-          {fields.map((field) => (
-            <div className="space-y-2 bg-gray-50 rounded-lg px-4 py-3" key={field.name}>
-              <Label htmlFor={field.name}>{field.label}</Label>
-              {field.type === "input" && (
-                <Input
-                  id={field.name}
-                  placeholder={field.placeholder}
-                  value={String(form[field.name] || "")}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  className="focus:border-blue-500 focus:ring-blue-500"
-                />
-              )}
-              {field.type === "textarea" && (
-                <Textarea
-                  id={field.name}
-                  placeholder={field.placeholder}
-                  value={String(form[field.name] || "")}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
-                />
-              )}
-              {field.type === "switch" && (
-                <Switch
-                  checked={!!form[field.name]}
-                  onChange={(e) => handleChange(field.name, e.target.checked)}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        {children ? children : (
+          <div className="space-y-4 py-4 px-6">
+            {fields.map((field) => (
+              <div className="space-y-2 bg-gray-50 rounded-lg px-4 py-3" key={field.name}>
+                <Label htmlFor={field.name}>{field.label}</Label>
+                {field.type === "input" && (
+                  <Input
+                    id={field.name}
+                    placeholder={field.placeholder}
+                    value={String(form[field.name] || "")}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    className="focus:border-blue-500 focus:ring-blue-500"
+                  />
+                )}
+                {field.type === "textarea" && (
+                  <Textarea
+                    id={field.name}
+                    placeholder={field.placeholder}
+                    value={String(form[field.name] || "")}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
+                  />
+                )}
+                {field.type === "switch" && (
+                  <Switch
+                    checked={!!form[field.name]}
+                    onChange={(e) => handleChange(field.name, e.target.checked)}
+                  />
+                )}
+                {field.type === "select" && field.options && (
+                  <Select value={String(form[field.name] || "")} onValueChange={val => handleChange(field.name, val)}>
+                    <SelectTrigger id={field.name} className="w-full">
+                      <SelectValue placeholder={field.placeholder || "Select an option"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <EditDialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel

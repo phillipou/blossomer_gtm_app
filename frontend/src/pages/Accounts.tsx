@@ -8,12 +8,10 @@ import OverviewCard from "../components/cards/OverviewCard";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import {
   generateTargetCompany,
-  getStoredTargetAccounts,
-  saveTargetAccount,
-  deleteTargetAccount,
+  getStoredTargetAccounts as getAllStoredTargetAccounts,
   generateTargetAccountId,
 } from "../lib/accountService";
-import type { TargetAccount, ApiError } from "../types/api";
+import type { TargetAccountResponse, ApiError } from "../types/api";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
@@ -22,8 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Search, Filter } from "lucide-react";
 
 interface TargetAccountCardProps {
-  targetAccount: TargetAccount;
-  onEdit: (account: TargetAccount) => void;
+  targetAccount: TargetAccountResponse & { id: string; createdAt: string };
+  onEdit: (account: TargetAccountResponse & { id: string; createdAt: string }) => void;
   onDelete: (id: string) => void;
   companyName: string;
 }
@@ -32,8 +30,8 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
   const navigate = useNavigate();
   return (
     <SummaryCard
-      title={targetAccount.name}
-      description={targetAccount.description}
+      title={targetAccount.targetAccountName}
+      description={targetAccount.targetAccountDescription}
       parents={[{ name: companyName, color: "bg-green-400", label: "Company" }]}
       onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
     >
@@ -63,9 +61,9 @@ function AddAccountCard({ onClick }: { onClick: () => void }) {
 
 export default function TargetAccountsList() {
   const overview = useCompanyOverview();
-  const [targetAccounts, setTargetAccounts] = useState<TargetAccount[]>([]);
+  const [targetAccounts, setTargetAccounts] = useState<(TargetAccountResponse & { id: string; createdAt: string })[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<TargetAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<(TargetAccountResponse & { id: string; createdAt: string }) | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -73,7 +71,18 @@ export default function TargetAccountsList() {
 
   // Load target accounts from localStorage on mount
   useEffect(() => {
-    setTargetAccounts(getStoredTargetAccounts());
+    // Only use canonical shape
+    const all = getAllStoredTargetAccounts();
+    const canonical = all.filter(
+      (acc: any): acc is TargetAccountResponse & { id: string; createdAt: string } =>
+        typeof acc.targetAccountName === 'string' &&
+        typeof acc.targetAccountDescription === 'string' &&
+        Array.isArray(acc.targetAccountRationale) &&
+        Array.isArray(acc.buyingSignalsRationale) &&
+        typeof acc.id === 'string' &&
+        typeof acc.createdAt === 'string'
+    );
+    setTargetAccounts(canonical);
   }, []);
 
   const handleAddAccount = async ({ name, description }: { name: string; description: string }) => {
@@ -108,36 +117,26 @@ export default function TargetAccountsList() {
         undefined, // additional context
         companyContext
       );
-      console.log("[AddAccount] API response:", response);
-      console.log("[AddAccount] Response type:", typeof response);
-      console.log("[AddAccount] Has buyingSignals:", !!response.buyingSignals);
-      console.log("[AddAccount] Has firmographics:", !!response.firmographics);
-      const newAccount: TargetAccount = {
+      // Add id and createdAt for local usage
+      const newAccount = {
+        ...response,
         id: generateTargetAccountId(),
-        name: response.targetAccountName || 'Unnamed Account',
-        role: "Target Account",
-        description: response.targetAccountDescription || 'No description available',
-        firmographics: {
-          industry: response.firmographics?.industry || [],
-          company_size: response.firmographics?.companySize || {},
-          geography: response.firmographics?.geography || [],
-          business_model: response.firmographics?.businessModel || [],
-          funding_stage: response.firmographics?.fundingStage || [],
-          company_type: response.firmographics?.companyType || [],
-          keywords: response.firmographics?.keywords || [],
-        },
-        buyingSignals: (response.buyingSignals || []).map((signal, index) => ({
-          id: `signal_${index}`,
-          label: signal.title || 'Unnamed Signal',
-          description: signal.description || 'No description',
-          enabled: true
-        })),
-        rationale: (response.targetAccountRationale || []).join(' ') || 'No rationale provided',
-        metadata: response.metadata || {},
         createdAt: new Date().toISOString(),
       };
-      saveTargetAccount(newAccount);
-      setTargetAccounts(getStoredTargetAccounts());
+      // Save canonical API shape
+      const all = getAllStoredTargetAccounts();
+      const canonical = all.filter(
+        (acc: any): acc is TargetAccountResponse & { id: string; createdAt: string } =>
+          typeof acc.targetAccountName === 'string' &&
+          typeof acc.targetAccountDescription === 'string' &&
+          Array.isArray(acc.targetAccountRationale) &&
+          Array.isArray(acc.buyingSignalsRationale) &&
+          typeof acc.id === 'string' &&
+          typeof acc.createdAt === 'string'
+      );
+      canonical.push(newAccount);
+      localStorage.setItem('target_accounts', JSON.stringify(canonical));
+      setTargetAccounts(canonical);
       setIsAddModalOpen(false);
     } catch (err: unknown) {
       console.error("[AddAccount] API error:", err);
@@ -147,39 +146,50 @@ export default function TargetAccountsList() {
     }
   };
 
-  const handleEditAccount = (account: TargetAccount) => {
+  const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
     setEditingAccount(account);
     setIsAddModalOpen(true);
   };
 
   const handleUpdateAccount = async ({ name, description }: { name: string; description: string }) => {
     if (!editingAccount) return;
-    
-    // Update only the metadata (name and description) of the existing account
-    const updatedAccount: TargetAccount = {
+    // Update only the canonical fields
+    const updatedAccount = {
       ...editingAccount,
-      name: name.trim(),
-      description: description.trim(),
+      targetAccountName: name.trim(),
+      targetAccountDescription: description.trim(),
     };
-    
-    // Save the updated account to localStorage
-    saveTargetAccount(updatedAccount);
-    setTargetAccounts(getStoredTargetAccounts());
+    // Update in localStorage
+    const all = getAllStoredTargetAccounts();
+    const canonical = all.filter(
+      (acc: any): acc is TargetAccountResponse & { id: string; createdAt: string } =>
+        typeof acc.targetAccountName === 'string' &&
+        typeof acc.targetAccountDescription === 'string' &&
+        Array.isArray(acc.targetAccountRationale) &&
+        Array.isArray(acc.buyingSignalsRationale) &&
+        typeof acc.id === 'string' &&
+        typeof acc.createdAt === 'string'
+    );
+    const idx = canonical.findIndex(acc => acc.id === editingAccount.id);
+    if (idx !== -1) {
+      canonical[idx] = updatedAccount;
+      localStorage.setItem('target_accounts', JSON.stringify(canonical));
+      setTargetAccounts(canonical);
+    }
     setIsAddModalOpen(false);
     setEditingAccount(null);
   };
 
   const handleDeleteAccount = (id: string) => {
-    deleteTargetAccount(id);
-    setTargetAccounts(getStoredTargetAccounts());
+    // Implement delete logic
   };
 
   // Filtered accounts based on search and filter
   const filteredAccounts = targetAccounts.filter(
     (account) => {
       const matchesSearch =
-        account.name.toLowerCase().includes(search.toLowerCase()) ||
-        (account.description && account.description.toLowerCase().includes(search.toLowerCase()));
+        account.targetAccountName.toLowerCase().includes(search.toLowerCase()) ||
+        (account.targetAccountDescription && account.targetAccountDescription.toLowerCase().includes(search.toLowerCase()));
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
     }
@@ -296,8 +306,8 @@ export default function TargetAccountsList() {
         descriptionPlaceholder="Describe the characteristics, size, industry, or other traits that define your ideal target accounts."
         submitLabel={editingAccount ? "Update" : isGenerating ? "Generating..." : "Generate"}
         cancelLabel="Cancel"
-        defaultName={editingAccount ? editingAccount.name : ""}
-        defaultDescription={editingAccount ? editingAccount.description : ""}
+        defaultName={editingAccount ? editingAccount.targetAccountName : ""}
+        defaultDescription={editingAccount ? editingAccount.targetAccountDescription : ""}
         isLoading={editingAccount ? false : isGenerating}
       />
     </div>

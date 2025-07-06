@@ -8,8 +8,9 @@ import SubNav from "../components/navigation/SubNav";
 import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import OverviewCard from "../components/cards/OverviewCard";
 import { getStoredTargetAccounts, addPersonaToTargetAccount, getPersonasForTargetAccount } from "../lib/accountService";
-import { transformTargetAccountToDetail, transformBuyingSignalsToCards } from "../utils/targetAccountTransforms";
-import type { TargetPersonaResponse, TargetAccount, FirmographicRow, BuyingSignal, TargetAccountDetail, ApiError } from "../types/api";
+import { transformFirmographicsToTable, transformBuyingSignalsToCards } from "../utils/targetAccountTransforms";
+import { transformKeysToCamelCase } from "../lib/utils";
+import type { TargetPersonaResponse, FirmographicRow, BuyingSignal, ApiError, TargetAccountResponse } from "../types/api";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import InfoCard from "../components/cards/InfoCard";
 import EditFirmographicsModal from "../components/modals/EditFirmographicsModal";
@@ -18,11 +19,12 @@ import { generateTargetPersona } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
+import ListInfoCard from "../components/cards/ListInfoCard";
 
 export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [accountDetail, setAccountDetail] = useState<TargetAccountDetail | null>(null);
+  const [accountDetail, setAccountDetail] = useState<TargetAccountResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,9 +37,9 @@ export default function AccountDetail() {
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
   const [hoveredFirmo, setHoveredFirmo] = useState(false);
   // State for rationale editing
-  const [rationale, setRationale] = useState("");
+  const [rationale, setRationale] = useState<string[]>([]);
   const [editingRationale, setEditingRationale] = useState(false);
-  const [editRationaleContent, setEditRationaleContent] = useState("");
+  const [editRationaleContent, setEditRationaleContent] = useState<string[]>([]);
 
   // Tab state for sub navigation
   const [activeTab, setActiveTab] = useState<string>("accounts");
@@ -71,14 +73,16 @@ export default function AccountDetail() {
   useEffect(() => {
     try {
       const accounts = getStoredTargetAccounts();
-      const account = accounts.find((p: TargetAccount) => p.id === id);
+      const account = accounts.find((p) => p.id === id);
+      console.log("[AccountDetail] Loaded account: ", account);
       if (account) {
-        const detailData = transformTargetAccountToDetail(account);
-        setAccountDetail(detailData);
-        setBuyingSignals(transformBuyingSignalsToCards(detailData.buyingSignals));
-        const firmographicsData = Array.isArray(detailData.firmographics) ? detailData.firmographics : [];
+        setAccountDetail(account);
+        const firmographicsData = Array.isArray(account.firmographics)
+          ? account.firmographics as FirmographicRow[]
+          : (account.firmographics ? transformFirmographicsToTable(account.firmographics as unknown as Record<string, string | string[]>) : []);
         setFirmographics(firmographicsData);
-        setRationale(detailData.rationale || "");
+        setBuyingSignals(transformBuyingSignalsToCards(account.buyingSignals || []));
+        setRationale(account.targetAccountRationale);
       } else {
         setError("Account not found");
       }
@@ -130,7 +134,7 @@ export default function AccountDetail() {
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Target Accounts", href: "/target-accounts" },
-          { label: accountDetail?.title || "Target Account" }
+          { label: accountDetail?.targetAccountName || "Target Account" }
         ]}
         activeSubTab={activeTab}
         setActiveSubTab={setActiveTab}
@@ -144,24 +148,33 @@ export default function AccountDetail() {
           <>
             {/* Target Description */}
             <OverviewCard
-              title={accountDetail.title}
-              bodyText={accountDetail.description}
+              title={accountDetail?.targetAccountName}
+              bodyText={accountDetail?.targetAccountDescription}
               showButton={false}
               onEdit={({ name, description }) => {
-                setAccountDetail((prev: TargetAccountDetail | null) => {
+                setAccountDetail((prev) => {
                   if (!prev) return null;
-                  return {
+                  const updated: TargetAccountResponse = {
                     ...prev,
-                    title: name,
-                    description: description
+                    targetAccountName: name,
+                    targetAccountDescription: description,
+                    // preserve other canonical fields
+                    targetAccountRationale: prev.targetAccountRationale || [],
+                    firmographics: prev.firmographics || {},
+                    buyingSignals: prev.buyingSignals || [],
+                    buyingSignalsRationale: prev.buyingSignalsRationale || [],
+                    metadata: prev.metadata || {},
                   };
+                  // Update localStorage with canonical shape
+                  const accounts = getStoredTargetAccounts();
+                  // Only update accounts that are TargetAccountResponse shape
+                  const updatedAccounts = accounts
+                    .map((p) =>
+                      p.targetAccountName === prev.targetAccountName ? updated : p
+                    );
+                  localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
+                  return updated;
                 });
-                // Also update the stored account
-                const accounts = getStoredTargetAccounts();
-                const updatedAccounts = accounts.map((p: TargetAccount) => 
-                  p.id === id ? { ...p, name: name, description: description } : p
-                );
-                localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
               }}
             />
             {/* Firmographics and Why Good Fit Row */}
@@ -191,36 +204,37 @@ export default function AccountDetail() {
               </Card>
               {/* Why they're a good fit InfoCard with edit affordance */}
               <div className="flex-1">
-                {editingRationale ? (
-                  <div className="space-y-4 group relative rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <label className="font-semibold">Why they're a good fit</label>
-                    <textarea
-                      value={editRationaleContent}
-                      onChange={e => setEditRationaleContent(e.target.value)}
-                      className="min-h-[120px] w-full border rounded p-2"
-                    />
-                    <div className="flex space-x-2">
-                      <Button size="sm" onClick={() => { setRationale(editRationaleContent); setEditingRationale(false); }}>
-                        <Check className="w-4 h-4 mr-2" />Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingRationale(false)}>
-                        <X className="w-4 h-4 mr-2" />Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className="group relative h-full"
-                  >
-                    <InfoCard
-                      title={"Why they're a good fit"}
-                      items={[rationale]}
-                      onEdit={() => { setEditRationaleContent(rationale); setEditingRationale(true); }}
-                    />
-                  </div>
-                )}
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Why they're a good fit</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul>
+                      {rationale.map((item: string, idx: number) => (
+                        <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet mb-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               </div>
             </div>
+            {/* Buying Signals Rationale Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Buying Signals Rationale</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul>
+                  {accountDetail.buyingSignalsRationale?.map((item: string, idx: number) => (
+                    <li key={idx} className="list-disc list-inside text-sm text-gray-700 mb-2">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
             {/* Buying Signals Block */}
             <Card>
               <CardHeader>
@@ -257,7 +271,7 @@ export default function AccountDetail() {
                     description={persona.description}
                     parents={[
                       { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
-                      { name: accountDetail?.title || "Account", color: "bg-red-400", label: "Account" },
+                      { name: accountDetail?.targetAccountName || "Account", color: "bg-red-400", label: "Account" },
                     ]}
                     onClick={() => handlePersonaClick(persona.id)}
                   >
@@ -284,16 +298,43 @@ export default function AccountDetail() {
         onSave={(values: Record<string, string | boolean>) => {
           const label = String(values.label || '').trim();
           const description = String(values.description || '').trim();
-          if (modalEditingSignal) {
-            // Edit
-            setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));
-          } else {
-            // Add
-            setBuyingSignals(signals => [
-              ...signals,
-              { id: String(Date.now()), label, description, enabled: true },
-            ]);
-          }
+          const priority = String(values.priority || '').trim();
+          setBuyingSignals(prevSignals => {
+            let updatedSignals;
+            if (modalEditingSignal) {
+              // Edit
+              updatedSignals = prevSignals.map(s =>
+                s.id === modalEditingSignal.id ? { ...s, label, description, priority } : s
+              );
+            } else {
+              // Add
+              updatedSignals = [
+                ...prevSignals,
+                { id: String(Date.now()), label, description, priority, enabled: true },
+              ];
+            }
+            // Map to APIBuyingSignal shape for localStorage
+            const apiBuyingSignals = updatedSignals.map(s => ({
+              title: s.label,
+              description: s.description,
+              type: 'type' in s && typeof s.type === 'string' ? s.type : "",
+              priority: 'priority' in s && typeof s.priority === 'string' ? s.priority : "",
+              detectionMethod: 'detectionMethod' in s && typeof s.detectionMethod === 'string' ? s.detectionMethod : "",
+            }));
+            // Update localStorage for the account
+            if (accountDetail && id) {
+              const accounts = getStoredTargetAccounts();
+              const idx = accounts.findIndex(acc => acc.id === id);
+              if (idx !== -1) {
+                accounts[idx] = {
+                  ...accounts[idx],
+                  buyingSignals: apiBuyingSignals,
+                };
+                localStorage.setItem('target_accounts', JSON.stringify(accounts));
+              }
+            }
+            return updatedSignals;
+          });
         }}
       />
       <EditFirmographicsModal
@@ -339,12 +380,12 @@ export default function AccountDetail() {
             // Pass the full target account as targetAccountContext
             let targetAccountContext = undefined;
             const accounts = getStoredTargetAccounts();
-            const account = accounts.find((p: TargetAccount) => p.id === id);
+            const account = accounts.find((p) => p.id === id);
             if (account) {
               targetAccountContext = {
                 ...account, // Send the full account object
-                targetAccountName: accountDetail.title || "",
-                targetAccountDescription: accountDetail.description || "",
+                targetAccountName: accountDetail?.targetAccountName || "",
+                targetAccountDescription: accountDetail?.targetAccountDescription || "",
               };
             }
             // Debug: log all context objects before API call
