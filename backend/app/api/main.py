@@ -1,9 +1,6 @@
 from fastapi import FastAPI
 from backend.app.api.routes import company, customers, campaigns, auth
-from backend.app.services.llm_service import LLMClient, OpenAIProvider
 from fastapi.middleware.cors import CORSMiddleware
-
-llm_client = LLMClient([OpenAIProvider()])
 
 app = FastAPI(title="Blossomer GTM API v2")
 
@@ -19,13 +16,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register non-demo endpoints with /api prefix
+# Register API endpoints
 app.include_router(company.router, prefix="/api/company", tags=["Company"])
 app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 
-# Register demo endpoints at root (no /api prefix)
+# Register demo endpoints (these are defined within their respective routers with the /demo prefix)
 app.include_router(company.router, tags=["Demo"], include_in_schema=True)
 app.include_router(customers.router, tags=["Demo"], include_in_schema=True)
 

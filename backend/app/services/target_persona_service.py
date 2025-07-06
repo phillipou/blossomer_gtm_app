@@ -1,26 +1,23 @@
 from backend.app.schemas import TargetPersonaRequest, TargetPersonaResponse
 from backend.app.prompts.models import TargetPersonaPromptVars
 from backend.app.services.context_orchestrator_service import ContextOrchestratorService
-from backend.app.services.llm_service import LLMClient
 
 
 async def generate_target_persona_profile(
     request: TargetPersonaRequest,
-    llm_client: LLMClient,
 ) -> TargetPersonaResponse:
     """
     Generate a target persona profile using the shared analysis service.
+    Uses the shared LLM client instance from llm_singleton.
 
     Args:
         request (TargetPersonaRequest): The validated request object.
-        llm_client (LLMClient): The LLM client for prompt completion.
 
     Returns:
         TargetPersonaResponse: The structured response model.
     """
     service = ContextOrchestratorService(
         orchestrator=None,  # Not used anymore
-        llm_client=llm_client,
     )
     response = await service.analyze(
         request_data=request,

@@ -1,17 +1,25 @@
 import logging
-from typing import Any, Type, Optional
-from fastapi import HTTPException
-from backend.app.services.llm_service import LLMClient
+from typing import Any, Type, Optional, Dict
+
+try:
+    from fastapi import HTTPException
+except ImportError:
+    from starlette.exceptions import HTTPException
+from backend.app.core.llm_singleton import get_llm_client
 from backend.app.prompts.registry import render_prompt
 from backend.app.services.content_preprocessing import ContentPreprocessingPipeline
-from pydantic import BaseModel, ValidationError
+
+try:
+    from pydantic import BaseModel, ValidationError
+except ImportError:
+    from pydantic.v1 import BaseModel, ValidationError
 import json
 import time
 
 logger = logging.getLogger(__name__)
 
 
-def flatten_dict(d: dict) -> dict:
+def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
     """Flatten one level of nested dicts into the top-level dict."""
     out = dict(d)
     for k, v in d.items():
@@ -24,6 +32,15 @@ def flatten_dict(d: dict) -> dict:
 
 
 def is_target_account_context_sufficient(context: Any) -> bool:
+    """
+    Check if the target account context has sufficient information.
+
+    Args:
+        context: The context to check, can be a dict, list, or string.
+
+    Returns:
+        bool: True if the context has sufficient information, False otherwise.
+    """
     ctx = context
     if not isinstance(ctx, (dict, list)):
         try:
@@ -85,15 +102,16 @@ class ContextOrchestratorService:
     def __init__(
         self,
         orchestrator: Optional[Any] = None,
-        llm_client: Optional[LLMClient] = None,
         preprocessing_pipeline: Optional[ContentPreprocessingPipeline] = None,
     ):
-        if llm_client is None:
-            raise ValueError(
-                "llm_client must be provided to ContextOrchestratorService"
-            )
+        """
+        Initialize the service.
+
+        Args:
+            orchestrator: Optional context orchestrator (not used anymore).
+            preprocessing_pipeline: Optional pipeline for content preprocessing.
+        """
         self.orchestrator = orchestrator
-        self.llm_client = llm_client
         self.preprocessing_pipeline = preprocessing_pipeline
 
     async def analyze(
@@ -197,40 +215,42 @@ class ContextOrchestratorService:
                 prompt_vars_kwargs["company_context"] = getattr(
                     request_data, "company_context", None
                 )
-                prompt_vars_kwargs["target_account_context"] = getattr(
-                    request_data, "target_account_context", None
-                )
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
             prompt = render_prompt(prompt_template, prompt_vars)
             t5 = time.monotonic()
             print(f"[{analysis_type}] Prompt construction took {t5 - t4:.2f}s")
-            # 4. LLM call and response parsing
+            # 4. LLM call
             t6 = time.monotonic()
-            llm_output = await self.llm_client.generate_structured_output(
-                prompt=prompt, response_model=response_model
-            )
+            try:
+                system_prompt, user_prompt = prompt
+                response = await get_llm_client().generate_structured_output(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    response_model=response_model,
+                )
+            except ValidationError as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "LLM response validation failed",
+                        "analysis_type": analysis_type,
+                        "validation_errors": str(e),
+                    },
+                )
             t7 = time.monotonic()
-            print(f"[{analysis_type}] LLM call + response parsing took {t7 - t6:.2f}s")
-            print(f"[{analysis_type}] Total analyze() time: {t7 - total_start:.2f}s")
-            return response_model.model_validate(llm_output)
-        except (ValidationError, json.JSONDecodeError, ValueError) as e:
-            print(f"[{analysis_type}] Failed to parse LLM output: {e}")
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "error": f"LLM did not return valid output for {analysis_type}.",
-                    "analysis_type": analysis_type,
-                    "exception": str(e),
-                },
-            )
+            print(f"[{analysis_type}] LLM call took {t7 - t6:.2f}s")
+            total_end = time.monotonic()
+            print(f"[{analysis_type}] Total time: {total_end - total_start:.2f}s")
+            return response
+        except HTTPException:
+            raise
         except Exception as e:
-            print(f"[{analysis_type}] Analysis failed: {e}")
             raise HTTPException(
                 status_code=500,
                 detail={
-                    "error": f"Analysis failed for {analysis_type}.",
+                    "error": "Analysis failed",
                     "analysis_type": analysis_type,
-                    "exception": str(e),
+                    "error_details": str(e),
                 },
             )
 

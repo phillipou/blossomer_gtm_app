@@ -5,7 +5,6 @@ from backend.app.services.product_overview_service import (
     generate_product_overview_service,
 )
 from backend.app.core.database import get_db
-from backend.app.services.llm_service import LLMClient, OpenAIProvider
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 from backend.app.core.auth import rate_limit_dependency
 from sqlalchemy.orm import Session
@@ -13,8 +12,6 @@ from backend.app.models import APIKey
 
 
 router = APIRouter()
-
-llm_client = LLMClient([OpenAIProvider()])
 
 
 @router.post(
@@ -34,9 +31,9 @@ async def demo_generate_product_overview(
     """
     Generate a company overview for demo users, with IP-based rate limiting.
     """
-    orchestrator = ContextOrchestrator(llm_client)
+    orchestrator = ContextOrchestrator()
     try:
-        result = await generate_product_overview_service(data, orchestrator, llm_client)
+        result = await generate_product_overview_service(data, orchestrator)
         return result
     except HTTPException:
         raise
@@ -59,9 +56,9 @@ async def prod_generate_product_overview(
     """
     Generate a company overview for authenticated users (API key required).
     """
-    orchestrator = ContextOrchestrator(llm_client)
+    orchestrator = ContextOrchestrator()
     try:
-        result = await generate_product_overview_service(data, orchestrator, llm_client)
+        result = await generate_product_overview_service(data, orchestrator)
         return result
     except HTTPException:
         raise

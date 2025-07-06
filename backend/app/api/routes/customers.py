@@ -11,13 +11,11 @@ from backend.app.core.auth import rate_limit_dependency
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 from backend.app.core.database import get_db
 from backend.app.models import APIKey
-from backend.app.services.llm_service import LLMClient, OpenAIProvider
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from sqlalchemy.orm import Session
 
 
 router = APIRouter()
-
-llm_client = LLMClient([OpenAIProvider()])
 
 
 @router.post(
@@ -37,10 +35,14 @@ async def demo_generate_target_account(
     """
     Generate a target account profile for demo users, with IP-based rate limiting.
     """
+    orchestrator = ContextOrchestrator()
     try:
-        return await generate_target_account_profile(data, llm_client=llm_client)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        result = await generate_target_account_profile(data, orchestrator)
+        return result
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post(
@@ -58,10 +60,14 @@ async def prod_generate_target_account(
     """
     Generate a target account profile for authenticated users (API key required).
     """
+    orchestrator = ContextOrchestrator()
     try:
-        return await generate_target_account_profile(data, llm_client=llm_client)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        result = await generate_target_account_profile(data, orchestrator)
+        return result
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post(
@@ -82,7 +88,7 @@ async def demo_generate_target_persona(
     Generate a target persona profile for demo users, with IP-based rate limiting.
     """
     try:
-        return await generate_target_persona_profile(data, llm_client=llm_client)
+        return await generate_target_persona_profile(data)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -103,6 +109,9 @@ async def prod_generate_target_persona(
     Generate a target persona profile for authenticated users (API key required).
     """
     try:
-        return await generate_target_persona_profile(data, llm_client=llm_client)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        result = await generate_target_persona_profile(data)
+        return result
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))

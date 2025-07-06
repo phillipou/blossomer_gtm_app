@@ -1,7 +1,6 @@
 from backend.app.schemas import TargetAccountRequest, TargetAccountResponse
 from backend.app.prompts.models import TargetAccountPromptVars
 from backend.app.services.context_orchestrator_service import ContextOrchestratorService
-from backend.app.services.llm_service import LLMClient
 from typing import Optional
 import re
 
@@ -21,14 +20,13 @@ def extract_target_company_name(user_inputted_context: Optional[str]) -> Optiona
 
 async def generate_target_account_profile(
     request: TargetAccountRequest,
-    llm_client: LLMClient,
 ) -> TargetAccountResponse:
     """
     Generate a target account profile using the shared analysis service.
+    Uses the shared LLM client instance from llm_singleton.
     """
     service = ContextOrchestratorService(
         orchestrator=None,  # Not used anymore
-        llm_client=llm_client,
     )
     response: TargetAccountResponse = await service.analyze(
         request_data=request,

@@ -158,9 +158,11 @@ src/
 
 ### **Prompt System**
 - **Jinja2 Templates**: Structured prompt templates with variable injection
+- **System/User Prompt Separation**: Clear separation between role definition (system) and task-specific instructions (user)
 - **Template Registry**: Centralized management of prompt templates
 - **Context Injection**: Dynamic context based on available data sources
 - **Output Schemas**: Pydantic models for type-safe AI responses
+- **Prompt Organization**: System prompts define AI behavior and output standards, user prompts contain specific tasks and data
 
 ### **Content Processing Flow**
 ```

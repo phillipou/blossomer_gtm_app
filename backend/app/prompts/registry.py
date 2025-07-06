@@ -9,7 +9,7 @@ from backend.app.prompts.models import (
 )
 from .base import render_template
 from pydantic import BaseModel
-from typing import Dict, Type
+from typing import Dict, Type, Tuple, Optional
 from typing_extensions import TypedDict
 
 
@@ -29,7 +29,13 @@ TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
 }
 
 
-def render_prompt(template_name: str, variables: BaseModel) -> str:
+def render_prompt(
+    template_name: str, variables: BaseModel
+) -> Tuple[Optional[str], str]:
+    """
+    Render a prompt template with the given variables.
+    Returns a tuple of (system_prompt, user_prompt).
+    """
     entry = TEMPLATE_REGISTRY[template_name]
     if not isinstance(variables, BaseModel):
         raise TypeError(

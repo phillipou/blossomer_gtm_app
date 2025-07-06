@@ -7,19 +7,77 @@
 ### **Code Quality Cleanup (2-3 days) - HIGH PRIORITY**
 *Tech debt assessment completed - manageable cleanup needed before feature work*
 
-- [x] **Remove dead code** - Delete unused App.tsx and clean up unused imports (15 min) ✅ **COMPLETED**
-- [x] **Fix critical build issues** - Resolved TypeScript errors and runtime data structure mismatches ✅ **COMPLETED**
-- [x] **Implement missing functions** - Added getNextCustomType() function to EmailPreview.tsx ✅ **COMPLETED**
-- [x] **Fix API casing inconsistency** - Implement snake_case to camelCase transformation layer (1-2 hours) ✅ **COMPLETED**
-- [x] **Improve buying signals transformation** - Enhanced data processing and transformation patterns ✅ **COMPLETED**
-- [x] **Fix linter errors** - Resolved all ESLint and TypeScript issues ✅ **COMPLETED**
-- [ ] **Consolidate LLM clients** - Create shared LLM client instance instead of per-route instances (1-2 hours)
+- [x] **Remove dead code** - Delete unused App.tsx and clean up unused imports (15 min)
+- [x] **Fix critical build issues** - Resolved TypeScript errors and runtime data structure mismatches
+- [x] **Implement missing functions** - Added getNextCustomType() function to EmailPreview.tsx
+- [x] **Fix API casing inconsistency** - Implement snake_case to camelCase transformation layer (1-2 hours)
+- [x] **Improve buying signals transformation** - Enhanced data processing and transformation patterns
+- [x] **Fix linter errors** - Resolved all ESLint and TypeScript issues
+- [x] **Consolidate LLM clients** - Created shared LLM client instance instead of per-route instances (1-2 hours)
+  - [x] Updated llm_singleton.py with better configuration and documentation
+  - [x] Updated all services to use the singleton
+  - [x] Updated all routes to remove LLM client parameter
+  - [x] Added tests for LLM singleton
+  - [x] Fixed error handling and validation
+
+### **Prompt Improvements (1-2 days) - MEDIUM PRIORITY**
+*Enhance prompt quality and consistency across all endpoints*
+
+- [x] **Separate system and user prompts** - Split prompts into system and user parts for better results
+  - [x] Updated LLMRequest model to support system_prompt and user_prompt fields
+  - [x] Updated template rendering to separate system and user prompts using {# User Prompt #} comment
+  - [x] Updated LLM providers to handle separate system and user prompts
+  - [x] Updated LLMClient to support system prompts in generate_structured_output
+  - [x] Updated ContextOrchestratorService to use new prompt format
+  - [x] Updated product_overview.jinja2 with clear system/user separation
+  - [x] Added detailed quality standards and guidelines
+  - [x] Improved analysis approach with specific examples
+  - [x] Enhanced error handling and validation
+  - [x] Added more examples and guidance
+  - [x] Updated documentation in ARCHITECTURE.md and DECISIONS.md
+- [ ] **Update target_account.jinja2** - Apply same improvements to target account prompt
+- [ ] **Update target_persona.jinja2** - Apply same improvements to target persona prompt
+
+### **Testing and Documentation (1-2 days) - MEDIUM PRIORITY**
+*Ensure code quality and maintainability*
+
+- [ ] **Add missing tests** - Cover critical paths and edge cases
+- [ ] **Update documentation** - Keep docs in sync with code changes
+- [ ] **Add API documentation** - Document all endpoints and parameters
+- [ ] **Add examples** - Add more examples to documentation
+
+### **Feature Work (3-4 days) - LOW PRIORITY**
+*New features and improvements*
+
+- [ ] **Add email preview** - Add email preview functionality
+- [ ] **Add campaign wizard** - Add campaign wizard functionality
+- [ ] **Add campaign history** - Add campaign history functionality
+- [ ] **Add campaign analytics** - Add campaign analytics functionality
+
+#### **LLM Client Consolidation (1-2 hours)**
+- [ ] **Update llm_singleton.py** - Add configuration options and improve typing (15 min)
+- [ ] **Update service dependencies** - Modify services to use singleton (30 min):
+  - product_overview_service.py
+  - target_account_service.py
+  - target_persona_service.py
+  - context_orchestrator_service.py
+  - context_orchestrator_agent.py
+- [ ] **Update tests** - Modify tests to properly mock singleton (30 min)
+- [ ] **Add integration tests** - Test singleton pattern with circuit breakers (15 min)
+
 - [ ] **Standardize error handling** - Make error handling consistent across company.py and customers.py routes (1 hour)
 - [ ] **Fix router duplication** - Refactor dual router registration pattern in main.py (30 min)
 - [ ] **Finish minor cleanups** - Remove remaining unused imports in eslint.config.js, Campaigns.tsx (15 min)
 
 ### **Improve Prompt Templates for Better AI Output**
-- [ ] **Update product_overview.jinja2** - Add more specific guidance for extracting capabilities and competitive positioning
+
+#### **Update product_overview.jinja2 (1-2 hours)**
+- [ ] **Split system/user prompts** - Separate instructions into system and user sections
+- [ ] **Update JSON schema** - Add confidence scores and source attribution
+- [ ] **Add quality controls** - Implement validation checks and thresholds
+- [ ] **Test improvements** - Validate with sample websites
+
+#### **Enhance target_account.jinja2 & target_persona.jinja2**
 - [ ] **Enhance target_account.jinja2** - Include more detailed buying signals and firmographic criteria  
 - [ ] **Refine target_persona.jinja2** - Add psychological insights and deeper use case analysis
 - [ ] **Test prompt improvements** - Run through existing website analyses to validate better outputs

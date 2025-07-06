@@ -201,6 +201,32 @@ This document captures key architectural decisions made during the development o
 
 ---
 
+### **Decision 11: System/User Prompt Separation**
+
+**What**: Separated prompts into system and user components using Jinja2 template comments instead of single combined prompts.
+
+**Why**:
+- **Clear role definition**: System prompts establish AI behavior and output standards
+- **Better organization**: Separates general instructions from task-specific content
+- **Reusability**: System prompts can be shared across similar analysis types
+- **Maintainability**: Easier to update role definitions without touching task logic
+- **LLM optimization**: Better token usage and response quality with clear role separation
+
+**Trade-offs**:
+- ✅ Better prompt organization, clearer AI behavior, easier maintenance
+- ❌ Slightly more complex template structure
+- ❌ Need to update existing templates to use new format
+
+**Implementation**: 
+- Jinja2 templates use `{# User Prompt #}` comment to separate system and user sections
+- `LLMRequest` model supports optional `system_prompt` and required `user_prompt`
+- Backward compatibility maintained for templates without separation
+- Template registry returns tuple of `(system_prompt, user_prompt)`
+
+**Status**: ✅ Implemented, templates being updated to use new format
+
+---
+
 ## Data & State Management Decisions
 
 ### **Decision 11: Minimal Database Schema**

@@ -23,93 +23,65 @@ class ProductOverviewRequest(BaseModel):
     )
 
 
+class CompanySummary(BaseModel):
+    description: str = Field(
+        ..., description="2-3 sentences on core identity and business model"
+    )
+    category: str = Field(..., description="5-6 words on product category")
+    business_model: str = Field(
+        ..., description="1-2 sentences on revenue streams and pricing"
+    )
+    existing_customers: str = Field(
+        ..., description="1-3 sentences on customer evidence"
+    )
+
+
+class UseCaseAnalysis(BaseModel):
+    process_impact: str = Field(
+        ..., description="Primary process/workflow this product impacts"
+    )
+    problems_addressed: str = Field(
+        ..., description="Problems and inefficiencies solved"
+    )
+    how_they_do_it_today: str = Field(
+        ..., description="Current state/alternative approaches"
+    )
+
+
+class Positioning(BaseModel):
+    key_market_belief: str = Field(
+        ..., description="Unique POV on why current solutions fail"
+    )
+    unique_approach: str = Field(..., description="Differentiated value proposition")
+    language_used: str = Field(..., description="Terminology and mental models used")
+
+
+class ICPHypothesis(BaseModel):
+    target_account_hypothesis: str = Field(..., description="Ideal customer profile")
+    target_persona_hypothesis: str = Field(
+        ..., description="Ideal stakeholder/decision-maker"
+    )
+
+
 class ProductOverviewResponse(BaseModel):
-    company_name: str = Field(
-        ...,
-        description=(
-            "The official name of the company as found on the website or in the provided "
-            "context."
-        ),
+    company_name: str = Field(..., description="Official company name")
+    company_url: str = Field(..., description="Canonical website URL")
+    company_summary: CompanySummary = Field(
+        ..., description="Company overview and positioning"
     )
-    company_url: str = Field(
-        ...,
-        description=(
-            "The canonical website URL for the company (should match the input or be extracted "
-            "from the website if different)."
-        ),
+    capabilities: List[str] = Field(..., description="Key features and capabilities")
+    use_case_analysis: UseCaseAnalysis = Field(
+        ..., description="Process impact and problems solved"
     )
-    company_overview: str = Field(
-        ...,
-        description=(
-            "2-3 sentence summary of what the company does, their mission, and primary focus "
-            "area."
-        ),
+    positioning: Positioning = Field(
+        ..., description="Market positioning and differentiation"
     )
-    capabilities: List[str] = Field(
-        ...,
-        description=(
-            "Technical capabilities, core product features, platform abilities, and key "
-            "functionalities."
-        ),
+    objections: List[str] = Field(..., description="Common objections and concerns")
+    icp_hypothesis: ICPHypothesis = Field(
+        ..., description="Target customer and persona hypothesis"
     )
-    business_model: List[str] = Field(
-        ...,
-        description=(
-            "How they make money, pricing approach, target market size, sales model, and "
-            "revenue streams."
-        ),
-    )
-    differentiated_value: List[str] = Field(
-        ...,
-        description=(
-            "What sets them apart from competitors, unique approaches, proprietary technology, "
-            "or market positioning."
-        ),
-    )
-    customer_benefits: List[str] = Field(
-        ...,
-        description=(
-            "Expected outcomes, ROI, efficiency gains, problem resolution, or value delivery "
-            "for customers."
-        ),
-    )
-    alternatives: List[str] = Field(
-        ...,
-        description=(
-            "Similar services/competitors with brief comparison of similarities and key "
-            "differences."
-        ),
-    )
-    testimonials: List[str] = Field(
-        ...,
-        description=(
-            "Up to 5 direct customer quotes found on the website, including attribution when "
-            "available."
-        ),
-    )
-    product_description: str = Field(..., description="Main product summary")
-    key_features: List[str] = Field(
-        ..., description="List of product features/benefits"
-    )
-    company_profiles: List[str] = Field(
-        ..., description="Company/firmographic segments (e.g., industry, size, region)"
-    )
-    persona_profiles: List[str] = Field(
-        ...,
-        description="Persona/job role segments (e.g., job title, seniority, department)",
-    )
-    use_cases: List[str] = Field(
-        ..., description="Use cases explicitly listed on the website"
-    )
-    pain_points: List[str] = Field(
-        ..., description="Pain points explicitly listed on the website"
-    )
-    pricing: str = Field(..., description="Pricing information if available")
     metadata: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Additional metadata (sources, context quality, processing time, etc.)",
-        ),
+        ..., description="Analysis metadata and quality scores"
     )
 
 

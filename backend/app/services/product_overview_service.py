@@ -1,7 +1,6 @@
 import logging
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.context_orchestrator_service import ContextOrchestratorService
-from backend.app.services.llm_service import LLMClient
 from backend.app.prompts.models import ProductOverviewPromptVars
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
 from backend.app.services.content_preprocessing import (
@@ -10,7 +9,11 @@ from backend.app.services.content_preprocessing import (
     LangChainSummarizer,
     BoilerplateFilter,
 )
-from fastapi import HTTPException
+
+try:
+    from fastapi import HTTPException
+except ImportError:
+    from starlette.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +27,13 @@ preprocessing_pipeline = ContentPreprocessingPipeline(chunker, summarizer, filte
 async def generate_product_overview_service(
     data: ProductOverviewRequest,
     orchestrator: ContextOrchestrator,
-    llm_client: LLMClient,
 ) -> ProductOverviewResponse:
     """
-    Orchestrates the generation of a comprehensive product overview using the shared analysis service.
+    Orchestrates the generation of a comprehensive product overview using the shared
+    analysis service. Uses the shared LLM client instance from llm_singleton.
     """
     service = ContextOrchestratorService(
         orchestrator=orchestrator,
-        llm_client=llm_client,
         preprocessing_pipeline=preprocessing_pipeline,
     )
     result = await service.analyze(

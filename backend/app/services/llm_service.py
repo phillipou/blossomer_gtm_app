@@ -29,6 +29,7 @@ from dotenv import load_dotenv
 from backend.app.services.circuit_breaker import CircuitBreaker
 import json
 from pydantic import ValidationError
+from fastapi import HTTPException
 
 load_dotenv()
 
@@ -54,15 +55,26 @@ class LLMRequest(BaseModel):
     Standardized input model for LLM requests.
 
     Args:
-        prompt (str): The prompt to send to the LLM.
+        system_prompt (Optional[str]): The system prompt that sets the context and behavior.
+        user_prompt (str): The user prompt that contains the actual request.
         parameters (Optional[Dict[str, Any]]): Optional provider-specific parameters
             (e.g., temperature, max_tokens).
         response_schema (Optional[Dict[str, Any]]): Optional JSON schema for structured output.
     """
 
-    prompt: str
+    system_prompt: Optional[str] = None
+    user_prompt: str
     parameters: Optional[Dict[str, Any]] = None
     response_schema: Optional[Dict[str, Any]] = None
+
+    @property
+    def prompt(self) -> str:
+        """
+        Combine system and user prompts for backward compatibility.
+        """
+        if self.system_prompt:
+            return f"{self.system_prompt}\n\n{self.user_prompt}"
+        return self.user_prompt
 
 
 class LLMResponse(BaseModel):
@@ -161,12 +173,17 @@ class OpenAIProvider(BaseLLMProvider):
                 # Validate after response if needed.
                 kwargs["response_format"] = {"type": "json_object"}
 
+            messages = []
+            if request.system_prompt:
+                messages.append({"role": "system", "content": request.system_prompt})
+            messages.append({"role": "user", "content": request.user_prompt})
+
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "user", "content": request.prompt}],
+                    messages=messages,
                     **kwargs,
                 ),
             )
@@ -380,64 +397,65 @@ class LLMClient:
         )
 
     async def generate_structured_output(
-        self, prompt: str, response_model: type[BaseModel]
+        self,
+        prompt: str,
+        response_model: type[BaseModel],
+        system_prompt: Optional[str] = None,
     ) -> BaseModel:
         """
-        Generates a structured response from an LLM by parsing its output into a Pydantic model.
+        Generate structured output using the LLM and validate against a Pydantic model.
 
         Args:
-            prompt (str): The prompt to send to the LLM.
-            response_model (type[BaseModel]): The Pydantic model to parse the response into.
+            prompt (str): The user prompt to send to the LLM.
+            response_model (type[BaseModel]): The Pydantic model to validate against.
+            system_prompt (Optional[str]): Optional system prompt to set context and behavior.
 
         Returns:
-            BaseModel: An instance of the provided Pydantic model.
+            BaseModel: The validated response model.
 
         Raises:
-            ValueError: If the LLM response cannot be parsed into the desired model.
+            HTTPException: On LLM or validation errors.
         """
-        request = LLMRequest(prompt=prompt)
-        llm_response = await self.generate(request)
-
         try:
-            # Basic JSON extraction - assumes LLM returns a clean JSON string
-            json_text = llm_response.text
-            if "```json" in json_text:
-                json_text = json_text.split("```json")[1].split("```")[0]
-
-            parsed_json = json.loads(json_text)
-
-            # Post-processing: Ensure all required data_quality_metrics keys are present and floats
-            if "data_quality_metrics" in parsed_json and isinstance(
-                parsed_json["data_quality_metrics"], dict
-            ):
-                required_metrics = [
-                    "content_completeness",
-                    "information_specificity",
-                    "data_recency",
-                    "marketing_maturity",
-                ]
-                for key in required_metrics:
-                    val = parsed_json["data_quality_metrics"].get(key, 0.0)
-                    if val is None:
-                        val = 0.0
-                    parsed_json["data_quality_metrics"][key] = float(val)
-
-            return response_model.model_validate(parsed_json)
-        except (json.JSONDecodeError, ValidationError) as e:
-            logging.error(
-                f"Failed to parse LLM output into {response_model.__name__}: {e}"
+            # Create a request with JSON output format
+            request = LLMRequest(
+                user_prompt=prompt,
+                system_prompt=system_prompt,
+                parameters={
+                    "temperature": 0.1
+                },  # Low temperature for structured output
+                response_schema=response_model.model_json_schema(),
             )
-            logging.error(f"Raw LLM output: {llm_response.text}")
-            # If it's a ValidationError, extract missing/invalid fields
-            if isinstance(e, ValidationError):
-                error_fields = [err["loc"] for err in e.errors()]
-                user_message = (
-                    f"LLM response is missing or has invalid required fields: {error_fields}. "
-                    "Please provide more complete context or check the LLM output format."
+
+            # Generate response
+            response = await self.generate(request)
+
+            # Parse and validate response
+            try:
+                json_response = json.loads(response.text)
+            except json.JSONDecodeError as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "Invalid JSON response from LLM",
+                        "details": str(e),
+                    },
                 )
-            else:
-                user_message = "LLM did not return valid JSON."
-            raise ValueError(user_message) from e
+
+            # Validate against the model
+            try:
+                return response_model.model_validate(json_response)
+            except ValidationError as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "Response validation failed",
+                        "details": str(e),
+                    },
+                )
+        except Exception as e:
+            logging.error(f"LLMService error: {e}", exc_info=True)
+            raise
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """
