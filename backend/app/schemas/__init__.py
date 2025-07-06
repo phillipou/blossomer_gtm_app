@@ -87,13 +87,40 @@ class ProductOverviewResponse(BaseModel):
 
 class TargetAccountRequest(BaseModel):
     website_url: str = Field(..., description="Company website or landing page URL")
-    user_inputted_context: Optional[Dict[str, Any]] = Field(
+    account_profile_name: Optional[str] = Field(
         None,
-        description="Flexible user-provided context for target account generation (JSON object)",
+        description=(
+            "Name of the target account profile "
+            "(e.g., 'Mid-market SaaS companies', 'Enterprise healthcare organizations')"
+        ),
+    )
+    hypothesis: Optional[str] = Field(
+        None,
+        description="User's hypothesis about why this account profile is ideal for the solution",
+    )
+    additional_context: Optional[str] = Field(
+        None,
+        description="Additional user-provided context for target account generation",
     )
     company_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Flexible company context for target account generation (JSON object)",
+        description="Company context from previous endpoints (e.g., company/generate output)",
+    )
+
+
+class CompanySummary(BaseModel):
+    description: str = Field(
+        ...,
+        description="2-3 sentences on core identity, what they do, and business model",
+    )
+    category: str = Field(
+        ..., description="5-6 words on product category (e.g. AI-powered Sales Tool)"
+    )
+    business_model: str = Field(
+        ..., description="1-2 sentences on revenue streams, pricing, sales model"
+    )
+    existing_customers: str = Field(
+        ..., description="1-3 sentences on customer evidence from website"
     )
 
 
@@ -102,40 +129,29 @@ class TargetAccountResponse(BaseModel):
     Response model for the /customers/target_accounts endpoint (matches new prompt output).
     """
 
-    target_company_name: str = Field(
+    company_name: str = Field(..., description="Official company name")
+    company_url: str = Field(..., description="Input website URL")
+    company_summary: CompanySummary = Field(
+        ..., description="Company overview and business details"
+    )
+    capabilities: List[str] = Field(
         ...,
-        description=(
-            "Short name for the target account (5 words max, from user context or inferred)"
-        ),
+        description="Key features and capabilities (format: 'Feature Name: Description')",
     )
-    target_company_description: str = Field(
-        ..., description="Ideal account type and why they need this solution"
+    use_case_analysis: UseCaseAnalysis = Field(
+        ..., description="Process impact and problems solved"
     )
-    firmographics: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Firmographic attributes: industry, company_size, geography, business_model, "
-            "funding_stage"
-        ),
+    positioning: Positioning = Field(
+        ..., description="Market positioning and differentiation"
     )
-    buying_signals: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Buying signals: growth_indicators, technology_signals, organizational_signals, "
-            "market_signals"
-        ),
+    objections: List[str] = Field(
+        ..., description="Common objections (format: 'Title: Description')"
     )
-    rationale: str = Field(
-        ..., description="Explanation of why these accounts are ideal customers"
+    icp_hypothesis: ICPHypothesis = Field(
+        ..., description="Target customer and persona hypothesis"
     )
     metadata: Dict[str, Any] = Field(
-        ...,
-        description=(
-            "Additional metadata (primary_context_source, inference_level, context_quality, "
-            "assessment_summary, etc.). "
-            "Includes 'parsed_website_content' (true if website_content was parsed, false otherwise). "
-            "primary_context_source is set to 'website' if parsed_website_content is true."
-        ),
+        ..., description="Analysis metadata and quality scores"
     )
 
 

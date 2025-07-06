@@ -178,8 +178,20 @@ Before finalizing response:
 {# User Prompt #}
 REMEMBER: Always return valid JSON. Focus on discovery call preparation value.
 
-{% if user_inputted_context %}
-**User-provided context:** {{user_inputted_context}}
+{% if account_profile_name %}
+**Target Account Profile Name:** {{account_profile_name}}
+{% endif %}
+
+{% if hypothesis %}
+**User Hypothesis:** {{hypothesis}}
+{% endif %}
+
+{% if additional_context %}
+**Additional Context:** {{additional_context}}
+{% endif %}
+
+{% if company_context %}
+**Company Context:** {{company_context}}
 {% endif %}
 
 {% if website_content %}

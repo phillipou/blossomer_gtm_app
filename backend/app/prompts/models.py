@@ -134,23 +134,27 @@ class TargetAccountPromptVars(BaseModel):
     website_content: Optional[str] = Field(
         None, description="The preprocessed content from the company's website."
     )
-    user_inputted_context: Optional[Dict[str, Any]] = Field(
+    account_profile_name: Optional[str] = Field(
         None,
-        description="Flexible user-provided context for target account generation (JSON object)",
+        description="Name of the target account profile (e.g., 'Mid-market SaaS companies')",
+    )
+    hypothesis: Optional[str] = Field(
+        None,
+        description="User's hypothesis about why this account profile is ideal",
+    )
+    additional_context: Optional[str] = Field(
+        None,
+        description="Additional user-provided context for target account generation",
     )
     company_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Flexible company context for target account generation (JSON object)",
+        description="Company context from previous endpoints (JSON object)",
     )
     context_quality: Optional[str] = Field(
         None, description="Optional context quality assessment for the prompt."
     )
     assessment_summary: Optional[str] = Field(
         None, description="Optional summary of the context assessment."
-    )
-    target_company_name: Optional[str] = Field(
-        None,
-        description="Short name for the target company (from user input, if provided)",
     )
 
 
