@@ -109,28 +109,31 @@ export default function TargetAccountsList() {
         companyContext
       );
       console.log("[AddAccount] API response:", response);
+      console.log("[AddAccount] Response type:", typeof response);
+      console.log("[AddAccount] Has buyingSignals:", !!response.buyingSignals);
+      console.log("[AddAccount] Has firmographics:", !!response.firmographics);
       const newAccount: TargetAccount = {
         id: generateTargetAccountId(),
-        name: response.target_account_name,
+        name: response.targetAccountName || 'Unnamed Account',
         role: "Target Account",
-        description: response.target_account_description,
+        description: response.targetAccountDescription || 'No description available',
         firmographics: {
-          industry: response.firmographics.industry,
-          company_size: response.firmographics.company_size,
-          geography: response.firmographics.geography,
-          business_model: response.firmographics.business_model,
-          funding_stage: response.firmographics.funding_stage,
-          company_type: response.firmographics.company_type,
-          keywords: response.firmographics.keywords,
+          industry: response.firmographics?.industry || [],
+          company_size: response.firmographics?.companySize || {},
+          geography: response.firmographics?.geography || [],
+          business_model: response.firmographics?.businessModel || [],
+          funding_stage: response.firmographics?.fundingStage || [],
+          company_type: response.firmographics?.companyType || [],
+          keywords: response.firmographics?.keywords || [],
         },
-        buyingSignals: response.buying_signals.map((signal, index) => ({
+        buyingSignals: (response.buyingSignals || []).map((signal, index) => ({
           id: `signal_${index}`,
-          label: signal.title,
-          description: signal.description,
+          label: signal.title || 'Unnamed Signal',
+          description: signal.description || 'No description',
           enabled: true
         })),
-        rationale: response.target_account_rationale.join(' '),
-        metadata: response.metadata,
+        rationale: (response.targetAccountRationale || []).join(' ') || 'No rationale provided',
+        metadata: response.metadata || {},
         createdAt: new Date().toISOString(),
       };
       saveTargetAccount(newAccount);
@@ -212,7 +215,7 @@ export default function TargetAccountsList() {
           title={overview.companyName}
           subtitle={overview.companyUrl}
           bodyTitle="Company Overview"
-          bodyText={overview.companyOverview || overview.productDescription}
+          bodyText={overview.description}
           showButton={true}
           buttonTitle="View Details"
         />

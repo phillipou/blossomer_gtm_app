@@ -21,7 +21,7 @@ export interface APIBuyingSignal {
   description: string;
   type: string;
   priority: string;
-  detection_method: string;
+  detectionMethod: string;
   keywords: string[];
 }
 
@@ -91,42 +91,42 @@ export interface CompanyOverviewResponse {
 // New target account response structure matching the updated backend (ICP analysis format)
 export interface CompanySize {
   employees?: string;
-  department_size?: string;
+  departmentSize?: string;
   revenue?: string;
 }
 
 export interface Firmographics {
   industry: string[];
-  company_size: CompanySize;
+  companySize: CompanySize;
   geography?: string[];
-  business_model?: string[];
-  funding_stage?: string[];
-  company_type?: string[];
+  businessModel?: string[];
+  fundingStage?: string[];
+  companyType?: string[];
   keywords: string[];
 }
 
 export interface ConfidenceAssessment {
-  overall_confidence: string;
-  data_quality: string;
-  inference_level: string;
-  recommended_improvements: string[];
+  overallConfidence: string;
+  dataQuality: string;
+  inferenceLevel: string;
+  recommendedImprovements: string[];
 }
 
 export interface ICPMetadata {
-  primary_context_source: string;
-  sources_used: string[];
-  context_sufficiency: string;
-  confidence_assessment: ConfidenceAssessment;
-  processing_notes?: string;
+  primaryContextSource: string;
+  sourcesUsed: string[];
+  contextSufficiency: string;
+  confidenceAssessment: ConfidenceAssessment;
+  processingNotes?: string;
 }
 
 export interface TargetAccountResponse {
-  target_account_name: string;
-  target_account_description: string;
-  target_account_rationale: string[];
+  targetAccountName: string;
+  targetAccountDescription: string;
+  targetAccountRationale: string[];
   firmographics: Firmographics;
-  buying_signals: APIBuyingSignal[];
-  buying_signals_rationale: string[];
+  buyingSignals: APIBuyingSignal[];
+  buyingSignalsRationale: string[];
   metadata: ICPMetadata;
 }
 
@@ -192,7 +192,7 @@ export interface TargetAccount {
   name: string;
   role: string;
   description: string;
-  firmographics?: FirmographicRow[] | Record<string, string | string[] | Record<string, string>> | Firmographics;
+  firmographics?: FirmographicRow[] | Record<string, string | string[] | Record<string, string>> | Firmographics | any;
   buyingSignals?: BuyingSignal[];
   rationale?: string;
   confidenceScores?: Record<string, number>;
