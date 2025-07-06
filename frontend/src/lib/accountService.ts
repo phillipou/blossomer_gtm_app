@@ -1,6 +1,7 @@
 import { apiFetch } from './apiClient';
 import type {
   TargetCompanyRequest,
+  TargetAccountResponse,
   TargetCompanyResponse,
   TargetAccount,
   TargetPersonaResponse,
@@ -10,17 +11,21 @@ import type {
 // API service functions
 export async function generateTargetCompany(
   websiteUrl: string,
-  userInputtedContext: Record<string, string>,
+  accountProfileName?: string,
+  hypothesis?: string,
+  additionalContext?: string,
   companyContext?: Record<string, string | string[]> // Allow string or string[] for context values
-): Promise<TargetCompanyResponse> {
+): Promise<TargetAccountResponse> {
   const request: TargetCompanyRequest = {
     websiteUrl,
-    userInputtedContext,
+    ...(accountProfileName ? { accountProfileName } : {}),
+    ...(hypothesis ? { hypothesis } : {}),
+    ...(additionalContext ? { additionalContext } : {}),
     ...(companyContext ? { companyContext } : {}),
   };
 
   // Use demo endpoint for now (no API key required)
-  return apiFetch<TargetCompanyResponse>('/demo/customers/target_accounts', {
+  return apiFetch<TargetAccountResponse>('/demo/customers/target_accounts', {
     method: 'POST',
     body: JSON.stringify(request),
   });

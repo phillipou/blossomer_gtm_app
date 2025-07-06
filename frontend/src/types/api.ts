@@ -36,7 +36,9 @@ export interface AnalysisState {
 
 export interface TargetCompanyRequest {
   websiteUrl: string;
-  userInputtedContext?: Record<string, string | string[]>;
+  accountProfileName?: string;
+  hypothesis?: string;
+  additionalContext?: string;
   companyContext?: Record<string, string | string[]>;
 }
 
@@ -69,6 +71,26 @@ export interface CompanyOverviewResponse {
   companyUrl: string;
   description: string;
   businessProfile: BusinessProfile;
+  capabilities: string[];
+  useCaseAnalysis: UseCaseAnalysis;
+  positioning: Positioning;
+  objections: string[];
+  icpHypothesis: ICPHypothesis;
+  metadata: Record<string, unknown>;
+}
+
+// New target account response structure matching the updated backend
+export interface CompanySummary {
+  description: string;
+  category: string;
+  businessModel: string;
+  existingCustomers: string;
+}
+
+export interface TargetAccountResponse {
+  companyName: string;
+  companyUrl: string;
+  companySummary: CompanySummary;
   capabilities: string[];
   useCaseAnalysis: UseCaseAnalysis;
   positioning: Positioning;

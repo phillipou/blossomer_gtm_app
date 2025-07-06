@@ -84,12 +84,7 @@ export default function TargetAccountsList() {
     }
     setIsGenerating(true);
     try {
-      // Build userInputtedContext as an object
-      const userInputtedContext: Record<string, string> = {
-        targetCompanyName: name,
-        targetCompanyDescription: description,
-      };
-      // Build companyContext as an object
+      // Build companyContext from overview data
       const companyContext: Record<string, string | string[]> = {
         companyName: company_name,
         companyUrl: company_url,
@@ -100,24 +95,32 @@ export default function TargetAccountsList() {
         ...(differentiated_value && differentiated_value.length ? { differentiatedValue: differentiated_value } : {}),
         ...(customer_benefits && customer_benefits.length ? { customerBenefits: customer_benefits } : {}),
       };
+      
       // Debug: log the context variables
       console.log("[AddAccount] websiteUrl:", company_url.trim());
-      console.log("[AddAccount] userInputtedContext:", userInputtedContext);
+      console.log("[AddAccount] accountProfileName:", name);
+      console.log("[AddAccount] hypothesis:", description);
       console.log("[AddAccount] companyContext:", companyContext);
       const response = await generateTargetCompany(
         overview?.companyUrl.trim() || '',
-        userInputtedContext,
+        name, // account profile name
+        description, // hypothesis
+        undefined, // additional context
         companyContext
       );
       console.log("[AddAccount] API response:", response);
       const newAccount: TargetAccount = {
         id: generateTargetAccountId(),
-        name: response.targetCompanyName,
+        name: name, // Use the user-provided account profile name
         role: "Target Account",
-        description: response.targetCompanyDescription || description,
-        firmographics: response.firmographics,
-        buyingSignals: response.buyingSignals,
-        rationale: response.rationale,
+        description: response.companySummary.description,
+        firmographics: {
+          category: response.companySummary.category,
+          businessModel: response.companySummary.businessModel,
+          existingCustomers: response.companySummary.existingCustomers,
+        },
+        buyingSignals: [],
+        rationale: response.icpHypothesis.targetAccountHypothesis,
         metadata: response.metadata,
         createdAt: new Date().toISOString(),
       };
