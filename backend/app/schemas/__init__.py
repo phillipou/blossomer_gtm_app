@@ -108,49 +108,106 @@ class TargetAccountRequest(BaseModel):
     )
 
 
-class CompanySummary(BaseModel):
+class CompanySize(BaseModel):
+    employees: Optional[str] = Field(
+        None, description="Employee count range (e.g., '50-500')"
+    )
+    department_size: Optional[str] = Field(
+        None, description="Relevant department size if applicable"
+    )
+    revenue: Optional[str] = Field(None, description="Revenue range if relevant")
+
+
+class Firmographics(BaseModel):
+    industry: List[str] = Field(
+        ..., description="Exact industry names from Clay taxonomy"
+    )
+    company_size: CompanySize = Field(..., description="Size criteria")
+    geography: Optional[List[str]] = Field(
+        None, description="Geographic markets if relevant"
+    )
+    business_model: Optional[List[str]] = Field(
+        None, description="Clay-searchable business model keywords"
+    )
+    funding_stage: Optional[List[str]] = Field(
+        None, description="Exact funding stage names"
+    )
+    company_type: Optional[List[str]] = Field(
+        None, description="Public/Private/PE-backed etc."
+    )
+    keywords: List[str] = Field(
+        ...,
+        description="3-5 sophisticated company description keywords that indicate implicit need",
+    )
+
+
+class BuyingSignal(BaseModel):
+    title: str = Field(..., description="Concise signal name (3-5 words)")
     description: str = Field(
         ...,
-        description="2-3 sentences on core identity, what they do, and business model",
+        description="1-2 sentences explaining why this signal indicates buying readiness",
     )
-    category: str = Field(
-        ..., description="5-6 words on product category (e.g. AI-powered Sales Tool)"
+    type: str = Field(
+        ..., description="Company Data|Website|Tech Stack|News|Social Media|Other"
     )
-    business_model: str = Field(
-        ..., description="1-2 sentences on revenue streams, pricing, sales model"
+    priority: str = Field(..., description="low|med|hi")
+    detection_method: str = Field(
+        ..., description="Specific Clay enrichment or data source"
     )
-    existing_customers: str = Field(
-        ..., description="1-3 sentences on customer evidence from website"
+    keywords: List[str] = Field(
+        ..., description="Search terms or indicators to identify this signal"
+    )
+
+
+class ConfidenceAssessment(BaseModel):
+    overall_confidence: str = Field(..., description="high|medium|low")
+    data_quality: str = Field(..., description="high|medium|low")
+    inference_level: str = Field(..., description="minimal|moderate|significant")
+    recommended_improvements: List[str] = Field(
+        ..., description="What additional data would help"
+    )
+
+
+class ICPMetadata(BaseModel):
+    primary_context_source: str = Field(
+        ..., description="user_input|company_context|website_content"
+    )
+    sources_used: List[str] = Field(..., description="List of context sources utilized")
+    context_sufficiency: str = Field(
+        ..., description="Context met 0.4 confidence threshold: true/false"
+    )
+    confidence_assessment: ConfidenceAssessment = Field(
+        ..., description="Confidence metrics"
+    )
+    processing_notes: Optional[str] = Field(
+        None, description="Any important notes about analysis approach"
     )
 
 
 class TargetAccountResponse(BaseModel):
     """
-    Response model for the /customers/target_accounts endpoint (matches new prompt output).
+    Response model for the /customers/target_accounts endpoint (ICP analysis with Clay-ready filters).
     """
 
-    company_name: str = Field(..., description="Official company name")
-    company_url: str = Field(..., description="Input website URL")
-    company_summary: CompanySummary = Field(
-        ..., description="Company overview and business details"
+    target_account_name: str = Field(
+        ..., description="Short descriptive name for this customer segment"
     )
-    capabilities: List[str] = Field(
+    target_account_description: str = Field(
+        ..., description="1-2 sentences: who they are and why they need this solution"
+    )
+    target_account_rationale: List[str] = Field(
         ...,
-        description="Key features and capabilities (format: 'Feature Name: Description')",
+        description="3-5 bullets explaining the overall logic behind these targeting filters",
     )
-    use_case_analysis: UseCaseAnalysis = Field(
-        ..., description="Process impact and problems solved"
+    firmographics: Firmographics = Field(..., description="Clay-ready prospect filters")
+    buying_signals: List[BuyingSignal] = Field(
+        ..., description="Detectable buying signals with specific data sources"
     )
-    positioning: Positioning = Field(
-        ..., description="Market positioning and differentiation"
+    buying_signals_rationale: List[str] = Field(
+        ...,
+        description="3-5 bullets explaining the overall logic behind these buying signal choices",
     )
-    objections: List[str] = Field(
-        ..., description="Common objections (format: 'Title: Description')"
-    )
-    icp_hypothesis: ICPHypothesis = Field(
-        ..., description="Target customer and persona hypothesis"
-    )
-    metadata: Dict[str, Any] = Field(
+    metadata: ICPMetadata = Field(
         ..., description="Analysis metadata and quality scores"
     )
 

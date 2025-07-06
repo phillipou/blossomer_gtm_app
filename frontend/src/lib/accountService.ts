@@ -2,7 +2,6 @@ import { apiFetch } from './apiClient';
 import type {
   TargetCompanyRequest,
   TargetAccountResponse,
-  TargetCompanyResponse,
   TargetAccount,
   TargetPersonaResponse,
   TargetPersonaRequest,

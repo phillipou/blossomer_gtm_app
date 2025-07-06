@@ -16,6 +16,15 @@ export interface BuyingSignal {
   enabled?: boolean;
 }
 
+export interface APIBuyingSignal {
+  title: string;
+  description: string;
+  type: string;
+  priority: string;
+  detection_method: string;
+  keywords: string[];
+}
+
 export interface ApiError {
   errorCode: string;
   message: string;
@@ -79,24 +88,54 @@ export interface CompanyOverviewResponse {
   metadata: Record<string, unknown>;
 }
 
-// New target account response structure matching the updated backend
+// New target account response structure matching the updated backend (ICP analysis format)
+export interface CompanySize {
+  employees?: string;
+  department_size?: string;
+  revenue?: string;
+}
+
+export interface Firmographics {
+  industry: string[];
+  company_size: CompanySize;
+  geography?: string[];
+  business_model?: string[];
+  funding_stage?: string[];
+  company_type?: string[];
+  keywords: string[];
+}
+
+export interface ConfidenceAssessment {
+  overall_confidence: string;
+  data_quality: string;
+  inference_level: string;
+  recommended_improvements: string[];
+}
+
+export interface ICPMetadata {
+  primary_context_source: string;
+  sources_used: string[];
+  context_sufficiency: string;
+  confidence_assessment: ConfidenceAssessment;
+  processing_notes?: string;
+}
+
+export interface TargetAccountResponse {
+  target_account_name: string;
+  target_account_description: string;
+  target_account_rationale: string[];
+  firmographics: Firmographics;
+  buying_signals: APIBuyingSignal[];
+  buying_signals_rationale: string[];
+  metadata: ICPMetadata;
+}
+
+// Legacy interface for backward compatibility
 export interface CompanySummary {
   description: string;
   category: string;
   businessModel: string;
   existingCustomers: string;
-}
-
-export interface TargetAccountResponse {
-  companyName: string;
-  companyUrl: string;
-  companySummary: CompanySummary;
-  capabilities: string[];
-  useCaseAnalysis: UseCaseAnalysis;
-  positioning: Positioning;
-  objections: string[];
-  icpHypothesis: ICPHypothesis;
-  metadata: Record<string, unknown>;
 }
 
 // Legacy interface for backward compatibility
@@ -153,11 +192,11 @@ export interface TargetAccount {
   name: string;
   role: string;
   description: string;
-  firmographics?: FirmographicRow[] | Record<string, string | string[] | Record<string, string>>;
+  firmographics?: FirmographicRow[] | Record<string, string | string[] | Record<string, string>> | Firmographics;
   buyingSignals?: BuyingSignal[];
   rationale?: string;
   confidenceScores?: Record<string, number>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | ICPMetadata;
   createdAt?: string;
   personas?: TargetPersonaResponse[];
   [key: string]: string | string[] | FirmographicRow[] | BuyingSignal[] | TargetPersonaResponse[] | unknown; // Added index signature

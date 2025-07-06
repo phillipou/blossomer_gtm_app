@@ -111,16 +111,25 @@ export default function TargetAccountsList() {
       console.log("[AddAccount] API response:", response);
       const newAccount: TargetAccount = {
         id: generateTargetAccountId(),
-        name: name, // Use the user-provided account profile name
+        name: response.target_account_name,
         role: "Target Account",
-        description: response.companySummary.description,
+        description: response.target_account_description,
         firmographics: {
-          category: response.companySummary.category,
-          businessModel: response.companySummary.businessModel,
-          existingCustomers: response.companySummary.existingCustomers,
+          industry: response.firmographics.industry,
+          company_size: response.firmographics.company_size,
+          geography: response.firmographics.geography,
+          business_model: response.firmographics.business_model,
+          funding_stage: response.firmographics.funding_stage,
+          company_type: response.firmographics.company_type,
+          keywords: response.firmographics.keywords,
         },
-        buyingSignals: [],
-        rationale: response.icpHypothesis.targetAccountHypothesis,
+        buyingSignals: response.buying_signals.map((signal, index) => ({
+          id: `signal_${index}`,
+          label: signal.title,
+          description: signal.description,
+          enabled: true
+        })),
+        rationale: response.target_account_rationale.join(' '),
         metadata: response.metadata,
         createdAt: new Date().toISOString(),
       };
