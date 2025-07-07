@@ -6,6 +6,7 @@ from backend.app.prompts.models import (
     ProductOverviewPromptVars,
     TargetAccountPromptVars,
     TargetPersonaPromptVars,
+    EmailGenerationPromptVars,
 )
 from .base import render_template
 from pydantic import BaseModel
@@ -25,6 +26,10 @@ TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
     },
     "target_account": {"model": TargetAccountPromptVars, "template": "target_account"},
     "target_persona": {"model": TargetPersonaPromptVars, "template": "target_persona"},
+    "email_generation": {
+        "model": EmailGenerationPromptVars,
+        "template": "email_generation",
+    },
     # Add more templates here
 }
 

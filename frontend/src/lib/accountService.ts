@@ -4,6 +4,8 @@ import type {
   TargetAccountResponse,
   TargetPersonaResponse,
   TargetPersonaRequest,
+  EmailGenerationRequest,
+  EmailGenerationResponse,
 } from '../types/api';
 
 // API service functions
@@ -52,6 +54,18 @@ export async function generateTargetPersona(
   });
 }
 
+// Email campaign generation API function
+export async function generateEmailCampaign(
+  request: EmailGenerationRequest
+): Promise<EmailGenerationResponse> {
+  // Log the user prompt/request payload for debugging
+  console.log('[generateEmailCampaign] Request payload:', request);
+  // Call the demo backend endpoint (no API key required)
+  return apiFetch<EmailGenerationResponse>('/demo/campaigns/generate-email', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
 
 // Local storage service functions for canonical target accounts
 export function getStoredTargetAccounts(): (TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] })[] {

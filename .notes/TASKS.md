@@ -1,8 +1,133 @@
 # Current Tasks & Priorities
 
-*Last updated: July 6, 2025*
+*Last updated: July 7, 2025*
 
-## 🎯 Next Major Task: Target Account Improvements
+## 🎯 TOP PRIORITY: Email Generation API for Campaign Wizard
+
+### **Email Generation System Implementation (3-4 days) - HIGHEST PRIORITY**
+*Build comprehensive email generation API to power the Campaign Wizard*
+
+**Context**: Successfully updated Email Campaign Wizard to use real data from Target Accounts and Personas. Now need to implement the email generation backend that synthesizes all context into compelling, modular emails.
+
+**Requirements Gathered**:
+- **Inputs**: Company overview (localStorage), selected target account/persona objects, wizard preferences (use case, emphasis, opening line, CTA)
+- **Output**: 3 subjects (1 primary + 2 alternatives), modular email body with segments, breakdown data for UI
+- **Must apply Blossomer's best practices** for subject lines and email structure
+- **Must generate structured segments** that match existing UI rendering system
+
+#### **Phase 1: API Foundation & Design (1 day)** ✅ COMPLETED
+- [x] **Create endpoint structure** - `POST /api/campaigns/generate-email` in campaigns.py
+- [x] **Design request/response schemas** - EmailGenerationRequest/Response in schemas/
+- [x] **Set up prompt template system** - Create email_generation.jinja2 with Jinja2
+- [x] **Create business logic service** - EmailGenerationService in services/
+- [x] **Fix EmailBreakdown schema** - Made flexible to match frontend dictionary structure
+
+**Input Schema Design**:
+```typescript
+interface EmailGenerationRequest {
+  companyContext: CompanyOverviewResponse;  // from localStorage
+  targetAccount: TargetAccountResponse;     // selected account
+  targetPersona: TargetPersonaResponse;     // selected persona  
+  preferences: {
+    useCase: string;           // from step 2
+    emphasis: string;          // capabilities|pain-point|desired-outcome
+    openingLine: string;       // buying-signal|company-research|not-personalized
+    ctaSetting: string;        // feedback|meeting|priority-check|free-resource|visit-link
+    template: string;          // blossomer (custom disabled)
+  };
+}
+```
+
+**Output Schema Design**:
+```typescript
+interface EmailGenerationResponse {
+  subjects: {
+    primary: string;
+    alternatives: [string, string];
+  };
+  emailBody: EmailSegment[];
+  breakdown: EmailBreakdown;
+  metadata: {
+    generationId: string;
+    confidence: number;
+    personalizationLevel: "high" | "medium" | "low";
+  };
+}
+```
+
+#### **Phase 2: Prompt Engineering & LLM Integration (1-2 days)**
+- [ ] **Subject line prompt template** - Apply Blossomer best practices for compelling subjects
+- [ ] **Modular email body prompt** - Generate structured segments (greeting, opening, pain-point, solution, evidence, cta, signature)
+- [ ] **Context synthesis logic** - Intelligently combine company + account + persona + preferences
+- [ ] **Personalization strategies** - Handle different opening line approaches (buying signal vs company research vs generic)
+- [ ] **CTA customization** - Generate appropriate calls-to-action based on selected strategy
+
+**Key Prompt Design Decisions**:
+- **Single comprehensive prompt vs multiple specialized prompts** - One unified prompt for consistency
+- **Context prioritization** - Persona use cases > account buying signals > company capabilities
+- **Personalization handling** - Dynamic prompt sections based on opening line preference
+- **Segment modularity** - Generate cohesive email that breaks down into logical segments
+
+#### **Phase 3: Frontend Integration (1 day)**
+- [ ] **Frontend service layer** - Create emailGenerationService.ts to call API
+- [ ] **LocalStorage data extraction** - Extract dashboard_overview and selected wizard data
+- [ ] **Update EmailWizardModal** - Connect final step to real API instead of mock generation
+- [ ] **Error handling and fallbacks** - Graceful degradation when API fails
+- [ ] **Response transformation** - Ensure API response matches existing EmailPreview component expectations
+
+#### **Phase 4: Testing & Polish (0.5-1 day)**
+- [ ] **Backend unit tests** - Test email generation service and prompt templates
+- [ ] **Frontend integration tests** - Test end-to-end wizard flow with real API
+- [ ] **Error scenario testing** - Handle incomplete context, API failures, malformed responses
+- [ ] **Quality validation** - Ensure generated emails meet Blossomer standards
+
+### **Implementation Architecture**
+
+```
+EmailWizardModal → Extract Context → EmailGenerationService → LLM → Structured Response → EmailPreview
+                   ↓
+          dashboard_overview (localStorage)
+          selectedAccount + selectedPersona
+          wizard preferences (steps 2-3)
+```
+
+**Context Orchestration Flow**:
+1. **Gather company overview** from localStorage dashboard_overview
+2. **Extract selected account/persona** full objects from wizard state
+3. **Map wizard preferences** to prompt parameters (use case, emphasis, opening line, CTA)
+4. **Synthesize comprehensive context** - intelligent prioritization and combination
+5. **Generate structured email** with appropriate personalization level
+6. **Return modular segments** for existing UI rendering system
+
+### **Success Criteria**:
+- [ ] Clean, comprehensive prompt template with Blossomer best practices
+- [ ] Well-structured API that handles all input combinations gracefully
+- [ ] Generated emails that feel personalized and compelling
+- [ ] Seamless integration with existing EmailPreview component
+- [ ] Robust error handling and fallback mechanisms
+- [ ] Fast response times (< 10 seconds for email generation)
+
+**Notes for Implementation**:
+- Follow same high-quality prompt engineering patterns from product_overview and target_account
+- Use existing LLM singleton and circuit breaker patterns
+- Maintain backwards compatibility with existing EmailPreview rendering
+- Prioritize email quality over generation speed
+- Implement comprehensive logging for debugging and improvement
+
+---
+
+## 🎯 Recently Completed: Email Campaign Wizard Data Integration
+
+### **Email Campaign Wizard Real Data Integration (COMPLETED)**
+*Successfully connected wizard to real Target Account and Persona data*
+
+- [x] **Step 1: Real Target Accounts & Personas** - Load from localStorage, handle empty states
+- [x] **Step 2: Dynamic Use Cases** - Pull use cases from selected persona's actual data  
+- [x] **Step 3: Enhanced CTAs** - Added priority-check, free-resource, visit-link options
+- [x] **Step 3: Custom Template UX** - Disabled with "Coming Soon" badge, auto-select Blossomer
+- [x] **Comprehensive error handling** - Loading states, empty states, fallbacks
+
+## 🎯 Previously Completed: Target Account Improvements
 
 ### **Target Account System Overhaul (3-4 days) - HIGH PRIORITY**
 *Apply same improvements made to product_overview to target_account system*

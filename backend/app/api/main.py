@@ -25,6 +25,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 # Register demo endpoints (these are defined within their respective routers with the /demo prefix)
 app.include_router(company.router, tags=["Demo"], include_in_schema=True)
 app.include_router(customers.router, tags=["Demo"], include_in_schema=True)
+app.include_router(campaigns.router, tags=["Demo"], include_in_schema=True)
 
 
 @app.get("/health")

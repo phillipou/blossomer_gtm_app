@@ -316,57 +316,62 @@ class ContextOrchestrator:
         )
 
         return ContextAssessmentResult(
-            quality=assessment.quality,
-            reason=assessment.reason,
+            overall_quality=assessment.metadata.get("context_quality", ContextQuality.INSUFFICIENT),
+            overall_confidence=assessment.metadata.get("overall_confidence", 0.0),
+            content_sections=[],  # Placeholder, as CompanyOverviewResult doesn't directly provide this
+            company_clarity={},  # Placeholder
+            endpoint_readiness=[],  # Placeholder
+            data_quality_metrics={},  # Placeholder
+            recommendations={},  # Placeholder
+            summary=assessment.company_overview,  # Using company_overview as summary for now
             source="website",
             from_cache=from_cache,
-            content=content,
-            html=html,
         )
 
     def check_endpoint_readiness(
         self,
-        assessment: CompanyOverviewResult,
+        assessment: Any, # Changed to Any for flexibility
         endpoint: str,
     ) -> Dict[str, Any]:
         """
         Check if an endpoint is ready for generation based on context assessment.
         """
+        quality_value = "INSUFFICIENT"
+        if hasattr(assessment, 'overall_quality'):
+            quality_value = assessment.overall_quality
+        elif hasattr(assessment, 'metadata') and 'context_quality' in assessment.metadata:
+            quality_value = assessment.metadata['context_quality']
+
+        is_ready = False
+        missing_requirements = []
+
         if endpoint == "target_account":
-            # Target account requires company context
-            company_ready = assessment.quality in (
-                "GOOD",
-                "EXCELLENT",
-            )
-            return {
-                "is_ready": company_ready,
-                "missing": [] if company_ready else ["company_context"],
-            }
+            is_ready = quality_value in ("GOOD", "EXCELLENT")
+            if not is_ready:
+                missing_requirements.append("company_context")
+        elif endpoint == "target_persona":
+            company_ready = quality_value in ("GOOD", "EXCELLENT")
+            target_account_ready = False
+            if hasattr(assessment, 'target_account_quality'):
+                target_account_ready = assessment.target_account_quality in ("GOOD", "EXCELLENT")
 
-        if endpoint == "target_persona":
-            # Target persona requires company and target account context
-            company_ready = assessment.quality in (
-                "GOOD",
-                "EXCELLENT",
-            )
-            target_account_ready = assessment.target_account_quality in (
-                "GOOD",
-                "EXCELLENT",
-            )
-            missing = []
+            is_ready = company_ready and target_account_ready
             if not company_ready:
-                missing.append("company_context")
+                missing_requirements.append("company_context")
             if not target_account_ready:
-                missing.append("target_account_context")
-            return {
-                "is_ready": company_ready and target_account_ready,
-                "missing": missing,
-            }
+                missing_requirements.append("target_account_context")
+        else:
+            # Default case for other endpoints
+            is_ready = quality_value in ("GOOD", "EXCELLENT")
+            # No specific missing requirements for default case, but can be extended
 
-        # Default case - just check overall quality
         return {
-            "is_ready": assessment.quality in ("GOOD", "EXCELLENT"),
-            "missing": [],
+            "is_ready": is_ready,
+            "confidence": assessment.overall_confidence if hasattr(assessment, 'overall_confidence') else (assessment.metadata.get('overall_confidence') if hasattr(assessment, 'metadata') else 0.0), # Add confidence
+            "missing_requirements": missing_requirements,
+            "recommendations": assessment.recommendations if hasattr(assessment, 'recommendations') else (assessment.metadata.get('recommended_improvements') if hasattr(assessment, 'metadata') else []), # Add recommendations
+            "assessment_summary": assessment.summary if hasattr(assessment, 'summary') else (assessment.metadata.get('assessment_summary') if hasattr(assessment, 'metadata') else ""), # Add summary
+            "missing": missing_requirements, # Ensure 'missing' key is always present
         }
 
     async def orchestrate_context(

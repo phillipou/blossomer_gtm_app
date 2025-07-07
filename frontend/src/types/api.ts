@@ -251,3 +251,38 @@ export interface GeneratedEmail {
   breakdown: EmailBreakdown;
   config?: EmailConfig;
 }
+
+// Email generation API types
+export interface EmailPreferences {
+  useCase: string;
+  emphasis: string;
+  openingLine: string;
+  ctaSetting: string;
+  template: string;
+}
+
+export interface EmailGenerationRequest {
+  companyContext: CompanyOverviewResponse;
+  targetAccount: TargetAccountResponse;
+  targetPersona: TargetPersonaResponse;
+  preferences: EmailPreferences;
+}
+
+export interface EmailSubjects {
+  primary: string;
+  alternatives: string[];
+}
+
+export interface EmailGenerationMetadata {
+  generationId: string;
+  confidence: number;
+  personalizationLevel: string;
+  processingTimeMs?: number;
+}
+
+export interface EmailGenerationResponse {
+  subjects: EmailSubjects;
+  emailBody: EmailSegment[];
+  breakdown: EmailBreakdown;
+  metadata: EmailGenerationMetadata;
+}

@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.13, pytest-8.4.1, pluggy-1.6.0 -- /Users/phillipou/Library/Caches/pypoetry/virtualenvs/blossomer-gtm-api-8K98SqoW-py3.11/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/phillipou/dev/active/blossomer-gtm-api
+configfile: pytest.ini
+plugins: anyio-4.9.0, mock-3.14.1, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 154 items
+
+tests/test_circuit_breaker.py::test_circuit_breaker_opens_after_threshold PASSED [  0%]
+tests/test_circuit_breaker.py::test_circuit_breaker_half_open_after_timeout 

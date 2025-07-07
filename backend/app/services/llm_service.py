@@ -176,7 +176,11 @@ class OpenAIProvider(BaseLLMProvider):
             messages = []
             if request.system_prompt:
                 messages.append({"role": "system", "content": request.system_prompt})
-            messages.append({"role": "user", "content": request.user_prompt})
+
+            user_content = request.user_prompt
+            if request.response_schema and "json" not in user_content.lower():
+                user_content += "\n\nRespond in JSON format."
+            messages.append({"role": "user", "content": user_content})
 
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(

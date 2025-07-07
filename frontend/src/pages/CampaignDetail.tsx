@@ -116,6 +116,8 @@ Best,
           personaName: "Demo Persona",
         },
       }
+      console.log("[CampaignDetail] Loaded campaignId:", campaignId)
+      console.log("[CampaignDetail] Loaded mockEmail:", mockEmail)
       setEmail(mockEmail)
     }
   }, [campaignId])
@@ -124,10 +126,15 @@ Best,
 
   const handleWizardComplete = (config: EmailConfig) => {
     // Update the email with new config
+    console.log("[CampaignDetail] handleWizardComplete config:", config)
     if (email) {
-      setEmail({
+      const updatedEmail = {
         ...email,
         config: config,
+      }
+      console.log("[CampaignDetail] Updated email after wizard complete:", updatedEmail)
+      setEmail({
+        ...updatedEmail
       })
     }
     setIsWizardOpen(false)
@@ -143,7 +150,7 @@ Best,
   }
 
   const handleSaveEmail = (email: GeneratedEmail) => {
-    console.log("Saving email:", email)
+    console.log("[CampaignDetail] handleSaveEmail, email to save:", email)
     // TODO: Implement save functionality
   }
 

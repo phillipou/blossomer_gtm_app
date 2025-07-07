@@ -339,3 +339,144 @@ class TargetPersonaResponse(BaseModel):
     metadata: Dict[str, Any] = Field(
         ..., description="Analysis metadata and quality scores"
     )
+
+
+# Email Generation Schemas
+class EmailPreferences(BaseModel):
+    """User preferences from the Email Campaign Wizard."""
+    
+    use_case: str = Field(..., description="Selected use case ID from persona data")
+    emphasis: str = Field(
+        ..., 
+        description="Emphasis approach: capabilities|pain-point|desired-outcome"
+    )
+    opening_line: str = Field(
+        ..., 
+        description="Opening line strategy: buying-signal|company-research|not-personalized"
+    )
+    cta_setting: str = Field(
+        ..., 
+        description="Call-to-action type: feedback|meeting|priority-check|free-resource|visit-link"
+    )
+    template: str = Field(..., description="Template type: blossomer")
+
+
+class EmailGenerationRequest(BaseModel):
+    """Request model for email generation API."""
+    company_context: Optional[Dict[str, Any]] = Field(
+        None, description="Company overview from localStorage dashboard_overview"
+    )
+    target_account: Optional[Dict[str, Any]] = Field(
+        None, description="Selected target account from wizard step 1"
+    )
+    target_persona: Optional[Dict[str, Any]] = Field(
+        None, description="Selected target persona from wizard step 1"
+    )
+    preferences: Optional[Dict[str, Any]] = Field(
+        None, description="User preferences from wizard steps 2-3"
+    )
+
+
+class EmailSegment(BaseModel):
+    """Individual email segment with type classification."""
+    
+    text: str = Field(..., description="The text content of this email segment")
+    type: str = Field(
+        ..., 
+        description="Segment type: greeting|opening|pain-point|solution|evidence|cta|signature"
+    )
+
+
+class EmailSubjects(BaseModel):
+    """Generated email subjects with primary and alternatives."""
+    
+    primary: str = Field(..., description="Most effective subject line")
+    alternatives: List[str] = Field(
+        ..., 
+        description="2 alternative subject lines",
+        min_items=2,
+        max_items=2
+    )
+
+
+# EmailBreakdown is a flexible dictionary structure to match frontend expectations
+# Frontend uses: breakdown[segment.type]?.label, breakdown[segment.type]?.description, etc.
+EmailBreakdown = Dict[str, Dict[str, str]]
+
+
+def get_default_email_breakdown() -> EmailBreakdown:
+    """
+    Returns the default email breakdown structure that matches frontend expectations.
+    Each segment type maps to an object with label, description, and color.
+    """
+    return {
+        "greeting": {
+            "label": "Greeting",
+            "description": "Standard personalized greeting",
+            "color": "bg-purple-100 border-purple-200"
+        },
+        "opening": {
+            "label": "Opening Line", 
+            "description": "Personalized connection or research-based opener",
+            "color": "bg-blue-100 border-blue-200"
+        },
+        "pain-point": {
+            "label": "Pain Point",
+            "description": "Challenge or problem being addressed", 
+            "color": "bg-red-100 border-red-200"
+        },
+        "solution": {
+            "label": "Solution",
+            "description": "How your product solves the pain point",
+            "color": "bg-green-100 border-green-200"
+        },
+        "evidence": {
+            "label": "Evidence", 
+            "description": "Proof points or social proof",
+            "color": "bg-indigo-100 border-indigo-200"
+        },
+        "cta": {
+            "label": "Call to Action",
+            "description": "Next step request",
+            "color": "bg-yellow-100 border-yellow-200"
+        },
+        "signature": {
+            "label": "Signature",
+            "description": "Professional closing", 
+            "color": "bg-gray-100 border-gray-200"
+        }
+    }
+
+
+class EmailGenerationMetadata(BaseModel):
+    """Metadata about the email generation process."""
+    
+    generation_id: str = Field(..., description="Unique identifier for this generation")
+    confidence: float = Field(
+        ..., 
+        description="Confidence score for email quality (0.0-1.0)",
+        ge=0.0,
+        le=1.0
+    )
+    personalization_level: str = Field(
+        ..., 
+        description="Level of personalization achieved: high|medium|low"
+    )
+    processing_time_ms: Optional[int] = Field(
+        None, description="Time taken to generate email in milliseconds"
+    )
+
+
+class EmailGenerationResponse(BaseModel):
+    """Response model for email generation API."""
+    
+    subjects: EmailSubjects = Field(..., description="Generated subject lines")
+    email_body: List[EmailSegment] = Field(
+        ..., description="Email content broken into structured segments"
+    )
+    breakdown: EmailBreakdown = Field(
+        ..., description="Flexible segment breakdown for UI rendering - maps segment types to {label, description, color}"
+    )
+    metadata: EmailGenerationMetadata = Field(
+        ..., description="Generation metadata and quality metrics"
+    )

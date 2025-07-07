@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Label } from "../ui/label"
 import { ChevronRight, ChevronLeft, Wand2, X, RefreshCw } from "lucide-react"
 import { EditDialog, EditDialogContent, EditDialogHeader, EditDialogTitle } from "../ui/dialog"
+import { getStoredTargetAccounts, getAllPersonas } from "../../lib/accountService"
 
 interface EmailWizardModalProps {
   isOpen: boolean
@@ -32,38 +33,24 @@ interface EmailConfig {
   personaName?: string;
 }
 
-// Mock data - in real app this would come from API
-const targetAccounts = [
-  { id: "1", name: "Technical B2B SaaS Founder-Led Startups" },
-  { id: "2", name: "Marketing Directors at Mid-Market Companies" },
-]
+// Transform stored data for wizard use
+interface WizardAccount {
+  id: string;
+  name: string;
+}
 
-const targetPersonas = [
-  { id: "1", name: "Startup Founder", accountId: "1" },
-  { id: "2", name: "Technical Co-founder", accountId: "1" },
-  { id: "3", name: "Marketing Director", accountId: "2" },
-]
+interface WizardPersona {
+  id: string;
+  name: string;
+  accountId: string;
+}
 
-const useCases = [
-  {
-    id: "1",
-    title: "Scaling Sales Without Hiring",
-    description: "Help founders establish sales processes before building a team",
-    personaIds: ["1", "2"],
-  },
-  {
-    id: "2",
-    title: "Founder Time Optimization",
-    description: "Reduce manual sales tasks to focus on product development",
-    personaIds: ["1", "2"],
-  },
-  {
-    id: "3",
-    title: "Predictable Revenue Generation",
-    description: "Build repeatable systems for consistent customer acquisition",
-    personaIds: ["1", "3"],
-  },
-]
+interface WizardUseCase {
+  id: string;
+  title: string;
+  description: string;
+  personaIds: string[];
+}
 
 export function EmailWizardModal({
   isOpen,
@@ -75,6 +62,10 @@ export function EmailWizardModal({
 }: EmailWizardModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [targetAccounts, setTargetAccounts] = useState<WizardAccount[]>([])
+  const [targetPersonas, setTargetPersonas] = useState<WizardPersona[]>([])
+  const [allPersonasData, setAllPersonasData] = useState<Array<{ persona: any; accountId: string }>>([])
+  const [loading, setLoading] = useState(true)
   const [config, setConfig] = useState<EmailConfig>({
     selectedAccount: "",
     selectedPersona: "",
@@ -140,7 +131,65 @@ export function EmailWizardModal({
   const canProceed = currentStepData.fields.every((field) => config[field as keyof typeof config])
   const isLastStep = safeCurrentStep === steps.length - 1
   const filteredPersonas = targetPersonas.filter((persona) => persona.accountId === config.selectedAccount)
-  const filteredUseCases = useCases.filter((useCase) => useCase.personaIds.includes(config.selectedPersona))
+  
+  // Get use cases from selected persona
+  const getUseCasesForSelectedPersona = (): WizardUseCase[] => {
+    if (!config.selectedPersona) return []
+    
+    const selectedPersonaData = allPersonasData.find(
+      ({ persona }) => persona.id === config.selectedPersona
+    )
+    
+    if (!selectedPersonaData?.persona.useCases) return []
+    
+    return selectedPersonaData.persona.useCases.map((useCase: any, index: number) => ({
+      id: `${config.selectedPersona}_${index}`,
+      title: useCase.useCase,
+      description: `${useCase.painPoints} → ${useCase.desiredOutcome}`,
+      personaIds: [config.selectedPersona]
+    }))
+  }
+  
+  const filteredUseCases = getUseCasesForSelectedPersona()
+
+  // Load real data from localStorage
+  useEffect(() => {
+    const loadData = () => {
+      try {
+        setLoading(true)
+        
+        // Get stored accounts
+        const storedAccounts = getStoredTargetAccounts()
+        const transformedAccounts: WizardAccount[] = storedAccounts.map(account => ({
+          id: account.id,
+          name: account.targetAccountName
+        }))
+        
+        // Get all personas across accounts
+        const allPersonas = getAllPersonas()
+        const transformedPersonas: WizardPersona[] = allPersonas.map(({ persona, accountId }) => ({
+          id: persona.id,
+          name: persona.targetPersonaName,
+          accountId: accountId
+        }))
+        
+        setTargetAccounts(transformedAccounts)
+        setTargetPersonas(transformedPersonas)
+        setAllPersonasData(allPersonas) // Store full persona data for use cases
+      } catch (error) {
+        console.error('Error loading target accounts and personas:', error)
+        // Fallback to empty arrays
+        setTargetAccounts([])
+        setTargetPersonas([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (isOpen) {
+      loadData()
+    }
+  }, [isOpen])
 
   // Initialize config when modal opens
   useEffect(() => {
@@ -162,6 +211,13 @@ export function EmailWizardModal({
       setIsGenerating(false)
     }
   }, [isOpen, mode, initialConfig])
+
+  // Auto-select blossomer template when reaching step 3 if no template is selected
+  useEffect(() => {
+    if (safeCurrentStep === 2 && mode === "create" && !config.template) {
+      setConfig(prev => ({ ...prev, template: "blossomer" }))
+    }
+  }, [safeCurrentStep, mode, config.template])
 
   const handleNext = async () => {
     if (isLastStep) {
@@ -243,46 +299,68 @@ export function EmailWizardModal({
             {/* Target Selection Step */}
             {safeCurrentStep === 0 && mode === "create" && (
               <div className="space-y-4">
-                <div>
-                  <Label className="text-base font-medium mb-3 block">Target Account</Label>
-                  <Select
-                    value={config.selectedAccount}
-                    onValueChange={(value) =>
-                      setConfig((prev) => ({ ...prev, selectedAccount: value, selectedPersona: "" }))
-                    }
-                  >
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Select target account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {targetAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {config.selectedAccount && (
-                  <div>
-                    <Label className="text-base font-medium mb-3 block">Target Persona</Label>
-                    <Select
-                      value={config.selectedPersona}
-                      onValueChange={(value) => setConfig((prev) => ({ ...prev, selectedPersona: value }))}
-                    >
-                      <SelectTrigger className="h-12">
-                        <SelectValue placeholder="Select target persona" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredPersonas.map((persona) => (
-                          <SelectItem key={persona.id} value={persona.id}>
-                            {persona.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+                    <span className="text-gray-600">Loading target accounts and personas...</span>
                   </div>
+                ) : targetAccounts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">No target accounts found.</p>
+                    <p className="text-sm text-gray-500">
+                      Generate target accounts and personas from the Accounts or Personas pages first.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-base font-medium mb-3 block">Target Account</Label>
+                      <Select
+                        value={config.selectedAccount}
+                        onValueChange={(value) =>
+                          setConfig((prev) => ({ ...prev, selectedAccount: value, selectedPersona: "" }))
+                        }
+                      >
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select target account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {targetAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {config.selectedAccount && (
+                      <div>
+                        <Label className="text-base font-medium mb-3 block">Target Persona</Label>
+                        <Select
+                          value={config.selectedPersona}
+                          onValueChange={(value) => setConfig((prev) => ({ ...prev, selectedPersona: value }))}
+                        >
+                          <SelectTrigger className="h-12">
+                            <SelectValue placeholder="Select target persona" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredPersonas.length === 0 ? (
+                              <div className="px-2 py-1 text-sm text-gray-500">
+                                No personas found for this account
+                              </div>
+                            ) : (
+                              filteredPersonas.map((persona) => (
+                                <SelectItem key={persona.id} value={persona.id}>
+                                  {persona.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -300,24 +378,34 @@ export function EmailWizardModal({
                       onValueChange={(value) => setConfig((prev) => ({ ...prev, selectedUseCase: value }))}
                     >
                       <div className="space-y-3">
-                        {(mode === "create" ? filteredUseCases : useCases).map((useCase) => (
-                          <div
-                            key={useCase.id}
-                            className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                            onClick={() => setConfig((prev) => ({ ...prev, selectedUseCase: useCase.id }))}
-                            tabIndex={0}
-                            role="button"
-                            aria-pressed={config.selectedUseCase === useCase.id}
-                          >
-                            <RadioGroupItem value={useCase.id} id={useCase.id} className="mt-1" />
-                            <div className="flex-1">
-                              <Label htmlFor={useCase.id} className="font-medium cursor-pointer">
-                                {useCase.title}
-                              </Label>
-                              <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
-                            </div>
+                        {filteredUseCases.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500 border rounded-lg">
+                            {config.selectedPersona ? (
+                              "No use cases found for this persona"
+                            ) : (
+                              "Select a persona to see available use cases"
+                            )}
                           </div>
-                        ))}
+                        ) : (
+                          filteredUseCases.map((useCase) => (
+                            <div
+                              key={useCase.id}
+                              className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                              onClick={() => setConfig((prev) => ({ ...prev, selectedUseCase: useCase.id }))}
+                              tabIndex={0}
+                              role="button"
+                              aria-pressed={config.selectedUseCase === useCase.id}
+                            >
+                              <RadioGroupItem value={useCase.id} id={useCase.id} className="mt-1" />
+                              <div className="flex-1">
+                                <Label htmlFor={useCase.id} className="font-medium cursor-pointer">
+                                  {useCase.title}
+                                </Label>
+                                <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </RadioGroup>
                   </div>
@@ -414,18 +502,22 @@ export function EmailWizardModal({
                           </div>
                         </div>
                         <div
-                          className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setConfig((prev) => ({ ...prev, template: "custom" }))}
-                          tabIndex={0}
-                          role="button"
-                          aria-pressed={config.template === "custom"}
+                          className="flex items-start space-x-3 p-4 border rounded-lg bg-gray-50 cursor-not-allowed opacity-60 relative"
+                          aria-disabled="true"
                         >
-                          <RadioGroupItem value="custom" id="custom" className="mt-1" />
-                          <div>
-                            <Label htmlFor="custom" className="font-medium cursor-pointer">
-                              Custom Template
-                            </Label>
-                            <p className="text-sm text-gray-600 mt-1">Flexible template for unique approaches</p>
+                          <RadioGroupItem value="custom" id="custom" className="mt-1" disabled />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Label htmlFor="custom" className="font-medium text-gray-500">
+                                Custom Template
+                              </Label>
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                Coming Soon
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">
+                              We're building custom template support for advanced use cases
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -531,6 +623,51 @@ export function EmailWizardModal({
                               Ask for meeting
                             </Label>
                             <p className="text-sm text-gray-600 mt-1">Direct request for a call or meeting</p>
+                          </div>
+                        </div>
+                        <div
+                          className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setConfig((prev) => ({ ...prev, ctaSetting: "priority-check" }))}
+                          tabIndex={0}
+                          role="button"
+                          aria-pressed={config.ctaSetting === "priority-check"}
+                        >
+                          <RadioGroupItem value="priority-check" id="priority-check" className="mt-1" />
+                          <div>
+                            <Label htmlFor="priority-check" className="font-medium cursor-pointer">
+                              Ask if this is a priority
+                            </Label>
+                            <p className="text-sm text-gray-600 mt-1">Gauge timing and urgency for their needs</p>
+                          </div>
+                        </div>
+                        <div
+                          className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setConfig((prev) => ({ ...prev, ctaSetting: "free-resource" }))}
+                          tabIndex={0}
+                          role="button"
+                          aria-pressed={config.ctaSetting === "free-resource"}
+                        >
+                          <RadioGroupItem value="free-resource" id="free-resource" className="mt-1" />
+                          <div>
+                            <Label htmlFor="free-resource" className="font-medium cursor-pointer">
+                              Offer free help or resource
+                            </Label>
+                            <p className="text-sm text-gray-600 mt-1">Provide value upfront with no strings attached</p>
+                          </div>
+                        </div>
+                        <div
+                          className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setConfig((prev) => ({ ...prev, ctaSetting: "visit-link" }))}
+                          tabIndex={0}
+                          role="button"
+                          aria-pressed={config.ctaSetting === "visit-link"}
+                        >
+                          <RadioGroupItem value="visit-link" id="visit-link" className="mt-1" />
+                          <div>
+                            <Label htmlFor="visit-link" className="font-medium cursor-pointer">
+                              Invite to visit a resource
+                            </Label>
+                            <p className="text-sm text-gray-600 mt-1">Direct them to relevant content or demo</p>
                           </div>
                         </div>
                       </div>

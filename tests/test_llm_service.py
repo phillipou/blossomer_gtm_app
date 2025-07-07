@@ -33,7 +33,7 @@ async def test_gemini_provider_generate_mock(monkeypatch):
     )
     monkeypatch.setattr(provider, "generate", AsyncMock(return_value=fake_response))
 
-    request = LLMRequest(prompt="Hello, Gemini!")
+    request = LLMRequest(user_prompt="Hello, Gemini!")
     response = await provider.generate(request)
     assert isinstance(response, LLMResponse)
     assert response.text == "Mocked Gemini response."
@@ -57,7 +57,7 @@ async def test_openai_provider_generate_mock(monkeypatch):
     )
     monkeypatch.setattr(provider, "generate", AsyncMock(return_value=fake_response))
 
-    request = LLMRequest(prompt="Hello, OpenAI!")
+    request = LLMRequest(user_prompt="Hello, OpenAI!")
     response = await provider.generate(request)
     assert isinstance(response, LLMResponse)
     assert response.text == "Mocked OpenAI response."
@@ -72,7 +72,7 @@ async def test_anthropic_provider_not_implemented():
     AnthropicProvider.generate() should raise NotImplementedError.
     """
     provider = AnthropicProvider()
-    request = LLMRequest(prompt="Hello, Anthropic!")
+    request = LLMRequest(user_prompt="Hello, Anthropic!")
     with pytest.raises(NotImplementedError):
         await provider.generate(request)
 
@@ -97,7 +97,7 @@ async def test_llm_client_failover(monkeypatch):
         good_provider, "generate", AsyncMock(return_value=fake_response)
     )
     client = LLMClient([bad_provider, good_provider])
-    request = LLMRequest(prompt="Test failover")
+    request = LLMRequest(user_prompt="Test failover")
     response = await client.generate(request)
     assert response.text == "LLMClient response."
     assert response.provider == "openai"
@@ -113,7 +113,7 @@ async def test_llm_client_all_providers_fail(monkeypatch):
     bad_provider = GeminiProvider.__new__(GeminiProvider)
     monkeypatch.setattr(bad_provider, "health_check", AsyncMock(return_value=False))
     client = LLMClient([bad_provider])
-    request = LLMRequest(prompt="Test all fail")
+    request = LLMRequest(user_prompt="Test all fail")
     with pytest.raises(RuntimeError):
         await client.generate(request)
 
@@ -184,7 +184,7 @@ def test_llmclient_no_providers():
     import pytest
 
     client = LLMClient([])
-    request = LLMRequest(prompt="Test")
+    request = LLMRequest(user_prompt="Test")
     import asyncio
 
     with pytest.raises(RuntimeError):
@@ -196,8 +196,8 @@ def test_llmrequest_with_and_without_parameters():
     Test LLMRequest construction with and without the optional 'parameters' field.
     Ensures default is None and custom dict is accepted.
     """
-    req1 = LLMRequest(prompt="Test prompt")
+    req1 = LLMRequest(user_prompt="Test prompt")
     assert req1.prompt == "Test prompt"
     assert req1.parameters is None  # Default should be None
-    req2 = LLMRequest(prompt="Test prompt", parameters={"temperature": 0.5})
+    req2 = LLMRequest(user_prompt="Test prompt", parameters={"temperature": 0.5})
     assert req2.parameters == {"temperature": 0.5}

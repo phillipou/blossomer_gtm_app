@@ -114,6 +114,7 @@ class ContextOrchestratorService:
         self.orchestrator = orchestrator
         self.preprocessing_pipeline = preprocessing_pipeline
 
+    # TODO: This is the main entry point for all analysis types. We should definitely refactor this to be more modular.
     async def analyze(
         self,
         *,
@@ -208,44 +209,52 @@ class ContextOrchestratorService:
                 print(f"[{analysis_type}] Preprocessing took {t3 - t2:.2f}s")
             # 3. Prompt construction
             t4 = time.monotonic()
-            prompt_vars_kwargs = dict(
-                website_content=website_content,
-            )
-            if analysis_type == "product_overview":
-                prompt_vars_kwargs["input_website_url"] = getattr(
-                    request_data, "website_url", None
+            if analysis_type == "email_generation":
+                prompt_vars_kwargs = {
+                    "company_context": getattr(request_data, "company_context", None),
+                    "target_account": getattr(request_data, "target_account", None),
+                    "target_persona": getattr(request_data, "target_persona", None),
+                    "preferences": getattr(request_data, "preferences", None),
+                }
+            else:
+                prompt_vars_kwargs = dict(
+                    website_content=website_content,
                 )
-                prompt_vars_kwargs["user_inputted_context"] = getattr(
-                    request_data, "user_inputted_context", None
-                )
-            if analysis_type == "target_persona":
-                prompt_vars_kwargs["persona_profile_name"] = getattr(
-                    request_data, "persona_profile_name", None
-                )
-                prompt_vars_kwargs["hypothesis"] = getattr(
-                    request_data, "hypothesis", None
-                )
-                prompt_vars_kwargs["additional_context"] = getattr(
-                    request_data, "additional_context", None
-                )
-                company_context = getattr(request_data, "company_context", None)
-                prompt_vars_kwargs["company_context"] = company_context
-                target_account_context = getattr(
-                    request_data, "target_account_context", None
-                )
-                prompt_vars_kwargs["target_account_context"] = target_account_context
-            if analysis_type == "target_account":
-                company_context = getattr(request_data, "company_context", None)
-                prompt_vars_kwargs["company_context"] = company_context
-                prompt_vars_kwargs["account_profile_name"] = getattr(
-                    request_data, "account_profile_name", None
-                )
-                prompt_vars_kwargs["hypothesis"] = getattr(
-                    request_data, "hypothesis", None
-                )
-                prompt_vars_kwargs["additional_context"] = getattr(
-                    request_data, "additional_context", None
-                )
+                if analysis_type == "product_overview":
+                    prompt_vars_kwargs["input_website_url"] = getattr(
+                        request_data, "website_url", None
+                    )
+                    prompt_vars_kwargs["user_inputted_context"] = getattr(
+                        request_data, "user_inputted_context", None
+                    )
+                if analysis_type == "target_persona":
+                    prompt_vars_kwargs["persona_profile_name"] = getattr(
+                        request_data, "persona_profile_name", None
+                    )
+                    prompt_vars_kwargs["hypothesis"] = getattr(
+                        request_data, "hypothesis", None
+                    )
+                    prompt_vars_kwargs["additional_context"] = getattr(
+                        request_data, "additional_context", None
+                    )
+                    company_context = getattr(request_data, "company_context", None)
+                    prompt_vars_kwargs["company_context"] = company_context
+                    target_account_context = getattr(
+                        request_data, "target_account_context", None
+                    )
+                    prompt_vars_kwargs["target_account_context"] = target_account_context
+                if analysis_type == "target_account":
+                    company_context = getattr(request_data, "company_context", None)
+                    prompt_vars_kwargs["company_context"] = company_context
+                    prompt_vars_kwargs["account_profile_name"] = getattr(
+                        request_data, "account_profile_name", None
+                    )
+                    prompt_vars_kwargs["hypothesis"] = getattr(
+                        request_data, "hypothesis", None
+                    )
+                    prompt_vars_kwargs["additional_context"] = getattr(
+                        request_data, "additional_context", None
+                    )
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
             prompt = render_prompt(prompt_template, prompt_vars)
             t5 = time.monotonic()

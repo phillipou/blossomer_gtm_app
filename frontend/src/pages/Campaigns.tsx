@@ -8,6 +8,8 @@ import PageHeader from "../components/navigation/PageHeader"
 import AddCard from "../components/ui/AddCard"
 import InputModal from "../components/modals/InputModal"
 import type { GeneratedEmail, EmailConfig } from "../types/api";
+import { generateEmailCampaign, getStoredTargetAccounts } from "../lib/accountService";
+import { useCompanyOverview } from "../lib/useCompanyOverview";
 
 export default function CampaignsPage() {
   const navigate = useNavigate()
@@ -22,6 +24,9 @@ export default function CampaignsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingEmail, setEditingEmail] = useState<GeneratedEmail | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const overview = useCompanyOverview();
 
   // Debug log to see emailHistory on every render
   console.log("Rendering CampaignsPage, emailHistory:", emailHistory)
@@ -29,7 +34,12 @@ export default function CampaignsPage() {
   // Load emailHistory from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("emailHistory")
-    if (stored) setEmailHistory(JSON.parse(stored))
+    console.log("[Campaigns] Raw emailHistory from localStorage:", stored)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      console.log("[Campaigns] Parsed emailHistory from localStorage:", parsed)
+      setEmailHistory(parsed)
+    }
   }, [])
 
   const handleOpenCreateWizard = () => {
@@ -39,93 +49,64 @@ export default function CampaignsPage() {
     setIsWizardOpen(true)
   }
 
-  const handleWizardComplete = (config: EmailConfig) => {
-    
-    // Generate email data based on config
-    const emailData = generateEmailFromConfig()
-
-    const newEmail: GeneratedEmail = {
-      id: Date.now().toString(),
-      timestamp: new Date().toLocaleString(),
-      config: config,
-      ...emailData,
+  const handleWizardComplete = async (config: EmailConfig) => {
+    setIsGenerating(true);
+    setError(null);
+    try {
+      console.log("[Campaigns] handleWizardComplete config:", config);
+      // Gather context for the request
+      if (!overview) throw new Error("Company overview not loaded");
+      const accounts = getStoredTargetAccounts();
+      const selectedAccount = accounts.find(acc => acc.id === config.selectedAccount);
+      if (!selectedAccount) throw new Error("Selected account not found");
+      const persona = selectedAccount.personas?.find(p => p.id === config.selectedPersona);
+      if (!persona) throw new Error("Selected persona not found");
+      // Build preferences from config
+      const preferences = {
+        useCase: config.selectedUseCase,
+        emphasis: config.emphasis,
+        openingLine: config.openingLine,
+        ctaSetting: config.ctaSetting,
+        template: config.template,
+      };
+      // Build the request
+      const request = {
+        companyContext: overview,
+        targetAccount: selectedAccount,
+        targetPersona: persona,
+        preferences,
+      };
+      // Log the user prompt/request
+      console.log("[Campaigns] EmailGenerationRequest payload:", request);
+      // Call the LLM-backed API
+      const response = await generateEmailCampaign(request);
+      console.log("[Campaigns] LLM API response:", response);
+      // Build the new email object
+      const newEmail: GeneratedEmail = {
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString(),
+        config: config,
+        subject: response.subjects.primary,
+        body: response.emailBody.map(seg => seg.text).join("\n\n"),
+        segments: response.emailBody.map(seg => ({ ...seg, color: "" })), // Add color if needed
+        breakdown: response.breakdown,
+      };
+      console.log("[Campaigns] New email object:", newEmail);
+      setEmailHistory((prev) => {
+        const updated = [newEmail, ...prev];
+        console.log("[Campaigns] Updated emailHistory (to be saved):", updated);
+        localStorage.setItem("emailHistory", JSON.stringify(updated));
+        return updated;
+      });
+      setIsWizardOpen(false);
+      navigate(`/campaigns/${newEmail.id}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to generate email");
+      console.error("[Campaigns] Error generating email:", err);
+    } finally {
+      setIsGenerating(false);
     }
-
-    setEmailHistory((prev) => {
-      const updated = [newEmail, ...prev];
-      console.log("Updated emailHistory:", updated);
-      localStorage.setItem("emailHistory", JSON.stringify(updated));
-      return updated;
-    });
-
-    setIsWizardOpen(false);
-    navigate(`/campaigns/${newEmail.id}`);
-  }
-
-  const generateEmailFromConfig = (): Omit<GeneratedEmail, 'id' | 'timestamp' | 'config'> => {
-    // This would normally call an API, but for demo we'll return mock data
-    return {
-      subject: "Quick question about scaling your sales process",
-      body: `Hi [First Name],\n\nI noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.\n\nMany technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.\n\nThat's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.\n\nWould you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?\n\nBest,\n[Your Name]`,
-      segments: [
-        { text: "Hi [First Name],", type: "greeting", color: "bg-purple-100 border-purple-200" },
-        {
-          text: "I noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.",
-          type: "opening",
-          color: "bg-blue-100 border-blue-200",
-        },
-        {
-          text: "Many technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.",
-          type: "pain-point",
-          color: "bg-red-100 border-red-200",
-        },
-        {
-          text: "That's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.",
-          type: "solution",
-          color: "bg-green-100 border-green-200",
-        },
-        {
-          text: "Would you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?",
-          type: "cta",
-          color: "bg-yellow-100 border-yellow-200",
-        },
-        { text: "Best,\n[Your Name]", type: "signature", color: "bg-gray-100 border-gray-200" },
-      ],
-      breakdown: {
-        subject: {
-          label: "Subject Line",
-          description: "The email's subject line, crafted to grab attention",
-          color: "bg-blue-50 border-blue-200",
-        },
-        greeting: {
-          label: "Greeting",
-          description: "Standard personalized greeting",
-          color: "bg-purple-100 border-purple-200",
-        },
-        opening: {
-          label: "Opening Line",
-          description: "Personalized based on company research",
-          color: "bg-blue-100 border-blue-200",
-        },
-        "pain-point": {
-          label: "Pain Point",
-          description: "Manual sales tasks taking time from product",
-          color: "bg-red-100 border-red-200",
-        },
-        solution: {
-          label: "Solution",
-          description: "Scaling Sales Without Hiring use case",
-          color: "bg-green-100 border-green-200",
-        },
-        cta: {
-          label: "Call to Action",
-          description: "Ask for meeting: 15-minute call",
-          color: "bg-yellow-100 border-yellow-200",
-        },
-        signature: { label: "Signature", description: "Professional closing", color: "bg-gray-100 border-gray-200" },
-      },
-    }
-  }
+  };
 
   const handleSelectEmail = (email: GeneratedEmail) => {
     // Navigate to the campaign detail page
@@ -139,7 +120,6 @@ export default function CampaignsPage() {
 
   const handleSaveEmailEdit = async ({ name, description }: { name: string; description: string }) => {
     if (!editingEmail) return
-    
     setIsSaving(true)
     try {
       const updatedEmail: GeneratedEmail = {
@@ -147,15 +127,14 @@ export default function CampaignsPage() {
         subject: name.trim(),
         body: description.trim(),
       }
-      
       setEmailHistory((prev) => {
         const updated = prev.map(email => 
           email.id === editingEmail.id ? updatedEmail : email
         )
+        console.log("[Campaigns] Updated emailHistory after edit (to be saved):", updated)
         localStorage.setItem("emailHistory", JSON.stringify(updated))
         return updated
       })
-      
       setEditModalOpen(false)
       setEditingEmail(null)
     } catch (err) {
@@ -173,6 +152,7 @@ export default function CampaignsPage() {
   const handleDeleteEmail = (email: GeneratedEmail) => {
     setEmailHistory((prev) => {
       const updated = prev.filter(e => e.id !== email.id)
+      console.log("[Campaigns] Updated emailHistory after delete (to be saved):", updated)
       localStorage.setItem("emailHistory", JSON.stringify(updated))
       return updated
     })

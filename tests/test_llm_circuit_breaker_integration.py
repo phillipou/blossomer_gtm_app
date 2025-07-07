@@ -55,7 +55,7 @@ async def test_circuit_breaker_opens_after_failures():
     """Test that repeated provider failures open the circuit breaker and block further calls."""
     client = LLMClient([AlwaysFailProvider()])
     cb = client.circuit_breakers["fail"]
-    req = LLMRequest(prompt="test")
+    req = LLMRequest(user_prompt="test")
     for _ in range(cb.failure_threshold):
         with pytest.raises(RuntimeError):
             await client.generate(req)
@@ -71,7 +71,7 @@ async def test_circuit_breaker_resets_on_success():
     """Test that a successful provider call resets the circuit breaker."""
     client = LLMClient([AlwaysFailProvider(), AlwaysSucceedProvider()])
     cb = client.circuit_breakers["fail"]
-    req = LLMRequest(prompt="test")
+    req = LLMRequest(user_prompt="test")
     # Trip the circuit breaker by causing enough failures.
     # Failover will succeed, but breaker should still open.
     for _ in range(cb.failure_threshold):
@@ -90,7 +90,7 @@ async def test_health_check_failures_increment_circuit_breaker():
     """Test that health check failures are counted as failures by the circuit breaker."""
     client = LLMClient([HealthCheckFailProvider()])
     cb = client.circuit_breakers["healthfail"]
-    req = LLMRequest(prompt="test")
+    req = LLMRequest(user_prompt="test")
     for _ in range(cb.failure_threshold):
         with pytest.raises(RuntimeError):
             await client.generate(req)
