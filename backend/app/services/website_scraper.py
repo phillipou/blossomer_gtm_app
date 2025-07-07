@@ -25,11 +25,34 @@ except ImportError:
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 
 
+def normalize_url(url: str) -> str:
+    """
+    Normalize a URL by adding http:// if no scheme is present.
+    Basic validation without network calls.
+    """
+    parsed = urllib.parse.urlparse(url)
+    if not parsed.scheme:
+        url = "http://" + url
+        parsed = urllib.parse.urlparse(url)
+
+    # Basic validation
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}")
+    if not parsed.netloc:
+        raise ValueError("URL missing network location (domain)")
+    if "." not in parsed.netloc:
+        raise ValueError("URL netloc must contain a dot (e.g., example.com)")
+
+    return url
+
+
 def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     """
     Validate a website URL for syntax, reachability, and robots.txt compliance.
     Returns a dict with validation results.
     """
+    t_total0 = time.monotonic()
+
     result: dict[str, Any] = {
         "is_valid": False,
         "reason": None,
@@ -40,6 +63,7 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     }
 
     # 1. Normalize and parse URL
+    t_parse0 = time.monotonic()
     parsed = urllib.parse.urlparse(url)
     if not parsed.scheme:
         url = "http://" + url  # Default to http if missing
@@ -54,8 +78,11 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     if "." not in parsed.netloc:
         result["reason"] = "URL netloc must contain a dot (e.g., example.com)"
         return result
+    t_parse1 = time.monotonic()
+    print(f"[TIMING] URL parsing took {t_parse1 - t_parse0:.3f}s")
 
     # 2. DNS resolution
+    t_dns0 = time.monotonic()
     if not parsed.hostname:
         result["reason"] = "URL missing hostname for DNS resolution"
         return result
@@ -64,8 +91,11 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     except Exception as e:
         result["reason"] = f"DNS resolution failed: {e}"
         return result
+    t_dns1 = time.monotonic()
+    print(f"[TIMING] DNS resolution took {t_dns1 - t_dns0:.3f}s")
 
     # 3. HTTP reachability
+    t_http0 = time.monotonic()
     try:
         resp = requests.head(
             url,
@@ -82,8 +112,11 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
     except Exception as e:
         result["reason"] = f"HTTP request failed: {e}"
         return result
+    t_http1 = time.monotonic()
+    print(f"[TIMING] HTTP HEAD request took {t_http1 - t_http0:.3f}s")
 
     # 4. robots.txt compliance
+    t_robots0 = time.monotonic()
     robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
     rp = robotparser.RobotFileParser()
     try:
@@ -98,8 +131,14 @@ def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
         logger.warning(f"robots.txt fetch failed for {robots_url}: {e}")
         # If robots.txt is missing/unreachable, default to allow
         result["robots_allowed"] = True
+    t_robots1 = time.monotonic()
+    print(f"[TIMING] robots.txt check took {t_robots1 - t_robots0:.3f}s")
 
     result["is_valid"] = True
+
+    t_total1 = time.monotonic()
+    print(f"[TIMING] Total URL validation took {t_total1 - t_total0:.3f}s")
+
     return result
 
 
@@ -220,14 +259,18 @@ def extract_website_content(
             )
 
     t_scrape0 = time.monotonic()
-    validation = validate_url(url)
-    if not validation["is_valid"] or not validation["reachable"]:
-        logger.warning(f"URL validation failed: {validation}")
-        raise ValueError(f"URL validation failed: {validation}")
+
+    # Step 1: URL Normalization (fast, no network calls)
+    t_normalize0 = time.monotonic()
+    url = normalize_url(url)
+    t_normalize1 = time.monotonic()
+    print(f"[TIMING] URL normalization took {t_normalize1 - t_normalize0:.3f}s")
 
     if formats is None:
         formats = ["markdown", "html"]
 
+    # Step 2: Firecrawl API Call
+    t_firecrawl0 = time.monotonic()
     if crawl:
         crawl_result = firecrawl_crawl_site(
             url,
@@ -249,15 +292,21 @@ def extract_website_content(
         content = scrape_result.get("markdown", "")
         html = scrape_result.get("html", "")
         metadata = scrape_result.get("metadata", {})
+    t_firecrawl1 = time.monotonic()
+    print(f"[TIMING] Firecrawl API call took {t_firecrawl1 - t_firecrawl0:.2f}s")
+
+    # Step 3: Content processing
+    t_processing0 = time.monotonic()
 
     t_scrape1 = time.monotonic()
+    t_processing1 = time.monotonic()
+    print(f"[TIMING] Content processing took {t_processing1 - t_processing0:.2f}s")
     print(
-        f"[DEV CACHE] Fresh scrape/crawl for URL: {url} took {t_scrape1 - t_scrape0:.2f}s"
+        f"[TIMING] Total fresh scrape for URL: {url} took {t_scrape1 - t_scrape0:.2f}s"
     )
 
     result = {
         "url": url,
-        "validation": validation,
         "content": content,
         "html": html,
         "metadata": metadata,

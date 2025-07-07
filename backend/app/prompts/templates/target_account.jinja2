@@ -204,7 +204,7 @@ REMEMBER: Always return valid JSON. Focus on Clay-ready ICP analysis for prospec
 {% endif %}
 
 {% if company_context %}
-**Company Context:** {{company_context}}
+**Company Context:** {{company_context | tojson}}
 {% endif %}
 
 {% if website_content %}

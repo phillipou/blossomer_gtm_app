@@ -234,7 +234,7 @@ REMEMBER: Always return valid JSON. Focus on actionable persona insights for sal
 {% endif %}
 
 {% if company_context %}
-**Company Context:** {{company_context}}
+**Company Context:** {{company_context | tojson}}
 {% endif %}
 
 {% if website_content %}
@@ -242,7 +242,7 @@ REMEMBER: Always return valid JSON. Focus on actionable persona insights for sal
 {% endif %}
 
 {% if target_account_context %}
-**Target Account Context:** {{target_account_context}}
+**Target Account Context:** {{target_account_context | tojson}}
 {% endif %}
 
 ## Task

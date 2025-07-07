@@ -147,12 +147,34 @@ class ContentPreprocessingPipeline:
         Returns:
             List[str]: List of processed content chunks.
         """
+        import time
+
         # Always prefer html if available
         if html:
+            t_html0 = time.monotonic()
             text = extract_main_text_from_html(html)
+            t_html1 = time.monotonic()
+            print(f"[TIMING] HTML extraction took {t_html1 - t_html0:.3f}s")
+
+        t_chunk0 = time.monotonic()
         chunks = self.chunker.chunk(text)
+        t_chunk1 = time.monotonic()
+        print(
+            f"[TIMING] Chunking took {t_chunk1 - t_chunk0:.3f}s (produced {len(chunks)} chunks)"
+        )
+
+        t_summarize0 = time.monotonic()
         summarized = [self.summarizer.summarize(chunk) for chunk in chunks]
+        t_summarize1 = time.monotonic()
+        print(f"[TIMING] Summarization took {t_summarize1 - t_summarize0:.3f}s")
+
+        t_filter0 = time.monotonic()
         filtered = self.filter.filter(summarized)
+        t_filter1 = time.monotonic()
+        print(
+            f"[TIMING] Filtering took {t_filter1 - t_filter0:.3f}s (kept {len(filtered)} chunks)"
+        )
+
         return filtered
 
     def find_and_replace(self, text: str) -> str:

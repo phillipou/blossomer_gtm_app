@@ -95,18 +95,18 @@ export default function TargetAccountsList() {
     try {
       // Build companyContext from overview data
       const companyContext: Record<string, string | string[]> = {
-        companyName: company_name,
-        companyUrl: company_url,
-        ...(company_overview ? { companyOverview: company_overview } : {}),
-        ...(product_description ? { productDescription: product_description } : {}),
-        ...(capabilities && capabilities.length ? { capabilities: capabilities } : {}),
-        ...(business_model && business_model.length ? { businessModel: business_model } : {}),
-        ...(differentiated_value && differentiated_value.length ? { differentiatedValue: differentiated_value } : {}),
-        ...(customer_benefits && customer_benefits.length ? { customerBenefits: customer_benefits } : {}),
+        companyName: overview.companyName,
+        companyUrl: overview.companyUrl,
+        ...(overview.companyOverview ? { companyOverview: overview.companyOverview } : {}),
+        ...(overview.productDescription ? { productDescription: overview.productDescription } : {}),
+        ...(overview.capabilities && overview.capabilities.length ? { capabilities: overview.capabilities } : {}),
+        ...(overview.businessModel && overview.businessModel.length ? { businessModel: overview.businessModel } : {}),
+        ...(overview.differentiatedValue && overview.differentiatedValue.length ? { differentiatedValue: overview.differentiatedValue } : {}),
+        ...(overview.customerBenefits && overview.customerBenefits.length ? { customerBenefits: overview.customerBenefits } : {}),
       };
       
       // Debug: log the context variables
-      console.log("[AddAccount] websiteUrl:", company_url.trim());
+      console.log("[AddAccount] websiteUrl:", overview.companyUrl.trim());
       console.log("[AddAccount] accountProfileName:", name);
       console.log("[AddAccount] hypothesis:", description);
       console.log("[AddAccount] companyContext:", companyContext);

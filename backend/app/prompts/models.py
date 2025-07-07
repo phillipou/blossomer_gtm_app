@@ -121,6 +121,12 @@ class ContextAssessmentResult(BaseModel):
     summary: str = Field(
         ..., description="2-3 sentence summary of the context assessment"
     )
+    source: str = Field(
+        ..., description="Source of the context (e.g., 'website', 'user_input')"
+    )
+    from_cache: bool = Field(
+        ..., description="Whether the context was retrieved from cache"
+    )
 
 
 # ==============================================================================
@@ -177,15 +183,18 @@ class TargetPersonaPromptVars(BaseModel):
         None,
         description="Additional context or specifications about the target persona",
     )
-    company_context: Optional[str] = Field(
+    company_context: Optional[Dict[str, Any]] = Field(
         None, description="Structured context about the analyzed company/product"
     )
     website_content: Optional[str] = Field(
         None, description="The preprocessed content from the company's website"
     )
-    target_account_context: Optional[str] = Field(
+    target_account_context: Optional[Dict[str, Any]] = Field(
         None,
-        description="Target account profile context - JSON string of the ideal customer company type this persona works for",
+        description=(
+            "Target account profile context - dictionary of the ideal customer "
+            "company type this persona works for"
+        ),
     )
 
 

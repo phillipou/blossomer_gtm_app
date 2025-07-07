@@ -181,11 +181,27 @@ class ContextOrchestratorService:
             # 2. Preprocessing (if enabled and website content present)
             t2 = time.monotonic()
             if use_preprocessing and website_content and self.preprocessing_pipeline:
+                print(
+                    f"[{analysis_type}] Starting preprocessing of {len(website_content)} chars"
+                )
+
+                # Get HTML from context_result if available
+                html_content = None
+                if analysis_type == "product_overview" and "context_result" in locals():
+                    html_content = context_result.get("html")
+
                 preprocessed_chunks = self.preprocessing_pipeline.process(
                     text=website_content,
-                    html=None,
+                    html=html_content,
                 )
                 preprocessed_text = "\n\n".join(preprocessed_chunks)
+                print(
+                    f"[{analysis_type}] Preprocessing reduced content from "
+                    f"{len(website_content)} to {len(preprocessed_text)} chars"
+                )
+                print(
+                    f"[{analysis_type}] Preprocessing produced {len(preprocessed_chunks)} chunks"
+                )
                 website_content = preprocessed_text
             t3 = time.monotonic()
             if use_preprocessing and website_content and self.preprocessing_pipeline:
@@ -213,22 +229,14 @@ class ContextOrchestratorService:
                     request_data, "additional_context", None
                 )
                 company_context = getattr(request_data, "company_context", None)
-                prompt_vars_kwargs["company_context"] = (
-                    json.dumps(company_context) if company_context else None
-                )
+                prompt_vars_kwargs["company_context"] = company_context
                 target_account_context = getattr(
                     request_data, "target_account_context", None
                 )
-                prompt_vars_kwargs["target_account_context"] = (
-                    json.dumps(target_account_context)
-                    if target_account_context
-                    else None
-                )
+                prompt_vars_kwargs["target_account_context"] = target_account_context
             if analysis_type == "target_account":
                 company_context = getattr(request_data, "company_context", None)
-                prompt_vars_kwargs["company_context"] = (
-                    json.dumps(company_context) if company_context else None
-                )
+                prompt_vars_kwargs["company_context"] = company_context
                 prompt_vars_kwargs["account_profile_name"] = getattr(
                     request_data, "account_profile_name", None
                 )

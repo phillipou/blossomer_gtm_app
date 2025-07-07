@@ -31,17 +31,35 @@ def url_to_filename(url: str) -> str:
 
 def load_cached_scrape(url: str) -> Optional[Dict[str, Any]]:
     """Load cached scrape result for a URL, or return None if not cached."""
+    import time
+
+    t0 = time.monotonic()
+
     os.makedirs(CACHE_DIR, exist_ok=True)
     fname = url_to_filename(url)
+
     if os.path.exists(fname):
         with open(fname, "r") as f:
-            return json.load(f)
+            result = json.load(f)
+        t1 = time.monotonic()
+        print(f"[TIMING] Cache file read took {t1 - t0:.3f}s")
+        return result
+
+    t1 = time.monotonic()
+    print(f"[TIMING] Cache file check took {t1 - t0:.3f}s")
     return None
 
 
 def save_scrape_to_cache(url: str, data: Dict[str, Any]) -> None:
     """Save scrape result to cache for a URL."""
+    import time
+
+    t0 = time.monotonic()
+
     os.makedirs(CACHE_DIR, exist_ok=True)
     fname = url_to_filename(url)
     with open(fname, "w") as f:
         json.dump(data, f)
+
+    t1 = time.monotonic()
+    print(f"[TIMING] Cache file save took {t1 - t0:.3f}s")
