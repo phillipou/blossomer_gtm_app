@@ -30,6 +30,14 @@ TEMPLATE_REGISTRY: Dict[str, TemplateEntry] = {
         "model": EmailGenerationPromptVars,
         "template": "email_generation",
     },
+    "email_generation_blossomer": {
+        "model": EmailGenerationPromptVars,
+        "template": "email_generation_blossomer",
+    },
+    "email_generation_custom": {
+        "model": EmailGenerationPromptVars,
+        "template": "email_generation_custom",
+    },
     # Add more templates here
 }
 

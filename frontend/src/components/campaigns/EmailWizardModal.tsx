@@ -4,6 +4,7 @@ import { Badge } from "../ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Label } from "../ui/label"
+import { Textarea } from "../ui/textarea"
 import { ChevronRight, ChevronLeft, Wand2, X, RefreshCw } from "lucide-react"
 import { EditDialog, EditDialogContent, EditDialogHeader, EditDialogTitle } from "../ui/dialog"
 import { getStoredTargetAccounts, getAllPersonas } from "../../lib/accountService"
@@ -11,7 +12,7 @@ import { getStoredTargetAccounts, getAllPersonas } from "../../lib/accountServic
 interface EmailWizardModalProps {
   isOpen: boolean
   onClose: () => void
-  onComplete: (config: EmailConfig) => void
+  onComplete: (config: EmailConfig) => Promise<void>
   mode: "create" | "edit"
   editingComponent?: {
     type: string;
@@ -28,6 +29,7 @@ interface EmailConfig {
   template: string;
   openingLine: string;
   ctaSetting: string;
+  socialProof?: string;
   companyName?: string;
   accountName?: string;
   personaName?: string;
@@ -74,6 +76,7 @@ export function EmailWizardModal({
     template: "",
     openingLine: "",
     ctaSetting: "",
+    socialProof: "",
   })
 
   // Define steps based on mode
@@ -113,7 +116,7 @@ export function EmailWizardModal({
       {
         title: "Template & Personalization",
         description: "Choose template and personalization settings",
-        fields: ["template", "openingLine", "ctaSetting"],
+        fields: ["template", "openingLine", "ctaSetting", "socialProof"],
       },
     ]
   }
@@ -128,7 +131,10 @@ export function EmailWizardModal({
     fields: [],
   }
 
-  const canProceed = currentStepData.fields.every((field) => config[field as keyof typeof config])
+  const canProceed = currentStepData.fields.every((field) => {
+    if (field === "socialProof") return true // socialProof is optional
+    return config[field as keyof typeof config]
+  })
   const isLastStep = safeCurrentStep === steps.length - 1
   const filteredPersonas = targetPersonas.filter((persona) => persona.accountId === config.selectedAccount)
   
@@ -205,6 +211,7 @@ export function EmailWizardModal({
           template: "",
           openingLine: "",
           ctaSetting: "",
+          socialProof: "",
         })
       }
       setCurrentStep(0)
@@ -222,10 +229,13 @@ export function EmailWizardModal({
   const handleNext = async () => {
     if (isLastStep) {
       setIsGenerating(true)
-      // Simulate generation/update time
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      onComplete(config)
-      setIsGenerating(false)
+      try {
+        await onComplete(config)
+        setIsGenerating(false)
+      } catch (error) {
+        setIsGenerating(false)
+        console.error('Email generation failed:', error)
+      }
     } else {
       setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
     }
@@ -244,6 +254,7 @@ export function EmailWizardModal({
       template: "",
       openingLine: "",
       ctaSetting: "",
+      socialProof: "",
     })
     setCurrentStep(0)
     setIsGenerating(false)
@@ -476,7 +487,8 @@ export function EmailWizardModal({
               (mode === "edit" &&
                 (currentStepData.fields.includes("template") ||
                   currentStepData.fields.includes("openingLine") ||
-                  currentStepData.fields.includes("ctaSetting")))) && (
+                  currentStepData.fields.includes("ctaSetting") ||
+                  currentStepData.fields.includes("socialProof")))) && (
               <div className="space-y-6">
                 {currentStepData.fields.includes("template") && (
                   <div>
@@ -672,6 +684,22 @@ export function EmailWizardModal({
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+                )}
+
+                {currentStepData.fields.includes("socialProof") && (
+                  <div>
+                    <Label className="text-base font-medium mb-3 block">Social Proof (Optional)</Label>
+                    <Textarea
+                      value={config.socialProof || ""}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, socialProof: e.target.value }))}
+                      placeholder="Add any specific social proof, customer testimonials, case studies, or success metrics you'd like to include in the email..."
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <p className="text-sm text-gray-500 mt-2">
+                      This will be incorporated into the evidence section of your email.
+                    </p>
                   </div>
                 )}
               </div>

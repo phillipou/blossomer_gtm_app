@@ -65,10 +65,11 @@ interface SortableSegmentProps {
   hoveredSegment: string | null;
   setHoveredSegment: (type: string | null) => void;
   handleEditLabel: (index: number) => void;
+  getSegmentColor: (segmentType: string) => string;
 }
 
 // SortableSegment component for drag-and-drop
-function SortableSegment({ segment, index, breakdown, hoveredSegment, setHoveredSegment, handleEditLabel }: SortableSegmentProps) {
+function SortableSegment({ segment, index, breakdown, hoveredSegment, setHoveredSegment, handleEditLabel, getSegmentColor }: SortableSegmentProps) {
   const {
     attributes,
     listeners,
@@ -89,7 +90,7 @@ function SortableSegment({ segment, index, breakdown, hoveredSegment, setHovered
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded border transition-all duration-200 hover:ring-2 hover:ring-blue-400 ${breakdown[segment.type]?.color || "bg-blue-50 border-blue-200"} ${
+      className={`p-3 rounded border transition-all duration-200 hover:ring-2 hover:ring-blue-400 ${getSegmentColor(segment.type)} ${
         hoveredSegment === segment.type ? "ring-2 ring-blue-400" : ""
       }`}
       onMouseEnter={() => setHoveredSegment(segment.type)}
@@ -189,7 +190,8 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
     setEditingSegment(null)
     const newSegments = segments.map((s, i) => i === idx ? { ...s, text: segmentValues[i] } : s)
     setSegments(newSegments)
-    setBodyValue(newSegments.map(s => s.text).join('\n\n'))
+    // Only include email body segments in the body value
+    setBodyValue(newSegments.filter(s => isEmailBodySegment(s.type)).map(s => s.text).join('\n\n'))
   }
 
   // Save segment on blur or Enter
@@ -260,13 +262,42 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
     setEditingLabelIndex(null);
   };
 
+  // Define which segment types should be excluded from email body display
+  const isEmailBodySegment = (segmentType: string) => {
+    const excludedFromBody = ['subject', 'subject-line', 'email-subject'];
+    return !excludedFromBody.includes(segmentType?.toLowerCase());
+  };
+
+  // Fallback color assignment for segments without colors in breakdown
+  const getSegmentColor = (segmentType: string) => {
+    const breakdownColor = breakdown[segmentType]?.color;
+    if (breakdownColor) return breakdownColor;
+    
+    // Fallback color mapping
+    const fallbackColors = {
+      'subject': 'bg-purple-50 border-purple-200',
+      'intro': 'bg-blue-50 border-blue-200', 
+      'opening': 'bg-blue-50 border-blue-200',
+      'pain-point': 'bg-red-50 border-red-200',
+      'company-intro': 'bg-green-50 border-green-200',
+      'emphasis': 'bg-indigo-50 border-indigo-200',
+      'cta': 'bg-yellow-50 border-yellow-200',
+      'signature': 'bg-gray-50 border-gray-200'
+    };
+    
+    return fallbackColors[segmentType] || 'bg-blue-50 border-blue-200';
+  };
+
   // Restore renderColorCodedBody
   const renderColorCodedBody = () => (
     <div className="space-y-2">
-      {segmentValues.map((text, index) => (
+      {segmentValues.map((text, index) => {
+        // Skip segments that shouldn't appear in email body
+        if (!isEmailBodySegment(segments[index]?.type)) return null;
+        return (
         <div
           key={index}
-          className={`p-2 rounded border transition-all duration-200 cursor-pointer ${segments[index]?.color || ''} ${hoveredSegment === segments[index]?.type ? "ring-2 ring-blue-400" : ""}`}
+          className={`p-2 rounded border transition-all duration-200 cursor-pointer ${getSegmentColor(segments[index]?.type)} ${hoveredSegment === segments[index]?.type ? "ring-2 ring-blue-400" : ""}`}
           onMouseEnter={() => setHoveredSegment(segments[index]?.type)}
           onMouseLeave={() => setHoveredSegment(null)}
         >
@@ -303,12 +334,13 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
                 )}
               </pre>
             )}
-            <Badge variant="secondary" className="ml-2 text-xs">
+            <Badge variant="secondary" className="ml-2 text-xs bg-gray-100 text-gray-900 border-gray-300">
               {breakdown[segments[index]?.type]?.label}
             </Badge>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -317,7 +349,9 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
   useEffect(() => {
     if (editingMode === EditingMode.Writing) {
       // Switch to writing mode: join segments, estimate height, hide breakdown
-      const joined = segmentValues.join('\n\n');
+      // Only include email body segments, not subject segments
+      const bodySegmentValues = segmentValues.filter((_, index) => isEmailBodySegment(segments[index]?.type));
+      const joined = bodySegmentValues.join('\n\n');
       setBodyValue(joined);
       // Estimate height: 20px per line + 40px padding, min 120px
       const lineCount = joined.split('\n').length;
@@ -374,7 +408,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
               />
             ) : (
               <div
-                className={`mt-1 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${email.breakdown.subject.color} ${hoveredSegment === "subject" ? "ring-2 ring-blue-400" : ""}`}
+                className={`mt-1 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${email.breakdown.subject?.color || "bg-purple-50 border-purple-200"} ${hoveredSegment === "subject" ? "ring-2 ring-blue-400" : ""}`}
                 onMouseEnter={() => setHoveredSegment("subject")}
                 onMouseLeave={() => setHoveredSegment(null)}
                 onClick={() => setEditingSubject(true)}
@@ -442,6 +476,7 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
                     hoveredSegment={hoveredSegment}
                     setHoveredSegment={setHoveredSegment}
                     handleEditLabel={handleEditLabel}
+                    getSegmentColor={getSegmentColor}
                   />
                 ))}
               </div>

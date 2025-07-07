@@ -68,6 +68,7 @@ export default function CampaignsPage() {
         openingLine: config.openingLine,
         ctaSetting: config.ctaSetting,
         template: config.template,
+        socialProof: config.socialProof,
       };
       // Build the request
       const request = {
@@ -88,7 +89,7 @@ export default function CampaignsPage() {
         config: config,
         subject: response.subjects.primary,
         body: response.emailBody.map(seg => seg.text).join("\n\n"),
-        segments: response.emailBody.map(seg => ({ ...seg, color: "" })), // Add color if needed
+        segments: response.emailBody.map(seg => ({ ...seg, color: response.breakdown[seg.type]?.color || "bg-blue-50 border-blue-200" })),
         breakdown: response.breakdown,
       };
       console.log("[Campaigns] New email object:", newEmail);

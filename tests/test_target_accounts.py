@@ -202,7 +202,9 @@ def test_target_account_endpoint_http_exception(monkeypatch):
 # --- Prompt Rendering Tests ---
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_only_website_url():
     """
     Test rendering when only website_url is provided.
@@ -221,7 +223,9 @@ def test_target_account_prompt_rendering_only_website_url():
     assert "Company Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_user_context():
     """
     Test rendering with website_url and user_inputted_context.
@@ -241,7 +245,9 @@ def test_target_account_prompt_rendering_with_user_context():
     assert "Company Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_company_context():
     """
     Test rendering with website_url and company_context.
@@ -261,7 +267,9 @@ def test_target_account_prompt_rendering_with_company_context():
     assert "Additional Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_target_account_context():
     """
     Test rendering with website_url and target_account_context.
@@ -281,12 +289,16 @@ def test_target_account_prompt_rendering_with_target_account_context():
     assert "Additional Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_all_contexts():
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_quality_assessment():
     pass
 

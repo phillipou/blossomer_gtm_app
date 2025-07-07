@@ -237,6 +237,7 @@ export interface EmailConfig {
   template: string;
   openingLine: string;
   ctaSetting: string;
+  socialProof?: string;
   companyName?: string;
   accountName?: string;
   personaName?: string;
@@ -259,6 +260,7 @@ export interface EmailPreferences {
   openingLine: string;
   ctaSetting: string;
   template: string;
+  socialProof?: string;
 }
 
 export interface EmailGenerationRequest {
@@ -275,7 +277,7 @@ export interface EmailSubjects {
 
 export interface EmailGenerationMetadata {
   generationId: string;
-  confidence: number;
+  confidence: string;
   personalizationLevel: string;
   processingTimeMs?: number;
 }

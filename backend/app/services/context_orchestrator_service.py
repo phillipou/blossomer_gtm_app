@@ -242,7 +242,9 @@ class ContextOrchestratorService:
                     target_account_context = getattr(
                         request_data, "target_account_context", None
                     )
-                    prompt_vars_kwargs["target_account_context"] = target_account_context
+                    prompt_vars_kwargs["target_account_context"] = (
+                        target_account_context
+                    )
                 if analysis_type == "target_account":
                     company_context = getattr(request_data, "company_context", None)
                     prompt_vars_kwargs["company_context"] = company_context

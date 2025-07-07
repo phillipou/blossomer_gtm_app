@@ -15,7 +15,11 @@ from backend.app.services.content_preprocessing import (
 )
 from backend.app.schemas import ProductOverviewRequest
 from backend.app.schemas import (
-    ProductOverviewResponse, BusinessProfile, UseCaseAnalysis, Positioning, ICPHypothesis
+    ProductOverviewResponse,
+    BusinessProfile,
+    UseCaseAnalysis,
+    Positioning,
+    ICPHypothesis,
 )
 
 client = TestClient(app)
@@ -52,7 +56,10 @@ async def test_orchestrator_returns_assessment_and_raw_content():
     with patch(
         "backend.app.services.website_scraper.extract_website_content"
     ) as mock_scrape:
-        mock_scrape.return_value = {"content": "This is the website content.", "from_cache": False}
+        mock_scrape.return_value = {
+            "content": "This is the website content.",
+            "from_cache": False,
+        }
         result = await orchestrator.orchestrate_context(
             website_url="https://example.com",
             target_endpoint="company_overview",
@@ -176,13 +183,17 @@ async def test_service_uses_raw_website_content(monkeypatch):
                 unique_approach="Unique AI",
                 language_used="Automation",
             ),
-            objections=["Cost: Higher than manual processes", "Setup: Learning curve required"],
+            objections=[
+                "Cost: Higher than manual processes",
+                "Setup: Learning curve required",
+            ],
             icp_hypothesis=ICPHypothesis(
                 target_account_hypothesis="SaaS Innovators",
                 target_persona_hypothesis="CTO",
             ),
             metadata={"context_quality": "high"},
         )
+
     monkeypatch.setattr(
         "backend.app.services.context_orchestrator_service.ContextOrchestratorService.analyze",
         fake_analyze,
@@ -211,9 +222,7 @@ async def test_service_uses_raw_website_content(monkeypatch):
                     metadata={},
                 ),
                 "enriched_content": {
-                    "raw_website_content": (
-                        "This is the real website content!"
-                    )
+                    "raw_website_content": ("This is the real website content!")
                 },
                 "enrichment_successful": True,
             }
@@ -311,12 +320,16 @@ async def test_service_uses_raw_website_content(monkeypatch):
     assert result.company_url == "https://example.com"
 
 
-@pytest.mark.skip(reason="Service dependency injection and error handling changed; test needs rewrite.")
+@pytest.mark.skip(
+    reason="Service dependency injection and error handling changed; test needs rewrite."
+)
 def test_service_handles_missing_website_content(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="Service dependency injection and error handling changed; test needs rewrite.")
+@pytest.mark.skip(
+    reason="Service dependency injection and error handling changed; test needs rewrite."
+)
 def test_service_handles_llm_refusal(monkeypatch):
     pass
 
@@ -348,11 +361,15 @@ def test_preprocessing_pipeline_removes_noise():
 
 
 # --- End-to-End API Tests ---
-@pytest.mark.skip(reason="API endpoint/module structure changed; test needs rewrite for new FastAPI routing.")
+@pytest.mark.skip(
+    reason="API endpoint/module structure changed; test needs rewrite for new FastAPI routing."
+)
 def test_api_happy_path(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="API now requires authentication; test client setup must provide valid auth.")
+@pytest.mark.skip(
+    reason="API now requires authentication; test client setup must provide valid auth."
+)
 def test_api_insufficient_content(monkeypatch):
     pass

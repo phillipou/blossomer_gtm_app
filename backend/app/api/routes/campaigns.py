@@ -4,11 +4,10 @@ from typing import List
 from backend.app.models import APIKey
 from backend.app.core.auth import rate_limit_dependency
 from backend.app.core.database import get_db
-from backend.app.schemas import (
-    EmailGenerationRequest, 
-    EmailGenerationResponse
+from backend.app.schemas import EmailGenerationRequest, EmailGenerationResponse
+from backend.app.services.email_generation_service import (
+    generate_email_campaign_service,
 )
-from backend.app.services.email_generation_service import generate_email_campaign_service
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from sqlalchemy.orm import Session
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
@@ -96,33 +95,29 @@ async def generate_email(
     """
     Generate a personalized email campaign based on company context, target account/persona,
     and user preferences from the Email Campaign Wizard.
-    
+
     This endpoint synthesizes:
     - Company overview and capabilities
-    - Target account firmographics and buying signals  
+    - Target account firmographics and buying signals
     - Target persona demographics and use cases
     - User preferences for emphasis, opening line strategy, and CTA type
-    
+
     Returns structured email content with modular segments and metadata for UI rendering.
     """
     try:
         # Get orchestrator instance
         orchestrator = ContextOrchestrator()
-        
+
         # Generate email campaign using the service
         result = await generate_email_campaign_service(
-            data=request,
-            orchestrator=orchestrator
+            data=request, orchestrator=orchestrator
         )
-        
+
         return result
-        
+
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Failed to generate email campaign: {str(e)}"
-            )
+            status_code=500, detail=(f"Failed to generate email campaign: {str(e)}")
         )
 
 
@@ -149,14 +144,10 @@ async def demo_generate_email(
     try:
         orchestrator = ContextOrchestrator()
         result = await generate_email_campaign_service(
-            data=request,
-            orchestrator=orchestrator
+            data=request, orchestrator=orchestrator
         )
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Failed to generate email campaign: {str(e)}"
-            )
+            status_code=500, detail=(f"Failed to generate email campaign: {str(e)}")
         )

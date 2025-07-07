@@ -256,9 +256,7 @@ async def test_product_overview_endpoint_success(monkeypatch):
             "Target customers are mid-to-large enterprises"
         )
         assert data["metadata"]["sources_used"] == ["website"]
-        assert (
-            data["metadata"]["primary_context_source"] == "user_input"
-        )
+        assert data["metadata"]["primary_context_source"] == "user_input"
         assert "buying_signals" in data
         assert isinstance(data["buying_signals"], list)
         assert len(data["buying_signals"]) > 0
@@ -428,7 +426,12 @@ async def test_target_account_endpoint_success(monkeypatch):
                 "type": "Website",
                 "priority": "med",
                 "detection_method": "Job boards, company career pages, LinkedIn",
-                "keywords": ["AI engineer", "DevOps", "cloud developer", "multi-region"],
+                "keywords": [
+                    "AI engineer",
+                    "DevOps",
+                    "cloud developer",
+                    "multi-region",
+                ],
             },
             {
                 "title": "Tech Stack Adoption",
@@ -494,10 +497,15 @@ async def test_target_account_endpoint_success(monkeypatch):
             ),
         },
     }
+
     class OrchestratorMock:
         async def orchestrate_context(self, *args, **kwargs):
             return fake_response
-    with patch("backend.app.services.context_orchestrator_agent.ContextOrchestrator", return_value=OrchestratorMock()):
+
+    with patch(
+        "backend.app.services.context_orchestrator_agent.ContextOrchestrator",
+        return_value=OrchestratorMock(),
+    ):
         monkeypatch.setattr(
             "backend.app.services.dev_file_cache.load_cached_scrape",
             lambda url: None,
@@ -523,61 +531,81 @@ async def test_target_account_endpoint_success(monkeypatch):
             "Machine Learning Platforms",
         ]
         assert data["buying_signals"][0]["title"] == "Funding Announcements"
-        assert (
-            data["metadata"]["primary_context_source"] == "user_input"
-        )
+        assert data["metadata"]["primary_context_source"] == "user_input"
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_vars_render(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_only_website_url():
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_user_context():
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_company_context():
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_target_account_context():
     pass
 
 
-@pytest.mark.skip(reason="API endpoint/module structure changed; test needs rewrite for new FastAPI routing.")
+@pytest.mark.skip(
+    reason="API endpoint/module structure changed; test needs rewrite for new FastAPI routing."
+)
 def test_target_persona_endpoint_success(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_all_contexts():
     pass
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_account_prompt_rendering_with_quality_assessment():
     pass
 
 
-@pytest.mark.skip(reason="Negative test for missing optional fields; API now requires all fields. Skipping.")
+@pytest.mark.skip(
+    reason="Negative test for missing optional fields; API now requires all fields. Skipping."
+)
 def test_target_account_endpoint_llm_response_missing_optional_fields(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="Negative test for invalid enum values; API now enforces strict validation. Skipping.")
+@pytest.mark.skip(
+    reason="Negative test for invalid enum values; API now enforces strict validation. Skipping."
+)
 def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch):
     pass
 
 
-@pytest.mark.skip(reason="Negative test for invalid input types; API now returns string_type error. Skipping.")
+@pytest.mark.skip(
+    reason="Negative test for invalid input types; API now returns string_type error. Skipping."
+)
 def test_target_account_endpoint_invalid_input_data_types(monkeypatch):
     pass

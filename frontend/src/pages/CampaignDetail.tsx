@@ -5,7 +5,8 @@ import { EmailPreview } from "../components/campaigns/EmailPreview"
 import { EmailWizardModal } from "../components/campaigns/EmailWizardModal"
 import SubNav from "../components/navigation/SubNav"
 import CampaignDetailHeader, { type EditingMode as HeaderEditingMode } from "../components/campaigns/CampaignDetailHeader"
-import type { GeneratedEmail, EmailConfig } from "../types/api"
+import type { GeneratedEmail, EmailConfig, CompanyOverviewResponse, TargetAccountResponse, TargetPersonaResponse } from "../types/api"
+import { transformKeysToCamelCase } from "../lib/utils"
 
 interface EmailWizardModalProps {
   editingComponent: { type: string; currentConfig: EmailConfig } | null;
@@ -25,107 +26,64 @@ export default function CampaignDetail() {
   const [editingComponent] = useState<EmailWizardModalProps['editingComponent']>(null)
   const [editingMode, setEditingMode] = useState<HeaderEditingMode>(EditingMode.Component)
 
-  useEffect(() => {
-    // In a real app, this would fetch the email data from an API
-    // For now, we'll simulate loading the email data
-    if (campaignId) {
-      // Mock data - replace with actual API call
-      const mockEmail: GeneratedEmail = {
-        id: campaignId,
-        timestamp: new Date().toLocaleString(),
-        subject: "Quick question about scaling your sales process",
-        body: `Hi [First Name],
-
-I noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.
-
-Many technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.
-
-That's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.
-
-Would you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?
-
-Best,
-[Your Name]`,
-        segments: [
-          { text: "Hi [First Name],", type: "greeting", color: "bg-purple-100 border-purple-200" },
-          {
-            text: "I noticed you're building something exciting at [Company]. As a fellow founder, I know how challenging it can be to balance product development with the need to generate revenue.",
-            type: "opening",
-            color: "bg-blue-100 border-blue-200",
-          },
-          {
-            text: "Many technical founders I work with struggle with the same challenge: they need to prove product-market fit and generate early revenue, but don't want to get bogged down in manual sales tasks that take time away from building.",
-            type: "pain-point",
-            color: "bg-red-100 border-red-200",
-          },
-          {
-            text: "That's exactly why we built Blossomer - to help founders like you establish a predictable sales process without having to hire a full sales team yet.",
-            type: "solution",
-            color: "bg-green-100 border-green-200",
-          },
-          {
-            text: "Would you be open to a quick 15-minute call to discuss how we've helped other technical founders in similar situations?",
-            type: "cta",
-            color: "bg-yellow-100 border-yellow-200",
-          },
-          { text: "Best,\n[Your Name]", type: "signature", color: "bg-gray-100 border-gray-200" },
-        ],
-        breakdown: {
-          subject: {
-            label: "Subject Line",
-            description: "The email's subject line, crafted to grab attention",
-            color: "bg-blue-50 border-blue-200",
-          },
-          greeting: {
-            label: "Greeting",
-            description: "Standard personalized greeting",
-            color: "bg-purple-100 border-purple-200",
-          },
-          opening: {
-            label: "Opening Line",
-            description: "Personalized based on company research",
-            color: "bg-blue-100 border-blue-200",
-          },
-          "pain-point": {
-            label: "Pain Point",
-            description: "Manual sales tasks taking time from product",
-            color: "bg-red-100 border-red-200",
-          },
-          solution: {
-            label: "Solution",
-            description: "Scaling Sales Without Hiring use case",
-            color: "bg-green-100 border-green-200",
-          },
-          cta: {
-            label: "Call to Action",
-            description: "Ask for meeting: 15-minute call",
-            color: "bg-yellow-100 border-yellow-200",
-          },
-          signature: { label: "Signature", description: "Professional closing", color: "bg-gray-100 border-gray-200" },
-        },
-        config: {
-          selectedAccount: "1",
-          selectedPersona: "1", 
-          selectedUseCase: "1",
-          emphasis: "pain-point",
-          template: "professional",
-          openingLine: "custom",
-          ctaSetting: "meeting",
-          companyName: "Demo Company",
-          accountName: "Demo Account",
-          personaName: "Demo Persona",
-        },
-      }
-      console.log("[CampaignDetail] Loaded campaignId:", campaignId)
-      console.log("[CampaignDetail] Loaded mockEmail:", mockEmail)
-      setEmail(mockEmail)
+  // Load company, account, and persona from localStorage
+  const company: CompanyOverviewResponse | null = (() => {
+    const stored = localStorage.getItem("dashboard_overview");
+    if (!stored) return null;
+    try {
+      return transformKeysToCamelCase<CompanyOverviewResponse>(JSON.parse(stored));
+    } catch {
+      return null;
     }
-  }, [campaignId])
+  })();
+  const account: TargetAccountResponse | null = (() => {
+    const stored = localStorage.getItem("selected_target_account");
+    if (!stored) return null;
+    try {
+      return transformKeysToCamelCase<TargetAccountResponse>(JSON.parse(stored));
+    } catch {
+      return null;
+    }
+  })();
+  const persona: TargetPersonaResponse | null = (() => {
+    const stored = localStorage.getItem("selected_target_persona");
+    if (!stored) return null;
+    try {
+      return transformKeysToCamelCase<TargetPersonaResponse>(JSON.parse(stored));
+    } catch {
+      return null;
+    }
+  })();
+
+  useEffect(() => {
+    // Load the email data from localStorage
+    if (campaignId) {
+      const stored = localStorage.getItem("emailHistory")
+      if (stored) {
+        const emailHistory: GeneratedEmail[] = JSON.parse(stored)
+        const foundEmail = emailHistory.find(email => email.id === campaignId)
+        
+        if (foundEmail) {
+          console.log("[CampaignDetail] Loaded campaignId:", campaignId)
+          console.log("[CampaignDetail] Loaded real email:", foundEmail)
+          setEmail(foundEmail)
+        } else {
+          console.warn("[CampaignDetail] Email not found in localStorage:", campaignId)
+          // Navigate back to campaigns if email not found
+          navigate('/campaigns')
+        }
+      } else {
+        console.warn("[CampaignDetail] No emailHistory in localStorage")
+        // Navigate back to campaigns if no email history
+        navigate('/campaigns')
+      }
+    }
+  }, [campaignId, navigate])
 
 
 
-  const handleWizardComplete = (config: EmailConfig) => {
-    // Update the email with new config
+  const handleWizardComplete = async (config: EmailConfig) => {
+    // Update the email with new config and save to localStorage
     console.log("[CampaignDetail] handleWizardComplete config:", config)
     if (email) {
       const updatedEmail = {
@@ -133,9 +91,18 @@ Best,
         config: config,
       }
       console.log("[CampaignDetail] Updated email after wizard complete:", updatedEmail)
-      setEmail({
-        ...updatedEmail
-      })
+      
+      // Update localStorage
+      const stored = localStorage.getItem("emailHistory")
+      if (stored) {
+        const emailHistory: GeneratedEmail[] = JSON.parse(stored)
+        const updatedHistory = emailHistory.map(e => 
+          e.id === email.id ? updatedEmail : e
+        )
+        localStorage.setItem("emailHistory", JSON.stringify(updatedHistory))
+      }
+      
+      setEmail(updatedEmail)
     }
     setIsWizardOpen(false)
   }
@@ -189,9 +156,9 @@ Best,
           modeTabs={modeTabs}
           editingMode={editingMode}
           setEditingMode={setEditingMode}
-          companyName={email.config?.companyName || "Company"}
-          accountName={email.config?.accountName || "Account"}
-          personaName={email.config?.personaName || "Persona"}
+          company={company}
+          account={account}
+          persona={persona}
         />
         {/* Content Area */}
         <div className="overflow-auto p-0">

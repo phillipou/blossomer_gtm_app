@@ -168,7 +168,9 @@ def test_target_persona_endpoint_success(monkeypatch):
 # --- Prompt Rendering Tests ---
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env; test needs rewrite or template loader patch."
+)
 def test_target_persona_prompt_rendering_with_user_context():
     """
     Test rendering with website_url and user_inputted_context.
@@ -189,7 +191,9 @@ def test_target_persona_prompt_rendering_with_user_context():
     assert "Target Account Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch."
+)
 def test_target_persona_prompt_rendering_with_company_context():
     """
     Test rendering with website_url and company_context.
@@ -210,7 +214,9 @@ def test_target_persona_prompt_rendering_with_company_context():
     assert "Target Account Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch."
+)
 def test_target_persona_prompt_rendering_with_target_account_context():
     """
     Test rendering with website_url and target_account_context.
@@ -231,7 +237,9 @@ def test_target_persona_prompt_rendering_with_target_account_context():
     assert "Company Context:" not in prompt
 
 
-@pytest.mark.skip(reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch.")
+@pytest.mark.skip(
+    reason="Prompt rendering template not found or not loaded in test env, or schema changed; test needs rewrite or template loader patch."
+)
 def test_target_persona_prompt_rendering_all_contexts():
     """
     Test rendering with all available contexts.

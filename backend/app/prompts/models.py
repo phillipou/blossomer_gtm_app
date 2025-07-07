@@ -50,13 +50,13 @@ class ProductOverviewPromptVars(BaseModel):
 
 
 # ==============================================================================
-# Email Generation Prompt Variables  
+# Email Generation Prompt Variables
 # ==============================================================================
 
 
 class EmailGenerationPromptVars(BaseModel):
     """Variables for the email_generation.jinja2 prompt template."""
-    
+
     company_context: Optional[Dict[str, Any]] = None
     target_account: Optional[Dict[str, Any]] = None
     target_persona: Optional[Dict[str, Any]] = None

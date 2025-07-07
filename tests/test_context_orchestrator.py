@@ -42,6 +42,7 @@ async def test_assess_context_empty_content():
         async def generate(request):
             class FakeResp:
                 text = mock_result.model_dump_json()
+
             return FakeResp()
 
     with patch("backend.app.core.llm_singleton.get_llm_client", return_value=LLMMock()):
@@ -108,6 +109,7 @@ async def test_assess_context_happy_path():
         async def generate(request):
             class FakeResp:
                 text = mock_result.model_dump_json()
+
             return FakeResp()
 
     with patch("backend.app.core.llm_singleton.get_llm_client", return_value=LLMMock()):
@@ -336,7 +338,9 @@ async def test_orchestrate_context_no_content(monkeypatch):
     assert result["assessment"].metadata["context_quality"] == "insufficient"
 
 
-@pytest.mark.skip(reason="Code now prefers website scraping if user context is insufficient; test is outdated.")
+@pytest.mark.skip(
+    reason="Code now prefers website scraping if user context is insufficient; test is outdated."
+)
 @pytest.mark.asyncio
 async def test_resolve_context_prefers_user_context(monkeypatch):
     pass
@@ -427,7 +431,9 @@ async def test_resolve_context_falls_back_to_website(monkeypatch):
     assert result["context"] == scraped_content
 
 
-@pytest.mark.skip(reason="Code now prefers website scraping if user context is insufficient; test is outdated.")
+@pytest.mark.skip(
+    reason="Code now prefers website scraping if user context is insufficient; test is outdated."
+)
 @pytest.mark.asyncio
 async def test_resolve_context_endpoint_specific_sufficiency(monkeypatch):
     pass
