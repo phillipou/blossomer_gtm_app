@@ -91,6 +91,20 @@ export default function CampaignsPage() {
         body: response.emailBody.map(seg => seg.text).join("\n\n"),
         segments: response.emailBody.map(seg => ({ ...seg, color: response.breakdown[seg.type]?.color || "bg-blue-50 border-blue-200" })),
         breakdown: response.breakdown,
+        companySnapshot: {
+          companyName: overview.companyName,
+          companyUrl: overview.companyUrl,
+        },
+        accountSnapshot: {
+          id: selectedAccount.id,
+          targetAccountName: selectedAccount.targetAccountName,
+          targetAccountDescription: selectedAccount.targetAccountDescription,
+        },
+        personaSnapshot: {
+          id: persona.id,
+          targetPersonaName: persona.targetPersonaName,
+          targetPersonaDescription: persona.targetPersonaDescription,
+        },
       };
       console.log("[Campaigns] New email object:", newEmail);
       setEmailHistory((prev) => {

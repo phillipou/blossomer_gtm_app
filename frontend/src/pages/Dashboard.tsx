@@ -422,19 +422,9 @@ export default function Dashboard() {
                     onEdit={isEditable ? handleListEdit(key) : undefined}
                     renderItem={(item: string, idx: number) => (
                       bulleted ? (
-                        <li
-                          key={idx}
-                          className="list-disc list-inside text-sm text-gray-700 blue-bullet mb-2"
-                        >
-                          {item}
-                        </li>
+                        <span key={idx} className="text-sm text-gray-700 blue-bullet mb-2">{item}</span>
                       ) : (
-                        <div
-                          key={idx}
-                          className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded border-l-4 border-blue-200"
-                        >
-                          {item}
-                        </div>
+                        <div key={idx} className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded border-l-4 border-blue-200">{item}</div>
                       )
                     )}
                     editModalSubtitle={subtitle}

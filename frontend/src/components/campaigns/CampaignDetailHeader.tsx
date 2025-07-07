@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { Card, CardContent } from "../ui/card";
+import type { CompanyOverviewResponse, TargetAccountResponse, TargetPersonaResponse } from "../../types/api";
 
 // Accept EditingMode as a type for value and setEditingMode
 export type EditingMode = "component" | "writing";
@@ -17,9 +18,9 @@ interface CampaignDetailHeaderProps {
   modeTabs: ModeTab[];
   editingMode: EditingMode;
   setEditingMode: (mode: EditingMode) => void;
-  companyName: string;
-  accountName: string;
-  personaName: string;
+  company: { companyName: string; companyUrl: string } | null;
+  account: { id: string; targetAccountName: string; targetAccountDescription: string } | null;
+  persona: { id: string; targetPersonaName: string; targetPersonaDescription: string } | null;
 }
 
 export default function CampaignDetailHeader({
@@ -28,9 +29,9 @@ export default function CampaignDetailHeader({
   modeTabs,
   editingMode,
   setEditingMode,
-  companyName,
-  accountName,
-  personaName,
+  company,
+  account,
+  persona,
 }: CampaignDetailHeaderProps) {
   return (
     <Card className="mb-6">
@@ -63,15 +64,15 @@ export default function CampaignDetailHeader({
           <div className="flex flex-row items-center gap-8 mt-1">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-green-400 inline-block" />
-              <span className="text-sm text-gray-700">{companyName}</span>
+              <span className="text-sm text-gray-700">{company?.companyName || "Company"}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-red-400 inline-block" />
-              <span className="text-sm text-gray-700">{accountName}</span>
+              <span className="text-sm text-gray-700">{account?.targetAccountName || "Account"}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-blue-400 inline-block" />
-              <span className="text-sm text-gray-700">{personaName}</span>
+              <span className="text-sm text-gray-700">{persona?.targetPersonaName || "Persona"}</span>
             </div>
           </div>
         </div>

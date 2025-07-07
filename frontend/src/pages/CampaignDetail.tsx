@@ -26,35 +26,6 @@ export default function CampaignDetail() {
   const [editingComponent] = useState<EmailWizardModalProps['editingComponent']>(null)
   const [editingMode, setEditingMode] = useState<HeaderEditingMode>(EditingMode.Component)
 
-  // Load company, account, and persona from localStorage
-  const company: CompanyOverviewResponse | null = (() => {
-    const stored = localStorage.getItem("dashboard_overview");
-    if (!stored) return null;
-    try {
-      return transformKeysToCamelCase<CompanyOverviewResponse>(JSON.parse(stored));
-    } catch {
-      return null;
-    }
-  })();
-  const account: TargetAccountResponse | null = (() => {
-    const stored = localStorage.getItem("selected_target_account");
-    if (!stored) return null;
-    try {
-      return transformKeysToCamelCase<TargetAccountResponse>(JSON.parse(stored));
-    } catch {
-      return null;
-    }
-  })();
-  const persona: TargetPersonaResponse | null = (() => {
-    const stored = localStorage.getItem("selected_target_persona");
-    if (!stored) return null;
-    try {
-      return transformKeysToCamelCase<TargetPersonaResponse>(JSON.parse(stored));
-    } catch {
-      return null;
-    }
-  })();
-
   useEffect(() => {
     // Load the email data from localStorage
     if (campaignId) {
@@ -136,6 +107,11 @@ export default function CampaignDetail() {
     { label: "Component Mode", value: EditingMode.Component, icon: <LayoutGrid className="w-4 h-4 mr-2" /> },
     { label: "Writing Mode", value: EditingMode.Writing, icon: <Pencil className="w-4 h-4 mr-2" /> },
   ];
+
+  // Use snapshots from the email object for display context
+  const company = email.companySnapshot ? { companyName: email.companySnapshot.companyName, companyUrl: email.companySnapshot.companyUrl } : null;
+  const account = email.accountSnapshot ? { id: email.accountSnapshot.id, targetAccountName: email.accountSnapshot.targetAccountName, targetAccountDescription: email.accountSnapshot.targetAccountDescription } : null;
+  const persona = email.personaSnapshot ? { id: email.personaSnapshot.id, targetPersonaName: email.personaSnapshot.targetPersonaName, targetPersonaDescription: email.personaSnapshot.targetPersonaDescription } : null;
 
   return (
     <div className="flex flex-col min-h-screen">

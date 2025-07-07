@@ -74,18 +74,20 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
       {/* Email Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredEmails.map((email) => {
-          // Extract parent info from email.config if available, else use placeholders
+          // Prefer snapshot fields for parent info, fallback to config, then placeholders
           let parents = [];
-          if (email.config?.companyName) parents.push({ name: email.config.companyName, color: "bg-green-400", label: "Company" });
-          if (email.config?.accountName) parents.push({ name: email.config.accountName, color: "bg-red-400", label: "Account" });
-          if (email.config?.personaName) parents.push({ name: email.config.personaName, color: "bg-blue-400", label: "Persona" });
-          if (parents.length === 0) {
-            parents = [
-              { name: "Demo Company", color: "bg-green-400", label: "Company" },
-              { name: "Demo Account", color: "bg-red-400", label: "Account" },
-              { name: "Demo Persona", color: "bg-blue-400", label: "Persona" },
-            ];
-          }
+          if (email.companySnapshot?.companyName) parents.push({ name: email.companySnapshot.companyName, color: "bg-green-400", label: "Company" });
+          else if (email.config?.companyName) parents.push({ name: email.config.companyName, color: "bg-green-400", label: "Company" });
+          else parents.push({ name: "Demo Company", color: "bg-green-400", label: "Company" });
+
+          if (email.accountSnapshot?.targetAccountName) parents.push({ name: email.accountSnapshot.targetAccountName, color: "bg-red-400", label: "Account" });
+          else if (email.config?.accountName) parents.push({ name: email.config.accountName, color: "bg-red-400", label: "Account" });
+          else parents.push({ name: "Demo Account", color: "bg-red-400", label: "Account" });
+
+          if (email.personaSnapshot?.targetPersonaName) parents.push({ name: email.personaSnapshot.targetPersonaName, color: "bg-blue-400", label: "Persona" });
+          else if (email.config?.personaName) parents.push({ name: email.config.personaName, color: "bg-blue-400", label: "Persona" });
+          else parents.push({ name: "Demo Persona", color: "bg-blue-400", label: "Persona" });
+
           return (
             <SummaryCard
               key={email.id}

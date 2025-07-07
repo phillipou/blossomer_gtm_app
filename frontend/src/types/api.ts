@@ -251,6 +251,20 @@ export interface GeneratedEmail {
   segments: EmailSegment[];
   breakdown: EmailBreakdown;
   config?: EmailConfig;
+  companySnapshot?: {
+    companyName: string;
+    companyUrl: string;
+  };
+  accountSnapshot?: {
+    id: string;
+    targetAccountName: string;
+    targetAccountDescription: string;
+  };
+  personaSnapshot?: {
+    id: string;
+    targetPersonaName: string;
+    targetPersonaDescription: string;
+  };
 }
 
 // Email generation API types

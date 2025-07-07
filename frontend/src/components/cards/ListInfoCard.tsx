@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Edit3 } from "lucide-react";
 import type { ReactNode } from "react";
 import ListInfoCardEditModal, { type ListInfoCardItem } from "./ListInfoCardEditModal";
+import React, { isValidElement } from "react";
 
 interface ListInfoCardProps {
   title: string;
@@ -40,6 +41,30 @@ export default function ListInfoCard({ title, items, onEdit, renderItem, editMod
     if (onEdit) onEdit(updated);
   };
 
+  // Helper to render a list item with custom bullet and alignment
+  const renderFlexBulletItem = (content: ReactNode, idx: number) => (
+    <li key={idx} className="flex items-start text-sm text-gray-700 m-0 p-0" style={{ margin: 0, padding: 0 }}>
+      <span className="mt-1 mr-2 text-blue-600" style={{ minWidth: '1em', textAlign: 'center', lineHeight: 1.2 }}>&#8226;</span>
+      <span className="flex-1 whitespace-pre-line break-words">{content}</span>
+    </li>
+  );
+
+  // Wrap renderItem to warn if it returns an <li>
+  const safeRenderItem = (item: string, idx: number) => {
+    const content = renderItem ? renderItem(item, idx) : item;
+    if (
+      process.env.NODE_ENV === "development" &&
+      isValidElement(content) &&
+      content.type === "li"
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[ListInfoCard] renderItem should not return an <li>. Return only the content."
+      );
+    }
+    return content;
+  };
+
   return (
     <>
       {/* Scoped style for blue bullets in ListInfoCard only */}
@@ -71,12 +96,8 @@ export default function ListInfoCard({ title, items, onEdit, renderItem, editMod
           )}
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 list-infocard-list">
-            {localItems.map((item, idx) => (
-              renderItem ? renderItem(item, idx) : (
-                <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
-              )
-            ))}
+          <ul className="space-y-2 list-infocard-list m-0 p-0" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {localItems.map((item, idx) => renderFlexBulletItem(safeRenderItem(item, idx), idx))}
           </ul>
         </CardContent>
       </Card>

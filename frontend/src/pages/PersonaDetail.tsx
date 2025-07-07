@@ -182,7 +182,7 @@ export default function PersonaDetail() {
           items={Array.isArray(persona.targetPersonaRationale) ? persona.targetPersonaRationale : []}
           onEdit={handleListEdit("targetPersonaRationale")}
           renderItem={(item: string, idx: number) => (
-            <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Why this persona is ideal for your solution."
         />
@@ -221,7 +221,7 @@ export default function PersonaDetail() {
           items={Array.isArray(persona.buyingSignalsRationale) ? persona.buyingSignalsRationale : []}
           onEdit={handleListEdit("buyingSignalsRationale")}
           renderItem={(item: string, idx: number) => (
-            <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Logic behind buying signal choices."
         />
@@ -233,7 +233,7 @@ export default function PersonaDetail() {
             items={Array.isArray(persona.goals) ? persona.goals : []}
             onEdit={handleListEdit("goals")}
             renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+              <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
             )}
             editModalSubtitle="Objectives this product can help this persona achieve."
           />
@@ -242,7 +242,7 @@ export default function PersonaDetail() {
             items={Array.isArray(persona.purchaseJourney) ? persona.purchaseJourney : []}
             onEdit={handleListEdit("purchaseJourney")}
             renderItem={(item: string, idx: number) => (
-              <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+              <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
             )}
             editModalSubtitle="Path from awareness to purchase."
           />
@@ -254,7 +254,7 @@ export default function PersonaDetail() {
           items={Array.isArray(persona.objections) ? persona.objections : []}
           onEdit={handleListEdit("objections")}
           renderItem={(item: string, idx: number) => (
-            <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet">{item}</li>
+            <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Common concerns about adopting this solution."
         />
