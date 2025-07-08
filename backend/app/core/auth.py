@@ -52,9 +52,13 @@ class AuthService:
         Returns:
             User object
         """
-        existing_user = db.query(User).filter(
-            (User.email == email) | (User.neon_auth_user_id == neon_auth_user_id)
-        ).first()
+        existing_user = (
+            db.query(User)
+            .filter(
+                (User.email == email) | (User.neon_auth_user_id == neon_auth_user_id)
+            )
+            .first()
+        )
         if existing_user:
             # Update existing user with Neon Auth ID if missing
             if not existing_user.neon_auth_user_id:
@@ -63,17 +67,19 @@ class AuthService:
                 existing_user.name = name
                 db.commit()
             return existing_user
-            
+
         user = User(
             neon_auth_user_id=neon_auth_user_id,
-            email=email, 
-            name=name, 
-            role=role, 
-            rate_limit_exempt=rate_limit_exempt
+            email=email,
+            name=name,
+            role=role,
+            rate_limit_exempt=rate_limit_exempt,
         )
         db.add(user)
         db.commit()
-        logger.info(f"Created user {email} linked to Neon Auth user {neon_auth_user_id}")
+        logger.info(
+            f"Created user {email} linked to Neon Auth user {neon_auth_user_id}"
+        )
         return user
 
     @staticmethod
@@ -115,10 +121,7 @@ class AuthService:
 
     @staticmethod
     def create_api_key_for_user(
-        db: Session,
-        user: User,
-        key_name: str = "API Key",
-        tier: str = "free"
+        db: Session, user: User, key_name: str = "API Key", tier: str = "free"
     ) -> str:
         """
         Create a new API key for an existing user.

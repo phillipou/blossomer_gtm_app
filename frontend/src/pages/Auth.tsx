@@ -46,9 +46,19 @@ export function Auth() {
         className="w-full max-w-md p-8 border border-gray-200 rounded-lg shadow-md bg-white flex flex-col items-center"
       >
         {mode === "signup" ? (
-          <SignUp />
+          <SignUp 
+            oauthScope={{
+              google: ['email', 'profile']
+            }}
+            allowAccountLinking={true}
+          />
         ) : (
-          <SignIn />
+          <SignIn 
+            oauthScope={{
+              google: ['email', 'profile']
+            }}
+            allowAccountLinking={true}
+          />
         )}
       </div>
     </div>

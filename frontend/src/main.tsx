@@ -15,6 +15,7 @@ import MainLayout from './components/layout/MainLayout'
 import NavbarOnlyLayout from "./components/layout/NavbarOnlyLayout";
 import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
 import { Auth } from './pages/Auth'
+import { AuthError } from './pages/AuthError'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<LandingPage />} />
           <Route element={<NavbarOnlyLayout />}>
             <Route path="auth" element={<Auth />} />
+            <Route path="handler/error" element={<AuthError />} />
           </Route>
           <Route element={<MainLayout />}>
             <Route path="company" element={<Company />} />

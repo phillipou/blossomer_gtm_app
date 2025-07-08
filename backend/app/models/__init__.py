@@ -11,7 +11,7 @@ Base = declarative_base()
 class User(Base):
     """
     User model for authentication and API key management.
-    
+
     This model connects to Neon Auth users for authentication
     while managing API keys for programmatic access.
 
@@ -30,7 +30,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    neon_auth_user_id = Column(String(255), unique=True, nullable=True)  # Neon Auth user ID
+    neon_auth_user_id = Column(
+        String(255), unique=True, nullable=True
+    )  # Neon Auth user ID
     email = Column(String(255), unique=True, nullable=False)
     name = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)

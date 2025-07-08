@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "@stackframe/react";
 import React from "react";
 
@@ -9,12 +9,28 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useUser();
+
+  const isLandingPage = location.pathname === '/';
 
   const handleSignOut = async () => {
     if (user) {
+      // Clear localStorage data
+      localStorage.removeItem('dashboard_overview');
+      localStorage.removeItem('target_accounts');
+      localStorage.removeItem('emailHistory');
+      
       await user.signOut();
-      navigate('/auth?mode=signin');
+      navigate('/');
+    }
+  };
+
+  const handleLogoClick = () => {
+    if (user) {
+      navigate('/company');
+    } else {
+      navigate('/');
     }
   };
   return (
@@ -25,8 +41,8 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
             <button
               type="button"
               className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0 cursor-pointer"
-              aria-label="Go to home"
-              onClick={() => navigate("/")}
+              aria-label={user ? "Go to dashboard" : "Go to home"}
+              onClick={handleLogoClick}
             >
               <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
                 <img src="/blossomer-logo.png" alt="Blossomer Logo" className="w-10 h-10" />
@@ -35,22 +51,30 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
             </button>
           </div>
           <div className="flex items-center space-x-4">
-            <Button className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg" onClick={() => navigate('/company')}>Dashboard</Button>
             {user ? (
-              <Button 
-                variant="ghost" 
-                className="text-gray-600 hover:text-gray-800 focus:outline-none bg-transparent border-none shadow-none"
-                onClick={handleSignOut}
-              >
-                Sign out
-              </Button>
+              // Signed in user: Show Dashboard and Sign Out
+              <>
+                <Button 
+                  className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg" 
+                  onClick={() => navigate('/company')}
+                >
+                  Dashboard
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-600 hover:text-gray-800 focus:outline-none bg-transparent border-none shadow-none"
+                  onClick={handleSignOut}
+                >
+                  Sign out
+                </Button>
+              </>
             ) : (
+              // Not signed in: Show auth button only
               <Button 
-                variant="ghost" 
-                className="text-gray-600 hover:text-gray-800 focus:outline-none bg-transparent border-none shadow-none"
-                onClick={() => navigate('/auth?mode=signin')}
+                className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
+                onClick={() => navigate(isLandingPage ? '/auth?mode=signup' : '/auth?mode=signin')}
               >
-                Sign in
+                {isLandingPage ? 'Sign up' : 'Sign in'}
               </Button>
             )}
           </div>

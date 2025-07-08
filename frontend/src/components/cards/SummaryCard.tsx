@@ -29,7 +29,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
 
   return (
     <Card
-      className={`group relative transition-colors duration-200 cursor-pointer border-0 border-l-4 ${borderColor} ${className}`}
+      className={`group relative transition-all duration-200 cursor-pointer border-0 border-l-4 ${borderColor} hover:shadow-lg hover:scale-[1.02] ${className}`}
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-center justify-between">

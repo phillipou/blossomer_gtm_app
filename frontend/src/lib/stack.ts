@@ -11,6 +11,7 @@ export const stackClientApp = new StackClientApp({
     signUp: '/auth?mode=signup',
     afterSignIn: '/company',
     afterSignUp: '/company',
-    afterSignOut: '/auth?mode=signin',
+    afterSignOut: '/',
+    error: '/handler/error',
   }
 })

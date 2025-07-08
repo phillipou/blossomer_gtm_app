@@ -102,7 +102,7 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600"
                 onClick={e => {
                   e.stopPropagation()
                   onEditEmail(email)
@@ -115,7 +115,7 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
                 onClick={e => {
                   e.stopPropagation()
                   onDeleteEmail(email)

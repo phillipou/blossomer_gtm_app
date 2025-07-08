@@ -1,3 +1,4 @@
+// Force Tailwind to include entity colors: bg-green-400 bg-red-400 bg-blue-400 bg-purple-400 border-green-400 border-red-400 border-blue-400 border-purple-400
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
