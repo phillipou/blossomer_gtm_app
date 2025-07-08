@@ -50,13 +50,13 @@ async def demo_generate_target_account(
 )
 async def prod_generate_target_account(
     data: TargetAccountRequest,
-    user = Depends(validate_stack_auth_jwt),
+    user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """
     Generate a target account profile for authenticated users (Stack Auth JWT required).
     """
-    user_id = user['sub']
+    user_id = user["sub"]
     # TODO: Use user_id for rate limiting and business logic
     try:
         result = await generate_target_account_profile(data)
@@ -98,13 +98,13 @@ async def demo_generate_target_persona(
 )
 async def prod_generate_target_persona(
     data: TargetPersonaRequest,
-    user = Depends(validate_stack_auth_jwt),
+    user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """
     Generate a target persona profile for authenticated users (Stack Auth JWT required).
     """
-    user_id = user['sub']
+    user_id = user["sub"]
     # TODO: Use user_id for rate limiting and business logic
     try:
         result = await generate_target_persona_profile(data)

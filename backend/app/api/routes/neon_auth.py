@@ -66,7 +66,7 @@ async def validate_stack_auth_token(
     # 2. Check token expiration
     # 3. Extract user information from verified token
     # 4. Return user data
-    
+
     # For development: Accept any non-empty token as valid
     if token and len(token) > 10:  # Basic check to ensure it's not obviously fake
         # Extract user info from token (in real implementation, this would come from JWT claims)
@@ -78,8 +78,7 @@ async def validate_stack_auth_token(
         }
 
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED, 
-        detail="Invalid Stack Auth token"
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Stack Auth token"
     )
 
 
@@ -148,9 +147,7 @@ async def get_user_profile(
 
     # Get all API keys for this user
     api_keys = (
-        db.query(APIKey)
-        .filter(APIKey.user_id == user.id, APIKey.is_active)
-        .all()
+        db.query(APIKey).filter(APIKey.user_id == user.id, APIKey.is_active).all()
     )
 
     api_keys_data = []
@@ -215,9 +212,7 @@ async def delete_api_key(
 
     # Check if this is the user's last API key
     active_keys = (
-        db.query(APIKey)
-        .filter(APIKey.user_id == user.id, APIKey.is_active)
-        .count()
+        db.query(APIKey).filter(APIKey.user_id == user.id, APIKey.is_active).count()
     )
 
     if active_keys <= 1:
