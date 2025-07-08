@@ -92,7 +92,7 @@ const cardConfigs: {
   },
 ];
 
-export default function Dashboard() {
+export default function Company() {
   const location = useLocation();
   const navigate = useNavigate();
   // Helper to get cached overview
@@ -153,7 +153,7 @@ export default function Dashboard() {
     }));
     setProgressStage(0);
     try {
-      const response = await apiFetch("/demo/company/generate", {
+      const response = await apiFetch("/company", {
         method: "POST",
         body: JSON.stringify({
           website_url: url,
@@ -304,7 +304,7 @@ export default function Dashboard() {
     );
   }
 
-  // Success state - render dashboard with real data
+  // Success state - render company page with real data
   const overview = analysisState.data;
   const companyName = overview?.companyName || "Company";
   const domain = overview?.companyUrl || "";

@@ -28,7 +28,7 @@ export default function MainLayout() {
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" className="text-gray-600">Sign in</Button>
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Dashboard</Button>
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Company</Button>
             </div>
           </div>
         </div>

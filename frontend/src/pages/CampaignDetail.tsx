@@ -117,7 +117,7 @@ export default function CampaignDetail() {
     <div className="flex flex-col min-h-screen">
       <SubNav
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "Company", href: "/company" },
           { label: "Campaigns", href: "/campaigns" },
           { label: email.subject || campaignId || "Campaign" }
         ]}

@@ -37,7 +37,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
 
   // Determine active tab
   let activeTab = "";
-  if (/^\/dashboard/.test(location.pathname)) {
+  if (/^\/company/.test(location.pathname)) {
     activeTab = "company";
   } else if (/^\/target-accounts\/[^/]+\/personas\//.test(location.pathname)) {
     activeTab = "personas";
@@ -54,7 +54,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       key: "company",
       label: "Company",
       icon: <Building2 className="w-5 h-5" />,
-      onClick: () => navigate("/dashboard"),
+      onClick: () => navigate("/company"),
     },
     {
       key: "accounts",
@@ -80,7 +80,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
     <div
       className={`bg-gray-50 border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0 transition-all duration-200 ${collapsed ? "w-16" : "w-56"}`}
     >
-      {/* Header with custom SplitPanel icon and Dashboard label */}
+      {/* Header with custom SplitPanel icon and Company label */}
       <div className="px-2 py-4">
         <button
           className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors focus:outline-none bg-transparent border-0 ring-0 focus:border-0 focus:ring-0 hover:border-0 active:border-0 hover:bg-gray-200`}
@@ -88,7 +88,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <SplitPanelIcon className="w-6 h-6 text-gray-700" />
-          {!collapsed && <span className="text-base font-semibold text-gray-900">Dashboard</span>}
+          {!collapsed && <span className="text-base font-semibold text-gray-900">Company</span>}
         </button>
       </div>
       {/* Navigation */}

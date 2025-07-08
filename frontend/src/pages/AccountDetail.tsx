@@ -127,7 +127,7 @@ export default function AccountDetail() {
       {/* Sub Navigation */}
       <SubNav
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "Company", href: "/company" },
           { label: "Target Accounts", href: "/target-accounts" },
           { label: accountDetail?.targetAccountName || "Target Account" }
         ]}

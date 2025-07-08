@@ -22,7 +22,7 @@ export default function LandingPage() {
     if (!url.trim()) return;
     setError(null);
     setIsNavigating(true);
-    navigate("/dashboard", { state: { url, icp } });
+    navigate("/company", { state: { url, icp } });
   };
 
   return (
@@ -46,7 +46,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" className="text-gray-600">Sign in</Button>
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Dashboard</Button>
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Company</Button>
             </div>
           </div>
         </div>
@@ -124,14 +124,6 @@ export default function LandingPage() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setIcp(e.target.value)}
                       className="min-h-[100px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
-                    <button
-                      type="button"
-                      className="absolute bottom-2 right-3 text-blue-600 hover:text-blue-700 bg-transparent border-none p-0 flex items-center gap-1 text-sm font-medium"
-                      onClick={() => {/* Enhance logic here */}}
-                      tabIndex={-1}
-                    >
-                      <span role="img" aria-label="sparkles">✨</span> Enhance
-                    </button>
                   </div>
                 </div>
               </div>

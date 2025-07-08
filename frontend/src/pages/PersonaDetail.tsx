@@ -124,7 +124,7 @@ export default function PersonaDetail() {
     <div className="flex flex-col min-h-screen">
       <SubNav
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "Company", href: "/company" },
           { label: "Target Accounts", href: "/target-accounts" },
           { label: accountName, href: `/target-accounts/${accountId}` },
           { label: persona.targetPersonaName },

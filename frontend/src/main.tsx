@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import './App.css'
 import LandingPage from './pages/LandingPage'
-import Dashboard from './pages/Dashboard'
+import Company from './pages/Company'
 import Accounts from './pages/Accounts'
 import AccountDetail from './pages/AccountDetail'
 import PersonaDetail from './pages/PersonaDetail'
@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route element={<MainLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="company" element={<Company />} />
           <Route path="target-accounts" element={<Accounts />} />
           <Route path="target-accounts/:id" element={<AccountDetail />} />
           <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />

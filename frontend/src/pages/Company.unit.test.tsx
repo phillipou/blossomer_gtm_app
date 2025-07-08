@@ -14,7 +14,7 @@ Object.defineProperty(global, 'localStorage', {
   writable: true,
 })
 
-describe('Dashboard Unit Tests', () => {
+describe('Company Unit Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorageMock.clear()
