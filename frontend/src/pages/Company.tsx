@@ -7,9 +7,13 @@ import OverviewCard from "../components/cards/OverviewCard";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
 import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
-import type { ApiError, AnalysisState, CompanyOverviewResponse } from "../types/api";
+import type { ApiError, AnalysisState, CompanyOverviewResponse, TargetAccountResponse } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
 import PageHeader from "../components/navigation/PageHeader";
+import { getStoredTargetAccounts } from "../lib/accountService";
+import SummaryCard from "../components/cards/SummaryCard";
+import AddCard from "../components/ui/AddCard";
+import { Edit3, Trash2 } from "lucide-react";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -134,6 +138,7 @@ export default function Company() {
   });
   const [progressStage, setProgressStage] = useState(0);
   const [activeTab] = useState("company");
+  const [targetAccounts, setTargetAccounts] = useState<TargetAccountResponse[]>([]);
   const initialMount = useRef(true);
 
   // Generate unique analysis ID
@@ -264,6 +269,12 @@ export default function Company() {
     return () => clearInterval(timer);
   }, [analysisState.loading]);
 
+  // Load target accounts from localStorage
+  useEffect(() => {
+    const accounts = getStoredTargetAccounts();
+    setTargetAccounts(accounts);
+  }, []);
+
   // Retry function
   const handleRetry = useCallback(() => {
     const url = location.state?.url;
@@ -275,6 +286,27 @@ export default function Company() {
       }));
     }
   }, [location.state?.url]);
+
+  // Target account handlers
+  const handleAccountClick = (accountId: string) => {
+    navigate(`/target-accounts/${accountId}`);
+  };
+
+  const handleEditAccount = (account: TargetAccountResponse) => {
+    // For now, just navigate to the account detail page
+    navigate(`/target-accounts/${account.id}`);
+  };
+
+  const handleDeleteAccount = (accountId: string) => {
+    setTargetAccounts(prev => prev.filter(account => account.id !== accountId));
+    // Update localStorage
+    const updatedAccounts = getStoredTargetAccounts().filter(account => account.id !== accountId);
+    localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
+  };
+
+  const handleAddAccount = () => {
+    navigate('/target-accounts');
+  };
 
   // Loading state
   if (analysisState.loading) {
@@ -430,6 +462,33 @@ export default function Company() {
                   />
                 );
               })}
+            </div>
+            
+            {/* Target Accounts Section */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Target Accounts</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {targetAccounts.map((account) => (
+                  <SummaryCard
+                    key={account.id}
+                    title={account.targetAccountName}
+                    description={account.targetAccountDescription}
+                    parents={[
+                      { name: companyName, color: "bg-green-400", label: "Company" },
+                    ]}
+                    onClick={() => handleAccountClick(account.id)}
+                  >
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditAccount(account); }} className="text-blue-600">
+                      <Edit3 className="w-5 h-5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteAccount(account.id); }} className="text-red-500">
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </SummaryCard>
+                ))}
+                {/* Add New Account Card */}
+                <AddCard onClick={handleAddAccount} label="Add New" />
+              </div>
             </div>
           </div>
         )}

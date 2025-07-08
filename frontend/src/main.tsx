@@ -12,26 +12,29 @@ import Personas from './pages/Personas'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
 import MainLayout from './components/layout/MainLayout'
+import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StagewiseToolbar />
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route element={<MainLayout />}>
-          <Route path="company" element={<Company />} />
-          <Route path="target-accounts" element={<Accounts />} />
-          <Route path="target-accounts/:id" element={<AccountDetail />} />
-          <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
-          <Route path="target-personas" element={<Personas />} />
-          <Route path="campaigns" element={<Campaigns />} />
-          <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-          {/* Add other routes here */}
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <NeonAuthWrapper>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route element={<MainLayout />}>
+            <Route path="company" element={<Company />} />
+            <Route path="target-accounts" element={<Accounts />} />
+            <Route path="target-accounts/:id" element={<AccountDetail />} />
+            <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+            <Route path="target-personas" element={<Personas />} />
+            <Route path="campaigns" element={<Campaigns />} />
+            <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
+            {/* Add other routes here */}
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </NeonAuthWrapper>
   </StrictMode>,
 )

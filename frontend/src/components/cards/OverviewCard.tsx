@@ -4,6 +4,8 @@ import { Building2, Edit3 } from "lucide-react";
 import { useState } from "react";
 import InputModal from "../modals/InputModal";
 
+import type { EntityType } from "../../lib/entityColors";
+
 interface OverviewCardProps {
   title: string;
   subtitle?: string;
@@ -14,7 +16,10 @@ interface OverviewCardProps {
   onButtonClick?: () => void;
   onEdit?: (values: { name: string; description: string }) => void;
   children?: React.ReactNode;
+  entityType?: EntityType;
 }
+
+import { getEntityDotColor } from "../../lib/entityColors";
 
 export default function OverviewCard({
   title,
@@ -26,6 +31,7 @@ export default function OverviewCard({
   onButtonClick,
   onEdit,
   children,
+  entityType,
 }: OverviewCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -39,10 +45,14 @@ export default function OverviewCard({
     setEditModalOpen(false);
   };
 
+  // Determine border color class
+  const entityColor = entityType ? getEntityDotColor(entityType) : 'bg-blue-400';
+  const borderColor = entityColor.replace('bg-', 'border-');
+
   return (
     <>
-      <Card 
-        className="mb-6 group relative"
+      <Card
+        className={`mb-6 group relative border-0 border-l-4 ${borderColor}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -53,7 +63,8 @@ export default function OverviewCard({
                 <Building2 className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                <h2 className="text-xl font-semibold text-black mb-2">{title}</h2>
+                <div className={`h-1 w-16 ${entityColor} rounded-full mb-1`}></div>
                 {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
               </div>
             </div>

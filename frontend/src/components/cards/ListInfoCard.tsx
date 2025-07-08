@@ -4,7 +4,10 @@ import { Button } from "../ui/button";
 import { Edit3 } from "lucide-react";
 import type { ReactNode } from "react";
 import ListInfoCardEditModal, { type ListInfoCardItem } from "./ListInfoCardEditModal";
-import React, { isValidElement } from "react";
+import { isValidElement } from "react";
+
+import type { EntityType } from "../../lib/entityColors";
+import { getEntityDotColor } from "../../lib/entityColors";
 
 interface ListInfoCardProps {
   title: string;
@@ -12,9 +15,10 @@ interface ListInfoCardProps {
   onEdit?: (newItems: string[]) => void;
   renderItem?: (item: string, index: number) => ReactNode;
   editModalSubtitle?: string;
+  entityType?: EntityType;
 }
 
-export default function ListInfoCard({ title, items, onEdit, renderItem, editModalSubtitle }: ListInfoCardProps) {
+export default function ListInfoCard({ title, items, onEdit, renderItem, editModalSubtitle, entityType }: ListInfoCardProps) {
   const [hovered, setHovered] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [localItems, setLocalItems] = useState<string[]>(items);
