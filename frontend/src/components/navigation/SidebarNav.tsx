@@ -81,7 +81,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       className={`bg-gray-50 border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0 transition-all duration-200 ${collapsed ? "w-16" : "w-56"}`}
     >
       {/* Header with custom SplitPanel icon and Dashboard label */}
-      <div className="p-2 border-b border-gray-200">
+      <div className="px-2 py-4">
         <button
           className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors focus:outline-none bg-transparent border-0 ring-0 focus:border-0 focus:ring-0 hover:border-0 active:border-0 hover:bg-gray-200`}
           onClick={() => setCollapsed((c) => !c)}
