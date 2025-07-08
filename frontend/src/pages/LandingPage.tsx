@@ -9,6 +9,7 @@ import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import './LandingPage.css';
+import Navbar from "../components/layout/Navbar";
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
@@ -28,29 +29,7 @@ export default function LandingPage() {
   return (
     <div className="landing-root">
       {/* Navigation */}
-      <nav className="border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <button
-                type="button"
-                className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0 cursor-pointer"
-                aria-label="Go to home"
-                onClick={() => navigate("/")}
-              >
-                <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
-                  <img src="/blossomer-logo.png" alt="Blossomer Logo" className="w-10 h-10" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">Blossomer</span>
-              </button>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" className="text-gray-600">Sign in</Button>
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Company</Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar maxWidthClass="max-w-7xl mx-auto" />
       {/* Promotional Banner */}
       <div className="bg-blue-50 border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
