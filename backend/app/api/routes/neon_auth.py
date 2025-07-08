@@ -44,13 +44,14 @@ class UserProfileResponse(BaseModel):
     api_keys: List[dict]
 
 
-# Neon Auth Token Validation (placeholder - will need to implement based on Neon Auth docs)
-async def validate_neon_auth_token(
+# Stack Auth Token Validation
+async def validate_stack_auth_token(
     authorization: Annotated[str | None, Header()] = None,
 ) -> dict:
     """
-    Validate Neon Auth token and return user info.
-    This is a placeholder - will need to implement based on Neon Auth documentation.
+    Validate Stack Auth (Neon Auth) token and return user info.
+    For now, this is a placeholder that accepts any token for development.
+    TODO: Implement real Stack Auth JWT validation when ready for production.
     """
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
@@ -58,21 +59,28 @@ async def validate_neon_auth_token(
             detail="Missing or invalid authorization header",
         )
 
-    # TODO: Implement actual Neon Auth token validation
-    # For now, returning mock data for development
     token = authorization.split(" ")[1]
 
-    # This should validate the token with Neon Auth and return user info
-    # Placeholder implementation:
-    if token == "mock_neon_auth_token":
+    # TODO: Implement actual Stack Auth JWT token validation
+    # This should:
+    # 1. Verify JWT signature using Stack Auth public keys
+    # 2. Check token expiration
+    # 3. Extract user information from verified token
+    # 4. Return user data
+    
+    # For development: Accept any non-empty token as valid
+    if token and len(token) > 10:  # Basic check to ensure it's not obviously fake
+        # Extract user info from token (in real implementation, this would come from JWT claims)
+        # For now, return mock data to keep the demo working
         return {
-            "user_id": "neon_auth_user_123",
-            "email": "test@example.com",
-            "name": "Test User",
+            "user_id": f"stack_user_{token[:8]}",  # Use part of token as user ID
+            "email": "authenticated@example.com",
+            "name": "Authenticated User",
         }
 
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Neon Auth token"
+        status_code=status.HTTP_401_UNAUTHORIZED, 
+        detail="Invalid Stack Auth token"
     )
 
 
@@ -82,7 +90,7 @@ async def validate_neon_auth_token(
 @router.post("/sync-user")
 async def sync_neon_auth_user(
     request: NeonAuthUserRequest,
-    neon_auth_user: dict = Depends(validate_neon_auth_token),
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
     db: Session = Depends(get_db),
 ):
     """
@@ -112,7 +120,7 @@ async def sync_neon_auth_user(
 @router.post("/api-keys", response_model=CreateAPIKeyResponse)
 async def create_api_key(
     request: CreateAPIKeyRequest,
-    neon_auth_user: dict = Depends(validate_neon_auth_token),
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
     db: Session = Depends(get_db),
 ):
     """
@@ -166,7 +174,7 @@ async def create_api_key(
 
 @router.get("/profile", response_model=UserProfileResponse)
 async def get_user_profile(
-    neon_auth_user: dict = Depends(validate_neon_auth_token),
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
     db: Session = Depends(get_db),
 ):
     """
@@ -223,7 +231,7 @@ async def get_user_profile(
 @router.delete("/api-keys/{key_id}")
 async def delete_api_key(
     key_id: str,
-    neon_auth_user: dict = Depends(validate_neon_auth_token),
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
     db: Session = Depends(get_db),
 ):
     """

@@ -11,14 +11,16 @@ export interface ApiResponse<T> {
 
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  token?: string | null
 ): Promise<T> {
   // Get the appropriate base path (demo vs authenticated)
   const basePath = getApiBasePath();
   const url = `${API_BASE_URL}${basePath}${endpoint}`;
   
-  // Get auth state for headers
+  // Get auth state for headers (use passed token if available)
   const authState = getAuthState();
+  const authToken = token || authState.token;
   
   // Transform request body to snake_case if it exists
   let transformedOptions = { ...options };
@@ -38,9 +40,9 @@ export async function apiFetch<T>(
     ...(options.headers || {}),
   };
 
-  // Add authorization header if authenticated
-  if (authState.isAuthenticated && authState.apiKey) {
-    headers['Authorization'] = `Bearer ${authState.apiKey}`;
+  // Add authorization header if authenticated with Stack Auth token
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
   }
 
   const response = await fetch(url, {
@@ -76,10 +78,12 @@ export async function apiFetch<T>(
 // Convenience function that returns both data and rate limit info
 export async function apiFetchWithRateLimit<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  token?: string | null
 ): Promise<ApiResponse<T>> {
   // This is a modified version that doesn't transform the URL automatically
   const authState = getAuthState();
+  const authToken = token || authState.token;
   const basePath = getApiBasePath();
   const url = `${API_BASE_URL}${basePath}${endpoint}`;
   
@@ -99,8 +103,8 @@ export async function apiFetchWithRateLimit<T>(
     ...(options.headers || {}),
   };
 
-  if (authState.isAuthenticated && authState.apiKey) {
-    headers['Authorization'] = `Bearer ${authState.apiKey}`;
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
   }
 
   const response = await fetch(url, {

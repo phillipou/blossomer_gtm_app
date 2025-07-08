@@ -15,7 +15,7 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 - **Migrations**: Alembic for schema versioning
 - **AI/LLM**: Multi-provider (OpenAI, Anthropic, Google Generative AI)
 - **Content Processing**: Custom pipeline with LangChain integration
-- **Authentication**: API key system with SHA-256 hashing
+- **Authentication**: Hybrid Stack Auth (OAuth) + API key system
 - **Deployment**: Docker containers on Render
 
 ### **Frontend**
@@ -23,6 +23,7 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 - **Build Tool**: Vite with hot reload
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **State Management**: React hooks + localStorage
+- **Authentication**: Stack Auth (Google OAuth integration)
 - **Icons**: Lucide React
 - **Routing**: React Router
 
@@ -76,7 +77,8 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 ## Backend Architecture
 
 ### **API Layer**
-- **Dual Endpoint Structure**: `/demo/*` (IP rate limited) and `/api/*` (API key required)
+- **Dual Endpoint Structure**: `/demo/*` (unauthenticated, IP rate limited) and `/api/*` (Stack Auth token required)
+- **Hybrid Authentication**: Stack Auth JWT tokens for user identity + database-linked permissions/rate limits
 - **FastAPI Router**: Automatic OpenAPI documentation generation
 - **Middleware Stack**: Authentication, rate limiting, CORS, request logging
 - **Error Handling**: Standardized error responses with actionable guidance
@@ -107,14 +109,41 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 
 #### **Database Schema**
 ```sql
--- User management
-users (id UUID, email, name, created_at, last_login, rate_limit_exempt, role)
+-- User management with Stack Auth integration
+users (
+    id VARCHAR PRIMARY KEY,  -- Stack Auth user ID (no separate UUID needed)
+    email VARCHAR NOT NULL,
+    name VARCHAR,
+    tier VARCHAR DEFAULT 'free',
+    rate_limit_exempt BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_login TIMESTAMP
+)
 
--- API authentication  
-api_keys (id UUID, user_id, key_hash, key_prefix, tier, created_at, last_used)
+-- API key management (optional, for power users who need programmatic access)
+api_keys (
+    id UUID PRIMARY KEY,
+    user_id VARCHAR REFERENCES users(id),  -- References Stack Auth user ID
+    key_hash VARCHAR NOT NULL,
+    key_prefix VARCHAR NOT NULL,
+    tier VARCHAR DEFAULT 'free',
+    name VARCHAR DEFAULT 'API Key',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_used TIMESTAMP
+)
 
--- Usage analytics
-api_usage (id UUID, api_key_id, endpoint, status_code, response_time, created_at)
+-- Usage analytics and rate limiting
+api_usage (
+    id UUID PRIMARY KEY,
+    user_id VARCHAR REFERENCES users(id),  -- Track usage per Stack Auth user
+    endpoint VARCHAR NOT NULL,
+    status_code INTEGER,
+    response_time_ms INTEGER,
+    success BOOLEAN,
+    error_code VARCHAR,
+    created_at TIMESTAMP DEFAULT NOW()
+)
 ```
 
 #### **Data Storage Strategy**
@@ -176,13 +205,64 @@ LLM Processing → Structured Output → Validation → API Response
 - **Error Recovery**: Automatic retry with different prompts on failures
 - **Fallback Strategies**: Graceful degradation when data is insufficient
 
+## Authentication Architecture
+
+### **Hybrid Authentication System**
+
+The system uses a **two-layer authentication architecture** combining OAuth identity verification with business logic controls:
+
+#### **Layer 1: User Identity (Stack Auth)**
+- **OAuth Providers**: Google sign-in with potential for GitHub, Microsoft, etc.
+- **JWT Tokens**: Short-lived access tokens (1 hour) with automatic refresh
+- **User Management**: Built-in user profiles, password reset, account linking
+- **Frontend Integration**: Seamless React hooks for authentication state
+
+#### **Layer 2: Business Controls (Database)**
+- **User Records**: Local database links Stack Auth user IDs to business data
+- **Rate Limiting**: Per-user limits based on tier (free/paid/enterprise)
+- **Usage Tracking**: Detailed analytics and billing metrics
+- **Feature Gates**: Tier-based access to advanced features
+
+### **Authentication Flow**
+```
+1. User → Google OAuth → Stack Auth JWT token
+2. Frontend → API request with Bearer token
+3. Backend → Validates JWT → Extracts user ID
+4. Backend → Database lookup → User tier/limits
+5. Backend → Applies rate limits → Processes request
+```
+
+### **Endpoint Structure**
+- **`/demo/*` endpoints**: Unauthenticated access with IP-based rate limiting
+- **`/api/*` endpoints**: Requires Stack Auth token with user-specific rate limiting
+- **`/auth/*` endpoints**: Stack Auth token management (create API keys, etc.)
+
+### **Rate Limiting Strategy**
+```python
+# IP-based (demo endpoints)
+- Anonymous users: 5 requests/hour per IP
+- Basic protection against abuse
+
+# User-based (authenticated endpoints)  
+- Free tier: 10 requests/hour per user
+- Paid tier: 100 requests/hour per user
+- Enterprise: 1000+ requests/hour per user
+```
+
+### **Security Benefits**
+- ✅ **No password management**: OAuth providers handle credentials
+- ✅ **Short-lived tokens**: Automatic expiration reduces risk
+- ✅ **Fine-grained control**: Business logic separate from authentication
+- ✅ **Usage analytics**: Track individual user behavior
+- ✅ **Scalable**: Can add new OAuth providers easily
+
 ## Security Architecture
 
-### **Authentication**
-- **API Key System**: SHA-256 hashed keys with display prefixes
-- **Tiered Access**: Free, paid, enterprise tiers with different rate limits
-- **Rate Limiting**: Per-API-key and IP-based rate limiting
-- **Usage Tracking**: Comprehensive logging for analytics and security
+### **Data Security**
+- **No sensitive data storage**: Analysis results not persisted in database
+- **Environment separation**: Separate configs for dev/staging/production  
+- **Secrets management**: Environment variables for API keys and database URLs
+- **HTTPS enforcement**: All API communication over secure connections
 
 ### **Data Security**
 - **No sensitive data storage**: Analysis results not persisted in database

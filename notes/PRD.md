@@ -78,6 +78,36 @@ Blossomer GTM is a full-stack web application (frontend + backend + API) that au
 
 ---
 
+### **Authentication & User Experience**
+
+#### **What users see**
+- **Unauthenticated**: Try the tool immediately with demo endpoints (no signup barrier)
+- **Sign-in prompt**: Subtle "Sign in with Google" button in header after using demo
+- **Post-authentication**: UserButton dropdown with profile, usage limits, and sign out
+- **Usage awareness**: Clear indicators of current usage vs. limits based on tier
+
+#### **What happens when they interact**
+- **Demo usage**: Full access to all analysis features via `/demo/*` endpoints with IP-based rate limiting (5 requests/hour)
+- **Sign in with Google**: OAuth flow redirects to Stack Auth, then back to current page
+- **Authenticated usage**: Higher rate limits via `/api/*` endpoints (10+ requests/hour based on tier)
+- **Usage tracking**: All authenticated requests tracked for analytics and rate limiting
+
+#### **Product rationale**
+- **Minimal friction**: No auth required for first experience removes signup barriers
+- **Value demonstration**: Users experience full product value before committing to signup
+- **Natural upgrade path**: Rate limits encourage signup after users see value
+- **Professional experience**: OAuth with Google provides familiar, secure authentication
+- **Business control**: Usage tracking and tiered access enable freemium business model
+
+#### **Rate Limiting Strategy**
+```
+Demo (unauthenticated): 5 requests/hour per IP
+Free tier (authenticated): 10 requests/hour per user  
+Paid tier (future): 100+ requests/hour per user
+```
+
+---
+
 ### **Company Analysis Exploration**
 
 #### **What users see**

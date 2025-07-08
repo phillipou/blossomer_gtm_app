@@ -301,7 +301,7 @@ export default function TargetAccountsList() {
         namePlaceholder="e.g. SaaS Startups, B2B Fintech Companies, etc."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe the characteristics, size, industry, or other traits that define your ideal target accounts."
-        submitLabel={editingAccount ? "Update" : isGenerating ? "Generating..." : "Generate"}
+        submitLabel={editingAccount ? "Update" : <><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
         cancelLabel="Cancel"
         defaultName={editingAccount ? editingAccount.targetAccountName : ""}
         defaultDescription={editingAccount ? editingAccount.targetAccountDescription : ""}

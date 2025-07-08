@@ -27,13 +27,44 @@ This document captures key architectural decisions made during the development o
 
 ---
 
-### **Decision 2: Dual API Structure (Demo + Production)**
+### **Decision 2: Hybrid Authentication Architecture (Stack Auth + Database)**
+
+**What**: Two-layer authentication combining Stack Auth OAuth tokens with local database business controls.
+
+**Why**:
+- **User Experience**: Seamless OAuth sign-in (Google) without manual API key management
+- **Business Control**: Rate limiting, tiers, and feature gates managed in local database
+- **Security**: Short-lived JWT tokens with automatic refresh, no password storage
+- **Flexibility**: Can track individual user usage and apply business logic
+- **Scalability**: Easy to add new OAuth providers, detailed analytics
+
+**Architecture**:
+```
+Layer 1 (Identity): Stack Auth JWT tokens for user authentication
+Layer 2 (Business): Local database for rate limits, tiers, usage tracking
+```
+
+**Trade-offs**:
+- ✅ Better UX, no password management, detailed control, OAuth scalability
+- ❌ More complex than pure API keys, dependency on Stack Auth service
+- ❌ Two systems to maintain (Stack Auth + local database)
+
+**Evolution**: 
+- Initially considered pure API key system (simple but poor UX)
+- Considered pure JWT tokens (good UX but limited business control)
+- Settled on hybrid approach combining benefits of both
+
+**Implementation Decision**: Use Stack Auth user IDs directly as primary keys in local database instead of creating separate UUIDs. This eliminates unnecessary ID mapping complexity.
+
+---
+
+### **Decision 3: Dual API Structure (Demo + Authenticated)**
 
 **What**: Separate `/demo/*` and `/api/*` endpoints instead of single authenticated API.
 
 **Why**:
 - **Freemium model**: Enables try-before-buy user experience
-- **Rate limiting strategy**: Different limits for demo (IP-based) vs production (API key)
+- **Rate limiting strategy**: Different limits for demo (IP-based) vs authenticated users
 - **Marketing tool**: Demo endpoints for landing page and user acquisition
 - **Development speed**: No auth required for initial user experience
 
@@ -42,7 +73,7 @@ This document captures key architectural decisions made during the development o
 - ❌ Increased API surface area, more complex routing logic
 - ❌ Potential for demo abuse (mitigated by IP rate limiting)
 
-**Evolution**: Initially considered single API with API key tiers, but dual structure proved better for user acquisition.
+**Evolution**: Initially considered single API with authentication tiers, but dual structure proved better for user acquisition.
 
 ---
 

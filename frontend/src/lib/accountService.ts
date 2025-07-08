@@ -14,7 +14,8 @@ export async function generateTargetCompany(
   accountProfileName?: string,
   hypothesis?: string,
   additionalContext?: string,
-  companyContext?: Record<string, string | string[]> // Allow string or string[] for context values
+  companyContext?: Record<string, string | string[]>, // Allow string or string[] for context values
+  token?: string | null
 ): Promise<TargetAccountResponse> {
   const request: TargetCompanyRequest = {
     websiteUrl,
@@ -24,11 +25,11 @@ export async function generateTargetCompany(
     ...(companyContext ? { companyContext } : {}),
   };
 
-  // Use demo endpoint for now (no API key required)
+  // Pass token to API client for authentication
   return apiFetch<TargetAccountResponse>('/accounts', {
     method: 'POST',
     body: JSON.stringify(request),
-  });
+  }, token);
 }
 
 export async function generateTargetPersona(
@@ -37,7 +38,8 @@ export async function generateTargetPersona(
   hypothesis?: string,
   additionalContext?: string,
   companyContext?: Record<string, string | string[]>,
-  targetAccountContext?: Record<string, any>
+  targetAccountContext?: Record<string, any>,
+  token?: string | null
 ): Promise<TargetPersonaResponse> {
   const request: TargetPersonaRequest = {
     websiteUrl,
@@ -47,24 +49,25 @@ export async function generateTargetPersona(
     ...(companyContext ? { companyContext } : {}),
     ...(targetAccountContext ? { targetAccountContext } : {}),
   };
-  // Use demo endpoint for now (no API key required)
+  // Pass token to API client for authentication
   return apiFetch('/personas', {
     method: 'POST',
     body: JSON.stringify(request),
-  });
+  }, token);
 }
 
 // Email campaign generation API function
 export async function generateEmailCampaign(
-  request: EmailGenerationRequest
+  request: EmailGenerationRequest,
+  token?: string | null
 ): Promise<EmailGenerationResponse> {
   // Log the user prompt/request payload for debugging
   console.log('[generateEmailCampaign] Request payload:', request);
-  // Call the demo backend endpoint (no API key required)
+  // Pass token to API client for authentication
   return apiFetch<EmailGenerationResponse>('/campaigns/generate-email', {
     method: 'POST',
     body: JSON.stringify(request),
-  });
+  }, token);
 }
 
 // Local storage service functions for canonical target accounts

@@ -13,5 +13,6 @@ export const stackClientApp = new StackClientApp({
     afterSignUp: '/company',
     afterSignOut: '/',
     error: '/handler/error',
+    accountSettings: '/account-settings',
   }
 })

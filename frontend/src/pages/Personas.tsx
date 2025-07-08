@@ -297,7 +297,7 @@ export default function TargetPersonas() {
               userInputtedContext.personaDescription,
               undefined, // additionalContext
               companyContext,
-              targetAccountContext // targetAccountContext as TargetAccountResponse
+              targetAccountContext // targetAccountContext as TargetPersonaResponse
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 
@@ -327,7 +327,7 @@ export default function TargetPersonas() {
         namePlaceholder="e.g., Marketing Director, Sales Manager..."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
-        submitLabel={addPersonaLoading ? "Generating..." : "Generate"}
+        submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Persona</>}
         cancelLabel="Cancel"
         isLoading={addPersonaLoading}
         accounts={targetAccounts}

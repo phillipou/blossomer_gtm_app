@@ -7,11 +7,11 @@
 - Multi-provider LLM integration (OpenAI, Anthropic, Google)
 
 ## Core Documentation (Always Reference When Relevant)
-- **[ARCHITECTURE.md](.notes/ARCHITECTURE.md)**: Technical system design, tech stack, deployment architecture
-- **[PRD.md](.notes/PRD.md)**: User flows, interactions, product decisions, UX rationale
-- **[API_REFERENCE.md](.notes/API_REFERENCE.md)**: All endpoints, request/response examples, frontend integration
-- **[TASKS.md](.notes/TASKS.md)**: Current priorities, implementation roadmap, blockers
-- **[DECISIONS.md](.notes/DECISIONS.md)**: Architectural decisions, trade-offs, evolution rationale
+- **[ARCHITECTURE.md](@/notes/ARCHITECTURE.md)**: Technical system design, tech stack, deployment architecture
+- **[PRD.md](@/notes/PRD.md)**: User flows, interactions, product decisions, UX rationale
+- **[API_REFERENCE.md](@/notes/API_REFERENCE.md)**: All endpoints, request/response examples, frontend integration
+- **[TASKS.md](@/notes/TASKS.md)**: Current priorities, implementation roadmap, blockers
+- **[DECISIONS.md](@/notes/DECISIONS.md)**: Architectural decisions, trade-offs, evolution rationale
 
 ## Development Workflow
 1. **Read → Analyze → Implement**: Read relevant files, analyze the issue/requirement, then implement the solution
@@ -82,7 +82,7 @@ blossomer-gtm-api/
 │   └── types/           # TypeScript definitions
 ├── tests/               # Backend tests
 ├── .cursor/rules/       # Cursor IDE rules
-└── .notes/             # Core documentation
+└── @/notes/             # Core documentation
 ```
 
 ## Key Files to Reference

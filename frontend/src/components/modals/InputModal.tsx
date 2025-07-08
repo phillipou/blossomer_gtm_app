@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Wand2, RefreshCw } from "lucide-react";
 
 interface InputModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ interface InputModalProps {
   descriptionLabel?: string;
   namePlaceholder?: string;
   descriptionPlaceholder?: string;
-  submitLabel?: string;
+  submitLabel?: React.ReactNode;
   cancelLabel?: string;
   isLoading?: boolean;
   defaultName?: string;
@@ -155,9 +156,16 @@ export default function InputModal({
           <Button
             onClick={handleSubmit}
             disabled={(!name.trim() || !description.trim() || isLoading || (accounts.length > 0 && !accountId))}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            {isLoading ? "Saving..." : submitLabel}
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              submitLabel
+            )}
           </Button>
         </EditDialogFooter>
       </EditDialogContent>

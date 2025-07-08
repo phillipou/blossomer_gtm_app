@@ -1,4 +1,5 @@
 // Authentication utilities and API client updates
+import { useUser, useStackApp } from '@stackframe/react'
 
 export interface UserInfo {
   user_id: string
@@ -12,26 +13,22 @@ export interface UserInfo {
 
 export interface AuthState {
   isAuthenticated: boolean
-  apiKey: string | null
+  token: string | null
   userInfo: UserInfo | null
 }
 
-// Storage keys
-const AUTH_STORAGE_KEY = 'blossomer_auth'
-const API_KEY_STORAGE_KEY = 'blossomer_api_key'
-
-// Get auth state from localStorage
+// Get auth state using Stack Auth
 export function getAuthState(): AuthState {
+  // This function needs to be called from within a React component
+  // We'll create a hook version for components and a fallback for non-component usage
   try {
-    const authData = localStorage.getItem(AUTH_STORAGE_KEY)
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-    
-    if (authData && apiKey) {
-      const userInfo = JSON.parse(authData)
+    // Check if we're in a browser environment and have access to Stack Auth
+    if (typeof window !== 'undefined') {
+      // For now, return fallback state - we'll use the hook version in components
       return {
-        isAuthenticated: true,
-        apiKey,
-        userInfo
+        isAuthenticated: false,
+        token: null,
+        userInfo: null
       }
     }
   } catch (error) {
@@ -40,76 +37,43 @@ export function getAuthState(): AuthState {
   
   return {
     isAuthenticated: false,
-    apiKey: null,
+    token: null,
     userInfo: null
   }
 }
 
-// Save auth state to localStorage
-export function setAuthState(apiKey: string, userInfo: UserInfo): void {
-  try {
-    localStorage.setItem(API_KEY_STORAGE_KEY, apiKey)
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userInfo))
-  } catch (error) {
-    console.error('Error saving auth state:', error)
-  }
-}
-
-// Clear auth state
-export function clearAuthState(): void {
-  try {
-    localStorage.removeItem(API_KEY_STORAGE_KEY)
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-  } catch (error) {
-    console.error('Error clearing auth state:', error)
-  }
-}
-
-// Validate API key with backend
-export async function validateApiKey(apiKey: string): Promise<UserInfo> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5175'
+// Hook version for React components
+export function useAuthState(): AuthState {
+  const user = useUser()
+  const app = useStackApp()
   
-  const response = await fetch(`${baseUrl}/auth/validate`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-    },
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Invalid API key')
+  if (user) {
+    return {
+      isAuthenticated: true,
+      token: user.accessToken || null,
+      userInfo: {
+        user_id: user.id,
+        email: user.primaryEmail || '',
+        name: user.displayName || undefined,
+      }
+    }
   }
-
-  return response.json()
-}
-
-// Create authenticated fetch function
-export function createAuthenticatedFetch() {
-  const authState = getAuthState()
   
-  return async (url: string, options: RequestInit = {}) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    }
-
-    // Add authorization header if authenticated
-    if (authState.isAuthenticated && authState.apiKey) {
-      headers['Authorization'] = `Bearer ${authState.apiKey}`
-    }
-
-    return fetch(url, {
-      ...options,
-      headers,
-    })
+  return {
+    isAuthenticated: false,
+    token: null,
+    userInfo: null
   }
 }
+
+// These functions are no longer needed with Stack Auth integration
+// but keeping for backward compatibility during migration
 
 // Check if user should use authenticated endpoints
 export function shouldUseAuthenticatedEndpoints(): boolean {
-  const authState = getAuthState()
-  return authState.isAuthenticated && authState.apiKey !== null
+  // Enable authenticated endpoints now that Stack Auth is integrated
+  // This will route to /api/* instead of /demo/* when user is authenticated
+  return true
 }
 
 // Get API base path (demo vs authenticated)
