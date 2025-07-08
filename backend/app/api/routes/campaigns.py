@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from typing import List
-from backend.app.models import APIKey
-from backend.app.core.auth import rate_limit_dependency
 from backend.app.core.database import get_db
 from backend.app.schemas import EmailGenerationRequest, EmailGenerationResponse
 from backend.app.services.email_generation_service import (
@@ -11,7 +9,11 @@ from backend.app.services.email_generation_service import (
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from sqlalchemy.orm import Session
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
+from backend.app.core.auth import validate_stack_auth_jwt
 import logging
+
+
+# TODO: Implement rate limiting using JWT user ID (user['sub'])
 
 
 class UniqueSellingPoint(BaseModel):
@@ -45,9 +47,10 @@ router = APIRouter()
 )
 async def generate_positioning(
     data: dict,  # Should be replaced with a proper request model if available
-    api_key_record: APIKey = Depends(rate_limit_dependency("positioning")),  # type: ignore
+    user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
+    # user_id = user['sub']  # TODO: Use user_id for rate limiting and business logic
     # Placeholder implementation, replace with actual logic as needed
     return PositioningResponse(
         unique_insight=(
@@ -89,9 +92,10 @@ async def generate_positioning(
 )
 async def generate_email(
     request: EmailGenerationRequest,
-    api_key_record: APIKey = Depends(rate_limit_dependency("email_generation")),
+    user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
+    # user_id = user['sub']  # TODO: Use user_id for rate limiting and business logic
     """
     Generate a personalized email campaign based on company context, target account/persona,
     and user preferences from the Email Campaign Wizard.
@@ -136,7 +140,8 @@ async def demo_generate_email(
     _: None = Depends(demo_ip_rate_limit_dependency("email_generation")),
 ):
     """
-    Generate a personalized email campaign for demo users, with IP-based rate limiting.
+    Generate a personalized email campaign for demo users,
+    with IP-based rate limiting.
     """
     logger = logging.getLogger(__name__)
     logger.info(f"[DEMO] Incoming EmailGenerationRequest: {request}")

@@ -6,14 +6,14 @@ from backend.app.services.product_overview_service import (
 )
 from backend.app.core.database import get_db
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
-from backend.app.core.auth import rate_limit_dependency
 from sqlalchemy.orm import Session
-from backend.app.models import APIKey
+from backend.app.core.auth import validate_stack_auth_jwt
 
 
 router = APIRouter()
 
 
+# TODO: Implement rate limiting using JWT user ID (user['sub'])
 @router.post(
     "/demo/company",
     response_model=ProductOverviewResponse,
@@ -50,12 +50,13 @@ async def demo_generate_product_overview(
 )
 async def prod_generate_product_overview(
     data: ProductOverviewRequest,
-    api_key_record: APIKey = Depends(rate_limit_dependency("company_generate")),
+    user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """
-    Generate a company overview for authenticated users (API key required).
+    Generate a company overview for authenticated users (Stack Auth JWT required).
     """
+    # user_id = user['sub']  # TODO: Use user_id for rate limiting and business logic
     orchestrator = ContextOrchestrator()
     try:
         result = await generate_product_overview_service(data, orchestrator)
