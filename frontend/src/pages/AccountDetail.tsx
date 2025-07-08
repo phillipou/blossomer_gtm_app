@@ -36,8 +36,8 @@ export default function AccountDetail() {
   const [firmoModalOpen, setFirmoModalOpen] = useState(false);
   const [rationale, setRationale] = useState<string[]>([]);
 
-  // Tab state for sub navigation
-  const [activeTab, setActiveTab] = useState<string>("accounts");
+  // Remove tab state for sub navigation
+  // const [activeTab, setActiveTab] = useState<string>("accounts");
 
   const [personas, setPersonas] = useState<TargetPersonaResponse[]>([]);
   const [personaModalOpen, setPersonaModalOpen] = useState(false);
@@ -131,140 +131,134 @@ export default function AccountDetail() {
           { label: "Target Accounts", href: "/target-accounts" },
           { label: accountDetail?.targetAccountName || "Target Account" }
         ]}
-        activeSubTab={activeTab}
-        setActiveSubTab={setActiveTab}
-        subTabs={[
-          { label: "Account Details", value: "accounts" },
-        ]}
+        activeSubTab={""}
+        setActiveSubTab={() => {}}
+        subTabs={[]}
       />
       {/* Content */}
       <div className="flex-1 p-8 space-y-8">
-        {activeTab === "accounts" && (
-          <>
-            {/* Target Description */}
-            <OverviewCard
-              title={accountDetail?.targetAccountName}
-              bodyText={accountDetail?.targetAccountDescription}
-              showButton={false}
-              onEdit={({ name, description }) => {
-                setAccountDetail((prev) => {
-                  if (!prev) return null;
-                  const updated: TargetAccountResponse = {
-                    ...prev,
-                    targetAccountName: name,
-                    targetAccountDescription: description,
-                    // preserve other canonical fields
-                    targetAccountRationale: prev.targetAccountRationale || [],
-                    firmographics: prev.firmographics || {},
-                    buyingSignals: prev.buyingSignals || [],
-                    buyingSignalsRationale: prev.buyingSignalsRationale || [],
-                    metadata: prev.metadata || {},
-                  };
-                  // Update localStorage with canonical shape
-                  const accounts = getStoredTargetAccounts();
-                  // Only update accounts that are TargetAccountResponse shape
-                  const updatedAccounts = accounts
-                    .map((p) =>
-                      p.targetAccountName === prev.targetAccountName ? updated : p
-                    );
-                  localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
-                  return updated;
-                });
-              }}
-            />
-            {/* Firmographics and Why Good Fit Row */}
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Firmographics Card with edit affordance */}
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle>Firmographics</CardTitle>
-                  <div className="text-sm text-gray-500">Targeting criteria for prospecting tools</div>
-                </CardHeader>
-                <CardContent>
-                  <CriteriaTable 
-                    data={firmographics} 
-                    editable={true}
-                    onEdit={() => setFirmoModalOpen(true)}
-                  />
-                </CardContent>
-              </Card>
-              {/* Why they're a good fit InfoCard with edit affordance */}
-              <div className="flex-1">
-                <ListInfoCard
-                  title={"Why they're a good fit"}
-                  items={rationale}
-                  onEdit={undefined}
-                  renderItem={(item: string, idx: number) => (
-                    <span key={idx} className="text-sm text-gray-700">{item}</span>
-                  )}
-                  editModalSubtitle={"Why this account is a good fit for your solution."}
-                />
-              </div>
-            </div>
-            {/* Buying Signals Block */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle>Buying Signals</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
-                    <Plus className="w-4 h-4 mr-2" /> Add
-                  </Button>
-                </div>
-                <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
-              </CardHeader>
-              <CardContent>
-                {buyingSignals.length > 0 ? (
-                  <BuyingSignalsCard
-                    signals={buyingSignals}
-                    onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
-                    onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
-                  />
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No buying signals identified
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            {/* Buying Signals Rationale Card (moved below Buying Signals) */}
+        {/* Target Description */}
+        <OverviewCard
+          title={accountDetail?.targetAccountName}
+          bodyText={accountDetail?.targetAccountDescription}
+          showButton={false}
+          onEdit={({ name, description }) => {
+            setAccountDetail((prev) => {
+              if (!prev) return null;
+              const updated: TargetAccountResponse = {
+                ...prev,
+                targetAccountName: name,
+                targetAccountDescription: description,
+                // preserve other canonical fields
+                targetAccountRationale: prev.targetAccountRationale || [],
+                firmographics: prev.firmographics || {},
+                buyingSignals: prev.buyingSignals || [],
+                buyingSignalsRationale: prev.buyingSignalsRationale || [],
+                metadata: prev.metadata || {},
+              };
+              // Update localStorage with canonical shape
+              const accounts = getStoredTargetAccounts();
+              // Only update accounts that are TargetAccountResponse shape
+              const updatedAccounts = accounts
+                .map((p) =>
+                  p.targetAccountName === prev.targetAccountName ? updated : p
+                );
+              localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
+              return updated;
+            });
+          }}
+        />
+        {/* Firmographics and Why Good Fit Row */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Firmographics Card with edit affordance */}
+          <Card className="flex-1">
+            <CardHeader>
+              <CardTitle>Firmographics</CardTitle>
+              <div className="text-sm text-gray-500">Targeting criteria for prospecting tools</div>
+            </CardHeader>
+            <CardContent>
+              <CriteriaTable 
+                data={firmographics} 
+                editable={true}
+                onEdit={() => setFirmoModalOpen(true)}
+              />
+            </CardContent>
+          </Card>
+          {/* Why they're a good fit InfoCard with edit affordance */}
+          <div className="flex-1">
             <ListInfoCard
-              title={"Buying Signals Rationale"}
-              items={accountDetail.buyingSignalsRationale || []}
+              title={"Why they're a good fit"}
+              items={rationale}
               onEdit={undefined}
               renderItem={(item: string, idx: number) => (
                 <span key={idx} className="text-sm text-gray-700">{item}</span>
               )}
-              editModalSubtitle={"Logic behind buying signal choices."}
+              editModalSubtitle={"Why this account is a good fit for your solution."}
             />
-            {/* Personas Section (only show account-specific personas) */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Personas for this Account</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {personas.map((persona) => (
-                  <SummaryCard
-                    key={persona.id}
-                    title={persona.targetPersonaName}
-                    description={persona.targetPersonaDescription}
-                    parents={[
-                      { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
-                      { name: accountDetail?.targetAccountName || "Account", color: "bg-red-400", label: "Account" },
-                    ]}
-                    onClick={() => handlePersonaClick(persona.id)}
-                  >
-                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
-                      <Edit3 className="w-5 h-5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  </SummaryCard>
-                ))}
-                {/* Add New Persona Card */}
-                <AddCard onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }} label="Add New" />
-              </div>
+          </div>
+        </div>
+        {/* Buying Signals Block */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between mb-2">
+              <CardTitle>Buying Signals</CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setModalOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" /> Add
+              </Button>
             </div>
-          </>
-        )}
+            <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+          </CardHeader>
+          <CardContent>
+            {buyingSignals.length > 0 ? (
+              <BuyingSignalsCard
+                signals={buyingSignals}
+                onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
+                onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No buying signals identified
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* Buying Signals Rationale Card (moved below Buying Signals) */}
+        <ListInfoCard
+          title={"Buying Signals Rationale"}
+          items={accountDetail.buyingSignalsRationale || []}
+          onEdit={undefined}
+          renderItem={(item: string, idx: number) => (
+            <span key={idx} className="text-sm text-gray-700">{item}</span>
+          )}
+          editModalSubtitle={"Logic behind buying signal choices."}
+        />
+        {/* Personas Section (only show account-specific personas) */}
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Personas for this Account</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {personas.map((persona) => (
+              <SummaryCard
+                key={persona.id}
+                title={persona.targetPersonaName}
+                description={persona.targetPersonaDescription}
+                parents={[
+                  { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
+                  { name: accountDetail?.targetAccountName || "Account", color: "bg-red-400", label: "Account" },
+                ]}
+                onClick={() => handlePersonaClick(persona.id)}
+              >
+                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditPersona(persona); }} className="text-blue-600">
+                  <Edit3 className="w-5 h-5" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeletePersona(persona.id); }} className="text-red-500">
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </SummaryCard>
+            ))}
+            {/* Add New Persona Card */}
+            <AddCard onClick={() => { setEditingPersona(null); setPersonaModalOpen(true); }} label="Add New" />
+          </div>
+        </div>
       </div>
       {/* Buying Signal Modal */}
       <EditBuyingSignalModal

@@ -136,14 +136,6 @@ export default function TargetPersonas() {
       {/* Content */}
       <div className="flex-1 p-8 space-y-8">
         {/* Company Overview */}
-        <OverviewCard
-          title={overview?.companyName || "Your Company"}
-          subtitle={overview?.companyUrl || ""}
-          bodyTitle="Company Overview"
-          bodyText={overview?.description || ""}
-          showButton={true}
-          buttonTitle="View Details"
-        />
         {error && (
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
         )}

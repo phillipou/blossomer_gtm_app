@@ -404,8 +404,7 @@ export default function Dashboard() {
               subtitle={domain}
               bodyTitle="Company Overview"
               bodyText={overview?.description || "No description available"}
-              showButton={true}
-              buttonTitle="View Details"
+              showButton={false}
             />
             
             {/* Analysis Cards */}

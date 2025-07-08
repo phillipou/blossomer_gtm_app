@@ -12,8 +12,8 @@ export default function MainLayout() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
+                  <img src="/blossomer-logo.png" alt="Blossomer Logo" className="w-10 h-10" />
                 </div>
                 <span className="text-xl font-semibold text-gray-900">Blossomer</span>
               </div>
