@@ -1,7 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.api.main import app
-from backend.app.core.auth import rate_limit_dependency, authenticate_api_key
 from fastapi import HTTPException
 from backend.app.schemas import TargetPersonaResponse, Demographics
 

@@ -11,7 +11,6 @@ import PersonaDetail from './pages/PersonaDetail'
 import Personas from './pages/Personas'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
-import AccountSettings from './pages/AccountSettings'
 import MainLayout from './components/layout/MainLayout'
 import NavbarOnlyLayout from "./components/layout/NavbarOnlyLayout";
 import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
@@ -41,7 +40,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="target-personas" element={<Personas />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-            <Route path="account-settings" element={<AccountSettings />} />
             {/* Add other routes here */}
           </Route>
         </Routes>

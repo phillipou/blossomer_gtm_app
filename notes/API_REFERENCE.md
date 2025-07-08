@@ -17,11 +17,30 @@ This API reference provides complete documentation for frontend integration with
 
 ## Authentication
 
-### API Key Authentication
-All production endpoints require an API key in the Authorization header:
+### Stack Auth JWT Authentication
+All production endpoints require a Stack Auth JWT token in the Authorization header:
 
 ```bash
-Authorization: Bearer bls_1234567890abcdef...
+Authorization: Bearer <stack_auth_jwt_token>
+```
+
+- The frontend retrieves and caches the Stack Auth JWT token after login using the `useAuthState()` hook.
+- The token is available as `useAuthState().token` and is sent in the Authorization header for all `/api/*` requests.
+
+**Example (React):**
+```javascript
+import { useAuthState } from '../lib/auth';
+
+const { token } = useAuthState();
+
+const response = await fetch('/api/accounts', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({ ... })
+});
 ```
 
 ### Rate Limiting

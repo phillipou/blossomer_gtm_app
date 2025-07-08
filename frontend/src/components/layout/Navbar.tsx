@@ -1,7 +1,8 @@
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { useUser, UserButton } from "@stackframe/react";
-import React from "react";
+import React, { useEffect } from "react";
+import { useAuthState } from '../../lib/auth';
 
 interface NavbarProps {
   maxWidthClass?: string; // e.g., 'max-w-7xl mx-auto' or ''
@@ -10,6 +11,11 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
   const navigate = useNavigate();
   const user = useUser();
+  const authState = useAuthState();
+
+  useEffect(() => {
+    console.log('Navbar AuthState:', authState);
+  }, [authState]);
 
 
   const handleLogoClick = () => {

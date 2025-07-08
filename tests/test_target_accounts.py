@@ -1,7 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.api.main import app
-from backend.app.core.auth import rate_limit_dependency, authenticate_api_key
 from fastapi import HTTPException
 from backend.app.schemas import TargetAccountResponse, Firmographics
 
@@ -49,19 +48,21 @@ async def fake_generate_structured_output(prompt, response_model):
     ).model_dump()
 
 
-# Patch rate_limit_dependency globally for all tests
-app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
+# Remove this line:
+# app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
 
 
-class DummyAPIKey:
-    id = "test-id"
-    tier = "free"
-    key_prefix = "bloss_test_sk_..."
-    is_active = True
-    user = type("User", (), {"rate_limit_exempt": True})()
+# Remove this line:
+# class DummyAPIKey:
+#     id = "test-id"
+#     tier = "free"
+#     key_prefix = "bloss_test_sk_..."
+#     is_active = True
+#     user = type("User", (), {"rate_limit_exempt": True})()
 
 
-app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
+# Remove this line:
+# app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
 
 
 def test_target_account_endpoint_success(monkeypatch):

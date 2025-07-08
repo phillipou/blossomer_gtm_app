@@ -175,6 +175,7 @@ src/
 - **Global State**: Custom hooks for cross-component data
 - **Persistent Storage**: localStorage for analysis results and session data
 - **API Integration**: Custom hooks for data fetching with error handling
+- **Auth Token Access**: The Stack Auth JWT token is cached after login and available via `useAuthState().token` for all authenticated requests.
 
 ### **Data Flow**
 1. **User Input** → Landing page form
@@ -216,6 +217,7 @@ The system uses a **two-layer authentication architecture** combining OAuth iden
 - **JWT Tokens**: Short-lived access tokens (1 hour) with automatic refresh
 - **User Management**: Built-in user profiles, password reset, account linking
 - **Frontend Integration**: Seamless React hooks for authentication state
+- **Token Caching**: The frontend fetches the Stack Auth JWT token once after login and caches it in React state. The token is exposed as `useAuthState().token` and is available synchronously to all components for authenticated API calls.
 
 #### **Layer 2: Business Controls (Database)**
 - **User Records**: Local database links Stack Auth user IDs to business data

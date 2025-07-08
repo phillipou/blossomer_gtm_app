@@ -20,6 +20,7 @@ import { getEntityColorForParent, getAddCardHoverClasses } from "../lib/entityCo
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
+import { useAuthState } from '../lib/auth';
 
 interface TargetAccountCardProps {
   targetAccount: TargetAccountResponse & { id: string; createdAt: string };
@@ -71,6 +72,7 @@ export default function TargetAccountsList() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const authState = useAuthState();
 
   // Load target accounts from localStorage on mount
   useEffect(() => {
@@ -118,7 +120,8 @@ export default function TargetAccountsList() {
         name, // account profile name
         description, // hypothesis
         undefined, // additional context
-        companyContext
+        companyContext,
+        authState.token
       );
       // Add id and createdAt for local usage
       const newAccount = {

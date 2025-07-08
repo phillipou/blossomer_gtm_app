@@ -1,8 +1,14 @@
 import SidebarNav from "../navigation/SidebarNav";
 import Navbar from "./Navbar";
 import { Outlet } from "react-router-dom";
+import { useAuthState } from '../../lib/auth';
+import { useEffect } from 'react';
 
-export default function MainLayout() {
+export default function MainLayout(props) {
+  const authState = useAuthState();
+  useEffect(() => {
+    console.log('AuthState:', authState);
+  }, [authState]);
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar maxWidthClass="" />

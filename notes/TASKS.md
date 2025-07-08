@@ -4,6 +4,15 @@
 
 ---
 
+## 🚨 Deployment/Production Readiness
+- [ ] **TODO: Configure a separate Stack Auth project for production**
+  - Create a new Stack Auth project for production use
+  - Set production environment variables (e.g., STACK_PROJECT_ID, STACK_SECRET_SERVER_KEY)
+  - Add your production domain(s) to the allowed origins in the Stack Auth dashboard
+  - Double-check OAuth provider settings for production
+
+---
+
 ## 🎯 MVP LAUNCH CHECKLIST (July 2025)
 
 ### 1. User Authentication & API Key Flow ✅ COMPLETED

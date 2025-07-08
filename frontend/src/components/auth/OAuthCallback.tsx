@@ -19,6 +19,7 @@ export function OAuthCallback() {
       try {
         // Call Stack Auth's OAuth callback processing
         const hasRedirected = await app.callOAuthCallback()
+        console.log('OAuthCallback user:', user);
         
         if (!hasRedirected) {
           // If no automatic redirect happened, check if user is now authenticated

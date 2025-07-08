@@ -18,6 +18,7 @@ import InputModal from "../components/modals/InputModal";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
+import { useAuthState } from '../lib/auth';
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function TargetPersonas() {
 
   // Use the analyzed company website from the overview hook
   const overview = useCompanyOverview();
+  const authState = useAuthState();
 
   useEffect(() => {
     try {
@@ -297,7 +299,8 @@ export default function TargetPersonas() {
               userInputtedContext.personaDescription,
               undefined, // additionalContext
               companyContext,
-              targetAccountContext // targetAccountContext as TargetPersonaResponse
+              targetAccountContext,
+              authState.token // Pass the token here
             );
             console.log('[Persona Generation RESPONSE] response:', response);
 

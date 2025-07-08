@@ -10,6 +10,7 @@ import InputModal from "../components/modals/InputModal"
 import type { GeneratedEmail, EmailConfig } from "../types/api";
 import { generateEmailCampaign, getStoredTargetAccounts } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
+import { useAuthState } from '../lib/auth';
 
 export default function CampaignsPage() {
   const navigate = useNavigate()
@@ -27,6 +28,7 @@ export default function CampaignsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const overview = useCompanyOverview();
+  const authState = useAuthState();
 
   // Debug log to see emailHistory on every render
   console.log("Rendering CampaignsPage, emailHistory:", emailHistory)
@@ -80,7 +82,7 @@ export default function CampaignsPage() {
       // Log the user prompt/request
       console.log("[Campaigns] EmailGenerationRequest payload:", request);
       // Call the LLM-backed API
-      const response = await generateEmailCampaign(request);
+      const response = await generateEmailCampaign(request, authState.token);
       console.log("[Campaigns] LLM API response:", response);
       // Build the new email object
       const newEmail: GeneratedEmail = {

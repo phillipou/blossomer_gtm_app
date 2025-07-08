@@ -19,6 +19,7 @@ import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import ListInfoCard from "../components/cards/ListInfoCard";
+import { useAuthState } from '../lib/auth';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -51,6 +52,8 @@ export default function AccountDetail() {
   if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
     websiteUrl = `https://${websiteUrl}`;
   }
+
+  const authState = useAuthState();
 
   const handlePersonaClick = (personaId: string) => {
     console.log('Navigating to persona:', personaId, 'for account:', id);
@@ -412,7 +415,8 @@ export default function AccountDetail() {
               userInputtedContext.personaDescription,
               undefined, // additionalContext
               companyContext,
-              targetAccountContext // targetAccountContext as TargetAccountResponse
+              targetAccountContext,
+              authState.token // Pass the token here
             );
             console.log('[Persona Generation] API response:', response);
             // Transform the API response from snake_case to camelCase
@@ -424,7 +428,7 @@ export default function AccountDetail() {
               targetPersonaName: transformedResponse.targetPersonaName || '',
               targetPersonaDescription: transformedResponse.targetPersonaDescription || '',
             };
-            addPersonaToTargetAccount(id!, newPersona);
+            addPersonaToTargetAccount(id!, newPersona, authState.token);
             setPersonas(getPersonasForTargetAccount(id!));
             setPersonaModalOpen(false);
           } catch (err: unknown) {

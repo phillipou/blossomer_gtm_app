@@ -7,16 +7,15 @@ from backend.app.schemas import (
 )
 from backend.app.services.target_account_service import generate_target_account_profile
 from backend.app.services.target_persona_service import generate_target_persona_profile
-from backend.app.core.auth import rate_limit_dependency
-from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 from backend.app.core.database import get_db
-from backend.app.models import APIKey
+from backend.app.core.auth import validate_stack_auth_jwt
 from sqlalchemy.orm import Session
 
 
 router = APIRouter()
 
 
+# TODO: Implement rate limiting using JWT user ID (user['sub'])
 @router.post(
     "/demo/accounts",
     response_model=TargetAccountResponse,
@@ -29,7 +28,6 @@ async def demo_generate_target_account(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    _: None = Depends(demo_ip_rate_limit_dependency("target_account")),
 ):
     """
     Generate a target account profile for demo users, with IP-based rate limiting.
@@ -52,12 +50,14 @@ async def demo_generate_target_account(
 )
 async def prod_generate_target_account(
     data: TargetAccountRequest,
-    api_key_record: APIKey = Depends(rate_limit_dependency("target_account")),
+    user = Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """
-    Generate a target account profile for authenticated users (API key required).
+    Generate a target account profile for authenticated users (Stack Auth JWT required).
     """
+    user_id = user['sub']
+    # TODO: Use user_id for rate limiting and business logic
     try:
         result = await generate_target_account_profile(data)
         return result
@@ -79,7 +79,6 @@ async def demo_generate_target_persona(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    _: None = Depends(demo_ip_rate_limit_dependency("target_persona")),
 ):
     """
     Generate a target persona profile for demo users, with IP-based rate limiting.
@@ -99,12 +98,14 @@ async def demo_generate_target_persona(
 )
 async def prod_generate_target_persona(
     data: TargetPersonaRequest,
-    api_key_record: APIKey = Depends(rate_limit_dependency("target_persona")),
+    user = Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """
-    Generate a target persona profile for authenticated users (API key required).
+    Generate a target persona profile for authenticated users (Stack Auth JWT required).
     """
+    user_id = user['sub']
+    # TODO: Use user_id for rate limiting and business logic
     try:
         result = await generate_target_persona_profile(data)
         return result
