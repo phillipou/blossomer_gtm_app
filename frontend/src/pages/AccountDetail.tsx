@@ -65,6 +65,40 @@ export default function AccountDetail() {
     setPersonas((prev) => prev.filter((p) => p.id !== id));
   };
 
+  // Add edit handlers for rationale and buyingSignalsRationale
+  const handleEditRationale = (newItems: string[]) => {
+    setRationale(newItems);
+    // Update localStorage for the account
+    if (accountDetail && id) {
+      const accounts = getStoredTargetAccounts();
+      const idx = accounts.findIndex(acc => acc.id === id);
+      if (idx !== -1) {
+        accounts[idx] = {
+          ...accounts[idx],
+          targetAccountRationale: newItems,
+        };
+        localStorage.setItem('target_accounts', JSON.stringify(accounts));
+      }
+    }
+    setAccountDetail(prev => prev ? { ...prev, targetAccountRationale: newItems } : prev);
+  };
+
+  const handleEditBuyingSignalsRationale = (newItems: string[]) => {
+    // Update localStorage for the account
+    if (accountDetail && id) {
+      const accounts = getStoredTargetAccounts();
+      const idx = accounts.findIndex(acc => acc.id === id);
+      if (idx !== -1) {
+        accounts[idx] = {
+          ...accounts[idx],
+          buyingSignalsRationale: newItems,
+        };
+        localStorage.setItem('target_accounts', JSON.stringify(accounts));
+      }
+    }
+    setAccountDetail(prev => prev ? { ...prev, buyingSignalsRationale: newItems } : prev);
+  };
+
   useEffect(() => {
     try {
       const accounts = getStoredTargetAccounts();
@@ -190,7 +224,7 @@ export default function AccountDetail() {
             <ListInfoCard
               title={"Why they're a good fit"}
               items={rationale}
-              onEdit={undefined}
+              onEdit={handleEditRationale}
               renderItem={(item: string, idx: number) => (
                 <span key={idx} className="text-sm text-gray-700">{item}</span>
               )}
@@ -227,7 +261,7 @@ export default function AccountDetail() {
         <ListInfoCard
           title={"Buying Signals Rationale"}
           items={accountDetail.buyingSignalsRationale || []}
-          onEdit={undefined}
+          onEdit={handleEditBuyingSignalsRationale}
           renderItem={(item: string, idx: number) => (
             <span key={idx} className="text-sm text-gray-700">{item}</span>
           )}

@@ -14,6 +14,9 @@
   - [x] API key dashboard for create/view/delete operations
   - [x] Database schema updates with migration
   - [x] Backend endpoints for auth token validation
+  - [x] Professional navbar with UserButton component
+  - [x] Context-aware authentication flows
+  - [x] Error handling for OAuth conflicts
   - [ ] **NEXT**: Test complete auth flow and fix token validation
   - [ ] **NEXT**: Replace mock Neon Auth token validation with real implementation
 
@@ -86,11 +89,12 @@
 ## 🚀 IMMEDIATE PRIORITIES (Next Session)
 
 ### **1. Authentication System Testing & Refinement** - HIGHEST PRIORITY
-- [ ] **Test complete auth flow** - Sign up, create API keys, test API access
+- [ ] **Test API key creation and management** - Test the complete API key lifecycle (create, view, delete)
+- [ ] **Test API calls with Bearer token authentication** - Verify API endpoints work with generated keys
 - [ ] **Fix Neon Auth token validation** - Replace mock validation with real Stack Auth token verification  
-- [ ] **Verify API key rate limiting** - Ensure existing rate limiting works with new auth
+- [ ] **Fix Stack Auth OAuth account linking** - Resolve Google OAuth signup conflicts
 - [ ] **Test user sync** - Verify Neon Auth users properly sync to local database
-- [ ] **Error handling** - Add proper error states and loading UX
+- [ ] **Verify API key rate limiting** - Ensure existing rate limiting works with new auth
 
 ### **2. localStorage to Database Migration** - HIGH PRIORITY  
 - [ ] **Design user data persistence** - Plan migration from localStorage to database
@@ -111,8 +115,10 @@
 - **API key management** - Complete dashboard for creating/viewing/deleting API keys
 - **Hybrid architecture** - User auth for onboarding + API keys for programmatic access
 - **Database schema** - Added `neon_auth_user_id` field linking to Stack Auth users
-- **Frontend components** - Auth header, API key modal, sign up/in flows
+- **Frontend components** - Auth header, API key modal, sign up/in flows, UserButton
 - **Backend endpoints** - `/api/neon-auth/` routes for user sync and key management
+- **Professional navbar** - Context-aware authentication states with Stack Auth UserButton
+- **Error handling** - OAuth conflict resolution with user-friendly error pages
 
 **Environment Setup**:
 - Stack Auth Project ID: `2059ecbe-2154-408d-aeb5-679af7964264`

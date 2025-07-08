@@ -25,7 +25,7 @@ export async function generateTargetCompany(
   };
 
   // Use demo endpoint for now (no API key required)
-  return apiFetch<TargetAccountResponse>('/demo/customers/target_accounts', {
+  return apiFetch<TargetAccountResponse>('/customers/target_accounts', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -48,7 +48,7 @@ export async function generateTargetPersona(
     ...(targetAccountContext ? { targetAccountContext } : {}),
   };
   // Use demo endpoint for now (no API key required)
-  return apiFetch('/demo/customers/target_personas', {
+  return apiFetch('/customers/target_personas', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -61,7 +61,7 @@ export async function generateEmailCampaign(
   // Log the user prompt/request payload for debugging
   console.log('[generateEmailCampaign] Request payload:', request);
   // Call the demo backend endpoint (no API key required)
-  return apiFetch<EmailGenerationResponse>('/demo/campaigns/generate-email', {
+  return apiFetch<EmailGenerationResponse>('/campaigns/generate-email', {
     method: 'POST',
     body: JSON.stringify(request),
   });
