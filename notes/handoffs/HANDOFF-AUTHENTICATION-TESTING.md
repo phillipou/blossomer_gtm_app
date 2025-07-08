@@ -2,6 +2,18 @@
 
 *Created: July 8, 2025*
 
+## 🚀 Milestone Complete: Stack Auth JWT Migration
+
+**As of July 8, 2025:**
+- ✅ All backend `/api/*` endpoints now require Stack Auth JWT authentication (`validate_stack_auth_jwt`)
+- ✅ Legacy API key authentication, rate limiting, and related service code have been fully removed
+- ✅ Frontend passes Stack Auth JWT tokens from `useAuthState().token` to all authenticated API calls
+- ✅ Documentation and tests have been updated to reflect the new authentication flow
+- ✅ Demo endpoints remain available for unauthenticated/demo usage
+- ⚠️ (TODO) Real JWT validation in `neon_auth.py` is still a placeholder; production should use the same validation as the rest of the backend
+
+---
+
 ## 🎯 What We're Trying to Do
 
 Enable authenticated API endpoints and complete the Stack Auth integration testing. The goal is to move from demo-only usage (`/demo/*` endpoints) to authenticated usage (`/api/*` endpoints) with Stack Auth JWT tokens.

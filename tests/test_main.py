@@ -568,11 +568,141 @@ def test_target_account_prompt_rendering_with_target_account_context():
     pass
 
 
-@pytest.mark.skip(
-    reason="API endpoint/module structure changed; test needs rewrite for new FastAPI routing."
-)
-def test_target_persona_endpoint_success(monkeypatch):
-    pass
+@pytest.mark.asyncio
+async def test_target_persona_endpoint_success(monkeypatch):
+    payload = {
+        "persona_profile_name": "Chief Marketing Officer",
+        "hypothesis": "CMOs are key decision makers for marketing automation software.",
+        "additional_context": "Focus on CMOs in B2B SaaS companies.",
+        "company_context": "B2B SaaS company specializing in marketing automation.",
+        "target_account_context": "Mid-market SaaS companies with growing marketing teams.",
+        "website_content": "Company website content related to marketing solutions.",
+    }
+
+    fake_response = {
+        "target_persona_name": "Chief Marketing Officer",
+        "persona_description": "Senior executive responsible for marketing strategy and execution.",
+        "demographics": {
+            "title": "Chief Marketing Officer",
+            "department": "Marketing",
+            "seniority_level": "C-Level",
+            "years_experience": "15+ years",
+            "education": "Marketing or Business degree, often MBA",
+            "typical_background": "Brand management, digital marketing, sales leadership",
+        },
+        "psychographics": {
+            "motivations": [
+                "Market share growth",
+                "Brand recognition",
+                "Customer acquisition",
+            ],
+            "goals": [
+                "Increase MQLs/SQLs",
+                "Improve campaign ROI",
+                "Enhance customer lifetime value",
+            ],
+            "challenges": [
+                "Attribution modeling",
+                "Budget constraints",
+                "Talent retention",
+            ],
+            "values": ["Data-driven decisions", "Innovation", "Customer experience"],
+            "preferred_communication": "Strategic, outcome-focused",
+        },
+        "day_in_life": {
+            "primary_responsibilities": [
+                "Marketing strategy",
+                "Team leadership",
+                "Budget allocation",
+            ],
+            "tools_used": ["Salesforce", "HubSpot", "Google Analytics", "Marketo"],
+            "meeting_schedule": "60% meetings, 40% strategic planning",
+            "decision_making_process": "Collaborative, data-informed",
+            "information_sources": [
+                "Industry reports",
+                "Competitor analysis",
+                "Customer feedback",
+            ],
+        },
+        "pain_points": [
+            "Fragmented marketing data",
+            "Ineffective lead generation",
+            "Measuring campaign effectiveness",
+            "Integrating new marketing technologies",
+        ],
+        "buying_behavior": {
+            "decision_making_role": "Primary decision maker",
+            "evaluation_criteria": [
+                "ROI",
+                "Scalability",
+                "Integration capabilities",
+                "Ease of use",
+            ],
+            "decision_timeline": "3-6 months",
+            "budget_influence": "High influence on marketing budget",
+            "preferred_vendor_interaction": "Case studies, ROI calculators, demos",
+        },
+        "messaging_preferences": {
+            "communication_channels": ["Email", "LinkedIn", "Industry events"],
+            "content_types": ["Whitepapers", "Webinars", "Success stories"],
+            "messaging_tone": "Professional, results-oriented",
+            "key_value_propositions": ["Efficiency", "Growth", "Measurable impact"],
+            "objection_handling": "Address with data, testimonials, and clear ROI",
+        },
+        "engagement_strategy": {
+            "outreach_timing": "Wednesday-Friday, 10 AM-12 PM",
+            "content_calendar": "Monthly thought leadership, bi-weekly product updates",
+            "event_participation": "Marketing conferences, industry summits",
+            "social_media_strategy": "LinkedIn thought leadership, Twitter engagement",
+            "referral_sources": "Industry peers, consultants, existing customers",
+        },
+        "metadata": {
+            "sources_used": [
+                "user_input",
+                "company_context",
+                "target_account_context",
+                "website_content",
+            ],
+            "context_quality": "rich",
+            "assessment_summary": "Comprehensive persona analysis with rich context.",
+            "assumptions_made": [
+                "Standard CMO responsibilities in SaaS.",
+                "Focus on B2B marketing.",
+            ],
+            "primary_context_source": "user_input",
+        },
+    }
+
+    class OrchestratorMock:
+        async def orchestrate_context(self, *args, **kwargs):
+            return fake_response
+
+    with patch(
+        "backend.app.services.context_orchestrator_agent.ContextOrchestrator",
+        return_value=OrchestratorMock(),
+    ):
+        monkeypatch.setattr(
+            "backend.app.services.dev_file_cache.load_cached_scrape",
+            lambda url: None,
+        )
+        monkeypatch.setattr(
+            "backend.app.services.dev_file_cache.save_scrape_to_cache",
+            lambda url, content: None,
+        )
+        monkeypatch.setattr(
+            "backend.app.services.website_scraper.extract_website_content",
+            lambda *args, **kwargs: {"content": "Fake company info."},
+        )
+        response = client.post(
+            "/api/personas",
+            json=payload,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["target_persona_name"] == "Chief Marketing Officer"
+        assert data["demographics"]["title"] == "Chief Marketing Officer"
+        assert data["psychographics"]["motivations"][0] == "Market share growth"
+        assert data["metadata"]["primary_context_source"] == "user_input"
 
 
 @pytest.mark.skip(

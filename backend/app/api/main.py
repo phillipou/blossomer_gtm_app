@@ -1,5 +1,12 @@
 from fastapi import FastAPI
-from backend.app.api.routes import company, customers, campaigns, auth, neon_auth
+from backend.app.api.routes import (
+    company,
+    accounts,
+    personas,
+    campaigns,
+    auth,
+    neon_auth,
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Blossomer GTM API v2")
@@ -18,14 +25,16 @@ app.add_middleware(
 
 # Register API endpoints
 app.include_router(company.router, prefix="/api/company", tags=["Company"])
-app.include_router(customers.router, prefix="/api", tags=["Accounts", "Personas"])
+app.include_router(accounts.router, prefix="/api", tags=["Accounts"])
+app.include_router(personas.router, prefix="/api", tags=["Personas"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(neon_auth.router, prefix="/api/neon-auth", tags=["Neon Auth"])
 
 # Register demo endpoints (these are defined within their respective routers with the /demo prefix)
 app.include_router(company.router, tags=["Demo"], include_in_schema=True)
-app.include_router(customers.router, tags=["Demo"], include_in_schema=True)
+app.include_router(accounts.router, tags=["Demo"], include_in_schema=True)
+app.include_router(personas.router, tags=["Demo"], include_in_schema=True)
 app.include_router(campaigns.router, tags=["Demo"], include_in_schema=True)
 
 
