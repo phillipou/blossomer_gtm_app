@@ -2,6 +2,15 @@
 
 *Created: July 8, 2025*
 
+---
+
+**UPDATE (July 8, 2025):**
+- ✅ Real Stack Auth JWT validation is now fully implemented in `neon_auth.py` using python-jose and the Stack Auth JWKS endpoint.
+- ✅ The backend reads `STACK_PROJECT_ID` from the environment. Use your dev project ID for development and update to your production project ID before deploying to prod.
+- See `.env.example` for environment variable usage and instructions.
+
+---
+
 ## 🚀 Milestone Complete: Stack Auth JWT Migration
 
 **As of July 8, 2025:**
@@ -10,7 +19,7 @@
 - ✅ Frontend passes Stack Auth JWT tokens from `useAuthState().token` to all authenticated API calls
 - ✅ Documentation and tests have been updated to reflect the new authentication flow
 - ✅ Demo endpoints remain available for unauthenticated/demo usage
-- ⚠️ (TODO) Real JWT validation in `neon_auth.py` is still a placeholder; production should use the same validation as the rest of the backend
+- ✅ Real JWT validation in `neon_auth.py` is now implemented and production-ready. The backend verifies JWT signature, expiration, and extracts user data from the token using the Stack Auth JWKS endpoint and project ID from the environment.
 
 ---
 

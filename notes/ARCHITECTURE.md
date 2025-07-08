@@ -79,6 +79,8 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 ### **API Layer**
 - **Dual Endpoint Structure**: `/demo/*` (unauthenticated, IP rate limited) and `/api/*` (Stack Auth token required)
 - **Hybrid Authentication**: Stack Auth JWT tokens for user identity + database-linked permissions/rate limits
+- **JWT Validation**: The backend now performs real JWT validation using python-jose and the Stack Auth JWKS endpoint. The project ID is read from the `STACK_PROJECT_ID` environment variable. **For development, use your dev project ID; for production, update to your production project ID before deploying.**
+- **Environment Variables**: See `.env.example` for required variables and usage instructions, including how to set `STACK_PROJECT_ID` for different environments.
 - **FastAPI Router**: Automatic OpenAPI documentation generation
 - **Middleware Stack**: Authentication, rate limiting, CORS, request logging
 - **Error Handling**: Standardized error responses with actionable guidance
