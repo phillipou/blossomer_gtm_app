@@ -16,7 +16,7 @@ import type { TargetAccountResponse, ApiError } from "../types/api";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
-import { getEntityColorForParent } from "../lib/entityColors";
+import { getEntityColorForParent, getAddCardHoverClasses } from "../lib/entityColors";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
@@ -51,7 +51,7 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
 function AddAccountCard({ onClick }: { onClick: () => void }) {
   return (
     <Card
-      className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+      className={`flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 min-h-[180px] ${getAddCardHoverClasses()}`}
       onClick={onClick}
     >
       <div className="flex flex-col items-center">
@@ -273,7 +273,7 @@ export default function TargetAccountsList() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
                 {filteredAccounts.map((account) => {
                   return (
                     <TargetAccountCard

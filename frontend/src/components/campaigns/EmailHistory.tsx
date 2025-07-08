@@ -73,7 +73,7 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
       </div>
 
       {/* Email Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
         {filteredEmails.map((email) => {
           // Prefer snapshot fields for parent info, fallback to config, then placeholders
           let parents = [];

@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardHeader } from "../ui/card";
 import CardParentFooter from "./CardParentFooter";
-import { type EntityType, getEntityDotColor } from "../../lib/entityColors";
+import { type EntityType, getEntityDotColor, getCardHoverClasses } from "../../lib/entityColors";
 
 interface SummaryCardProps {
   title: string;
@@ -29,7 +29,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
 
   return (
     <Card
-      className={`group relative transition-all duration-200 cursor-pointer border-0 border-l-4 ${borderColor} hover:shadow-lg hover:scale-[1.02] ${className}`}
+      className={`group relative cursor-pointer border-0 border-l-4 ${borderColor} ${getCardHoverClasses()} ${className}`}
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-center justify-between">

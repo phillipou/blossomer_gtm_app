@@ -91,3 +91,17 @@ export function getEntityCardHoverBorder(entityType: EntityType): string {
 export function getEntityColorForParent(entityType: EntityType): string {
   return ENTITY_COLORS[entityType].dot;
 }
+
+/**
+ * Centralized card hover effects for consistent UX
+ */
+export function getCardHoverClasses(): string {
+  return 'transition-all duration-200 hover:shadow-lg hover:scale-[1.01]';
+}
+
+/**
+ * Add-style card hover effects (for dashed border cards)
+ */
+export function getAddCardHoverClasses(): string {
+  return 'transition-all duration-200 hover:bg-blue-50 hover:shadow-md hover:scale-[1.01]';
+}

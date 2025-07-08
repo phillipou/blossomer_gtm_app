@@ -19,7 +19,7 @@ interface OverviewCardProps {
   entityType?: EntityType;
 }
 
-import { getEntityDotColor } from "../../lib/entityColors";
+import { getEntityDotColor, getCardHoverClasses } from "../../lib/entityColors";
 
 export default function OverviewCard({
   title,
@@ -52,7 +52,7 @@ export default function OverviewCard({
   return (
     <>
       <Card
-        className={`mb-6 group relative border-0 border-l-4 ${borderColor}`}
+        className={`mb-6 group relative border-0 border-l-4 ${borderColor} ${getCardHoverClasses()}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

@@ -471,7 +471,7 @@ export default function Company() {
             {/* Target Accounts Section */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Target Accounts</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
                 {targetAccounts.map((account) => (
                   <SummaryCard
                     key={account.id}

@@ -1,5 +1,6 @@
 import { Card } from "./card";
 import { Plus } from "lucide-react";
+import { getAddCardHoverClasses } from "../../lib/entityColors";
 
 interface AddCardProps {
   onClick: () => void;
@@ -9,7 +10,7 @@ interface AddCardProps {
 export default function AddCard({ onClick, label = "Add New" }: AddCardProps) {
   return (
     <Card
-      className="flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 hover:bg-blue-50 min-h-[180px]"
+      className={`flex items-center justify-center cursor-pointer border-dashed border-2 border-blue-200 min-h-[180px] ${getAddCardHoverClasses()}`}
       onClick={onClick}
     >
       <div className="flex flex-col items-center">
