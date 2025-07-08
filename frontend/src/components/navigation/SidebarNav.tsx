@@ -81,24 +81,24 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       className={`bg-gray-50 border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0 transition-all duration-200 ${collapsed ? "w-16" : "w-56"}`}
     >
       {/* Header with custom SplitPanel icon and Company label */}
-      <div className="px-2 py-4">
+      <div className="px-4 py-4">
         <button
-          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors focus:outline-none bg-transparent border-0 ring-0 focus:border-0 focus:ring-0 hover:border-0 active:border-0 hover:bg-gray-200`}
+          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-2 py-2 rounded-lg text-left transition-colors focus:outline-none bg-transparent border-0 ring-0 focus:border-0 focus:ring-0 hover:border-0 active:border-0 hover:bg-gray-200`}
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <SplitPanelIcon className="w-6 h-6 text-gray-700" />
-          {!collapsed && <span className="text-base font-semibold text-gray-900">Company</span>}
+          {!collapsed && <span className="text-base font-semibold text-gray-900">Dashboard</span>}
         </button>
       </div>
       {/* Navigation */}
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 px-4 py-2">
         <div className="space-y-1">
           {navItems.map((item) => (
             <Button
               key={item.key}
               variant="ghost"
-              className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors relative
+              className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-2 py-2 rounded-lg text-left transition-colors relative
                 ${activeTab === item.key ? "bg-blue-50 text-blue-700 font-medium ring-0 border-0 outline-none" : "text-gray-600"}
                 hover:bg-blue-50 hover:text-blue-700 hover:font-medium focus:ring-0 focus:border-0 focus:outline-none border-0 ring-0 hover:border-0 active:border-0`}
               onClick={item.onClick}
