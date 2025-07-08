@@ -15,6 +15,7 @@ import type { TargetAccountResponse, ApiError } from "../types/api";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
+import { getEntityColorForParent } from "../lib/entityColors";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
@@ -32,8 +33,9 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
     <SummaryCard
       title={targetAccount.targetAccountName}
       description={targetAccount.targetAccountDescription}
-      parents={[{ name: companyName, color: "bg-green-400", label: "Company" }]}
+      parents={[{ name: companyName, color: getEntityColorForParent('company'), label: "Company" }]}
       onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
+      entityType="account"
     >
       <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(targetAccount); }} className="text-blue-600">
         <Edit3 className="w-5 h-5" />

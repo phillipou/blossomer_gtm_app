@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Clock, Search, Filter, Pencil, Trash } from "lucide-react"
 import SummaryCard from "../cards/SummaryCard"
 import type { GeneratedEmail } from "../../types/api"
+import { getEntityColorForParent } from "../../lib/entityColors"
 
 interface EmailHistoryProps {
   emails: GeneratedEmail[]
@@ -76,17 +77,17 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
         {filteredEmails.map((email) => {
           // Prefer snapshot fields for parent info, fallback to config, then placeholders
           let parents = [];
-          if (email.companySnapshot?.companyName) parents.push({ name: email.companySnapshot.companyName, color: "bg-green-400", label: "Company" });
-          else if (email.config?.companyName) parents.push({ name: email.config.companyName, color: "bg-green-400", label: "Company" });
-          else parents.push({ name: "Demo Company", color: "bg-green-400", label: "Company" });
+          if (email.companySnapshot?.companyName) parents.push({ name: email.companySnapshot.companyName, color: getEntityColorForParent('company'), label: "Company" });
+          else if (email.config?.companyName) parents.push({ name: email.config.companyName, color: getEntityColorForParent('company'), label: "Company" });
+          else parents.push({ name: "Demo Company", color: getEntityColorForParent('company'), label: "Company" });
 
-          if (email.accountSnapshot?.targetAccountName) parents.push({ name: email.accountSnapshot.targetAccountName, color: "bg-red-400", label: "Account" });
-          else if (email.config?.accountName) parents.push({ name: email.config.accountName, color: "bg-red-400", label: "Account" });
-          else parents.push({ name: "Demo Account", color: "bg-red-400", label: "Account" });
+          if (email.accountSnapshot?.targetAccountName) parents.push({ name: email.accountSnapshot.targetAccountName, color: getEntityColorForParent('account'), label: "Account" });
+          else if (email.config?.accountName) parents.push({ name: email.config.accountName, color: getEntityColorForParent('account'), label: "Account" });
+          else parents.push({ name: "Demo Account", color: getEntityColorForParent('account'), label: "Account" });
 
-          if (email.personaSnapshot?.targetPersonaName) parents.push({ name: email.personaSnapshot.targetPersonaName, color: "bg-blue-400", label: "Persona" });
-          else if (email.config?.personaName) parents.push({ name: email.config.personaName, color: "bg-blue-400", label: "Persona" });
-          else parents.push({ name: "Demo Persona", color: "bg-blue-400", label: "Persona" });
+          if (email.personaSnapshot?.targetPersonaName) parents.push({ name: email.personaSnapshot.targetPersonaName, color: getEntityColorForParent('persona'), label: "Persona" });
+          else if (email.config?.personaName) parents.push({ name: email.config.personaName, color: getEntityColorForParent('persona'), label: "Persona" });
+          else parents.push({ name: "Demo Persona", color: getEntityColorForParent('persona'), label: "Persona" });
 
           return (
             <SummaryCard
@@ -95,6 +96,7 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
               description={email.body.substring(0, 120) + (email.body.length > 120 ? "..." : "")}
               parents={parents}
               onClick={() => onSelectEmail(email)}
+              entityType="campaign"
             >
               {/* Edit button */}
               <Button

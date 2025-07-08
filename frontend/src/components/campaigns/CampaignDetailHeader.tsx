@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { Card, CardContent } from "../ui/card";
 import type { CompanyOverviewResponse, TargetAccountResponse, TargetPersonaResponse } from "../../types/api";
+import { getEntityDotColor } from "../../lib/entityColors";
 
 // Accept EditingMode as a type for value and setEditingMode
 export type EditingMode = "component" | "writing";
@@ -63,15 +64,15 @@ export default function CampaignDetailHeader({
           {/* Parent indicators */}
           <div className="flex flex-row items-center gap-8 mt-1">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-green-400 inline-block" />
+              <span className={`h-2 w-2 rounded-full ${getEntityDotColor('company')} inline-block`} />
               <span className="text-sm text-gray-700">{company?.companyName || "Company"}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-red-400 inline-block" />
+              <span className={`h-2 w-2 rounded-full ${getEntityDotColor('account')} inline-block`} />
               <span className="text-sm text-gray-700">{account?.targetAccountName || "Account"}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-blue-400 inline-block" />
+              <span className={`h-2 w-2 rounded-full ${getEntityDotColor('persona')} inline-block`} />
               <span className="text-sm text-gray-700">{persona?.targetPersonaName || "Persona"}</span>
             </div>
           </div>

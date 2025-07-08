@@ -10,6 +10,7 @@ import { transformKeysToCamelCase } from "../lib/utils";
 
 import SummaryCard from "../components/cards/SummaryCard";
 import type { TargetPersonaResponse, ApiError } from "../types/api";
+import { getEntityColorForParent } from "../lib/entityColors";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
 import InputModal from "../components/modals/InputModal";
@@ -178,10 +179,11 @@ export default function TargetPersonas() {
                     title={persona.targetPersonaName}
                     description={persona.targetPersonaDescription}
                     parents={[
-                      { name: accountName, color: "bg-red-400", label: "Account" },
-                      { name: overview?.companyName || "Company", color: "bg-green-400", label: "Company" },
+                      { name: accountName, color: getEntityColorForParent('account'), label: "Account" },
+                      { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
                     ]}
                     onClick={() => handlePersonaClick(accountId, persona.id)}
+                    entityType="persona"
                   >
                     <Button 
                       size="icon" 

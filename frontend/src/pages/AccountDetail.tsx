@@ -134,6 +134,7 @@ export default function AccountDetail() {
         activeSubTab={""}
         setActiveSubTab={() => {}}
         subTabs={[]}
+        entityType="account"
       />
       {/* Content */}
       <div className="flex-1 p-8 space-y-8">

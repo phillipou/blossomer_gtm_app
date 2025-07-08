@@ -63,8 +63,7 @@ export default function OverviewCard({
                 <Building2 className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-black mb-2">{title}</h2>
-                <div className={`h-1 w-16 ${entityColor} rounded-full mb-1`}></div>
+                <h2 className="text-xl font-semibold text-black">{title}</h2>
                 {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
               </div>
             </div>

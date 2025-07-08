@@ -14,6 +14,7 @@ import { getStoredTargetAccounts } from "../lib/accountService";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import { Edit3, Trash2 } from "lucide-react";
+import { getEntityColorForParent } from "../lib/entityColors";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -432,12 +433,13 @@ export default function Company() {
           <div className="flex-1 p-8 space-y-8">
             {/* Overview Block */}
             <OverviewCard
-              title={companyName}
-              subtitle={domain}
-              bodyTitle="Company Overview"
-              bodyText={overview?.description || "No description available"}
-              showButton={false}
-            />
+               title={companyName}
+               subtitle={domain}
+               bodyTitle="Company Overview"
+               bodyText={overview?.description || "No description available"}
+               showButton={false}
+               entityType="company"
+             />
             
             {/* Analysis Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -447,19 +449,20 @@ export default function Company() {
                 
                 return (
                   <ListInfoCard
-                    key={key}
-                    title={label}
-                    items={items}
-                    onEdit={isEditable ? handleListEdit(key) : undefined}
-                    renderItem={(item: string, idx: number) => (
-                      bulleted ? (
-                        <span key={idx} className="text-sm text-gray-700 blue-bullet mb-2">{item}</span>
-                      ) : (
-                        <div key={idx} className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded border-l-4 border-blue-200">{item}</div>
-                      )
-                    )}
-                    editModalSubtitle={subtitle}
-                  />
+                     key={key}
+                     title={label}
+                     items={items}
+                     onEdit={isEditable ? handleListEdit(key) : undefined}
+                     renderItem={(item: string, idx: number) => (
+                       bulleted ? (
+                         <span key={idx} className="text-sm text-gray-700 blue-bullet mb-2">{item}</span>
+                       ) : (
+                         <div key={idx} className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded border-l-4 border-blue-200">{item}</div>
+                       )
+                     )}
+                     editModalSubtitle={subtitle}
+                     entityType="company"
+                   />
                 );
               })}
             </div>
@@ -474,9 +477,10 @@ export default function Company() {
                     title={account.targetAccountName}
                     description={account.targetAccountDescription}
                     parents={[
-                      { name: companyName, color: "bg-green-400", label: "Company" },
+                      { name: companyName, color: getEntityColorForParent('company'), label: "Company" },
                     ]}
                     onClick={() => handleAccountClick(account.id)}
+                    entityType="account"
                   >
                     <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleEditAccount(account); }} className="text-blue-600">
                       <Edit3 className="w-5 h-5" />

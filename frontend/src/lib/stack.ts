@@ -6,4 +6,11 @@ export const stackClientApp = new StackClientApp({
   publishableClientKey: import.meta.env.VITE_STACK_PUBLISHABLE_CLIENT_KEY!,
   tokenStore: 'cookie', // Use cookies for token storage
   redirectMethod: { useNavigate },
+  urls: {
+    signIn: '/auth?mode=signin',
+    signUp: '/auth?mode=signup',
+    afterSignIn: '/company',
+    afterSignUp: '/company',
+    afterSignOut: '/auth?mode=signin',
+  }
 })

@@ -38,6 +38,45 @@ class AuthService:
         return hashlib.sha256(api_key.encode()).hexdigest()
 
     @staticmethod
+    def create_user_from_neon_auth(
+        db: Session,
+        neon_auth_user_id: str,
+        email: str,
+        name: Optional[str] = None,
+        role: str = "user",
+        rate_limit_exempt: bool = False,
+    ) -> User:
+        """
+        Create a user record linked to Neon Auth user.
+        Used when a Neon Auth user first requests an API key.
+        Returns:
+            User object
+        """
+        existing_user = db.query(User).filter(
+            (User.email == email) | (User.neon_auth_user_id == neon_auth_user_id)
+        ).first()
+        if existing_user:
+            # Update existing user with Neon Auth ID if missing
+            if not existing_user.neon_auth_user_id:
+                existing_user.neon_auth_user_id = neon_auth_user_id
+                existing_user.email = email
+                existing_user.name = name
+                db.commit()
+            return existing_user
+            
+        user = User(
+            neon_auth_user_id=neon_auth_user_id,
+            email=email, 
+            name=name, 
+            role=role, 
+            rate_limit_exempt=rate_limit_exempt
+        )
+        db.add(user)
+        db.commit()
+        logger.info(f"Created user {email} linked to Neon Auth user {neon_auth_user_id}")
+        return user
+
+    @staticmethod
     def create_user_with_api_key(
         db: Session,
         email: str,
@@ -73,6 +112,32 @@ class AuthService:
         db.commit()
         logger.info(f"Created user {email} with API key {key_prefix}")
         return user, full_key
+
+    @staticmethod
+    def create_api_key_for_user(
+        db: Session,
+        user: User,
+        key_name: str = "API Key",
+        tier: str = "free"
+    ) -> str:
+        """
+        Create a new API key for an existing user.
+        Used by authenticated Neon Auth users to generate API keys.
+        Returns:
+            Full API key string
+        """
+        full_key, key_hash, key_prefix = AuthService.generate_api_key(tier)
+        api_key = APIKey(
+            user_id=user.id,
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            name=key_name,
+            tier=tier,
+        )
+        db.add(api_key)
+        db.commit()
+        logger.info(f"Created API key {key_prefix} for user {user.email}")
+        return full_key
 
     @staticmethod
     def validate_api_key(db: Session, api_key: str) -> Optional[APIKey]:

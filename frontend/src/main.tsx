@@ -12,7 +12,9 @@ import Personas from './pages/Personas'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
 import MainLayout from './components/layout/MainLayout'
+import NavbarOnlyLayout from "./components/layout/NavbarOnlyLayout";
 import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
+import { Auth } from './pages/Auth'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
@@ -23,6 +25,9 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route element={<NavbarOnlyLayout />}>
+            <Route path="auth" element={<Auth />} />
+          </Route>
           <Route element={<MainLayout />}>
             <Route path="company" element={<Company />} />
             <Route path="target-accounts" element={<Accounts />} />

@@ -132,6 +132,7 @@ export default function PersonaDetail() {
         activeSubTab=""
         setActiveSubTab={() => {}}
         subTabs={[]}
+        entityType="persona"
       />
       <div className="flex-1 p-8 space-y-8">
         {/* Overview Card */}

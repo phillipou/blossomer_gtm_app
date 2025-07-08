@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useStackApp, useUser } from '@stackframe/react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { User, LogOut, Settings } from 'lucide-react'
 import { APIKeyModal } from './APIKeyModal'
@@ -7,14 +8,15 @@ import { APIKeyModal } from './APIKeyModal'
 export function NeonAuthHeader() {
   const app = useStackApp()
   const user = useUser()
+  const navigate = useNavigate()
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
 
   const handleSignIn = () => {
-    app.redirectToSignIn()
+    navigate('/auth?mode=signin')
   }
 
   const handleSignUp = () => {
-    app.redirectToSignUp()
+    navigate('/auth?mode=signup')
   }
 
   const handleSignOut = async () => {

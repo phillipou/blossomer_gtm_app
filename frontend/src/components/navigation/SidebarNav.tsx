@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Building2, Users, UserCheck, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
+import { getEntityNavActiveClass, getEntityNavHoverClass, type EntityType } from "../../lib/entityColors";
 
 interface SidebarNavProps {
   companyName?: string;
@@ -55,24 +56,28 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       label: "Company",
       icon: <Building2 className="w-5 h-5" />,
       onClick: () => navigate("/company"),
+      entityType: "company" as EntityType,
     },
     {
       key: "accounts",
       label: "Accounts",
       icon: <Users className="w-5 h-5" />,
       onClick: () => navigate("/target-accounts"),
+      entityType: "account" as EntityType,
     },
     {
       key: "personas",
       label: "Personas",
       icon: <UserCheck className="w-5 h-5" />,
       onClick: () => navigate("/target-personas"),
+      entityType: "persona" as EntityType,
     },
     {
       key: "campaigns",
       label: "Campaigns",
       icon: <TrendingUp className="w-5 h-5" />,
       onClick: () => navigate("/campaigns"),
+      entityType: "campaign" as EntityType,
     },
   ];
 
@@ -99,8 +104,8 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
               key={item.key}
               variant="ghost"
               className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-2 py-2 rounded-lg text-left transition-colors relative
-                ${activeTab === item.key ? "bg-blue-50 text-blue-700 font-medium ring-0 border-0 outline-none" : "text-gray-600"}
-                hover:bg-blue-50 hover:text-blue-700 hover:font-medium focus:ring-0 focus:border-0 focus:outline-none border-0 ring-0 hover:border-0 active:border-0`}
+                ${activeTab === item.key ? getEntityNavActiveClass(item.entityType) + " ring-0 border-0 outline-none" : "text-gray-600"}
+                ${getEntityNavHoverClass(item.entityType)} focus:ring-0 focus:border-0 focus:outline-none border-0 ring-0 hover:border-0 active:border-0`}
               onClick={item.onClick}
               aria-label={item.label}
               tabIndex={0}

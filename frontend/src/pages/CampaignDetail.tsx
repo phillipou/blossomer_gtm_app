@@ -124,6 +124,7 @@ export default function CampaignDetail() {
         activeSubTab=""
         setActiveSubTab={() => {}}
         subTabs={[]}
+        entityType="campaign"
       />
       <div className="flex-1 p-8">
         <CampaignDetailHeader
