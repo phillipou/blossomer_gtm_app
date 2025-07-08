@@ -6,7 +6,7 @@ from datetime import datetime
 
 from backend.app.core.database import get_db
 from backend.app.core.auth import AuthService, authenticate_api_key
-from backend.app.models import User, APIKey
+from backend.app.models import APIKey
 
 
 router = APIRouter()
@@ -76,10 +76,12 @@ async def signup(request: UserSignupRequest, db: Session = Depends(get_db)):
 
         return UserSignupResponse(
             user_id=str(user.id),
-            email=user.email,
-            name=user.name,
+            email=str(user.email),
+            name=str(user.name) if user.name is not None else None,
             api_key=api_key,
-            message="Account created successfully! Please save your API key - it won't be shown again.",
+            message=(
+                "Account created successfully! Please save your API key - it won't be shown again."
+            ),
         )
     except HTTPException:
         raise
@@ -103,12 +105,12 @@ async def validate_api_key(
     return APIKeyValidationResponse(
         valid=True,
         user_id=str(user.id),
-        email=user.email,
-        name=user.name,
-        tier=api_key_record.tier,
-        rate_limit_exempt=user.rate_limit_exempt,
-        created_at=api_key_record.created_at,
-        last_used=api_key_record.last_used,
+        email=str(user.email),
+        name=str(user.name) if user.name is not None else None,
+        tier=str(api_key_record.tier),
+        rate_limit_exempt=bool(user.rate_limit_exempt),
+        created_at=getattr(api_key_record, 'created_at', None),
+        last_used=getattr(api_key_record, 'last_used', None),
     )
 
 
@@ -125,7 +127,7 @@ async def get_user_profile(
     # Get all API keys for this user
     api_keys = (
         db.query(APIKey)
-        .filter(APIKey.user_id == user.id, APIKey.is_active == True)
+        .filter(APIKey.user_id == user.id, APIKey.is_active == True)  # noqa: E712
         .all()
     )
 
@@ -168,7 +170,7 @@ async def create_api_key(
     # Check if user already has too many API keys
     existing_keys = (
         db.query(APIKey)
-        .filter(APIKey.user_id == user.id, APIKey.is_active == True)
+        .filter(APIKey.user_id == user.id, APIKey.is_active == True)  # noqa: E712
         .count()
     )
 
@@ -215,7 +217,7 @@ async def delete_api_key(
     key_to_delete = (
         db.query(APIKey)
         .filter(
-            APIKey.id == key_id, APIKey.user_id == user.id, APIKey.is_active == True
+            APIKey.id == key_id, APIKey.user_id == user.id, APIKey.is_active == True  # noqa: E712
         )
         .first()
     )
@@ -235,7 +237,7 @@ async def delete_api_key(
     # Check if this is the user's last API key
     active_keys = (
         db.query(APIKey)
-        .filter(APIKey.user_id == user.id, APIKey.is_active == True)
+        .filter(APIKey.user_id == user.id, APIKey.is_active == True)  # noqa: E712
         .count()
     )
 
