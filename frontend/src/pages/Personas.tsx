@@ -140,7 +140,7 @@ export default function TargetPersonas() {
           title={overview?.companyName || "Your Company"}
           subtitle={overview?.companyUrl || ""}
           bodyTitle="Company Overview"
-          bodyText={overview?.companyOverview || ""}
+          bodyText={overview?.description || ""}
           showButton={true}
           buttonTitle="View Details"
         />

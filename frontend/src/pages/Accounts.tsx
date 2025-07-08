@@ -227,7 +227,7 @@ export default function TargetAccountsList() {
           title={overview.companyName}
           subtitle={overview.companyUrl}
           bodyTitle="Company Overview"
-          bodyText={overview.companyOverview || ""}
+          bodyText={overview.description || ""}
           showButton={true}
           buttonTitle="View Details"
         />

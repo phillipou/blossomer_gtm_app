@@ -157,6 +157,7 @@ export interface TargetCompanyResponse {
   businessModel?: string[];
   differentiatedValue?: string[];
   customerBenefits?: string[];
+  description?: string;
 }
 
 export interface TargetPersonaRequest {
