@@ -83,7 +83,7 @@ from backend.app.prompts.registry import render_prompt
 
 def test_target_persona_endpoint_success(monkeypatch):
     """
-    Test the /customers/target_personas endpoint for a successful response.
+    Test the /personas endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
     payload = {
@@ -152,7 +152,7 @@ def test_target_persona_endpoint_success(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 200
@@ -311,7 +311,7 @@ def test_target_persona_endpoint_llm_response_empty_lists(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 200
@@ -367,7 +367,7 @@ def test_target_persona_endpoint_llm_response_missing_optional_fields(monkeypatc
         fake_generate_target_persona_profile,
     )
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -436,7 +436,7 @@ def test_target_persona_endpoint_llm_response_semantically_incorrect(monkeypatch
         fake_generate_target_persona_profile,
     )
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -446,7 +446,7 @@ def test_target_persona_endpoint_llm_response_semantically_incorrect(monkeypatch
 # --- API Endpoint Tests (Error Handling) ---
 def test_target_persona_endpoint_llm_refusal(monkeypatch):
     """
-    Test the /customers/target_personas endpoint for LLM refusal.
+    Test the /personas endpoint for LLM refusal.
     """
     payload = {
         "website_url": "https://example.com",
@@ -473,7 +473,7 @@ def test_target_persona_endpoint_llm_refusal(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -482,7 +482,7 @@ def test_target_persona_endpoint_llm_refusal(monkeypatch):
 
 def test_target_persona_endpoint_value_error(monkeypatch):
     """
-    Test the /customers/target_personas endpoint for a ValueError.
+    Test the /personas endpoint for a ValueError.
     """
     payload = {
         "website_url": "https://example.com",
@@ -499,7 +499,7 @@ def test_target_persona_endpoint_value_error(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -508,7 +508,7 @@ def test_target_persona_endpoint_value_error(monkeypatch):
 
 def test_target_persona_endpoint_http_exception(monkeypatch):
     """
-    Test the /customers/target_personas endpoint for an HTTPException.
+    Test the /personas endpoint for an HTTPException.
     """
     payload = {
         "website_url": "https://example.com",
@@ -525,7 +525,7 @@ def test_target_persona_endpoint_http_exception(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 400
@@ -542,7 +542,7 @@ def test_target_persona_endpoint_invalid_input_data_types(monkeypatch):
         "hypothesis": "Test Hypothesis",
     }
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -555,7 +555,7 @@ def test_target_persona_endpoint_invalid_input_data_types(monkeypatch):
     }
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422
@@ -569,7 +569,7 @@ def test_target_persona_endpoint_invalid_input_data_types(monkeypatch):
     }
 
     response = client.post(
-        "/api/customers/target_personas",
+        "/api/personas",
         json=payload,
     )
     assert response.status_code == 422

@@ -25,7 +25,7 @@ export async function generateTargetCompany(
   };
 
   // Use demo endpoint for now (no API key required)
-  return apiFetch<TargetAccountResponse>('/customers/target_accounts', {
+  return apiFetch<TargetAccountResponse>('/accounts', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -48,7 +48,7 @@ export async function generateTargetPersona(
     ...(targetAccountContext ? { targetAccountContext } : {}),
   };
   // Use demo endpoint for now (no API key required)
-  return apiFetch('/customers/target_personas', {
+  return apiFetch('/personas', {
     method: 'POST',
     body: JSON.stringify(request),
   });

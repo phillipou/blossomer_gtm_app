@@ -66,7 +66,7 @@ app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
 
 def test_target_account_endpoint_success(monkeypatch):
     """
-    Test the /customers/target_accounts endpoint for a successful response.
+    Test the /accounts endpoint for a successful response.
     Mocks orchestrator and LLM response to ensure the endpoint returns valid JSON and status 200.
     """
     payload = {
@@ -122,7 +122,7 @@ def test_target_account_endpoint_success(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 200
@@ -145,7 +145,7 @@ from backend.app.prompts.registry import render_prompt
 
 def test_target_account_endpoint_value_error(monkeypatch):
     """
-    Test the /customers/target_accounts endpoint for a ValueError.
+    Test the /accounts endpoint for a ValueError.
     """
 
     payload = {
@@ -164,7 +164,7 @@ def test_target_account_endpoint_value_error(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422
@@ -173,7 +173,7 @@ def test_target_account_endpoint_value_error(monkeypatch):
 
 def test_target_account_endpoint_http_exception(monkeypatch):
     """
-    Test the /customers/target_accounts endpoint for an HTTPException.
+    Test the /accounts endpoint for an HTTPException.
     """
 
     payload = {
@@ -192,7 +192,7 @@ def test_target_account_endpoint_http_exception(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 400
@@ -349,7 +349,7 @@ def test_target_account_endpoint_llm_response_empty_lists(monkeypatch):
     )
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 200
@@ -400,7 +400,7 @@ def test_target_account_endpoint_llm_response_missing_optional_fields(monkeypatc
         fake_generate_target_account_profile,
     )
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422
@@ -460,7 +460,7 @@ def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch
         fake_generate_target_account_profile,
     )
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422
@@ -478,7 +478,7 @@ def test_target_account_endpoint_invalid_input_data_types(monkeypatch):
         "hypothesis": "These are good companies",
     }
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422
@@ -491,7 +491,7 @@ def test_target_account_endpoint_invalid_input_data_types(monkeypatch):
     }
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422
@@ -505,7 +505,7 @@ def test_target_account_endpoint_invalid_input_data_types(monkeypatch):
     }
 
     response = client.post(
-        "/api/customers/target_accounts",
+        "/api/accounts",
         json=payload,
     )
     assert response.status_code == 422

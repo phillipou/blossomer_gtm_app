@@ -160,7 +160,7 @@ export default function Company() {
     }));
     setProgressStage(0);
     try {
-      const response = await apiFetch("/company/generate", {
+      const response = await apiFetch("/company", {
         method: "POST",
         body: JSON.stringify({
           website_url: url,

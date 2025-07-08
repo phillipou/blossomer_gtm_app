@@ -18,7 +18,7 @@ app.add_middleware(
 
 # Register API endpoints
 app.include_router(company.router, prefix="/api/company", tags=["Company"])
-app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
+app.include_router(customers.router, prefix="/api", tags=["Accounts", "Personas"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(neon_auth.router, prefix="/api/neon-auth", tags=["Neon Auth"])

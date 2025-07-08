@@ -18,10 +18,10 @@ router = APIRouter()
 
 
 @router.post(
-    "/demo/customers/target_accounts",
+    "/demo/accounts",
     response_model=TargetAccountResponse,
     summary="[DEMO] Generate Target Account Profile (discovery call preparation)",
-    tags=["Demo", "Customers", "Target Accounts", "AI"],
+    tags=["Demo", "Accounts", "AI"],
     response_description="A structured discovery call preparation report with company analysis and ICP hypothesis.",
 )
 async def demo_generate_target_account(
@@ -44,10 +44,10 @@ async def demo_generate_target_account(
 
 
 @router.post(
-    "/target_accounts",
+    "/accounts",
     response_model=TargetAccountResponse,
     summary="Generate Target Account Profile (discovery call preparation)",
-    tags=["Customers", "Target Accounts", "AI"],
+    tags=["Accounts", "AI"],
     response_description="A structured discovery call preparation report with company analysis and ICP hypothesis.",
 )
 async def prod_generate_target_account(
@@ -68,10 +68,10 @@ async def prod_generate_target_account(
 
 
 @router.post(
-    "/demo/customers/target_personas",
+    "/demo/personas",
     response_model=TargetPersonaResponse,
     summary="[DEMO] Generate Target Persona Profile (attributes, buying signals, rationale)",
-    tags=["Demo", "Customers", "Target Personas", "AI"],
+    tags=["Demo", "Personas", "AI"],
     response_description="A structured target persona profile for the given company context.",
 )
 async def demo_generate_target_persona(
@@ -91,10 +91,10 @@ async def demo_generate_target_persona(
 
 
 @router.post(
-    "/target_personas",
+    "/personas",
     response_model=TargetPersonaResponse,
     summary="Generate Target Persona Profile (attributes, buying signals, rationale)",
-    tags=["Customers", "Target Personas", "AI"],
+    tags=["Personas", "AI"],
     response_description="A structured target persona profile for the given company context.",
 )
 async def prod_generate_target_persona(

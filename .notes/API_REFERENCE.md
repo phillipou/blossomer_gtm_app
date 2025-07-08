@@ -38,7 +38,7 @@ Authorization: Bearer bls_1234567890abcdef...
 
 Generate comprehensive company analysis from website URL.
 
-**Endpoint**: `POST /demo/company/generate` or `POST /api/company/generate`
+**Endpoint**: `POST /demo/company` or `POST /api/company`
 
 **Request Body**:
 ```json
@@ -154,7 +154,7 @@ Generate comprehensive company analysis from website URL.
 
 Generate ideal customer account profiles with firmographics and buying signals.
 
-**Endpoint**: `POST /demo/customers/target_accounts` or `POST /api/customers/target_accounts`
+**Endpoint**: `POST /demo/accounts` or `POST /api/accounts`
 
 **Request Body**:
 ```json
@@ -200,7 +200,7 @@ Generate ideal customer account profiles with firmographics and buying signals.
 
 Generate detailed buyer personas with responsibilities, pain points, and buying criteria.
 
-**Endpoint**: `POST /demo/customers/target_personas` or `POST /api/customers/target_personas`
+**Endpoint**: `POST /demo/personas` or `POST /api/personas`
 
 **Request Body**:
 ```json
@@ -542,7 +542,7 @@ Get API usage statistics for authenticated user.
 ### Basic Analysis Flow
 ```javascript
 // Start company analysis
-const response = await fetch('/demo/company/generate', {
+const response = await fetch('/demo/company', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -553,6 +553,16 @@ const response = await fetch('/demo/company/generate', {
 
 const companyData = await response.json();
 
+// Generate target account
+const accountResponse = await fetch('/demo/accounts', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    account_profile_name: 'Mid-market SaaS companies',
+    hypothesis: 'Companies with 100-500 employees'
+  })
+});
+
 // Store in localStorage for session persistence
 localStorage.setItem('company_analysis', JSON.stringify(companyData));
 ```
@@ -560,7 +570,7 @@ localStorage.setItem('company_analysis', JSON.stringify(companyData));
 ### Authenticated Requests
 ```javascript
 // Using API key for production endpoints
-const response = await fetch('/api/company/generate', {
+const response = await fetch('/api/company', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -577,7 +587,7 @@ const reset = response.headers.get('X-RateLimit-Reset');
 ### Error Handling
 ```javascript
 try {
-  const response = await fetch('/demo/company/generate', options);
+  const response = await fetch('/demo/company', options);
   
   if (!response.ok) {
     const error = await response.json();

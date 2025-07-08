@@ -232,7 +232,7 @@ async def test_product_overview_endpoint_success(monkeypatch):
             }
 
     with patch("backend.app.core.llm_singleton.get_llm_client", return_value=LLMMock()):
-        response = client.post("/api/company/generate", json=payload)
+        response = client.post("/api/company", json=payload)
         assert response.status_code == 200
         data = response.json()
         assert data["company_name"] == "Fake Company Inc."
@@ -519,7 +519,7 @@ async def test_target_account_endpoint_success(monkeypatch):
             lambda *args, **kwargs: {"content": "Fake company info."},
         )
         response = client.post(
-            "/api/customers/target_accounts",
+            "/api/accounts",
             json=payload,
         )
         assert response.status_code == 200

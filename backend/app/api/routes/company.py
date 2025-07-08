@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/demo/company/generate",
+    "/demo/company",
     response_model=ProductOverviewResponse,
     summary="[DEMO] Generate Company Overview (features, company & persona profiles, pricing)",
     tags=["Demo", "Company", "Overview", "AI"],
@@ -42,7 +42,7 @@ async def demo_generate_product_overview(
 
 
 @router.post(
-    "/generate",
+    "/",
     response_model=ProductOverviewResponse,
     summary="Generate Company Overview (features, company & persona profiles, pricing)",
     tags=["Company", "Overview", "AI"],
