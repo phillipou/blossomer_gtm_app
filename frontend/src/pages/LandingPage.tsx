@@ -32,19 +32,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+              <button
+                type="button"
+                className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0 cursor-pointer"
+                aria-label="Go to home"
+                onClick={() => navigate("/")}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
+                  <img src="/blossomer-logo.png" alt="Blossomer Logo" className="w-10 h-10" />
                 </div>
                 <span className="text-xl font-semibold text-gray-900">Blossomer</span>
-              </div>
-              <div className="hidden md:flex items-center space-x-6">
-                <Button variant="ghost" className="text-gray-600">Playground</Button>
-                <Button variant="ghost" className="text-gray-600">Templates</Button>
-                <Button variant="ghost" className="text-gray-600">Docs</Button>
-                <Button variant="ghost" className="text-gray-600">Pricing</Button>
-                <Button variant="ghost" className="text-gray-600">Blog</Button>
-              </div>
+              </button>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" className="text-gray-600">Sign in</Button>
@@ -165,7 +163,7 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-blue-600" />
                 </div>
-                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Target Accounts</CardTitle>
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Target Accounts & Personas</CardTitle>
                 <CardDescription className="text-gray-600">Identify ideal customer profiles, personas, and prospecting sources</CardDescription>
               </CardHeader>
             </Card>
@@ -175,7 +173,7 @@ export default function LandingPage() {
                   <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-lg font-semibold text-gray-900 mb-2">Campaign Ideas</CardTitle>
-                <CardDescription className="text-gray-600">AI-generated marketing campaigns and go-to-market strategies</CardDescription>
+                <CardDescription className="text-gray-600">AI-generated marketing campaigns and go-to-market strategies applying Blossomer's best practices</CardDescription>
               </CardHeader>
             </Card>
           </div>

@@ -1,9 +1,10 @@
 import SidebarNav from "../navigation/SidebarNav";
 import { Button } from "../ui/button";
 import { Sparkles } from "lucide-react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 export default function MainLayout() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header (copied from LandingPage) */}
@@ -11,12 +12,17 @@ export default function MainLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0 cursor-pointer"
+                aria-label="Go to home"
+                onClick={() => navigate("/")}
+              >
                 <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
                   <img src="/blossomer-logo.png" alt="Blossomer Logo" className="w-10 h-10" />
                 </div>
                 <span className="text-xl font-semibold text-gray-900">Blossomer</span>
-              </div>
+              </button>
               <div className="hidden md:flex items-center space-x-6">
               </div>
             </div>
