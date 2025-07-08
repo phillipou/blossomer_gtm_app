@@ -41,11 +41,10 @@ export default function ListInfoCard({ title, items, onEdit, renderItem, editMod
     if (onEdit) onEdit(updated);
   };
 
-  // Helper to render a list item with custom bullet and alignment
-  const renderFlexBulletItem = (content: ReactNode, idx: number) => (
-    <li key={idx} className="flex items-start text-sm text-gray-700 m-0 p-0" style={{ margin: 0, padding: 0 }}>
-      <span className="mt-1 mr-2 text-blue-600" style={{ minWidth: '1em', textAlign: 'center', lineHeight: 1.2 }}>&#8226;</span>
-      <span className="flex-1 whitespace-pre-line break-words">{content}</span>
+  // Helper to render a list item with standard bullet and alignment
+  const renderStandardBulletItem = (content: ReactNode, idx: number) => (
+    <li key={idx} className="list-disc list-inside text-base text-gray-700 mb-2">
+      {content}
     </li>
   );
 
@@ -67,12 +66,6 @@ export default function ListInfoCard({ title, items, onEdit, renderItem, editMod
 
   return (
     <>
-      {/* Scoped style for blue bullets in ListInfoCard only */}
-      <style>{`
-        .list-infocard-list .blue-bullet::marker {
-          color: #2563eb;
-        }
-      `}</style>
       <Card
         className="group relative"
         onMouseEnter={() => setHovered(true)}
@@ -96,8 +89,8 @@ export default function ListInfoCard({ title, items, onEdit, renderItem, editMod
           )}
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 list-infocard-list m-0 p-0" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {localItems.map((item, idx) => renderFlexBulletItem(safeRenderItem(item, idx), idx))}
+          <ul className="list-disc list-inside m-0 p-0">
+            {localItems.map((item, idx) => renderStandardBulletItem(safeRenderItem(item, idx), idx))}
           </ul>
         </CardContent>
       </Card>

@@ -18,6 +18,7 @@ import { generateTargetPersona } from "../lib/accountService";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
+import ListInfoCard from "../components/cards/ListInfoCard";
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -189,20 +190,15 @@ export default function AccountDetail() {
               </Card>
               {/* Why they're a good fit InfoCard with edit affordance */}
               <div className="flex-1">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Why they're a good fit</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul>
-                      {rationale.map((item: string, idx: number) => (
-                        <li key={idx} className="list-disc list-inside text-sm text-gray-700 blue-bullet mb-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
+                <ListInfoCard
+                  title={"Why they're a good fit"}
+                  items={rationale}
+                  onEdit={undefined}
+                  renderItem={(item: string, idx: number) => (
+                    <span key={idx} className="text-sm text-gray-700">{item}</span>
+                  )}
+                  editModalSubtitle={"Why this account is a good fit for your solution."}
+                />
               </div>
             </div>
             {/* Buying Signals Block */}
@@ -231,20 +227,15 @@ export default function AccountDetail() {
               </CardContent>
             </Card>
             {/* Buying Signals Rationale Card (moved below Buying Signals) */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Buying Signals Rationale</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul>
-                  {accountDetail.buyingSignalsRationale?.map((item: string, idx: number) => (
-                    <li key={idx} className="list-disc list-inside text-sm text-gray-700 mb-2">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <ListInfoCard
+              title={"Buying Signals Rationale"}
+              items={accountDetail.buyingSignalsRationale || []}
+              onEdit={undefined}
+              renderItem={(item: string, idx: number) => (
+                <span key={idx} className="text-sm text-gray-700">{item}</span>
+              )}
+              editModalSubtitle={"Logic behind buying signal choices."}
+            />
             {/* Personas Section (only show account-specific personas) */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Personas for this Account</h2>
