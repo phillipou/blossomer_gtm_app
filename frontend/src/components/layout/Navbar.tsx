@@ -1,6 +1,6 @@
 import { Button } from "../ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useUser } from "@stackframe/react";
+import { useNavigate } from "react-router-dom";
+import { useUser, UserButton } from "@stackframe/react";
 import React from "react";
 
 interface NavbarProps {
@@ -9,22 +9,8 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const user = useUser();
 
-  const isLandingPage = location.pathname === '/';
-
-  const handleSignOut = async () => {
-    if (user) {
-      // Clear localStorage data
-      localStorage.removeItem('dashboard_overview');
-      localStorage.removeItem('target_accounts');
-      localStorage.removeItem('emailHistory');
-      
-      await user.signOut();
-      navigate('/');
-    }
-  };
 
   const handleLogoClick = () => {
     if (user) {
@@ -52,7 +38,7 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
           </div>
           <div className="flex items-center space-x-4">
             {user ? (
-              // Signed in user: Show Dashboard and Sign Out
+              // Authenticated: Show Dashboard (primary CTA) and UserButton
               <>
                 <Button 
                   className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg" 
@@ -60,21 +46,15 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
                 >
                   Dashboard
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-gray-600 hover:text-gray-800 focus:outline-none bg-transparent border-none shadow-none"
-                  onClick={handleSignOut}
-                >
-                  Sign out
-                </Button>
+                <UserButton />
               </>
             ) : (
-              // Not signed in: Show auth button only
+              // Not authenticated: Show Sign Up (primary CTA)
               <Button 
                 className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
-                onClick={() => navigate(isLandingPage ? '/auth?mode=signup' : '/auth?mode=signin')}
+                onClick={() => navigate('/auth?mode=signup')}
               >
-                {isLandingPage ? 'Sign up' : 'Sign in'}
+                Sign up
               </Button>
             )}
           </div>

@@ -140,7 +140,7 @@ export default function Company() {
   });
   const [progressStage, setProgressStage] = useState(0);
   const [activeTab] = useState("company");
-  const [targetAccounts, setTargetAccounts] = useState<TargetAccountResponse[]>([]);
+  const [targetAccounts, setTargetAccounts] = useState<(TargetAccountResponse & { id: string; createdAt: string })[]>([]);
   const initialMount = useRef(true);
 
   // Generate unique analysis ID
@@ -160,7 +160,7 @@ export default function Company() {
     }));
     setProgressStage(0);
     try {
-      const response = await apiFetch("/company", {
+      const response = await apiFetch("/company/generate", {
         method: "POST",
         body: JSON.stringify({
           website_url: url,
@@ -294,7 +294,7 @@ export default function Company() {
     navigate(`/target-accounts/${accountId}`);
   };
 
-  const handleEditAccount = (account: TargetAccountResponse) => {
+  const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
     // For now, just navigate to the account detail page
     navigate(`/target-accounts/${account.id}`);
   };
