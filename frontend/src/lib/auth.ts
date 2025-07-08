@@ -1,5 +1,6 @@
 // Authentication utilities and API client updates
 import { useUser, useStackApp } from '@stackframe/react'
+import { useEffect, useState } from 'react';
 
 export interface UserInfo {
   user_id: string
@@ -44,13 +45,32 @@ export function getAuthState(): AuthState {
 
 // Hook version for React components
 export function useAuthState(): AuthState {
-  const user = useUser()
-  const app = useStackApp()
-  
+  const user = useUser();
+  const app = useStackApp();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchToken() {
+      if (user && typeof user.getAuthJson === 'function') {
+        try {
+          const { accessToken } = await user.getAuthJson();
+          if (isMounted) setToken(accessToken || null);
+        } catch {
+          if (isMounted) setToken(null);
+        }
+      } else {
+        if (isMounted) setToken(null);
+      }
+    }
+    fetchToken();
+    return () => { isMounted = false; };
+  }, [user]);
+
   if (user) {
     return {
       isAuthenticated: true,
-      token: user.accessToken || null,
+      token,
       userInfo: {
         user_id: user.id,
         email: user.primaryEmail || '',
@@ -64,6 +84,36 @@ export function useAuthState(): AuthState {
     token: null,
     userInfo: null
   }
+}
+
+// New hook: useAsyncAuthToken
+// Returns { token, loading } for use in components
+export function useAsyncAuthToken() {
+  const user = useUser();
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchToken() {
+      setLoading(true);
+      if (user && typeof user.getAuthJson === 'function') {
+        try {
+          const { accessToken } = await user.getAuthJson();
+          if (isMounted) setToken(accessToken || null);
+        } catch (e) {
+          if (isMounted) setToken(null);
+        }
+      } else {
+        if (isMounted) setToken(null);
+      }
+      if (isMounted) setLoading(false);
+    }
+    fetchToken();
+    return () => { isMounted = false; };
+  }, [user]);
+
+  return { token, loading };
 }
 
 // These functions are no longer needed with Stack Auth integration
