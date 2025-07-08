@@ -1,91 +1,117 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Building2, Users, TrendingUp, Home, Settings, UserCheck } from "lucide-react";
-import { Sparkles } from "lucide-react";
+import { Building2, Users, UserCheck, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface SidebarNavProps {
   companyName?: string;
 }
 
+const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
+
+// Custom vertical split panel icon as a React component
+function SplitPanelIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+    </svg>
+  );
+}
+
 export default function SidebarNav({ companyName }: SidebarNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  // Robustly determine active tab
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (stored !== null) setCollapsed(stored === "true");
+  }, []);
+
+  // Persist collapsed state
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  }, [collapsed]);
+
+  // Determine active tab
   let activeTab = "";
   if (/^\/dashboard/.test(location.pathname)) {
     activeTab = "company";
   } else if (/^\/target-accounts\/[^/]+\/personas\//.test(location.pathname)) {
-    // Persona detail route
-    activeTab = "target-personas";
+    activeTab = "personas";
   } else if (location.pathname.startsWith("/target-accounts")) {
-    activeTab = "target-accounts";
+    activeTab = "accounts";
   } else if (location.pathname.startsWith("/target-personas")) {
-    activeTab = "target-personas";
+    activeTab = "personas";
   } else if (location.pathname.startsWith("/campaigns")) {
     activeTab = "campaigns";
   }
+
+  const navItems = [
+    {
+      key: "company",
+      label: "Company",
+      icon: <Building2 className="w-5 h-5" />,
+      onClick: () => navigate("/dashboard"),
+    },
+    {
+      key: "accounts",
+      label: "Accounts",
+      icon: <Users className="w-5 h-5" />,
+      onClick: () => navigate("/target-accounts"),
+    },
+    {
+      key: "personas",
+      label: "Personas",
+      icon: <UserCheck className="w-5 h-5" />,
+      onClick: () => navigate("/target-personas"),
+    },
+    {
+      key: "campaigns",
+      label: "Campaigns",
+      icon: <TrendingUp className="w-5 h-5" />,
+      onClick: () => navigate("/campaigns"),
+    },
+  ];
+
   return (
-    <div className="bg-white border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-lg font-semibold text-gray-900">{companyName || "Blossomer"}</span>
-        </div>
+    <div
+      className={`bg-gray-50 border-r border-gray-200 flex flex-col h-screen min-h-screen sticky top-0 transition-all duration-200 ${collapsed ? "w-16" : "w-56"}`}
+    >
+      {/* Header with custom SplitPanel icon and Dashboard label */}
+      <div className="p-2 border-b border-gray-200">
+        <button
+          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors focus:outline-none bg-transparent border-0 ring-0 focus:border-0 focus:ring-0 hover:border-0 active:border-0 hover:bg-gray-200`}
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <SplitPanelIcon className="w-6 h-6 text-gray-700" />
+          {!collapsed && <span className="text-base font-semibold text-gray-900">Dashboard</span>}
+        </button>
       </div>
       {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <div className="space-y-2">
-          <Button
-            variant={activeTab === "company" ? "secondary" : "ghost"}
-            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors relative ${activeTab === "company" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => navigate("/dashboard")}
-          >
-            <Building2 className="w-5 h-5" />
-            <span>Your Company</span>
-            {activeTab === "company" && <div className="absolute right-2 w-2 h-2 bg-orange-500 rounded-full"></div>}
-          </Button>
-          <Button
-            variant={activeTab === "target-accounts" ? "secondary" : "ghost"}
-            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "target-accounts" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => navigate("/target-accounts")}
-          >
-            <Users className="w-5 h-5" />
-            <span>Target Accounts</span>
-          </Button>
-          <Button
-            variant={activeTab === "target-personas" ? "secondary" : "ghost"}
-            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "target-personas" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => navigate("/target-personas")}
-          >
-            <UserCheck className="w-5 h-5" />
-            <span>Target Personas</span>
-          </Button>
-          <Button
-            variant={activeTab === "campaigns" ? "secondary" : "ghost"}
-            className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === "campaigns" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            onClick={() => navigate("/campaigns")}
-          >
-            <TrendingUp className="w-5 h-5" />
-            <span>Campaigns</span>
-          </Button>
+      <nav className="flex-1 p-2">
+        <div className="space-y-1">
+          {navItems.map((item) => (
+            <Button
+              key={item.key}
+              variant="ghost"
+              className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-start gap-2"} px-3 py-2 rounded-lg text-left transition-colors relative
+                ${activeTab === item.key ? "bg-blue-50 text-blue-700 font-medium ring-0 border-0 outline-none" : "text-gray-600"}
+                hover:bg-blue-50 hover:text-blue-700 hover:font-medium focus:ring-0 focus:border-0 focus:outline-none border-0 ring-0 hover:border-0 active:border-0`}
+              onClick={item.onClick}
+              aria-label={item.label}
+              tabIndex={0}
+              title={collapsed ? item.label : undefined}
+            >
+              {item.icon}
+              {!collapsed && <span>{item.label}</span>}
+            </Button>
+          ))}
         </div>
       </nav>
-      {/* Bottom navigation */}
-      <div className="p-2 border-t border-gray-200">
-        <div className="space-y-1">
-          <Button variant="ghost" className="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
-            <Home className="w-5 h-5" />
-            <span>Home</span>
-          </Button>
-          <Button variant="ghost" className="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left text-gray-600 hover:bg-gray-50">
-            <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 } 
