@@ -12,8 +12,20 @@ This API reference provides complete documentation for frontend integration with
 
 ### API Structure
 - **Demo endpoints**: `/demo/*` - No authentication, IP rate limited
-- **Production endpoints**: `/api/*` - API key required
+- **Production endpoints**: `/api/*` - Stack Auth JWT required
 - **Admin endpoints**: `/admin/*` - Admin access only
+
+## Endpoint Summary Table
+
+| Resource   | AI Generation Endpoint (Demo)         | AI Generation Endpoint (Prod)         | CRUD Endpoints (Prod)                |
+|------------|---------------------------------------|---------------------------------------|--------------------------------------|
+| Companies  | POST /demo/companies/generate-ai      | POST /api/companies/generate-ai       | /api/companies, /api/companies/{id}  |
+| Accounts   | POST /demo/accounts/generate-ai       | POST /api/accounts/generate-ai        | /api/accounts, /api/accounts/{id}    |
+| Personas   | POST /demo/personas/generate-ai       | POST /api/personas/generate-ai        | /api/personas, /api/personas/{id}    |
+| Campaigns  | POST /demo/campaigns/generate-ai      | POST /api/campaigns/generate-ai       | /api/campaigns, /api/campaigns/{id}  |
+
+- All CRUD endpoints follow standard RESTful conventions (POST, GET, PUT, DELETE).
+- All AI generation endpoints use the `/generate-ai` subroute for each resource.
 
 ## Authentication
 
@@ -51,13 +63,12 @@ const response = await fetch('/api/accounts', {
   - `X-RateLimit-Remaining`: Requests remaining in current window
   - `X-RateLimit-Reset`: Timestamp when rate limit resets
 
-## Company Analysis Endpoints
+## Company Endpoints
 
-### **✅ Generate Company Overview**
+### AI Generate Company Overview
 
-Generate comprehensive company analysis from website URL.
-
-**Endpoint**: `POST /demo/company` or `POST /api/company`
+- **Demo**: `POST /demo/companies/generate-ai`
+- **Production**: `POST /api/companies/generate-ai`
 
 **Request Body**:
 ```json
@@ -68,283 +79,99 @@ Generate comprehensive company analysis from website URL.
 }
 ```
 
-**Response**:
-```json
-{
-  "company_name": "Example Corp",
-  "company_url": "https://example.com",
-  "company_overview": "2-3 sentence summary of what the company does and their focus",
-  "capabilities": [
-    "Core technical capability 1",
-    "Platform feature 2",
-    "Key functionality 3"
-  ],
-  "business_model": [
-    "SaaS subscription model",
-    "Enterprise pricing tiers",
-    "Usage-based billing"
-  ],
-  "differentiated_value": [
-    "Unique approach or technology",
-    "Market positioning advantage",
-    "Proprietary feature set"
-  ],
-  "customer_benefits": [
-    "Expected ROI or efficiency gain",
-    "Problem resolution outcome",
-    "Value delivery metric"
-  ],
-  "alternatives": [
-    "Competitor 1 - similar features, different pricing",
-    "Competitor 2 - broader platform, less specialized"
-  ],
-  "testimonials": [
-    "\"Direct customer quote from website\" - Customer Name, Company",
-    "\"Another testimonial with attribution\" - Name, Role"
-  ],
-  "product_description": "Main product summary and core value proposition",
-  "key_features": [
-    "Feature 1 with brief description",
-    "Feature 2 with benefit explanation"
-  ],
-  "company_profiles": [
-    "Mid-market SaaS companies",
-    "Enterprise software vendors"
-  ],
-  "persona_profiles": [
-    "VP of Engineering",
-    "Head of Operations"
-  ],
-  "use_cases": [
-    "Use case 1 explicitly mentioned on website",
-    "Use case 2 from customer examples"
-  ],
-  "pain_points": [
-    "Pain point 1 addressed by the product",
-    "Challenge 2 solved by the platform"
-  ],
-  "pricing": "Pricing model description if available",
-  "confidence_scores": {
-    "company_name": 0.95,
-    "company_overview": 0.87,
-    "capabilities": 0.92,
-    "business_model": 0.78,
-    "differentiated_value": 0.81,
-    "customer_benefits": 0.76,
-    "alternatives": 0.69,
-    "testimonials": 0.88,
-    "product_description": 0.89,
-    "key_features": 0.93,
-    "company_profiles": 0.72,
-    "persona_profiles": 0.74,
-    "use_cases": 0.85,
-    "pain_points": 0.79,
-    "pricing": 0.65
-  },
-  "metadata": {
-    "sources_used": ["website", "user_input"],
-    "context_quality": "high",
-    "assessment_summary": "Comprehensive website data with clear product positioning",
-    "processing_time": "18.3s"
-  }
-}
-```
+**Response**: (see ProductOverviewResponse schema)
 
-**Error Responses**:
-```json
-{
-  "detail": "Invalid website URL format",
-  "error_code": "INVALID_URL"
-}
-```
+### Company CRUD
 
-```json
-{
-  "detail": "Website unreachable or blocked",
-  "error_code": "WEBSITE_UNREACHABLE"
-}
-```
+- **Create**: `POST /api/companies`
+- **List**: `GET /api/companies`
+- **Retrieve**: `GET /api/companies/{company_id}`
+- **Update**: `PUT /api/companies/{company_id}`
+- **Delete**: `DELETE /api/companies/{company_id}`
 
----
+## Account Endpoints
 
-## Customer Analysis Endpoints
+### AI Generate Target Account Profile
 
-### **✅ Generate Target Accounts**
-
-Generate ideal customer account profiles with firmographics and buying signals.
-
-**Endpoint**: `POST /demo/accounts` or `POST /api/accounts`
-
-**Request Body**:
-```json
-{
-  "account_profile_name": "Mid-market SaaS companies",
-  "hypothesis": "User's reasoning about the profile",
-  "additional_context": "Optional additional context"
-}
-```
-
-**Response**:
-```json
-{
-  "targetCompanyName": "Mid-Market SaaS Companies",
-  "targetCompanyDescription": "A brief description of the target company profile.",
-  "firmographics": {
-    "industry": ["SaaS", "Software"],
-    "companySize": {
-      "employees": "100-500",
-      "revenue": "$10M-$50M"
-    },
-    "geography": ["North America", "Europe"],
-    "businessModel": ["B2B", "Subscription"],
-    "fundingStage": ["Series A", "Series B"]
-  },
-  "buyingSignals": {
-    "growthIndicators": ["Recent funding", "Hiring key roles"],
-    "technologySignals": ["Using specific tech stack"],
-    "organizationalSignals": ["New executive leadership"],
-    "marketSignals": ["Regulatory changes"]
-  },
-  "rationale": "A detailed explanation of why this profile is a good target.",
-  "metadata": {
-    "context_quality": "high",
-    "primary_context_source": "user",
-    "assessment_summary": "Summary of the context assessment.",
-    "sources_used": ["user_input", "company_context"]
-  }
-}
-```
-
-### **✅ Generate Target Personas**
-
-Generate detailed buyer personas with responsibilities, pain points, and buying criteria.
-
-**Endpoint**: `POST /demo/personas` or `POST /api/personas`
+- **Demo**: `POST /demo/accounts/generate-ai`
+- **Production**: `POST /api/accounts/generate-ai`
 
 **Request Body**:
 ```json
 {
   "website_url": "https://example.com",
-  "user_inputted_context": "Optional persona hints",
-  "company_context": "Optional company analysis data",
-  "target_account_context": "Optional target account data"
+  "account_profile_name": "Mid-market SaaS companies",
+  "hypothesis": "User's reasoning about the profile",
+  "additional_context": "Optional additional context",
+  "company_context": { /* ... */ }
 }
 ```
 
-**Response**:
-```json
-{
-  "persona": "VP of Engineering",
-  "persona_attributes": [
-    "Senior engineering leadership role",
-    "Responsible for team productivity and delivery",
-    "Budget authority for development tools",
-    "Reports to CTO or CEO"
-  ],
-  "persona_buying_signals": [
-    "Seeking tools to improve team efficiency",
-    "Evaluating development workflow solutions",
-    "Attending engineering leadership conferences",
-    "Active on engineering management forums"
-  ],
-  "rationale": "This persona has both the authority to make purchasing decisions and the direct pain points that the product addresses. They're actively seeking solutions to improve engineering team productivity and have budget responsibility for development tools.",
-  "metadata": {
-    "primary_context_source": "website",
-    "context_quality": "high",
-    "assessment_summary": "Clear persona indicators from product positioning and testimonials",
-    "sources_used": ["website", "company_context"]
-  }
-}
-```
+**Response**: (see TargetAccountResponse schema)
 
----
+### Account CRUD
 
-## Campaign Management Endpoints
+- **Create**: `POST /api/accounts`
+- **List**: `GET /api/accounts`
+- **Retrieve**: `GET /api/accounts/{account_id}`
+- **Update**: `PUT /api/accounts/{account_id}`
+- **Delete**: `DELETE /api/accounts/{account_id}`
 
-### **🔴 TODO: Generate Campaign Assets**
+## Persona Endpoints
 
-Generate complete campaign materials based on company and customer analysis.
+### AI Generate Target Persona Profile
 
-**Endpoint**: `POST /api/campaigns/generate` *(Not implemented)*
+- **Demo**: `POST /demo/personas/generate-ai`
+- **Production**: `POST /api/personas/generate-ai`
 
 **Request Body**:
 ```json
 {
-  "campaign_type": "email_sequence",
-  "company_context": "Company analysis data",
-  "target_account_context": "Target account data",
-  "persona_context": "Persona analysis data",
-  "campaign_config": {
-    "sequence_length": 3,
-    "tone": "professional",
-    "focus": "value_proposition"
-  }
+  "website_url": "https://example.com",
+  "persona_profile_name": "VP of Engineering",
+  "hypothesis": "Why this persona is ideal",
+  "additional_context": "Optional persona hints",
+  "company_context": { /* ... */ },
+  "target_account_context": { /* ... */ }
 }
 ```
 
-**Expected Response**:
-```json
-{
-  "campaign_id": "camp_1234567890",
-  "campaign_type": "email_sequence",
-  "emails": [
-    {
-      "step": 1,
-      "subject": "Email subject line",
-      "body": "Email body content with personalization tokens",
-      "personalization_tokens": ["{{company_name}}", "{{first_name}}"],
-      "send_delay": "immediate"
-    },
-    {
-      "step": 2,
-      "subject": "Follow-up subject",
-      "body": "Follow-up email content",
-      "personalization_tokens": ["{{company_name}}", "{{pain_point}}"],
-      "send_delay": "3_days"
-    }
-  ],
-  "positioning_statements": [
-    "Core value proposition statement",
-    "Differentiation message",
-    "Proof point statement"
-  ],
-  "call_to_actions": [
-    "Primary CTA for each email",
-    "Alternative soft CTA options"
-  ]
-}
-```
+**Response**: (see TargetPersonaResponse schema)
 
-### **🔴 TODO: Refine Campaign Content**
+### Persona CRUD
 
-Refine specific parts of generated campaigns using AI assistance.
+- **Create**: `POST /api/personas`
+- **List**: `GET /api/personas`
+- **Retrieve**: `GET /api/personas/{persona_id}`
+- **Update**: `PUT /api/personas/{persona_id}`
+- **Delete**: `DELETE /api/personas/{persona_id}`
 
-**Endpoint**: `PATCH /api/campaigns/{campaign_id}/refine` *(Not implemented)*
+## Campaign Endpoints
+
+### AI Generate Email Campaign
+
+- **Demo**: `POST /demo/campaigns/generate-ai`
+- **Production**: `POST /api/campaigns/generate-ai`
 
 **Request Body**:
 ```json
 {
-  "section": "email_subject" | "email_body" | "positioning",
-  "current_content": "Current content to refine",
-  "refinement_prompt": "Make this more compelling for technical buyers",
-  "context": "Additional context for refinement"
+  "company_context": { /* ... */ },
+  "target_account": { /* ... */ },
+  "target_persona": { /* ... */ },
+  "preferences": { /* ... */ }
 }
 ```
 
-### **🔴 TODO: Generate Campaign Variants**
+**Response**: (see EmailGenerationResponse schema)
 
-Create A/B test variants for campaign elements.
+### Campaign CRUD
 
-**Endpoint**: `POST /api/campaigns/{campaign_id}/variants` *(Not implemented)*
-
-**Request Body**:
-```json
-{
-  "element_type": "subject_line" | "email_body" | "cta",
-  "variant_style": "more_direct" | "softer_approach" | "value_focused",
-  "original_content": "Original content to create variant of"
-}
-```
+- **Create**: `POST /api/campaigns`
+- **List**: `GET /api/campaigns`
+- **Retrieve**: `GET /api/campaigns/{campaign_id}`
+- **Update**: `PUT /api/campaigns/{campaign_id}`
+- **Delete**: `DELETE /api/campaigns/{campaign_id}`
 
 ---
 

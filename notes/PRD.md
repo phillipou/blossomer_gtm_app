@@ -244,7 +244,9 @@ Paid tier (future): 100+ requests/hour per user
 
 ### **Dual API Structure (Demo + Production)**
 **Decision**: Separate demo endpoints with IP rate limiting vs. API key endpoints
-**Rationale**: Removes friction for trial while enabling developer/agency use cases
+- **Old**: /api/*-crud, /api/*/demo, inconsistent subroutes
+- **New**: All AI generation endpoints use `/generate-ai` subroutes (e.g., `/api/accounts/generate-ai`, `/demo/accounts/generate-ai`). All CRUD endpoints use standard RESTful paths (e.g., `/api/accounts`, `/api/accounts/{id}`), with no more `-crud` or `/demo` subroutes for CRUD.
+**Rationale**: Removes friction for trial while enabling developer/agency use cases. The new structure is more RESTful, easier to document, and less error-prone for frontend integration.
 
 ### **Analysis-First Approach**
 **Decision**: Start with website analysis rather than user input forms
