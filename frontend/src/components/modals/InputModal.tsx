@@ -41,6 +41,12 @@ interface InputModalProps {
   onAccountChange?: (accountId: string) => void;
   accountLabel?: string;
   accountPlaceholder?: string;
+  // New generic props
+  nameType?: 'text' | 'url';
+  nameRequired?: boolean;
+  descriptionRequired?: boolean;
+  showDescription?: boolean;
+  customNameValidation?: (value: string) => string | null;
 }
 
 export default function InputModal({
@@ -64,10 +70,16 @@ export default function InputModal({
   onAccountChange,
   accountLabel = "Target Account",
   accountPlaceholder = "Select target account...",
+  nameType = 'text',
+  nameRequired = true,
+  descriptionRequired = true,
+  showDescription = true,
+  customNameValidation,
 }: InputModalProps) {
   const [name, setName] = useState<string>(defaultName);
   const [description, setDescription] = useState<string>(defaultDescription);
   const [accountId, setAccountId] = useState<string>(selectedAccountId);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -75,6 +87,7 @@ export default function InputModal({
       setName(defaultName);
       setDescription(defaultDescription);
       setAccountId(selectedAccountId);
+      setNameError(null);
     }
   }, [isOpen, defaultName, defaultDescription, selectedAccountId]);
 
@@ -83,9 +96,35 @@ export default function InputModal({
     if (onAccountChange) onAccountChange(value);
   };
 
+  // Validation logic for name field
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!name && nameRequired) {
+      setNameError('This field is required');
+      return;
+    }
+    if (nameType === 'url' && name) {
+      try {
+        // Accepts with or without protocol
+        new URL(name.startsWith('http') ? name : `https://${name}`);
+        setNameError(null);
+      } catch {
+        setNameError('Please enter a valid URL');
+        return;
+      }
+    }
+    if (customNameValidation) {
+      setNameError(customNameValidation(name));
+      return;
+    }
+    setNameError(null);
+  }, [name, nameType, nameRequired, customNameValidation, isOpen]);
+
   const handleSubmit = () => {
     if (accounts.length > 0 && !accountId) return;
-    if (!name.trim() || !description.trim()) return;
+    if (nameRequired && !name.trim()) return;
+    if (nameError) return;
+    if (showDescription && descriptionRequired && !description.trim()) return;
     onSubmit({ name: name.trim(), description: description.trim(), accountId });
   };
 
@@ -93,6 +132,7 @@ export default function InputModal({
     setName(defaultName);
     setDescription(defaultDescription);
     setAccountId(selectedAccountId);
+    setNameError(null);
     onClose();
   };
 
@@ -123,26 +163,33 @@ export default function InputModal({
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="input-modal-name">{nameLabel}</Label>
+            <Label htmlFor="input-modal-name">{nameLabel}{nameRequired ? ' *' : ''}</Label>
             <Input
               id="input-modal-name"
+              type={nameType}
               placeholder={namePlaceholder}
               value={name}
               onChange={e => setName(e.target.value)}
               disabled={isLoading}
+              autoComplete="off"
             />
+            {nameError && (
+              <p className="text-sm text-red-600">{nameError}</p>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="input-modal-description">{descriptionLabel}</Label>
-            <Textarea
-              id="input-modal-description"
-              placeholder={descriptionPlaceholder}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
-              disabled={isLoading}
-            />
-          </div>
+          {showDescription && (
+            <div className="space-y-2">
+              <Label htmlFor="input-modal-description">{descriptionLabel}{descriptionRequired ? ' *' : ''}</Label>
+              <Textarea
+                id="input-modal-description"
+                placeholder={descriptionPlaceholder}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="min-h-[100px] focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+            </div>
+          )}
           {error && (
             <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm text-center">
               {error}
@@ -155,7 +202,13 @@ export default function InputModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={(!name.trim() || !description.trim() || isLoading || (accounts.length > 0 && !accountId))}
+            disabled={
+              isLoading ||
+              (accounts.length > 0 && !accountId) ||
+              (nameRequired && !name.trim()) ||
+              !!nameError ||
+              (showDescription && descriptionRequired && !description.trim())
+            }
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? (
