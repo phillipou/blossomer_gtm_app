@@ -1,12 +1,14 @@
 """
-schemas.py - Centralized LLM output schemas for Blossomer GTM API
+schemas.py - Centralized schemas for Blossomer GTM API
 
-This module defines JSON schemas for LLM structured outputs, enabling reuse and validation.
+This module defines JSON schemas for LLM structured outputs and database models,
+enabling reuse and validation.
 """
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4, ConfigDict
 from enum import Enum
+from datetime import datetime
 
 
 class ProductOverviewRequest(BaseModel):
@@ -396,7 +398,7 @@ class EmailSubjects(BaseModel):
 
     primary: str = Field(..., description="Most effective subject line")
     alternatives: List[str] = Field(
-        ..., description="2 alternative subject lines", min_items=2, max_items=2
+        ..., description="2 alternative subject lines", min_length=2, max_length=2
     )
 
 
@@ -500,3 +502,148 @@ class EmailGenerationResponse(BaseModel):
     metadata: EmailGenerationMetadata = Field(
         ..., description="Generation metadata and quality metrics"
     )
+
+
+# Database Model Schemas
+# ======================
+
+class UserBase(BaseModel):
+    """Base user schema."""
+    email: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    role: Optional[str] = Field("user", max_length=20)
+
+class UserCreate(UserBase):
+    """Schema for creating a new user."""
+    pass
+
+class UserUpdate(BaseModel):
+    """Schema for updating user information."""
+    email: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    role: Optional[str] = Field(None, max_length=20)
+    last_login: Optional[datetime] = None
+
+class UserResponse(UserBase):
+    """Schema for user responses."""
+    id: UUID4
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CompanyBase(BaseModel):
+    """Base company schema."""
+    name: str = Field(..., max_length=255)
+    url: str = Field(..., max_length=500)
+    analysis_data: Optional[Dict[str, Any]] = None
+
+class CompanyCreate(CompanyBase):
+    """Schema for creating a new company."""
+    pass
+
+class CompanyUpdate(BaseModel):
+    """Schema for updating company information."""
+    name: Optional[str] = Field(None, max_length=255)
+    url: Optional[str] = Field(None, max_length=500)
+    analysis_data: Optional[Dict[str, Any]] = None
+
+class CompanyResponse(CompanyBase):
+    """Schema for company responses."""
+    id: UUID4
+    user_id: UUID4
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AccountBase(BaseModel):
+    """Base account schema."""
+    name: str = Field(..., max_length=255)
+    account_data: Dict[str, Any] = Field(..., description="Account data including firmographics, buying signals, rationale, metadata")
+
+class AccountCreate(AccountBase):
+    """Schema for creating a new account."""
+    pass
+
+class AccountUpdate(BaseModel):
+    """Schema for updating account information."""
+    name: Optional[str] = Field(None, max_length=255)
+    account_data: Optional[Dict[str, Any]] = None
+
+class AccountResponse(AccountBase):
+    """Schema for account responses."""
+    id: UUID4
+    company_id: UUID4
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PersonaBase(BaseModel):
+    """Base persona schema."""
+    name: str = Field(..., max_length=255)
+    persona_data: Dict[str, Any] = Field(..., description="Persona data including demographics, use cases, buying signals, objections, goals")
+
+class PersonaCreate(PersonaBase):
+    """Schema for creating a new persona."""
+    pass
+
+class PersonaUpdate(BaseModel):
+    """Schema for updating persona information."""
+    name: Optional[str] = Field(None, max_length=255)
+    persona_data: Optional[Dict[str, Any]] = None
+
+class PersonaResponse(PersonaBase):
+    """Schema for persona responses."""
+    id: UUID4
+    account_id: UUID4
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CampaignBase(BaseModel):
+    """Base campaign schema."""
+    name: str = Field(..., max_length=255)
+    campaign_type: str = Field(..., max_length=50, description="Campaign type: email, linkedin, cold_call, ad")
+    campaign_data: Dict[str, Any] = Field(..., description="Campaign data including subject_line, content, segments, alternatives, configuration")
+
+class CampaignCreate(CampaignBase):
+    """Schema for creating a new campaign."""
+    pass
+
+class CampaignUpdate(BaseModel):
+    """Schema for updating campaign information."""
+    name: Optional[str] = Field(None, max_length=255)
+    campaign_type: Optional[str] = Field(None, max_length=50)
+    campaign_data: Optional[Dict[str, Any]] = None
+
+class CampaignResponse(CampaignBase):
+    """Schema for campaign responses."""
+    id: UUID4
+    account_id: UUID4
+    persona_id: UUID4
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Extended response schemas with relationships
+class CompanyWithRelations(CompanyResponse):
+    """Company schema with related accounts."""
+    accounts: List[AccountResponse] = []
+
+class AccountWithRelations(AccountResponse):
+    """Account schema with related personas and campaigns."""
+    personas: List[PersonaResponse] = []
+    campaigns: List[CampaignResponse] = []
+
+class PersonaWithRelations(PersonaResponse):
+    """Persona schema with related campaigns."""
+    campaigns: List[CampaignResponse] = []

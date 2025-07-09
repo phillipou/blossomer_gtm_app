@@ -9,7 +9,7 @@ import requests
 from functools import lru_cache
 
 from backend.app.core.database import get_db
-from backend.app.models import User, APIKey
+from backend.app.models import User
 
 
 router = APIRouter()
@@ -22,29 +22,14 @@ class NeonAuthUserRequest(BaseModel):
     name: Optional[str] = None
 
 
-class CreateAPIKeyRequest(BaseModel):
-    name: str = "API Key"
-    tier: str = "free"
-
-
-class CreateAPIKeyResponse(BaseModel):
-    api_key: str
-    key_prefix: str
-    name: str
-    tier: str
-    message: str
-
-
 class UserProfileResponse(BaseModel):
     user_id: str
     neon_auth_user_id: Optional[str]
     email: str
     name: Optional[str]
     role: str
-    rate_limit_exempt: bool
     created_at: datetime
     last_login: Optional[datetime]
-    api_keys: List[dict]
 
 
 # --- Stack Auth JWT Validation ---
@@ -174,84 +159,15 @@ async def get_user_profile(
         db.commit()
         db.refresh(user)
 
-    # Get all API keys for this user
-    api_keys = (
-        db.query(APIKey).filter(APIKey.user_id == user.id, APIKey.is_active).all()
-    )
-
-    api_keys_data = []
-    for key in api_keys:
-        api_keys_data.append(
-            {
-                "id": str(key.id),
-                "name": key.name,
-                "key_prefix": key.key_prefix,
-                "tier": key.tier,
-                "created_at": key.created_at,
-                "last_used": key.last_used,
-            }
-        )
-
     return UserProfileResponse(
         user_id=str(user.id),
         neon_auth_user_id=user.neon_auth_user_id,
         email=user.email,
         name=user.name,
         role=user.role,
-        rate_limit_exempt=user.rate_limit_exempt,
         created_at=user.created_at,
         last_login=user.last_login,
-        api_keys=api_keys_data,
     )
 
 
-@router.delete("/api-keys/{key_id}")
-async def delete_api_key(
-    key_id: str,
-    neon_auth_user: dict = Depends(validate_stack_auth_token),
-    db: Session = Depends(get_db),
-):
-    """
-    Delete an API key for authenticated Neon Auth user.
-    """
-    user = (
-        db.query(User)
-        .filter(User.neon_auth_user_id == neon_auth_user["user_id"])
-        .first()
-    )
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
-    # Find the API key to delete
-    key_to_delete = (
-        db.query(APIKey)
-        .filter(
-            APIKey.id == key_id, APIKey.user_id == user.id, APIKey.is_active == True
-        )
-        .first()
-    )
-
-    if not key_to_delete:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-        )
-
-    # Check if this is the user's last API key
-    active_keys = (
-        db.query(APIKey).filter(APIKey.user_id == user.id, APIKey.is_active).count()
-    )
-
-    if active_keys <= 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete your last API key",
-        )
-
-    # Deactivate the key
-    key_to_delete.is_active = False
-    db.commit()
-
-    return {"message": "API key deleted successfully"}
+# API key management is no longer supported - authentication is now handled via Stack Auth JWT tokens
