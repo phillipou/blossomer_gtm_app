@@ -20,7 +20,9 @@ from backend.app.schemas import (
     CompanyWithRelations,
 )
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
-from backend.app.services.product_overview_service import generate_product_overview_service
+from backend.app.services.product_overview_service import (
+    generate_product_overview_service,
+)
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.api.helpers import run_service
 
@@ -56,7 +58,7 @@ company_update_example = {
     },
 }
 
-router = APIRouter(prefix="/companies", tags=["companies"])
+router = APIRouter(tags=["companies"])
 
 
 @router.post(

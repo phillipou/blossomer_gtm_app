@@ -61,15 +61,9 @@ app = FastAPI(
         "url": "https://opensource.org/licenses/MIT",
     },
     servers=[
-        {
-            "url": "http://localhost:8000",
-            "description": "Development server"
-        },
-        {
-            "url": "https://api.blossomer.com",
-            "description": "Production server"
-        }
-    ]
+        {"url": "http://localhost:8000", "description": "Development server"},
+        {"url": "https://api.blossomer.com", "description": "Production server"},
+    ],
 )
 
 # CORS middleware for frontend-backend integration
@@ -77,23 +71,20 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5175",  # Vite dev server (update to match your frontend port)
-        "https://blossomer-gtm-app.onrender.com" # Domain of production frontend
+        "https://blossomer-gtm-app.onrender.com",  # Domain of production frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register API endpoints (AI generation endpoints)
+# Register API endpoints
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 app.include_router(accounts.router, prefix="/api", tags=["Accounts"])
 app.include_router(personas.router, prefix="/api", tags=["Personas"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(neon_auth.router, prefix="/api/neon-auth", tags=["Neon Auth"])
-
-# Register CRUD endpoints (data management endpoints)
-app.include_router(companies.router, prefix="/api", tags=["Companies CRUD"])
 
 # Register demo endpoints
 app.include_router(demo.router, prefix="/demo", tags=["Demo"])

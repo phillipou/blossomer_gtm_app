@@ -24,16 +24,302 @@
     }
   ],
   "paths": {
-    "/api/company/companies/generate-ai": {
+    "/api/companies/": {
       "post": {
         "tags": [
-          "Company",
+          "Companies",
+          "companies"
+        ],
+        "summary": "Create a new company",
+        "description": "Create a new company record for the authenticated user with analysis data.",
+        "operationId": "create_company_api_companies__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Company created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Company with this name already exists"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Companies",
+          "companies"
+        ],
+        "summary": "Get Companies",
+        "description": "Get all companies for the authenticated user.\n\n- **skip**: Number of companies to skip (for pagination)\n- **limit**: Maximum number of companies to return (1-1000)",
+        "operationId": "get_companies_api_companies__get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of companies to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of companies to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Maximum number of companies to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of companies to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyResponse"
+                  },
+                  "title": "Response Get Companies Api Companies  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/{company_id}": {
+      "get": {
+        "tags": [
+          "Companies",
+          "companies"
+        ],
+        "summary": "Get Company",
+        "description": "Get a specific company by ID.\n\nOnly returns companies owned by the authenticated user.",
+        "operationId": "get_company_api_companies__company_id__get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Companies",
+          "companies"
+        ],
+        "summary": "Update Company",
+        "description": "Update a company.\n\nOnly updates companies owned by the authenticated user.\nAll fields are optional - only provided fields will be updated.",
+        "operationId": "update_company_api_companies__company_id__put",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Companies",
+          "companies"
+        ],
+        "summary": "Delete Company",
+        "description": "Delete a company and all related data.\n\nOnly deletes companies owned by the authenticated user.\nThis will cascade delete all accounts, personas, and campaigns.",
+        "operationId": "delete_company_api_companies__company_id__delete",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/{company_id}/relations": {
+      "get": {
+        "tags": [
+          "Companies",
+          "companies"
+        ],
+        "summary": "Get Company With Relations",
+        "description": "Get a company with all related accounts.\n\nOnly returns companies owned by the authenticated user.\nIncludes nested account data.",
+        "operationId": "get_company_with_relations_api_companies__company_id__relations_get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyWithRelations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/generate-ai": {
+      "post": {
+        "tags": [
+          "Companies",
+          "companies",
           "Companies",
           "AI"
         ],
         "summary": "AI Generate Company Overview (features, company & persona profiles, pricing)",
         "description": "AI-generate a company overview for authenticated users (Stack Auth JWT required).",
-        "operationId": "prod_generate_product_overview_api_company_companies_generate_ai_post",
+        "operationId": "prod_generate_product_overview_api_companies_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -814,7 +1100,7 @@
         }
       }
     },
-    "/api/campaigns/campaigns/generate-ai": {
+    "/api/campaigns/generate-ai": {
       "post": {
         "tags": [
           "Campaigns",
@@ -823,7 +1109,7 @@
         ],
         "summary": "AI Generate Email Campaign",
         "description": "AI-generate a personalized email campaign based on company context, target account/persona, and user preferences.",
-        "operationId": "generate_email_api_campaigns_campaigns_generate_ai_post",
+        "operationId": "generate_email_api_campaigns_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -858,14 +1144,14 @@
         }
       }
     },
-    "/api/campaigns/campaigns": {
+    "/api/campaigns/": {
       "post": {
         "tags": [
           "Campaigns"
         ],
         "summary": "Create Campaign",
         "description": "Create a new campaign for an account and persona.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Persona ID (must belong to the account)\n- **name**: Campaign name (required, max 255 chars)\n- **campaign_type**: Campaign type (email, linkedin, cold_call, ad)\n- **campaign_data**: JSON data with subject_line, content, segments, etc.",
-        "operationId": "create_campaign_api_campaigns_campaigns_post",
+        "operationId": "create_campaign_api_campaigns__post",
         "parameters": [
           {
             "name": "account_id",
@@ -931,7 +1217,7 @@
         ],
         "summary": "Get Campaigns",
         "description": "Get all campaigns for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Optional persona ID to filter campaigns\n- **skip**: Number of campaigns to skip (for pagination)\n- **limit**: Maximum number of campaigns to return (1-1000)",
-        "operationId": "get_campaigns_api_campaigns_campaigns_get",
+        "operationId": "get_campaigns_api_campaigns__get",
         "parameters": [
           {
             "name": "account_id",
@@ -1002,7 +1288,7 @@
                   "items": {
                     "$ref": "#/components/schemas/CampaignResponse"
                   },
-                  "title": "Response Get Campaigns Api Campaigns Campaigns Get"
+                  "title": "Response Get Campaigns Api Campaigns  Get"
                 }
               }
             }
@@ -1020,14 +1306,14 @@
         }
       }
     },
-    "/api/campaigns/campaigns/{campaign_id}": {
+    "/api/campaigns/{campaign_id}": {
       "get": {
         "tags": [
           "Campaigns"
         ],
         "summary": "Get Campaign",
         "description": "Get a specific campaign by ID.\n\nOnly returns campaigns owned by the authenticated user (via account->company).",
-        "operationId": "get_campaign_api_campaigns_campaigns__campaign_id__get",
+        "operationId": "get_campaign_api_campaigns__campaign_id__get",
         "parameters": [
           {
             "name": "campaign_id",
@@ -1069,7 +1355,7 @@
         ],
         "summary": "Update Campaign",
         "description": "Update a campaign.\n\nOnly updates campaigns owned by the authenticated user (via account->company).\nAll fields are optional - only provided fields will be updated.",
-        "operationId": "update_campaign_api_campaigns_campaigns__campaign_id__put",
+        "operationId": "update_campaign_api_campaigns__campaign_id__put",
         "parameters": [
           {
             "name": "campaign_id",
@@ -1121,7 +1407,7 @@
         ],
         "summary": "Delete Campaign",
         "description": "Delete a campaign.\n\nOnly deletes campaigns owned by the authenticated user (via account->company).",
-        "operationId": "delete_campaign_api_campaigns_campaigns__campaign_id__delete",
+        "operationId": "delete_campaign_api_campaigns__campaign_id__delete",
         "parameters": [
           {
             "name": "campaign_id",
@@ -1366,291 +1652,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/backend__app__api__routes__neon_auth__UserProfileResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/companies/": {
-      "post": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Create a new company",
-        "description": "Create a new company record for the authenticated user with analysis data.",
-        "operationId": "create_company_api_companies__post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompanyCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Company created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompanyResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Company with this name already exists"
-          },
-          "401": {
-            "description": "Not authenticated"
-          },
-          "422": {
-            "description": "Validation error"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Get Companies",
-        "description": "Get all companies for the authenticated user.\n\n- **skip**: Number of companies to skip (for pagination)\n- **limit**: Maximum number of companies to return (1-1000)",
-        "operationId": "get_companies_api_companies__get",
-        "parameters": [
-          {
-            "name": "skip",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Number of companies to skip",
-              "default": 0,
-              "title": "Skip"
-            },
-            "description": "Number of companies to skip"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "description": "Maximum number of companies to return",
-              "default": 100,
-              "title": "Limit"
-            },
-            "description": "Maximum number of companies to return"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CompanyResponse"
-                  },
-                  "title": "Response Get Companies Api Companies  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/companies/{company_id}": {
-      "get": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Get Company",
-        "description": "Get a specific company by ID.\n\nOnly returns companies owned by the authenticated user.",
-        "operationId": "get_company_api_companies__company_id__get",
-        "parameters": [
-          {
-            "name": "company_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Company Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompanyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Update Company",
-        "description": "Update a company.\n\nOnly updates companies owned by the authenticated user.\nAll fields are optional - only provided fields will be updated.",
-        "operationId": "update_company_api_companies__company_id__put",
-        "parameters": [
-          {
-            "name": "company_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Company Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompanyUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompanyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Delete Company",
-        "description": "Delete a company and all related data.\n\nOnly deletes companies owned by the authenticated user.\nThis will cascade delete all accounts, personas, and campaigns.",
-        "operationId": "delete_company_api_companies__company_id__delete",
-        "parameters": [
-          {
-            "name": "company_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Company Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/companies/{company_id}/relations": {
-      "get": {
-        "tags": [
-          "Companies CRUD",
-          "companies"
-        ],
-        "summary": "Get Company With Relations",
-        "description": "Get a company with all related accounts.\n\nOnly returns companies owned by the authenticated user.\nIncludes nested account data.",
-        "operationId": "get_company_with_relations_api_companies__company_id__relations_get",
-        "parameters": [
-          {
-            "name": "company_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Company Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompanyWithRelations"
                 }
               }
             }
