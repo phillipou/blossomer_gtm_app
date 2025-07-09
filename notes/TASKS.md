@@ -22,7 +22,7 @@
 - [x] **Plan localStorage sync** - ✅ DONE - Progressive migration strategy (hybrid → DB-first → DB-only)
 - [x] **Update documentation** - ✅ DONE - Updated ARCHITECTURE.md, DECISIONS.md, handoffs with simplified schema
 - [x] **Generate Alembic migration** - ✅ DONE - Created migration for user role column and admin access
-- [ ] **Run database migration** - Apply migration to add role column: `poetry run alembic upgrade head`
+- [x] **Run database migration** - Apply migration to add role column: `poetry run alembic upgrade head`
 - [ ] **Create CRUD endpoints** - Build APIs for companies, accounts, personas, campaigns
 - [ ] **Implement Row-Level Security** - Ensure users only see their own data
 - [ ] **Build migration utilities** - Tools to import existing localStorage data (now trivial with JSONB)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query
+from fastapi import APIRouter, Depends, status, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from uuid import UUID
@@ -13,10 +13,10 @@ from backend.app.services.email_generation_service import (
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.database_service import DatabaseService
 from sqlalchemy.orm import Session
-from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 from backend.app.core.user_rate_limiter import jwt_rate_limit_dependency
 from backend.app.core.auth import validate_stack_auth_jwt
-import logging
+
+from .helpers import run_service
 
 
 class UniqueSellingPoint(BaseModel):
@@ -54,7 +54,6 @@ async def generate_positioning(
     db: Session = Depends(get_db),
     _: None = Depends(jwt_rate_limit_dependency("campaign_generate")),
 ):
-    user_id = user['sub']
     # Placeholder implementation, replace with actual logic as needed
     return PositioningResponse(
         unique_insight=(
@@ -100,7 +99,6 @@ async def generate_email(
     db: Session = Depends(get_db),
     _: None = Depends(jwt_rate_limit_dependency("campaign_generate")),
 ):
-    user_id = user['sub']
     """
     Generate a personalized email campaign based on company context, target account/persona,
     and user preferences from the Email Campaign Wizard.
@@ -113,54 +111,10 @@ async def generate_email(
 
     Returns structured email content with modular segments and metadata for UI rendering.
     """
-    try:
-        # Get orchestrator instance
-        orchestrator = ContextOrchestrator()
-
-        # Generate email campaign using the service
-        result = await generate_email_campaign_service(
-            data=request, orchestrator=orchestrator
-        )
-
-        return result
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=(f"Failed to generate email campaign: {str(e)}")
-        )
-
-
-@router.post(
-    "/demo/campaigns/generate-email",
-    response_model=EmailGenerationResponse,
-    summary="[DEMO] Generate Email Campaign",
-    tags=["Demo", "Campaigns", "Email Generation", "AI"],
-    response_description="A complete email campaign with subjects, body segments, and breakdown metadata.",
-)
-async def demo_generate_email(
-    request: EmailGenerationRequest,
-    req: Request,
-    res: Response,
-    db: Session = Depends(get_db),
-    _: None = Depends(demo_ip_rate_limit_dependency("email_generation")),
-):
-    """
-    Generate a personalized email campaign for demo users,
-    with IP-based rate limiting.
-    """
-    logger = logging.getLogger(__name__)
-    logger.info(f"[DEMO] Incoming EmailGenerationRequest: {request}")
-    print("[DEMO] Incoming EmailGenerationRequest:", request)
-    try:
-        orchestrator = ContextOrchestrator()
-        result = await generate_email_campaign_service(
-            data=request, orchestrator=orchestrator
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=(f"Failed to generate email campaign: {str(e)}")
-        )
+    orchestrator = ContextOrchestrator()
+    return await run_service(
+        generate_email_campaign_service, data=request, orchestrator=orchestrator
+    )
 
 
 # CRUD Operations for Campaign Management

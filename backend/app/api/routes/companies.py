@@ -17,10 +17,54 @@ from backend.app.schemas import (
     CompanyCreate, CompanyUpdate, CompanyResponse, CompanyWithRelations
 )
 
+# OpenAPI Examples
+company_create_example = {
+    "name": "TechFlow Solutions",
+    "url": "https://techflowsolutions.com",
+    "analysis_data": {
+        "description": "AI-powered workflow automation platform for software teams",
+        "business_profile": {
+            "category": "B2B SaaS workflow automation",
+            "business_model": "Monthly/annual subscriptions with tiered pricing",
+            "existing_customers": "50+ software companies using the platform"
+        },
+        "capabilities": [
+            "Automated code review workflows",
+            "CI/CD pipeline optimization",
+            "Team collaboration tools",
+            "Performance analytics dashboard"
+        ],
+        "positioning": {
+            "key_market_belief": "Manual dev processes are the biggest bottleneck in software delivery",
+            "unique_approach": "AI-driven automation that learns from team patterns"
+        }
+    }
+}
+
+company_update_example = {
+    "name": "TechFlow Solutions (Updated)",
+    "analysis_data": {
+        "description": "Updated: AI-powered workflow automation platform for software teams",
+        "last_updated": "2024-Q4"
+    }
+}
+
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 
-@router.post("/", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=CompanyResponse, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new company",
+    description="Create a new company record for the authenticated user with analysis data.",
+    responses={
+        201: {"description": "Company created successfully"},
+        400: {"description": "Company with this name already exists"},
+        401: {"description": "Not authenticated"},
+        422: {"description": "Validation error"}
+    }
+)
 async def create_company(
     company_data: CompanyCreate,
     db: Session = Depends(get_db),
@@ -31,7 +75,13 @@ async def create_company(
     
     - **name**: Company name (required, max 255 chars)
     - **url**: Company website URL (required, max 500 chars)
-    - **analysis_data**: Optional JSON data with company analysis
+    - **analysis_data**: Optional JSON data with company analysis including:
+      - description: Brief company description
+      - business_profile: Business model and customer info
+      - capabilities: List of key features
+      - positioning: Market positioning and differentiation
+    
+    Returns the created company with auto-generated ID and timestamps.
     """
     db_service = DatabaseService(db)
     return db_service.create_company(company_data, user["sub"])

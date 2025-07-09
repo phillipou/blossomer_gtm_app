@@ -541,13 +541,49 @@ class CompanyBase(BaseModel):
 
 class CompanyCreate(CompanyBase):
     """Schema for creating a new company."""
-    pass
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "TechFlow Solutions",
+                "url": "https://techflowsolutions.com",
+                "analysis_data": {
+                    "description": "AI-powered workflow automation platform for software teams",
+                    "business_profile": {
+                        "category": "B2B SaaS workflow automation",
+                        "business_model": "Monthly/annual subscriptions with tiered pricing",
+                        "existing_customers": "50+ software companies using the platform"
+                    },
+                    "capabilities": [
+                        "Automated code review workflows",
+                        "CI/CD pipeline optimization",
+                        "Team collaboration tools",
+                        "Performance analytics dashboard"
+                    ],
+                    "positioning": {
+                        "key_market_belief": "Manual dev processes are the biggest bottleneck in software delivery",
+                        "unique_approach": "AI-driven automation that learns from team patterns"
+                    }
+                }
+            }
+        }
 
 class CompanyUpdate(BaseModel):
     """Schema for updating company information."""
     name: Optional[str] = Field(None, max_length=255)
     url: Optional[str] = Field(None, max_length=500)
     analysis_data: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "TechFlow Solutions (Updated)",
+                "analysis_data": {
+                    "description": "Updated: AI-powered workflow automation platform for software teams",
+                    "last_updated": "2024-Q4"
+                }
+            }
+        }
 
 class CompanyResponse(CompanyBase):
     """Schema for company responses."""
@@ -566,7 +602,44 @@ class AccountBase(BaseModel):
 
 class AccountCreate(AccountBase):
     """Schema for creating a new account."""
-    pass
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Mid-market SaaS Companies",
+                "account_data": {
+                    "firmographics": {
+                        "industry": ["Software", "SaaS", "Technology"],
+                        "employees": "50-500",
+                        "revenue": "$5M-$50M",
+                        "geography": ["North America", "Europe"],
+                        "funding_stage": ["Series A", "Series B", "Series C"],
+                        "keywords": ["rapid growth", "scaling team", "CI/CD", "automation", "developer productivity"]
+                    },
+                    "buying_signals": [
+                        {
+                            "title": "Recent engineering hiring",
+                            "description": "Companies actively hiring developers indicating growth",
+                            "type": "Company Data",
+                            "priority": "High",
+                            "detection_method": "LinkedIn job postings, company announcements"
+                        },
+                        {
+                            "title": "DevOps tool adoption",
+                            "description": "Recent adoption of modern development tools",
+                            "type": "Tech Stack",
+                            "priority": "Medium",
+                            "detection_method": "GitHub repos, job descriptions, tech stack data"
+                        }
+                    ],
+                    "rationale": [
+                        "Mid-market companies have complex workflows but limited resources",
+                        "Growing teams need better automation to maintain velocity",
+                        "Budget available for tools that improve developer productivity"
+                    ]
+                }
+            }
+        }
 
 class AccountUpdate(BaseModel):
     """Schema for updating account information."""
@@ -590,7 +663,47 @@ class PersonaBase(BaseModel):
 
 class PersonaCreate(PersonaBase):
     """Schema for creating a new persona."""
-    pass
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "VP of Engineering",
+                "persona_data": {
+                    "demographics": {
+                        "job_titles": ["VP Engineering", "Head of Engineering", "Engineering Director"],
+                        "departments": ["Engineering", "Technology"],
+                        "seniority": ["VP", "Director", "Senior Manager"],
+                        "buying_roles": ["Decision Maker", "Technical Buyer", "Economic Buyer"],
+                        "job_description_keywords": ["team leadership", "technical strategy", "developer productivity", "scaling", "automation"]
+                    },
+                    "use_cases": [
+                        {
+                            "use_case": "Code review automation",
+                            "pain_points": "Manual code reviews slow down development cycles and create bottlenecks",
+                            "capability": "AI-powered code review that catches issues early and provides instant feedback",
+                            "desired_outcome": "Faster development cycles with maintained code quality"
+                        },
+                        {
+                            "use_case": "CI/CD optimization",
+                            "pain_points": "Build pipelines are slow and unreliable, causing deployment delays",
+                            "capability": "Intelligent pipeline optimization that reduces build times by 40%",
+                            "desired_outcome": "Reliable, fast deployments that don't block development"
+                        }
+                    ],
+                    "goals": [
+                        "Improve team productivity and delivery speed",
+                        "Reduce technical debt and improve code quality",
+                        "Scale engineering processes as team grows",
+                        "Minimize time spent on manual, repetitive tasks"
+                    ],
+                    "objections": [
+                        "Concerned about integration complexity with existing tools",
+                        "Budget approval process may be lengthy",
+                        "Team resistance to changing established workflows"
+                    ]
+                }
+            }
+        }
 
 class PersonaUpdate(BaseModel):
     """Schema for updating persona information."""
@@ -615,7 +728,55 @@ class CampaignBase(BaseModel):
 
 class CampaignCreate(CampaignBase):
     """Schema for creating a new campaign."""
-    pass
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Q4 VP Engineering Outreach",
+                "campaign_type": "email",
+                "campaign_data": {
+                    "subject_line": "Quick question about your development workflow",
+                    "content": "Hi {{name}}, I noticed {{company}} has been growing rapidly...",
+                    "segments": [
+                        {
+                            "type": "greeting",
+                            "text": "Hi {{name}}"
+                        },
+                        {
+                            "type": "opening",
+                            "text": "I noticed {{company}} has been growing rapidly and hiring more developers"
+                        },
+                        {
+                            "type": "pain-point",
+                            "text": "As teams scale, manual code reviews and slow CI/CD pipelines often become major bottlenecks"
+                        },
+                        {
+                            "type": "solution",
+                            "text": "TechFlow's AI-powered automation platform helps engineering teams like yours maintain velocity while improving code quality"
+                        },
+                        {
+                            "type": "evidence",
+                            "text": "We've helped 50+ similar companies reduce their build times by 40% and speed up code reviews by 60%"
+                        },
+                        {
+                            "type": "cta",
+                            "text": "Would you be open to a 15-minute demo to see how this could work for your team?"
+                        }
+                    ],
+                    "alternatives": {
+                        "subject_lines": [
+                            "Scaling your engineering team at {{company}}?",
+                            "How {{company}} can ship code 40% faster"
+                        ]
+                    },
+                    "configuration": {
+                        "personalization": "high",
+                        "tone": "professional",
+                        "length": "short"
+                    }
+                }
+            }
+        }
 
 class CampaignUpdate(BaseModel):
     """Schema for updating campaign information."""

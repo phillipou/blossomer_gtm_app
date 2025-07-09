@@ -131,7 +131,9 @@ Phase 3: DB-only (remove localStorage dependencies)
 - ❌ Increased API surface area, more complex routing logic
 - ❌ Potential for demo abuse (mitigated by IP rate limiting)
 
-**Evolution**: Initially considered single API with authentication tiers, but dual structure proved better for user acquisition.
+**Evolution**: 
+- Initially considered single API with authentication tiers, but dual structure proved better for user acquisition.
+- **July 2025 (Refactor)**: Consolidated all `/demo/*` endpoints into a dedicated `backend/app/api/routes/demo.py` router. This resolved an issue where demo routes were mixed with core API routes, causing inconsistent URL paths (e.g., `/api/demo/...`). The new structure provides a single source of truth for demo endpoints and cleans up the main application router configuration. The core business logic in the service layer remains shared between demo and authenticated endpoints.
 
 ---
 

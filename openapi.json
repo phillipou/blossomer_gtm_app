@@ -1,0 +1,4169 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Blossomer GTM API v2",
+    "description": "\n    ## AI-Powered Go-to-Market Campaign Generator API\n    \n    This API provides both AI generation capabilities and comprehensive CRUD operations for managing B2B go-to-market campaigns.\n    \n    ### Authentication\n    All CRUD endpoints require Stack Auth JWT authentication via the `Authorization: Bearer <token>` header.\n    \n    ### API Categories\n    \n    #### AI Generation Endpoints\n    - **Company Analysis**: Generate company overviews and product analysis\n    - **Account Generation**: Create target account profiles with firmographics\n    - **Persona Generation**: Generate buyer personas with use cases and objections\n    - **Campaign Generation**: Create personalized email campaigns and positioning\n    \n    #### CRUD Management Endpoints\n    - **Companies**: Manage company records with analysis data\n    - **Accounts**: Target account profiles with buying signals\n    - **Personas**: Buyer personas with demographics and use cases\n    - **Campaigns**: Email campaigns with segments and alternatives\n    \n    ### Row-Level Security\n    All CRUD operations are user-scoped - users can only access their own data.\n    \n    ### Data Hierarchy\n    ```\n    User\n    \u2514\u2500\u2500 Company\n        \u2514\u2500\u2500 Account\n            \u2514\u2500\u2500 Persona\n                \u2514\u2500\u2500 Campaign\n    ```\n    \n    ### Testing\n    1. Start the server: `poetry run python -m uvicorn backend.app.api.main:app --reload`\n    2. Import OpenAPI spec into Postman: `http://localhost:8000/openapi.json`\n    3. Use interactive docs: `http://localhost:8000/docs`\n    ",
+    "contact": {
+      "name": "Blossomer GTM API Support",
+      "email": "support@blossomer.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.blossomer.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/company/": {
+      "post": {
+        "tags": [
+          "Company",
+          "Company",
+          "Overview",
+          "AI"
+        ],
+        "summary": "Generate Company Overview (features, company & persona profiles, pricing)",
+        "description": "Generate a company overview for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_product_overview_api_company__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOverviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured company overview for the given company context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOverviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts": {
+      "post": {
+        "tags": [
+          "Accounts",
+          "Accounts",
+          "AI"
+        ],
+        "summary": "Generate Target Account Profile (discovery call preparation)",
+        "description": "Generate a target account profile for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_target_account_api_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured discovery call preparation report with company analysis and ICP hypothesis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetAccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts-crud": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Create Account",
+        "description": "Create a new account for a company.\n\n- **company_id**: Company ID (must be owned by authenticated user)\n- **name**: Account name (required, max 255 chars)\n- **account_data**: JSON data with firmographics, buying signals, rationale",
+        "operationId": "create_account_api_accounts_crud_post",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Company ID to create account for",
+              "title": "Company Id"
+            },
+            "description": "Company ID to create account for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Get Accounts",
+        "description": "Get all accounts for a company.\n\n- **company_id**: Company ID (must be owned by authenticated user)\n- **skip**: Number of accounts to skip (for pagination)\n- **limit**: Maximum number of accounts to return (1-1000)",
+        "operationId": "get_accounts_api_accounts_crud_get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Company ID to get accounts for",
+              "title": "Company Id"
+            },
+            "description": "Company ID to get accounts for"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of accounts to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of accounts to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Maximum number of accounts to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of accounts to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountResponse"
+                  },
+                  "title": "Response Get Accounts Api Accounts Crud Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts-crud/{account_id}": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Get Account",
+        "description": "Get a specific account by ID.\n\nOnly returns accounts owned by the authenticated user (via company).",
+        "operationId": "get_account_api_accounts_crud__account_id__get",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Update Account",
+        "description": "Update an account.\n\nOnly updates accounts owned by the authenticated user (via company).\nAll fields are optional - only provided fields will be updated.",
+        "operationId": "update_account_api_accounts_crud__account_id__put",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Delete Account",
+        "description": "Delete an account and all related data.\n\nOnly deletes accounts owned by the authenticated user (via company).\nThis will cascade delete all personas and campaigns.",
+        "operationId": "delete_account_api_accounts_crud__account_id__delete",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts-crud/{account_id}/relations": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Get Account With Relations",
+        "description": "Get an account with all related personas and campaigns.\n\nOnly returns accounts owned by the authenticated user (via company).\nIncludes nested persona and campaign data.",
+        "operationId": "get_account_with_relations_api_accounts_crud__account_id__relations_get",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountWithRelations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personas": {
+      "post": {
+        "tags": [
+          "Personas",
+          "Personas",
+          "AI"
+        ],
+        "summary": "Generate Target Persona Profile (attributes, buying signals, rationale)",
+        "description": "Generate a target persona profile for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_target_persona_api_personas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPersonaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured target persona profile for the given company context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetPersonaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personas-crud": {
+      "post": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Create Persona",
+        "description": "Create a new persona for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **name**: Persona name (required, max 255 chars)\n- **persona_data**: JSON data with demographics, use cases, goals, objections",
+        "operationId": "create_persona_api_personas_crud_post",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Account ID to create persona for",
+              "title": "Account Id"
+            },
+            "description": "Account ID to create persona for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Get Personas",
+        "description": "Get all personas for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **skip**: Number of personas to skip (for pagination)\n- **limit**: Maximum number of personas to return (1-1000)",
+        "operationId": "get_personas_api_personas_crud_get",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Account ID to get personas for",
+              "title": "Account Id"
+            },
+            "description": "Account ID to get personas for"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of personas to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of personas to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Maximum number of personas to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of personas to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonaResponse"
+                  },
+                  "title": "Response Get Personas Api Personas Crud Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personas-crud/{persona_id}": {
+      "get": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Get Persona",
+        "description": "Get a specific persona by ID.\n\nOnly returns personas owned by the authenticated user (via account->company).",
+        "operationId": "get_persona_api_personas_crud__persona_id__get",
+        "parameters": [
+          {
+            "name": "persona_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Persona Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Update Persona",
+        "description": "Update a persona.\n\nOnly updates personas owned by the authenticated user (via account->company).\nAll fields are optional - only provided fields will be updated.",
+        "operationId": "update_persona_api_personas_crud__persona_id__put",
+        "parameters": [
+          {
+            "name": "persona_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Persona Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Delete Persona",
+        "description": "Delete a persona and all related campaigns.\n\nOnly deletes personas owned by the authenticated user (via account->company).\nThis will cascade delete all campaigns.",
+        "operationId": "delete_persona_api_personas_crud__persona_id__delete",
+        "parameters": [
+          {
+            "name": "persona_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Persona Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personas-crud/{persona_id}/relations": {
+      "get": {
+        "tags": [
+          "Personas"
+        ],
+        "summary": "Get Persona With Relations",
+        "description": "Get a persona with all related campaigns.\n\nOnly returns personas owned by the authenticated user (via account->company).\nIncludes nested campaign data.",
+        "operationId": "get_persona_with_relations_api_personas_crud__persona_id__relations_get",
+        "parameters": [
+          {
+            "name": "persona_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Persona Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaWithRelations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/positioning": {
+      "post": {
+        "tags": [
+          "Campaigns",
+          "Campaigns",
+          "Positioning",
+          "AI"
+        ],
+        "summary": "Generate Unique Insight and Unique Selling Points",
+        "operationId": "generate_positioning_api_campaigns_positioning_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A unique insight and a list of unique selling points for the given company context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositioningResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/generate-email": {
+      "post": {
+        "tags": [
+          "Campaigns",
+          "Campaigns",
+          "Email Generation",
+          "AI"
+        ],
+        "summary": "Generate Email Campaign",
+        "description": "Generate a personalized email campaign based on company context, target account/persona,\nand user preferences from the Email Campaign Wizard.\n\nThis endpoint synthesizes:\n- Company overview and capabilities\n- Target account firmographics and buying signals\n- Target persona demographics and use cases\n- User preferences for emphasis, opening line strategy, and CTA type\n\nReturns structured email content with modular segments and metadata for UI rendering.",
+        "operationId": "generate_email_api_campaigns_generate_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A complete email campaign with subjects, body segments, and breakdown metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/campaigns-crud": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Create Campaign",
+        "description": "Create a new campaign for an account and persona.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Persona ID (must belong to the account)\n- **name**: Campaign name (required, max 255 chars)\n- **campaign_type**: Campaign type (email, linkedin, cold_call, ad)\n- **campaign_data**: JSON data with subject_line, content, segments, etc.",
+        "operationId": "create_campaign_api_campaigns_campaigns_crud_post",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Account ID to create campaign for",
+              "title": "Account Id"
+            },
+            "description": "Account ID to create campaign for"
+          },
+          {
+            "name": "persona_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Persona ID to create campaign for",
+              "title": "Persona Id"
+            },
+            "description": "Persona ID to create campaign for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Get Campaigns",
+        "description": "Get all campaigns for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Optional persona ID to filter campaigns\n- **skip**: Number of campaigns to skip (for pagination)\n- **limit**: Maximum number of campaigns to return (1-1000)",
+        "operationId": "get_campaigns_api_campaigns_campaigns_crud_get",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Account ID to get campaigns for",
+              "title": "Account Id"
+            },
+            "description": "Account ID to get campaigns for"
+          },
+          {
+            "name": "persona_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional persona ID to filter by",
+              "title": "Persona Id"
+            },
+            "description": "Optional persona ID to filter by"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of campaigns to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of campaigns to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Maximum number of campaigns to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of campaigns to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignResponse"
+                  },
+                  "title": "Response Get Campaigns Api Campaigns Campaigns Crud Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/campaigns-crud/{campaign_id}": {
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Get Campaign",
+        "description": "Get a specific campaign by ID.\n\nOnly returns campaigns owned by the authenticated user (via account->company).",
+        "operationId": "get_campaign_api_campaigns_campaigns_crud__campaign_id__get",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Campaign Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Update Campaign",
+        "description": "Update a campaign.\n\nOnly updates campaigns owned by the authenticated user (via account->company).\nAll fields are optional - only provided fields will be updated.",
+        "operationId": "update_campaign_api_campaigns_campaigns_crud__campaign_id__put",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Campaign Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Delete Campaign",
+        "description": "Delete a campaign.\n\nOnly deletes campaigns owned by the authenticated user (via account->company).",
+        "operationId": "delete_campaign_api_campaigns_campaigns_crud__campaign_id__delete",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Campaign Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Signup",
+        "description": "Create a new user account with an API key.",
+        "operationId": "signup_api_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSignupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/validate": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Validate Api Key",
+        "operationId": "validate_api_key_api_auth_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKeyValidationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/profile": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get User Profile",
+        "operationId": "get_user_profile_api_auth_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/backend__app__api__routes__auth__UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/api-keys": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create Api Key",
+        "operationId": "create_api_key_api_auth_api_keys_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAPIKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/api-keys/{key_id}": {
+      "delete": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Delete Api Key",
+        "operationId": "delete_api_key_api_auth_api_keys__key_id__delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/neon-auth/sync-user": {
+      "post": {
+        "tags": [
+          "Neon Auth"
+        ],
+        "summary": "Sync Neon Auth User",
+        "description": "Sync a Neon Auth user to our local user table.\nCalled when a Neon Auth user first accesses the API.",
+        "operationId": "sync_neon_auth_user_api_neon_auth_sync_user_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NeonAuthUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/neon-auth/profile": {
+      "get": {
+        "tags": [
+          "Neon Auth"
+        ],
+        "summary": "Get User Profile",
+        "description": "Get user profile information and API keys for authenticated Neon Auth user.",
+        "operationId": "get_user_profile_api_neon_auth_profile_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/backend__app__api__routes__neon_auth__UserProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/": {
+      "post": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Create a new company",
+        "description": "Create a new company record for the authenticated user with analysis data.",
+        "operationId": "create_company_api_companies__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Company created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Company with this name already exists"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Get Companies",
+        "description": "Get all companies for the authenticated user.\n\n- **skip**: Number of companies to skip (for pagination)\n- **limit**: Maximum number of companies to return (1-1000)",
+        "operationId": "get_companies_api_companies__get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of companies to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of companies to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Maximum number of companies to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of companies to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyResponse"
+                  },
+                  "title": "Response Get Companies Api Companies  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/{company_id}": {
+      "get": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Get Company",
+        "description": "Get a specific company by ID.\n\nOnly returns companies owned by the authenticated user.",
+        "operationId": "get_company_api_companies__company_id__get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Update Company",
+        "description": "Update a company.\n\nOnly updates companies owned by the authenticated user.\nAll fields are optional - only provided fields will be updated.",
+        "operationId": "update_company_api_companies__company_id__put",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Delete Company",
+        "description": "Delete a company and all related data.\n\nOnly deletes companies owned by the authenticated user.\nThis will cascade delete all accounts, personas, and campaigns.",
+        "operationId": "delete_company_api_companies__company_id__delete",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/{company_id}/relations": {
+      "get": {
+        "tags": [
+          "Companies CRUD",
+          "companies"
+        ],
+        "summary": "Get Company With Relations",
+        "description": "Get a company with all related accounts.\n\nOnly returns companies owned by the authenticated user.\nIncludes nested account data.",
+        "operationId": "get_company_with_relations_api_companies__company_id__relations_get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyWithRelations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/company/overview": {
+      "post": {
+        "tags": [
+          "Demo",
+          "Demo",
+          "Company",
+          "Overview",
+          "AI"
+        ],
+        "summary": "[DEMO] Generate Company Overview (features, company & persona profiles, pricing)",
+        "description": "Generate a company overview for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_product_overview_demo_company_overview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOverviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured company overview for the given company context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOverviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/accounts": {
+      "post": {
+        "tags": [
+          "Demo",
+          "Demo",
+          "Accounts",
+          "AI"
+        ],
+        "summary": "[DEMO] Generate Target Account Profile (discovery call preparation)",
+        "description": "Generate a target account profile for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_target_account_demo_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured discovery call preparation report with company analysis and ICP hypothesis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetAccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/personas": {
+      "post": {
+        "tags": [
+          "Demo",
+          "Demo",
+          "Personas",
+          "AI"
+        ],
+        "summary": "[DEMO] Generate Target Persona Profile (attributes, buying signals, rationale)",
+        "description": "Generate a target persona profile for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_target_persona_demo_personas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPersonaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A structured target persona profile for the given company context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetPersonaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/campaigns/generate-email": {
+      "post": {
+        "tags": [
+          "Demo",
+          "Demo",
+          "Campaigns",
+          "Email Generation",
+          "AI"
+        ],
+        "summary": "[DEMO] Generate Email Campaign",
+        "description": "Generate a personalized email campaign for demo users,\nwith IP-based rate limiting.",
+        "operationId": "demo_generate_email_demo_campaigns_generate_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A complete email campaign with subjects, body segments, and breakdown metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "APIKeyValidationResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "rate_limit_exempt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Limit Exempt"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "last_used": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "APIKeyValidationResponse"
+      },
+      "AccountCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "account_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Account Data",
+            "description": "Account data including firmographics, buying signals, rationale, metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "account_data"
+        ],
+        "title": "AccountCreate",
+        "description": "Schema for creating a new account.",
+        "example": {
+          "account_data": {
+            "buying_signals": [
+              {
+                "description": "Companies actively hiring developers indicating growth",
+                "detection_method": "LinkedIn job postings, company announcements",
+                "priority": "High",
+                "title": "Recent engineering hiring",
+                "type": "Company Data"
+              },
+              {
+                "description": "Recent adoption of modern development tools",
+                "detection_method": "GitHub repos, job descriptions, tech stack data",
+                "priority": "Medium",
+                "title": "DevOps tool adoption",
+                "type": "Tech Stack"
+              }
+            ],
+            "firmographics": {
+              "employees": "50-500",
+              "funding_stage": [
+                "Series A",
+                "Series B",
+                "Series C"
+              ],
+              "geography": [
+                "North America",
+                "Europe"
+              ],
+              "industry": [
+                "Software",
+                "SaaS",
+                "Technology"
+              ],
+              "keywords": [
+                "rapid growth",
+                "scaling team",
+                "CI/CD",
+                "automation",
+                "developer productivity"
+              ],
+              "revenue": "$5M-$50M"
+            },
+            "rationale": [
+              "Mid-market companies have complex workflows but limited resources",
+              "Growing teams need better automation to maintain velocity",
+              "Budget available for tools that improve developer productivity"
+            ]
+          },
+          "name": "Mid-market SaaS Companies"
+        }
+      },
+      "AccountResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "account_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Account Data",
+            "description": "Account data including firmographics, buying signals, rationale, metadata"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Company Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "account_data",
+          "id",
+          "company_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AccountResponse",
+        "description": "Schema for account responses."
+      },
+      "AccountUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "account_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Data"
+          }
+        },
+        "type": "object",
+        "title": "AccountUpdate",
+        "description": "Schema for updating account information."
+      },
+      "AccountWithRelations": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "account_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Account Data",
+            "description": "Account data including firmographics, buying signals, rationale, metadata"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Company Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "personas": {
+            "items": {
+              "$ref": "#/components/schemas/PersonaResponse"
+            },
+            "type": "array",
+            "title": "Personas",
+            "default": []
+          },
+          "campaigns": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignResponse"
+            },
+            "type": "array",
+            "title": "Campaigns",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "account_data",
+          "id",
+          "company_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AccountWithRelations",
+        "description": "Account schema with related personas and campaigns."
+      },
+      "BusinessProfile": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "5-6 words on product category"
+          },
+          "business_model": {
+            "type": "string",
+            "title": "Business Model",
+            "description": "1-2 sentences on revenue streams and pricing"
+          },
+          "existing_customers": {
+            "type": "string",
+            "title": "Existing Customers",
+            "description": "1-3 sentences on customer evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "business_model",
+          "existing_customers"
+        ],
+        "title": "BusinessProfile"
+      },
+      "BuyingSignal": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Concise signal name (3-5 words)"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "1-2 sentences explaining why this signal indicates buying readiness"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Company Data|Website|Tech Stack|News|Social Media|Other"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/PriorityEnum",
+            "description": "Low|Medium|High"
+          },
+          "detection_method": {
+            "type": "string",
+            "title": "Detection Method",
+            "description": "Specific Clay enrichment or data source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "type",
+          "priority",
+          "detection_method"
+        ],
+        "title": "BuyingSignal"
+      },
+      "CampaignCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "campaign_type": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Campaign Type",
+            "description": "Campaign type: email, linkedin, cold_call, ad"
+          },
+          "campaign_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campaign Data",
+            "description": "Campaign data including subject_line, content, segments, alternatives, configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "campaign_type",
+          "campaign_data"
+        ],
+        "title": "CampaignCreate",
+        "description": "Schema for creating a new campaign.",
+        "example": {
+          "campaign_data": {
+            "alternatives": {
+              "subject_lines": [
+                "Scaling your engineering team at {{company}}?",
+                "How {{company}} can ship code 40% faster"
+              ]
+            },
+            "configuration": {
+              "length": "short",
+              "personalization": "high",
+              "tone": "professional"
+            },
+            "content": "Hi {{name}}, I noticed {{company}} has been growing rapidly...",
+            "segments": [
+              {
+                "text": "Hi {{name}}",
+                "type": "greeting"
+              },
+              {
+                "text": "I noticed {{company}} has been growing rapidly and hiring more developers",
+                "type": "opening"
+              },
+              {
+                "text": "As teams scale, manual code reviews and slow CI/CD pipelines often become major bottlenecks",
+                "type": "pain-point"
+              },
+              {
+                "text": "TechFlow's AI-powered automation platform helps engineering teams like yours maintain velocity while improving code quality",
+                "type": "solution"
+              },
+              {
+                "text": "We've helped 50+ similar companies reduce their build times by 40% and speed up code reviews by 60%",
+                "type": "evidence"
+              },
+              {
+                "text": "Would you be open to a 15-minute demo to see how this could work for your team?",
+                "type": "cta"
+              }
+            ],
+            "subject_line": "Quick question about your development workflow"
+          },
+          "campaign_type": "email",
+          "name": "Q4 VP Engineering Outreach"
+        }
+      },
+      "CampaignResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "campaign_type": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Campaign Type",
+            "description": "Campaign type: email, linkedin, cold_call, ad"
+          },
+          "campaign_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campaign Data",
+            "description": "Campaign data including subject_line, content, segments, alternatives, configuration"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Account Id"
+          },
+          "persona_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Persona Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "campaign_type",
+          "campaign_data",
+          "id",
+          "account_id",
+          "persona_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CampaignResponse",
+        "description": "Schema for campaign responses."
+      },
+      "CampaignUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "campaign_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Type"
+          },
+          "campaign_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Data"
+          }
+        },
+        "type": "object",
+        "title": "CampaignUpdate",
+        "description": "Schema for updating campaign information."
+      },
+      "CompanyCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Url"
+          },
+          "analysis_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ],
+        "title": "CompanyCreate",
+        "description": "Schema for creating a new company.",
+        "example": {
+          "analysis_data": {
+            "business_profile": {
+              "business_model": "Monthly/annual subscriptions with tiered pricing",
+              "category": "B2B SaaS workflow automation",
+              "existing_customers": "50+ software companies using the platform"
+            },
+            "capabilities": [
+              "Automated code review workflows",
+              "CI/CD pipeline optimization",
+              "Team collaboration tools",
+              "Performance analytics dashboard"
+            ],
+            "description": "AI-powered workflow automation platform for software teams",
+            "positioning": {
+              "key_market_belief": "Manual dev processes are the biggest bottleneck in software delivery",
+              "unique_approach": "AI-driven automation that learns from team patterns"
+            }
+          },
+          "name": "TechFlow Solutions",
+          "url": "https://techflowsolutions.com"
+        }
+      },
+      "CompanyResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Url"
+          },
+          "analysis_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Data"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "User Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CompanyResponse",
+        "description": "Schema for company responses."
+      },
+      "CompanyUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "analysis_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Data"
+          }
+        },
+        "type": "object",
+        "title": "CompanyUpdate",
+        "description": "Schema for updating company information.",
+        "example": {
+          "analysis_data": {
+            "description": "Updated: AI-powered workflow automation platform for software teams",
+            "last_updated": "2024-Q4"
+          },
+          "name": "TechFlow Solutions (Updated)"
+        }
+      },
+      "CompanyWithRelations": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Url"
+          },
+          "analysis_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Data"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "User Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/AccountResponse"
+            },
+            "type": "array",
+            "title": "Accounts",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CompanyWithRelations",
+        "description": "Company schema with related accounts."
+      },
+      "ConfidenceAssessment": {
+        "properties": {
+          "overall_confidence": {
+            "type": "string",
+            "title": "Overall Confidence",
+            "description": "high|medium|low"
+          },
+          "data_quality": {
+            "type": "string",
+            "title": "Data Quality",
+            "description": "high|medium|low"
+          },
+          "inference_level": {
+            "type": "string",
+            "title": "Inference Level",
+            "description": "minimal|moderate|significant"
+          },
+          "recommended_improvements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Improvements",
+            "description": "What additional data would help"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_confidence",
+          "data_quality",
+          "inference_level",
+          "recommended_improvements"
+        ],
+        "title": "ConfidenceAssessment"
+      },
+      "CreateAPIKeyResponse": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "key_prefix": {
+            "type": "string",
+            "title": "Key Prefix"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key",
+          "key_prefix",
+          "name",
+          "tier",
+          "message"
+        ],
+        "title": "CreateAPIKeyResponse"
+      },
+      "Demographics": {
+        "properties": {
+          "job_titles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Job Titles",
+            "description": "2-4 likely job titles this person would hold"
+          },
+          "departments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Departments",
+            "description": "The department(s) they likely belong to"
+          },
+          "seniority": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Seniority",
+            "description": "Seniority levels: Entry|C-Suite|Senior Manager|Manager|VP|Founder/CEO"
+          },
+          "buying_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Buying Roles",
+            "description": "Buying roles: Technical Buyers|Economic Buyers|Decision Maker|Champion|End-User|Blocker|Executive Sponsor|Legal and Compliance|Budget Holder"
+          },
+          "job_description_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Job Description Keywords",
+            "description": "3-5 key words expected in job description describing day-to-day activities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_titles",
+          "departments",
+          "seniority",
+          "buying_roles",
+          "job_description_keywords"
+        ],
+        "title": "Demographics",
+        "description": "Demographics model for target persona."
+      },
+      "EmailGenerationMetadata": {
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "title": "Generation Id",
+            "description": "Unique identifier for this generation"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence",
+            "description": "Confidence level for email quality: high|medium|low"
+          },
+          "personalization_level": {
+            "type": "string",
+            "title": "Personalization Level",
+            "description": "Level of personalization achieved: high|medium|low"
+          },
+          "processing_time_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processing Time Ms",
+            "description": "Time taken to generate email in milliseconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generation_id",
+          "confidence",
+          "personalization_level"
+        ],
+        "title": "EmailGenerationMetadata",
+        "description": "Metadata about the email generation process."
+      },
+      "EmailGenerationRequest": {
+        "properties": {
+          "company_context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Context",
+            "description": "Company overview from localStorage dashboard_overview"
+          },
+          "target_account": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Account",
+            "description": "Selected target account from wizard step 1"
+          },
+          "target_persona": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Persona",
+            "description": "Selected target persona from wizard step 1"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferences",
+            "description": "User preferences from wizard steps 2-3"
+          }
+        },
+        "type": "object",
+        "title": "EmailGenerationRequest",
+        "description": "Request model for email generation API."
+      },
+      "EmailGenerationResponse": {
+        "properties": {
+          "subjects": {
+            "$ref": "#/components/schemas/EmailSubjects",
+            "description": "Generated subject lines"
+          },
+          "email_body": {
+            "items": {
+              "$ref": "#/components/schemas/EmailSegment"
+            },
+            "type": "array",
+            "title": "Email Body",
+            "description": "Email content broken into structured segments"
+          },
+          "breakdown": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Breakdown",
+            "description": "Flexible segment breakdown for UI rendering - maps segment types to {label, description, color}"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/EmailGenerationMetadata",
+            "description": "Generation metadata and quality metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subjects",
+          "email_body",
+          "breakdown",
+          "metadata"
+        ],
+        "title": "EmailGenerationResponse",
+        "description": "Response model for email generation API."
+      },
+      "EmailSegment": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content of this email segment"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Segment type: greeting|opening|pain-point|solution|evidence|cta|signature"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "type"
+        ],
+        "title": "EmailSegment",
+        "description": "Individual email segment with type classification."
+      },
+      "EmailSubjects": {
+        "properties": {
+          "primary": {
+            "type": "string",
+            "title": "Primary",
+            "description": "Most effective subject line"
+          },
+          "alternatives": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Alternatives",
+            "description": "2 alternative subject lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primary",
+          "alternatives"
+        ],
+        "title": "EmailSubjects",
+        "description": "Generated email subjects with primary and alternatives."
+      },
+      "Firmographics": {
+        "properties": {
+          "industry": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Industry",
+            "description": "Exact industry names from Clay taxonomy"
+          },
+          "employees": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employees",
+            "description": "Exact range (e.g., '50-500')"
+          },
+          "department_size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Size",
+            "description": "Relevant dept size if applicable"
+          },
+          "revenue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue",
+            "description": "Revenue range if relevant"
+          },
+          "geography": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geography",
+            "description": "Geographic markets if relevant"
+          },
+          "business_model": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Model",
+            "description": "Clay-searchable business model keywords"
+          },
+          "funding_stage": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Funding Stage",
+            "description": "Exact funding stage names"
+          },
+          "company_type": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Type",
+            "description": "Public/Private/PE-backed etc."
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords",
+            "description": "3-5 sophisticated company description keywords that indicate implicit need - avoid obvious solution terms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "industry",
+          "keywords"
+        ],
+        "title": "Firmographics"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ICPHypothesis": {
+        "properties": {
+          "target_account_hypothesis": {
+            "type": "string",
+            "title": "Target Account Hypothesis",
+            "description": "Ideal customer profile"
+          },
+          "target_persona_hypothesis": {
+            "type": "string",
+            "title": "Target Persona Hypothesis",
+            "description": "Ideal stakeholder/decision-maker"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_account_hypothesis",
+          "target_persona_hypothesis"
+        ],
+        "title": "ICPHypothesis"
+      },
+      "ICPMetadata": {
+        "properties": {
+          "primary_context_source": {
+            "type": "string",
+            "title": "Primary Context Source",
+            "description": "user_input|company_context|website_content"
+          },
+          "sources_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources Used",
+            "description": "List of context sources utilized"
+          },
+          "confidence_assessment": {
+            "$ref": "#/components/schemas/ConfidenceAssessment",
+            "description": "Confidence metrics"
+          },
+          "processing_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processing Notes",
+            "description": "Any important notes about analysis approach"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primary_context_source",
+          "sources_used",
+          "confidence_assessment"
+        ],
+        "title": "ICPMetadata"
+      },
+      "NeonAuthUserRequest": {
+        "properties": {
+          "neon_auth_user_id": {
+            "type": "string",
+            "title": "Neon Auth User Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "neon_auth_user_id",
+          "email"
+        ],
+        "title": "NeonAuthUserRequest"
+      },
+      "PersonaCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "persona_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Persona Data",
+            "description": "Persona data including demographics, use cases, buying signals, objections, goals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "persona_data"
+        ],
+        "title": "PersonaCreate",
+        "description": "Schema for creating a new persona.",
+        "example": {
+          "name": "VP of Engineering",
+          "persona_data": {
+            "demographics": {
+              "buying_roles": [
+                "Decision Maker",
+                "Technical Buyer",
+                "Economic Buyer"
+              ],
+              "departments": [
+                "Engineering",
+                "Technology"
+              ],
+              "job_description_keywords": [
+                "team leadership",
+                "technical strategy",
+                "developer productivity",
+                "scaling",
+                "automation"
+              ],
+              "job_titles": [
+                "VP Engineering",
+                "Head of Engineering",
+                "Engineering Director"
+              ],
+              "seniority": [
+                "VP",
+                "Director",
+                "Senior Manager"
+              ]
+            },
+            "goals": [
+              "Improve team productivity and delivery speed",
+              "Reduce technical debt and improve code quality",
+              "Scale engineering processes as team grows",
+              "Minimize time spent on manual, repetitive tasks"
+            ],
+            "objections": [
+              "Concerned about integration complexity with existing tools",
+              "Budget approval process may be lengthy",
+              "Team resistance to changing established workflows"
+            ],
+            "use_cases": [
+              {
+                "capability": "AI-powered code review that catches issues early and provides instant feedback",
+                "desired_outcome": "Faster development cycles with maintained code quality",
+                "pain_points": "Manual code reviews slow down development cycles and create bottlenecks",
+                "use_case": "Code review automation"
+              },
+              {
+                "capability": "Intelligent pipeline optimization that reduces build times by 40%",
+                "desired_outcome": "Reliable, fast deployments that don't block development",
+                "pain_points": "Build pipelines are slow and unreliable, causing deployment delays",
+                "use_case": "CI/CD optimization"
+              }
+            ]
+          }
+        }
+      },
+      "PersonaResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "persona_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Persona Data",
+            "description": "Persona data including demographics, use cases, buying signals, objections, goals"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Account Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "persona_data",
+          "id",
+          "account_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PersonaResponse",
+        "description": "Schema for persona responses."
+      },
+      "PersonaUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "persona_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Data"
+          }
+        },
+        "type": "object",
+        "title": "PersonaUpdate",
+        "description": "Schema for updating persona information."
+      },
+      "PersonaWithRelations": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "persona_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Persona Data",
+            "description": "Persona data including demographics, use cases, buying signals, objections, goals"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Account Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "campaigns": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignResponse"
+            },
+            "type": "array",
+            "title": "Campaigns",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "persona_data",
+          "id",
+          "account_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PersonaWithRelations",
+        "description": "Persona schema with related campaigns."
+      },
+      "Positioning": {
+        "properties": {
+          "key_market_belief": {
+            "type": "string",
+            "title": "Key Market Belief",
+            "description": "Unique POV on why current solutions fail"
+          },
+          "unique_approach": {
+            "type": "string",
+            "title": "Unique Approach",
+            "description": "Differentiated value proposition"
+          },
+          "language_used": {
+            "type": "string",
+            "title": "Language Used",
+            "description": "Terminology and mental models used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key_market_belief",
+          "unique_approach",
+          "language_used"
+        ],
+        "title": "Positioning"
+      },
+      "PositioningResponse": {
+        "properties": {
+          "unique_insight": {
+            "type": "string",
+            "title": "Unique Insight",
+            "description": "Core reframe of the problem (unique insight)"
+          },
+          "unique_selling_points": {
+            "items": {
+              "$ref": "#/components/schemas/UniqueSellingPoint"
+            },
+            "type": "array",
+            "title": "Unique Selling Points",
+            "description": "List of unique selling points (USPs)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_insight",
+          "unique_selling_points"
+        ],
+        "title": "PositioningResponse"
+      },
+      "PriorityEnum": {
+        "type": "string",
+        "enum": [
+          "Low",
+          "Medium",
+          "High"
+        ],
+        "title": "PriorityEnum"
+      },
+      "ProductOverviewRequest": {
+        "properties": {
+          "website_url": {
+            "type": "string",
+            "title": "Website Url",
+            "description": "Company website or landing page URL"
+          },
+          "user_inputted_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Inputted Context",
+            "description": "Optional user-provided context for campaign generation"
+          },
+          "company_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Context",
+            "description": "Optional company context inferred from previous endpoints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "website_url"
+        ],
+        "title": "ProductOverviewRequest"
+      },
+      "ProductOverviewResponse": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name",
+            "description": "Official company name"
+          },
+          "company_url": {
+            "type": "string",
+            "title": "Company Url",
+            "description": "Canonical website URL"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "2-3 sentences on core identity and what they do"
+          },
+          "business_profile": {
+            "$ref": "#/components/schemas/BusinessProfile",
+            "description": "Business category, model, and customer evidence"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities",
+            "description": "Key features and capabilities"
+          },
+          "use_case_analysis": {
+            "$ref": "#/components/schemas/UseCaseAnalysis",
+            "description": "Process impact and problems solved"
+          },
+          "positioning": {
+            "$ref": "#/components/schemas/Positioning",
+            "description": "Market positioning and differentiation"
+          },
+          "objections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Objections",
+            "description": "Common objections and concerns"
+          },
+          "icp_hypothesis": {
+            "$ref": "#/components/schemas/ICPHypothesis",
+            "description": "Target customer and persona hypothesis"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Analysis metadata and quality scores"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "company_url",
+          "description",
+          "business_profile",
+          "capabilities",
+          "use_case_analysis",
+          "positioning",
+          "objections",
+          "icp_hypothesis",
+          "metadata"
+        ],
+        "title": "ProductOverviewResponse"
+      },
+      "TargetAccountRequest": {
+        "properties": {
+          "website_url": {
+            "type": "string",
+            "title": "Website Url",
+            "description": "Company website or landing page URL"
+          },
+          "account_profile_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Profile Name",
+            "description": "Name of the target account profile (e.g., 'Mid-market SaaS companies', 'Enterprise healthcare organizations')"
+          },
+          "hypothesis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hypothesis",
+            "description": "User's hypothesis about why this account profile is ideal for the solution"
+          },
+          "additional_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Context",
+            "description": "Additional user-provided context for target account generation"
+          },
+          "company_context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Context",
+            "description": "Company context from previous endpoints (e.g., company/generate output)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "website_url"
+        ],
+        "title": "TargetAccountRequest"
+      },
+      "TargetAccountResponse": {
+        "properties": {
+          "target_account_name": {
+            "type": "string",
+            "title": "Target Account Name",
+            "description": "Short descriptive name for this customer segment"
+          },
+          "target_account_description": {
+            "type": "string",
+            "title": "Target Account Description",
+            "description": "1-2 sentences: who they are and why they need this solution"
+          },
+          "target_account_rationale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Target Account Rationale",
+            "description": "3-5 bullets explaining the overall logic behind these targeting filters"
+          },
+          "firmographics": {
+            "$ref": "#/components/schemas/Firmographics",
+            "description": "Clay-ready prospect filters"
+          },
+          "buying_signals": {
+            "items": {
+              "$ref": "#/components/schemas/BuyingSignal"
+            },
+            "type": "array",
+            "title": "Buying Signals",
+            "description": "Detectable buying signals with specific data sources"
+          },
+          "buying_signals_rationale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Buying Signals Rationale",
+            "description": "3-5 bullets explaining the overall logic behind these buying signal choices"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ICPMetadata",
+            "description": "Analysis metadata and quality scores"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_account_name",
+          "target_account_description",
+          "target_account_rationale",
+          "firmographics",
+          "buying_signals",
+          "buying_signals_rationale",
+          "metadata"
+        ],
+        "title": "TargetAccountResponse",
+        "description": "Response model for the /customers/target_accounts endpoint\n(ICP analysis with Clay-ready filters)."
+      },
+      "TargetPersonaRequest": {
+        "properties": {
+          "website_url": {
+            "type": "string",
+            "title": "Website Url",
+            "description": "Company website or landing page URL"
+          },
+          "persona_profile_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Profile Name",
+            "description": "Name of the target persona profile (e.g., 'VP of Engineering', 'Head of Customer Success', 'IT Director')"
+          },
+          "hypothesis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hypothesis",
+            "description": "User's hypothesis about why this persona is ideal for the solution"
+          },
+          "additional_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Context",
+            "description": "Additional context or specifications about the target persona"
+          },
+          "company_context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Context",
+            "description": "Structured context about the analyzed company/product"
+          },
+          "target_account_context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Account Context",
+            "description": "Target account profile context - the ideal customer company type this persona works for"
+          }
+        },
+        "type": "object",
+        "required": [
+          "website_url"
+        ],
+        "title": "TargetPersonaRequest"
+      },
+      "TargetPersonaResponse": {
+        "properties": {
+          "target_persona_name": {
+            "type": "string",
+            "title": "Target Persona Name",
+            "description": "Short descriptive name for this persona segment"
+          },
+          "target_persona_description": {
+            "type": "string",
+            "title": "Target Persona Description",
+            "description": "1-2 sentences: who they are and why they need this solution"
+          },
+          "target_persona_rationale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Target Persona Rationale",
+            "description": "3-5 bullets explaining the overall logic behind targeting this persona"
+          },
+          "demographics": {
+            "$ref": "#/components/schemas/Demographics",
+            "description": "Demographics and targeting attributes"
+          },
+          "use_cases": {
+            "items": {
+              "$ref": "#/components/schemas/UseCase"
+            },
+            "type": "array",
+            "title": "Use Cases",
+            "description": "3-4 use cases following logical progression"
+          },
+          "buying_signals": {
+            "items": {
+              "$ref": "#/components/schemas/BuyingSignal"
+            },
+            "type": "array",
+            "title": "Buying Signals",
+            "description": "Observable buying signals with detection methods"
+          },
+          "buying_signals_rationale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Buying Signals Rationale",
+            "description": "3-5 bullets explaining buying signal logic"
+          },
+          "objections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Objections",
+            "description": "3 bullets summarizing common concerns about adopting this solution"
+          },
+          "goals": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Goals",
+            "description": "3-5 bullets explaining business objectives this product can help with"
+          },
+          "purchase_journey": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Purchase Journey",
+            "description": "3-6 bullet points highlighting path from awareness to purchase"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Analysis metadata and quality scores"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_persona_name",
+          "target_persona_description",
+          "target_persona_rationale",
+          "demographics",
+          "use_cases",
+          "buying_signals",
+          "buying_signals_rationale",
+          "objections",
+          "goals",
+          "purchase_journey",
+          "metadata"
+        ],
+        "title": "TargetPersonaResponse",
+        "description": "Response model for the /customers/target_personas endpoint (matches new prompt output)."
+      },
+      "UniqueSellingPoint": {
+        "properties": {
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "description": "USP name or theme"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Brief benefit or outcome"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence",
+            "description": "Supporting details or explanations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "theme",
+          "description",
+          "evidence"
+        ],
+        "title": "UniqueSellingPoint"
+      },
+      "UseCase": {
+        "properties": {
+          "use_case": {
+            "type": "string",
+            "title": "Use Case",
+            "description": "3-5 word description of the use case or workflow this product impacts"
+          },
+          "pain_points": {
+            "type": "string",
+            "title": "Pain Points",
+            "description": "1 sentence description of the pain or inefficiency associated with this pain point"
+          },
+          "capability": {
+            "type": "string",
+            "title": "Capability",
+            "description": "1 sentence description of the capability the product has that can fix this pain point"
+          },
+          "desired_outcome": {
+            "type": "string",
+            "title": "Desired Outcome",
+            "description": "The desired outcome the persona hopes to achieve using this product"
+          }
+        },
+        "type": "object",
+        "required": [
+          "use_case",
+          "pain_points",
+          "capability",
+          "desired_outcome"
+        ],
+        "title": "UseCase",
+        "description": "Individual use case model for target persona."
+      },
+      "UseCaseAnalysis": {
+        "properties": {
+          "process_impact": {
+            "type": "string",
+            "title": "Process Impact",
+            "description": "Primary process/workflow this product impacts"
+          },
+          "problems_addressed": {
+            "type": "string",
+            "title": "Problems Addressed",
+            "description": "Problems and inefficiencies solved"
+          },
+          "how_they_do_it_today": {
+            "type": "string",
+            "title": "How They Do It Today",
+            "description": "Current state/alternative approaches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "process_impact",
+          "problems_addressed",
+          "how_they_do_it_today"
+        ],
+        "title": "UseCaseAnalysis"
+      },
+      "UserSignupRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "UserSignupRequest"
+      },
+      "UserSignupResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "name",
+          "api_key",
+          "message"
+        ],
+        "title": "UserSignupResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "backend__app__api__routes__auth__UserProfileResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "rate_limit_exempt": {
+            "type": "boolean",
+            "title": "Rate Limit Exempt"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_login": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login"
+          },
+          "api_keys": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Api Keys"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "name",
+          "role",
+          "rate_limit_exempt",
+          "created_at",
+          "last_login",
+          "api_keys"
+        ],
+        "title": "UserProfileResponse"
+      },
+      "backend__app__api__routes__neon_auth__UserProfileResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "neon_auth_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neon Auth User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_login": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "neon_auth_user_id",
+          "email",
+          "name",
+          "role",
+          "created_at",
+          "last_login"
+        ],
+        "title": "UserProfileResponse"
+      }
+    }
+  }
+}
