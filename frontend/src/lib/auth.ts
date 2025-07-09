@@ -18,40 +18,35 @@ export interface AuthState {
   userInfo: UserInfo | null
 }
 
+// Global auth state store for non-component usage
+let globalAuthState: AuthState = {
+  isAuthenticated: false,
+  token: null,
+  userInfo: null
+};
+
+// Function to update global auth state (called from useAuthState hook)
+export function updateGlobalAuthState(state: AuthState) {
+  globalAuthState = state;
+}
+
 // Get auth state using Stack Auth
 export function getAuthState(): AuthState {
-  // This function needs to be called from within a React component
-  // We'll create a hook version for components and a fallback for non-component usage
-  try {
-    // Check if we're in a browser environment and have access to Stack Auth
-    if (typeof window !== 'undefined') {
-      // For now, return fallback state - we'll use the hook version in components
-      return {
-        isAuthenticated: false,
-        token: null,
-        userInfo: null
-      }
-    }
-  } catch (error) {
-    console.error('Error loading auth state:', error)
-  }
-  
-  return {
-    isAuthenticated: false,
-    token: null,
-    userInfo: null
-  }
+  // Return the global auth state that's updated by the hook
+  return globalAuthState;
 }
 
 // Hook version for React components
-export function useAuthState(): AuthState {
+export function useAuthState(): AuthState & { loading: boolean } {
   const user = useUser();
   const app = useStackApp();
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchToken() {
+      setLoading(true);
       if (user && typeof user.getAuthJson === 'function') {
         try {
           const { accessToken } = await user.getAuthJson();
@@ -62,28 +57,32 @@ export function useAuthState(): AuthState {
       } else {
         if (isMounted) setToken(null);
       }
+      if (isMounted) setLoading(false);
     }
     fetchToken();
     return () => { isMounted = false; };
   }, [user]);
 
-  if (user) {
-    return {
-      isAuthenticated: true,
-      token,
-      userInfo: {
-        user_id: user.id,
-        email: user.primaryEmail || '',
-        name: user.displayName || undefined,
-      }
+  const authState = user ? {
+    isAuthenticated: true,
+    token,
+    userInfo: {
+      user_id: user.id,
+      email: user.primaryEmail || '',
+      name: user.displayName || undefined,
     }
-  }
-  
-  return {
+  } : {
     isAuthenticated: false,
     token: null,
     userInfo: null
-  }
+  };
+
+  // Update global auth state whenever local state changes
+  useEffect(() => {
+    updateGlobalAuthState(authState);
+  }, [authState.isAuthenticated, authState.token, authState.userInfo]);
+
+  return { ...authState, loading };
 }
 
 // New hook: useAsyncAuthToken

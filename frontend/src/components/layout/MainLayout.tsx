@@ -1,14 +1,39 @@
 import SidebarNav from "../navigation/SidebarNav";
 import Navbar from "./Navbar";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthState } from '../../lib/auth';
 import { useEffect } from 'react';
 
-export default function MainLayout(props) {
+export default function MainLayout() {
   const authState = useAuthState();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   useEffect(() => {
-    console.log('AuthState:', authState);
-  }, [authState]);
+    if (authState.loading) return; // Wait for auth state to resolve
+    const isAppRoute = location.pathname.startsWith('/app');
+    const isPlaygroundRoute = location.pathname.startsWith('/playground');
+    if (isAppRoute && !authState.token) {
+      // Unauthenticated user trying to access /app
+      navigate('/auth?mode=signin', { replace: true });
+    } else if (isPlaygroundRoute && authState.token) {
+      // Authenticated user trying to access /playground
+      // Redirect to /app/company (could enhance to /app/company/:id if available)
+      navigate('/app/company', { replace: true });
+    }
+  }, [authState.token, authState.loading, location.pathname, navigate]);
+
+  if (authState.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar maxWidthClass="" />
