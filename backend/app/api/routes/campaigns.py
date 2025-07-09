@@ -9,11 +9,9 @@ from backend.app.services.email_generation_service import (
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from sqlalchemy.orm import Session
 from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
+from backend.app.core.user_rate_limiter import jwt_rate_limit_dependency
 from backend.app.core.auth import validate_stack_auth_jwt
 import logging
-
-
-# TODO: Implement rate limiting using JWT user ID (user['sub'])
 
 
 class UniqueSellingPoint(BaseModel):
@@ -49,8 +47,9 @@ async def generate_positioning(
     data: dict,  # Should be replaced with a proper request model if available
     user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
+    _: None = Depends(jwt_rate_limit_dependency("campaign_generate")),
 ):
-    # user_id = user['sub']  # TODO: Use user_id for rate limiting and business logic
+    user_id = user['sub']
     # Placeholder implementation, replace with actual logic as needed
     return PositioningResponse(
         unique_insight=(
@@ -94,8 +93,9 @@ async def generate_email(
     request: EmailGenerationRequest,
     user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
+    _: None = Depends(jwt_rate_limit_dependency("campaign_generate")),
 ):
-    # user_id = user['sub']  # TODO: Use user_id for rate limiting and business logic
+    user_id = user['sub']
     """
     Generate a personalized email campaign based on company context, target account/persona,
     and user preferences from the Email Campaign Wizard.

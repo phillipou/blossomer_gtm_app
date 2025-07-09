@@ -32,6 +32,12 @@
   - [ ] **NEXT**: Test end-to-end authenticated flow with rate limiting
 
 ### 2. API Rate Limiting & Error Handling
+- [x] **Design API rate limiting architecture** - Complete design document with admin bypass functionality
+- [ ] Implement UserRateLimiter class based on existing DemoRateLimiter pattern
+- [ ] Add JWT-based rate limiting dependencies to production endpoints
+- [ ] Set up Redis infrastructure for rate limiting (or use in-memory fallback)
+- [ ] Configure rate limiting environment variables and tier limits
+- [ ] Test admin bypass functionality and rate limit enforcement
 - [ ] Implement and enforce API rate limiting ([B-133](https://linear.app/blossomer/issue/B-133/implement-and-enforce-api-rate-limiting-across-all-endpoints))
 - [ ] Error Handling and Rate Limit UX ([B-140](https://linear.app/blossomer/issue/B-140/error-handling-and-rate-limit-ux))
 
@@ -108,12 +114,14 @@
 - [ ] **Verify API key rate limiting** - Ensure existing rate limiting works with new auth
 
 ### **2. localStorage to Database Migration** - HIGH PRIORITY  
-- [x] **Design user data persistence** - Plan migration from localStorage to database
+- [x] **Design user data persistence** - ✅ DONE - Plan migration from localStorage to database
 - [x] **Create database models** - ✅ DONE - Simple JSONB schema (5 tables vs 27+ normalized)
 - [x] **Simplify schema** - ✅ DONE - JSONB columns mirror localStorage structure exactly
-- [x] **Update User model** - ✅ DONE - Stack Auth user ID as primary key, one-to-many with Company
+- [x] **Update User model** - ✅ DONE - Stack Auth user ID as primary key, one-to-many with Company, added UserRole enum for admin access
 - [x] **Plan localStorage sync** - ✅ DONE - Progressive migration strategy (hybrid → DB-first → DB-only)
-- [ ] **Generate Alembic migration** - Create and run database migration
+- [x] **Update documentation** - ✅ DONE - Updated ARCHITECTURE.md, DECISIONS.md, handoffs with simplified schema
+- [x] **Generate Alembic migration** - ✅ DONE - Created migration for user role column and admin access
+- [ ] **Run database migration** - Apply migration to add role column: `poetry run alembic upgrade head`
 - [ ] **Create CRUD endpoints** - Build APIs for companies, accounts, personas, campaigns
 - [ ] **Implement Row-Level Security** - Ensure users only see their own data
 - [ ] **Build migration utilities** - Tools to import existing localStorage data (now trivial with JSONB)
@@ -123,10 +131,45 @@
 
 ---
 
-## 🎉 RECENTLY COMPLETED (July 8, 2025)
+## 🎉 RECENTLY COMPLETED (January 9, 2025)
 
-### ✅ **Hybrid Neon Auth + API Key System**
-**Major Achievement**: Successfully implemented professional user authentication with developer-friendly API access
+### ✅ **Account Settings Page & Admin Role System**
+**What was built**:
+- **Account Settings page** - Professional UI with user profile display, sign out, and account deletion
+- **Admin role system** - UserRole enum (user/admin/super_admin) with database migration
+- **Rate limiting architecture** - Complete design document with admin bypass functionality  
+- **Security setup** - Private documentation for sensitive admin instructions
+- **Route integration** - Account Settings accessible from Stack Auth UserButton navigation
+
+**Key features**:
+- Stack Auth integration with `user.signOut()` and `user.delete()` methods
+- Responsive UI matching app design with navbar layout
+- Database schema updates for role-based access control
+- Comprehensive rate limiting design with multi-tier strategy
+- Admin bypass system for unlimited API access
+
+### ✅ **Simplified Database Schema with JSONB**
+**Major Achievement**: Dramatically simplified database architecture from 27 tables to 5 with JSONB columns
+
+**What was built**:
+- **JSONB schema** - 5 core tables with flexible AI-content storage
+- **Direct localStorage mapping** - JSONB mirrors localStorage structure exactly
+- **User model refinement** - Stack Auth user ID as primary key, added UserRole enum
+- **Documentation updates** - Complete refresh of ARCHITECTURE.md, DECISIONS.md, handoffs
+- **Migration strategy** - Progressive sync approach (hybrid → DB-first → DB-only)
+
+**Key decisions**:
+- Chose JSONB over normalized for AI flexibility
+- Removed 22+ supporting tables (over-engineered)
+- Maintained essential relationships and Row-Level Security
+- Rate limiting via JWT user ID (no API keys needed)
+
+---
+
+## 🎉 PREVIOUSLY COMPLETED (July 8, 2025)
+
+### ✅ **JWT-Only Authentication System**
+**Major Achievement**: Simplified from hybrid auth to pure Stack Auth JWT tokens
 
 **What was built**:
 - **Neon Auth integration** - Email/password signup via Stack Auth (stack-auth.com)

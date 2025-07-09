@@ -25,6 +25,12 @@ class SeniorityLevel(enum.Enum):
     C_LEVEL = "c_level"
 
 
+class UserRole(enum.Enum):
+    USER = "user"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+
+
 class User(Base):
     """
     User model using Stack Auth user ID as primary key.
@@ -43,6 +49,7 @@ class User(Base):
     id = Column(String, primary_key=True)  # Stack Auth user ID
     email = Column(String(255), unique=True, nullable=True)
     name = Column(String(255), nullable=True)
+    role = Column(String(20), default=UserRole.USER.value)  # user, admin, super_admin
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime)
 

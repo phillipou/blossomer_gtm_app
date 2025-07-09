@@ -6,6 +6,7 @@ from backend.app.schemas import (
 from backend.app.services.target_persona_service import generate_target_persona_profile
 from backend.app.core.database import get_db
 from backend.app.core.auth import validate_stack_auth_jwt
+from backend.app.core.user_rate_limiter import jwt_rate_limit_dependency
 from sqlalchemy.orm import Session
 
 
@@ -45,12 +46,12 @@ async def prod_generate_target_persona(
     data: TargetPersonaRequest,
     user=Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
+    _: None = Depends(jwt_rate_limit_dependency("persona_generate")),
 ):
     """
     Generate a target persona profile for authenticated users (Stack Auth JWT required).
     """
     user_id = user["sub"]
-    # TODO: Use user_id for rate limiting and business logic
     try:
         result = await generate_target_persona_profile(data)
         return result
