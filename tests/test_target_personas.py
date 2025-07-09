@@ -62,18 +62,6 @@ async def fake_generate_structured_output(prompt, response_model):
 
 
 # Patch rate_limit_dependency globally for all tests
-app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
-
-
-class DummyAPIKey:
-    id = "test-id"
-    tier = "free"
-    key_prefix = "bloss_test_sk_..."
-    is_active = True
-    user = type("User", (), {"rate_limit_exempt": True})()
-
-
-app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
 
 
 from backend.app.prompts.models import TargetPersonaPromptVars
@@ -146,7 +134,7 @@ def test_target_persona_endpoint_success(monkeypatch):
         return fake_response
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
 
@@ -305,7 +293,7 @@ def test_target_persona_endpoint_llm_response_empty_lists(monkeypatch):
         return fake_response
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
 
@@ -362,7 +350,7 @@ def test_target_persona_endpoint_llm_response_missing_optional_fields(monkeypatc
         return TargetPersonaResponse(**fake_response_dict).model_dump()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
     response = client.post(
@@ -431,7 +419,7 @@ def test_target_persona_endpoint_llm_response_semantically_incorrect(monkeypatch
         return TargetPersonaResponse(**fake_response_dict).model_dump()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
     response = client.post(
@@ -467,7 +455,7 @@ def test_target_persona_endpoint_llm_refusal(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
 
@@ -493,7 +481,7 @@ def test_target_persona_endpoint_value_error(monkeypatch):
         raise ValueError("Invalid input for persona generation")
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
 
@@ -519,7 +507,7 @@ def test_target_persona_endpoint_http_exception(monkeypatch):
         raise HTTPException(status_code=400, detail="Bad persona request")
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_persona_profile",
+        "backend.app.services.target_persona_service.generate_target_persona_profile",
         fake_generate_target_persona_profile,
     )
 

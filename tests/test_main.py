@@ -86,19 +86,23 @@ async def fake_generate_structured_output(prompt, response_model):
     ).model_dump()
 
 
-# Patch rate_limit_dependency globally for all tests
-# app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
+from fastapi import Depends
+from backend.app.core.auth import validate_stack_auth_jwt
+from backend.app.core.demo_rate_limiter import demo_ip_rate_limit_dependency
 
 
-# class DummyAPIKey:
-#     id = "test-id"
-#     tier = "free"
-#     key_prefix = "bloss_test_sk_..."
-#     is_active = True
-#     user = type("User", (), {"rate_limit_exempt": True})()
+class DummyUser(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.id = "test-user-id"
+        self.rate_limit_exempt = True
+        self["sub"] = "test-user-id"
 
 
-# app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
+app.dependency_overrides[demo_ip_rate_limit_dependency("company_generate")] = (
+    lambda: None
+)
+app.dependency_overrides[validate_stack_auth_jwt] = lambda: DummyUser()
 
 
 @pytest.mark.asyncio

@@ -18,7 +18,8 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_success(self):
         """Test successful target account profile generation."""
         request_data = TargetAccountRequest(
-            company_context="Test company context",
+            website_url="https://example.com",
+            company_context={"description": "Test company context"},
             account_profile_name="Enterprise SaaS Companies",
             hypothesis="Target mid-market SaaS companies",
             additional_context="Focus on companies with 100-500 employees",
@@ -28,14 +29,16 @@ class TestGenerateTargetAccountProfile:
         expected_response = TargetAccountResponse(
             target_account_name="Enterprise SaaS Companies",
             target_account_description="Mid-market SaaS companies with growth potential",
+            target_account_rationale=["Rationale for enterprise SaaS companies."],
             firmographics={
                 "industry": ["Software", "Technology", "SaaS"],
                 "company_size": "100-500 employees",
                 "revenue_range": "$10M-$50M",
                 "geography": ["North America", "Europe"],
                 "company_stage": "Growth stage",
-                "business_model": "B2B SaaS",
+                "business_model": ["B2B SaaS"],
                 "funding_status": "Series A-C",
+                "keywords": ["cloud", "saas", "enterprise"],
             },
             key_characteristics={
                 "technology_stack": ["Cloud-based", "API-first"],
@@ -52,10 +55,14 @@ class TestGenerateTargetAccountProfile:
             buying_signals=[
                 {
                     "title": "Funding Events",
-                    "indicators": ["Series A/B/C funding", "Growth investments"],
-                    "signal_source": "funding_databases",
+                    "description": "Companies announcing funding rounds.",
+                    "type": "Company Data",
+                    "priority": "High",
+                    "detection_method": "Crunchbase, PitchBook",
+                    "keywords": ["funding", "investment"],
                 }
             ],
+            buying_signals_rationale=["Funding indicates budget and growth focus."],
             disqualifying_factors=[
                 "Too small (<50 employees)",
                 "Legacy technology stack",
@@ -81,6 +88,13 @@ class TestGenerateTargetAccountProfile:
                 "assessment_summary": "Good target account definition",
                 "assumptions_made": ["Standard SaaS growth patterns"],
                 "primary_context_source": "user_input",
+                "confidence_assessment": {
+                    "overall_confidence": "high",
+                    "data_quality": "high",
+                    "inference_level": "low",
+                    "recommended_improvements": [],
+                },
+                "processing_notes": "Notes on processing.",
             },
         )
 
@@ -118,21 +132,24 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_minimal_request(self):
         """Test target account profile generation with minimal request data."""
         request_data = TargetAccountRequest(
-            company_context="Basic company context",
+            website_url="https://example.com",
+            company_context={"description": "Basic company context"},
             account_profile_name="Basic Account Profile",
         )
 
         expected_response = TargetAccountResponse(
             target_account_name="Basic Account Profile",
             target_account_description="Basic account description",
+            target_account_rationale=["Basic rationale."],
             firmographics={
                 "industry": ["Technology"],
                 "company_size": "Unknown",
                 "revenue_range": "Unknown",
                 "geography": ["Unknown"],
                 "company_stage": "Unknown",
-                "business_model": "Unknown",
+                "business_model": ["Unknown"],
                 "funding_status": "Unknown",
+                "keywords": ["Unknown"],
             },
             key_characteristics={
                 "technology_stack": ["Unknown"],
@@ -145,10 +162,14 @@ class TestGenerateTargetAccountProfile:
             buying_signals=[
                 {
                     "title": "Unknown signals",
-                    "indicators": ["No indicators"],
-                    "signal_source": "unknown",
+                    "description": "Unknown description",
+                    "type": "Unknown",
+                    "priority": "Low",
+                    "detection_method": "Unknown",
+                    "keywords": ["Unknown"],
                 }
             ],
+            buying_signals_rationale=["Unknown rationale."],
             disqualifying_factors=["Unknown factors"],
             account_examples=[
                 {
@@ -170,6 +191,13 @@ class TestGenerateTargetAccountProfile:
                 "assessment_summary": "Basic analysis with limited context",
                 "assumptions_made": ["General assumptions"],
                 "primary_context_source": "company_context",
+                "confidence_assessment": {
+                    "overall_confidence": "low",
+                    "data_quality": "low",
+                    "inference_level": "high",
+                    "recommended_improvements": ["More data"],
+                },
+                "processing_notes": "Notes.",
             },
         )
 
@@ -184,13 +212,16 @@ class TestGenerateTargetAccountProfile:
 
             assert result == expected_response
             assert result.target_account_name == "Basic Account Profile"
-            assert result.metadata["context_quality"] == "limited"
+            assert result.metadata.confidence_assessment.data_quality == "low"
 
     @pytest.mark.asyncio
     async def test_generate_target_account_profile_with_all_fields(self):
         """Test target account profile generation with all optional fields."""
         request_data = TargetAccountRequest(
-            company_context="Comprehensive company context with detailed information",
+            website_url="https://example.com",
+            company_context={
+                "description": "Comprehensive company context with detailed information"
+            },
             account_profile_name="Premium Enterprise Accounts",
             hypothesis="Target large enterprises with complex needs",
             additional_context="Focus on Fortune 500 companies with digital transformation initiatives",
@@ -200,14 +231,16 @@ class TestGenerateTargetAccountProfile:
         expected_response = TargetAccountResponse(
             target_account_name="Premium Enterprise Accounts",
             target_account_description="Large enterprise accounts with complex requirements",
+            target_account_rationale=["Rationale for premium enterprise accounts."],
             firmographics={
                 "industry": ["Enterprise Software", "Financial Services", "Healthcare"],
                 "company_size": "1000+ employees",
                 "revenue_range": "$100M+",
                 "geography": ["Global", "North America", "Europe", "APAC"],
                 "company_stage": "Mature",
-                "business_model": "Enterprise B2B",
+                "business_model": ["Enterprise B2B"],
                 "funding_status": "Public/Late-stage private",
+                "keywords": ["digital transformation", "compliance", "risk management"],
             },
             key_characteristics={
                 "technology_stack": ["Enterprise-grade", "Multi-cloud", "API-first"],
@@ -229,17 +262,23 @@ class TestGenerateTargetAccountProfile:
             buying_signals=[
                 {
                     "title": "Digital Transformation Initiatives",
-                    "indicators": [
-                        "CTO/CDO appointments",
-                        "Technology budget increases",
-                    ],
-                    "signal_source": "executive_moves",
+                    "description": "Companies investing in new technologies for digital transformation.",
+                    "type": "Company Data",
+                    "priority": "High",
+                    "detection_method": "CTO/CDO appointments, technology budget increases",
+                    "keywords": ["digital transformation", "cloud adoption"],
                 },
                 {
                     "title": "Compliance Requirements",
-                    "indicators": ["New regulations", "Audit findings"],
-                    "signal_source": "regulatory_changes",
+                    "description": "Companies facing new regulations or audit findings.",
+                    "type": "Regulatory",
+                    "priority": "High",
+                    "detection_method": "News, regulatory updates",
+                    "keywords": ["GDPR", "HIPAA", "compliance"],
                 },
+            ],
+            buying_signals_rationale=[
+                "These signals indicate a strong need for our solutions."
             ],
             disqualifying_factors=[
                 "Limited budget (<$1M)",
@@ -288,6 +327,13 @@ class TestGenerateTargetAccountProfile:
                     "Compliance requirements",
                 ],
                 "primary_context_source": "user_input",
+                "confidence_assessment": {
+                    "overall_confidence": "high",
+                    "data_quality": "high",
+                    "inference_level": "low",
+                    "recommended_improvements": [],
+                },
+                "processing_notes": "Notes on processing.",
             },
         )
 
@@ -302,7 +348,7 @@ class TestGenerateTargetAccountProfile:
 
             assert result == expected_response
             assert result.target_account_name == "Premium Enterprise Accounts"
-            assert result.metadata["context_quality"] == "rich"
+            assert result.metadata.confidence_assessment.data_quality == "high"
             assert len(result.buying_signals) == 2
             assert len(result.account_examples) == 2
 
@@ -310,7 +356,9 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_service_error(self):
         """Test handling of service errors."""
         request_data = TargetAccountRequest(
-            company_context="Test context", account_profile_name="Test Account"
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+            account_profile_name="Test Account",
         )
 
         with patch(
@@ -332,7 +380,9 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_validation_error(self):
         """Test handling of validation errors."""
         request_data = TargetAccountRequest(
-            company_context="Test context", account_profile_name="Test Account"
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+            account_profile_name="Test Account",
         )
 
         with patch(
@@ -358,21 +408,25 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_response_structure(self):
         """Test that response has correct structure and required fields."""
         request_data = TargetAccountRequest(
-            company_context="Test context", account_profile_name="Test Account"
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+            account_profile_name="Test Account",
         )
 
         # Create a comprehensive response to test structure
         structured_response = TargetAccountResponse(
             target_account_name="Test Account",
             target_account_description="Test description",
+            target_account_rationale=["Test rationale."],
             firmographics={
                 "industry": ["Technology"],
-                "company_size": "100-500",
-                "revenue_range": "$10M-$50M",
+                "employees": "100-500",
+                "revenue": "$10M-$50M",
                 "geography": ["North America"],
                 "company_stage": "Growth",
-                "business_model": "B2B SaaS",
+                "business_model": ["B2B SaaS"],
                 "funding_status": "Series A",
+                "keywords": ["test", "keywords"],
             },
             key_characteristics={
                 "technology_stack": ["Cloud"],
@@ -385,10 +439,13 @@ class TestGenerateTargetAccountProfile:
             buying_signals=[
                 {
                     "title": "Growth signals",
-                    "indicators": ["Hiring", "Funding"],
-                    "signal_source": "company_updates",
+                    "description": "Companies showing signs of growth.",
+                    "type": "Company Data",
+                    "priority": "High",
+                    "detection_method": "Crunchbase",
                 }
             ],
+            buying_signals_rationale=["Signals indicate potential for growth."],
             disqualifying_factors=["Too small"],
             account_examples=[
                 {
@@ -406,7 +463,12 @@ class TestGenerateTargetAccountProfile:
             },
             metadata={
                 "sources_used": ["company_context"],
-                "context_quality": "sufficient",
+                "confidence_assessment": {
+                    "overall_confidence": "high",
+                    "data_quality": "sufficient",
+                    "inference_level": "minimal",
+                    "recommended_improvements": [],
+                },
                 "assessment_summary": "Good analysis",
                 "assumptions_made": ["Standard patterns"],
                 "primary_context_source": "company_context",
@@ -426,7 +488,7 @@ class TestGenerateTargetAccountProfile:
             assert hasattr(result, "target_account_name")
             assert hasattr(result, "target_account_description")
             assert hasattr(result, "firmographics")
-            assert hasattr(result, "key_characteristics")
+
             assert hasattr(result, "pain_points")
             assert hasattr(result, "buying_signals")
             assert hasattr(result, "disqualifying_factors")
@@ -486,7 +548,9 @@ class TestGenerateTargetAccountProfile:
     async def test_generate_target_account_profile_no_preprocessing(self):
         """Test that preprocessing is disabled for target account analysis."""
         request_data = TargetAccountRequest(
-            company_context="Test context", account_profile_name="Test Account"
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+            account_profile_name="Test Account",
         )
 
         expected_response = TargetAccountResponse(
@@ -494,12 +558,12 @@ class TestGenerateTargetAccountProfile:
             target_account_description="Test description",
             firmographics={
                 "industry": ["Technology"],
-                "company_size": "100-500",
-                "revenue_range": "$10M-$50M",
+                "employees": "100-500",
+                "revenue": "$10M-$50M",
                 "geography": ["North America"],
-                "company_stage": "Growth",
-                "business_model": "B2B SaaS",
-                "funding_status": "Series A",
+                "business_model": ["B2B SaaS"],
+                "funding_stage": ["Series A"],
+                "keywords": ["test", "keywords"],
             },
             key_characteristics={
                 "technology_stack": ["Cloud"],
@@ -512,10 +576,13 @@ class TestGenerateTargetAccountProfile:
             buying_signals=[
                 {
                     "title": "Growth signals",
-                    "indicators": ["Hiring"],
-                    "signal_source": "company_updates",
+                    "description": "Companies showing signs of growth.",
+                    "type": "Company Data",
+                    "priority": "High",
+                    "detection_method": "Crunchbase",
                 }
             ],
+            buying_signals_rationale=["Signals indicate potential for growth."],
             disqualifying_factors=["Too small"],
             account_examples=[
                 {
@@ -533,7 +600,12 @@ class TestGenerateTargetAccountProfile:
             },
             metadata={
                 "sources_used": ["company_context"],
-                "context_quality": "sufficient",
+                "confidence_assessment": {
+                    "overall_confidence": "high",
+                    "data_quality": "sufficient",
+                    "inference_level": "minimal",
+                    "recommended_improvements": [],
+                },
                 "assessment_summary": "Good analysis",
                 "assumptions_made": ["Standard patterns"],
                 "primary_context_source": "company_context",

@@ -3,6 +3,17 @@
 *Created: July 8, 2025*
 *Status: In Progress - Database Models Completed*
 
+---
+
+**UPDATE (July 8, 2025):**
+- ✅ All authentication is now via Stack Auth JWT tokens. Legacy API key authentication and rate limiting have been fully removed from the backend and frontend.
+- ✅ All user linkage in the database is via Stack Auth user IDs (not API keys).
+- ✅ API endpoints have been refactored to RESTful conventions and split into `/accounts`, `/personas`, `/company`, and `/campaigns` routes. See `/backend/app/api/routes/accounts.py`, `/personas.py`, `/company.py`, `/campaigns.py`.
+- ✅ All endpoints require JWT authentication. Ensure the frontend passes the token from `useAuthState().token`.
+- ✅ All documentation and code references have been updated to reflect these changes.
+
+---
+
 ## 🎯 What We're Trying to Do
 
 **Goal**: Migrate from localStorage-based data persistence to a proper database-backed system with RESTful CRUD endpoints.
@@ -16,50 +27,53 @@
 
 ## 🏗️ What We've Accomplished
 
-### ✅ Database Models Created (Fully Normalized)
+### ✅ Database Models Created (Simplified JSON Schema)
 
-Created comprehensive database schema with proper relationships:
+Created simple, flexible database schema optimized for AI-generated content:
 
-#### **Core Models**
-1. **Company** - Stores analyzed company data
-   - Business profile, positioning, capabilities, objections
+#### **Core Models** (5 tables total)
+1. **User** - Stack Auth user management
+   - Stack Auth user ID as primary key
+   - Email, name, timestamps
+   - One-to-many with Company
+
+2. **Company** - Analyzed company data
+   - Basic info: name, url
+   - **analysis_data (JSONB)** - All website analysis data
    - Links to User via `user_id`
-   - One-to-many with TargetAccount
 
-2. **TargetAccount** - Ideal customer profiles 
-   - Firmographics, confidence metrics, analysis metadata
+3. **TargetAccount** - Ideal customer profiles
+   - Basic info: name
+   - **account_data (JSONB)** - All account data (firmographics, buying signals, etc.)
    - Links to Company via `company_id`
-   - One-to-many with TargetPersona
 
-3. **TargetPersona** - Buyer personas within accounts
-   - Demographics, use cases, buying behavior
+4. **TargetPersona** - Buyer personas
+   - Basic info: name
+   - **persona_data (JSONB)** - All persona data (demographics, use cases, etc.)
    - Links to TargetAccount via `target_account_id`
-   - One-to-many with Campaign
 
-4. **Campaign** - Generated campaigns (emails, etc.)
-   - Campaign content, configuration, status
+5. **Campaign** - Generated campaigns
+   - Basic info: name, campaign_type
+   - **campaign_data (JSONB)** - All campaign content and configuration
    - Links to both TargetAccount and TargetPersona
 
-#### **Normalized Supporting Tables** (25+ tables)
-- **Company**: `company_capabilities`, `company_objections`
-- **Account**: `account_rationale`, `account_keywords`, `account_buying_signals`, etc.
-- **Persona**: `persona_job_titles`, `persona_departments`, `persona_use_cases`, etc.
-- **Campaign**: `campaign_segments`, `campaign_alternatives`, etc.
+#### **Key Design Decisions**
+- **JSONB columns** - Flexible storage for AI-generated content
+- **Mirrors localStorage** - Direct mapping for easy migration
+- **PostgreSQL JSONB** - Fast queries with indexing support
+- **Minimal normalization** - Only essential relationships
 
-#### **Enums for Type Safety**
-- `PriorityLevel` (Low, Medium, High)
-- `BuyingSignalType` (technology, behavioral, intent, contextual)
-- `SeniorityLevel` (junior, mid, senior, director, vp, c_level)
-- `CampaignType` (email, linkedin, cold_call, ad)
-- `CampaignStatus` (draft, active, paused, completed)
+#### **Enums for Application Logic Only**
+- `PriorityLevel` (Low, Medium, High) - Used in business logic
+- `SeniorityLevel` (junior, mid, senior, director, vp, c_level) - Used in business logic
+- Database uses flexible String fields for AI-generated content
 
-### ✅ Best Practices Followed
-- **Proper normalization** - No JSON columns, separate tables for arrays
-- **Foreign key constraints** - Referential integrity maintained
-- **Cascade deletes** - Child records auto-deleted with parents
-- **Type safety** - Enums for controlled vocabularies
-- **Timestamps** - Created/updated tracking on all main entities
-- **User isolation** - All data linked to User for Row-Level Security
+### ✅ Benefits of Simplified Approach
+- **Easy migration** - Direct localStorage → JSONB mapping
+- **AI flexibility** - No schema changes needed for prompt evolution
+- **Performance** - PostgreSQL JSONB with indexing
+- **Maintainability** - 5 tables instead of 27+
+- **User isolation** - All data linked to Stack Auth user ID for Row-Level Security
 
 ### ✅ Files Modified
 - `/backend/app/models/__init__.py` - All database models added
@@ -67,19 +81,14 @@ Created comprehensive database schema with proper relationships:
 
 ## 🚧 What's Left to Complete
 
-### **1. Finish Campaign Model** (5 min remaining)
-Currently interrupted mid-implementation. Need to complete:
-```python
-class Campaign(Base):
-    # Add campaign fields: name, type, status, content, config
-    # Add relationships to TargetAccount and TargetPersona
-    
-class CampaignSegment(Base):
-    # Email segments with type and styling
-    
-class CampaignAlternative(Base):
-    # Subject line alternatives
-```
+### **1. ✅ Complete Campaign Model** (DONE)
+All models implemented with flexible schema:
+- ✅ `Campaign` - Main campaign entity with flexible type/status fields
+- ✅ `CampaignSegment` - Email segments with styling
+- ✅ `CampaignAlternative` - Subject line alternatives
+- ✅ Updated User model to use Stack Auth user ID as primary key
+- ✅ Removed rigid enums, kept only PriorityLevel/SeniorityLevel for business logic
+- ✅ All foreign keys updated for User → Company relationship (one-to-many)
 
 ### **2. Generate Alembic Migration** (10 min)
 ```bash
@@ -97,12 +106,12 @@ Create `/backend/app/schemas/` files for request/response models:
 
 ### **4. Implement CRUD Endpoints** (2-3 hours)
 Create `/backend/app/api/routes/` endpoints:
-- `companies.py` - GET, POST, PUT, DELETE /api/companies
-- `target_accounts.py` - CRUD for /api/target-accounts
-- `target_personas.py` - CRUD for /api/target-personas  
-- `campaigns.py` - CRUD for /api/campaigns
+- `company.py` - GET, POST, PUT, DELETE `/company`
+- `accounts.py` - CRUD for `/accounts`
+- `personas.py` - CRUD for `/personas`  
+- `campaigns.py` - CRUD for `/campaigns`
 
-**Critical**: Implement Row-Level Security to ensure users only access their own data.
+**Critical**: Implement Row-Level Security to ensure users only access their own data (using Stack Auth user ID).
 
 ### **5. Frontend API Integration** (3-4 hours)
 Replace localStorage calls with API calls:
@@ -116,6 +125,12 @@ Build tools to import existing localStorage data:
 - Create migration script to bulk import existing user data
 - Add admin endpoint for one-time data migration
 - Test migration with real localStorage data
+
+**LocalStorage Sync Strategy:**
+- **Current localStorage keys**: `dashboard_overview`, `target_accounts`, `emailHistory`
+- **Mapping**: `dashboard_overview` → Company, `target_accounts[]` → TargetAccount/TargetPersona, `emailHistory[]` → Campaign
+- **Approach**: Progressive migration (hybrid → DB-first → DB-only)
+- **Rate limiting**: JWT-based using Stack Auth user ID (not API keys)
 
 ## 📋 Implementation Priority
 
@@ -150,9 +165,9 @@ Build tools to import existing localStorage data:
 
 ## ⚠️ Important Notes
 
-1. **Row-Level Security is critical** - Users must only see their own data
+1. **Row-Level Security is critical** - Users must only see their own data (Stack Auth user ID)
 2. **Migration strategy needed** - Plan for importing existing localStorage data  
-3. **API authentication** - All endpoints require valid API key/user token
+3. **API authentication** - All endpoints require valid Stack Auth JWT token
 4. **Error handling** - Proper validation and error responses for all endpoints
 5. **Database constraints** - Foreign keys enforce data integrity
 

@@ -27,38 +27,96 @@ This document captures key architectural decisions made during the development o
 
 ---
 
-### **Decision 2: Hybrid Authentication Architecture (Stack Auth + Database)**
+### **Decision 2: JWT-Only Authentication (Stack Auth)**
 
-**What**: Two-layer authentication combining Stack Auth OAuth tokens with local database business controls.
+**What**: Pure Stack Auth JWT tokens for all authentication and authorization.
 
 **Why**:
-- **User Experience**: Seamless OAuth sign-in (Google) without manual API key management
-- **Business Control**: Rate limiting, tiers, and feature gates managed in local database
+- **Simplicity**: Single authentication system, no API key management
+- **User Experience**: Seamless OAuth sign-in (Google) without manual key management
 - **Security**: Short-lived JWT tokens with automatic refresh, no password storage
-- **Flexibility**: Can track individual user usage and apply business logic
-- **Scalability**: Easy to add new OAuth providers, detailed analytics
+- **Rate Limiting**: User-based limits using JWT user ID (no separate API keys)
+- **Row-Level Security**: All data isolated by Stack Auth user ID
 
 **Architecture**:
 ```
-Layer 1 (Identity): Stack Auth JWT tokens for user authentication
-Layer 2 (Business): Local database for rate limits, tiers, usage tracking
+Single Layer: Stack Auth JWT tokens → User ID → Rate limiting & data access
 ```
 
 **Trade-offs**:
-- ✅ Better UX, no password management, detailed control, OAuth scalability
-- ❌ More complex than pure API keys, dependency on Stack Auth service
-- ❌ Two systems to maintain (Stack Auth + local database)
+- ✅ Simpler architecture, better UX, strong security, unified user identity
+- ❌ No programmatic API access (could be added later if needed)
+- ❌ Dependency on Stack Auth service
 
 **Evolution**: 
-- Initially considered pure API key system (simple but poor UX)
-- Considered pure JWT tokens (good UX but limited business control)
-- Settled on hybrid approach combining benefits of both
+- Initially used hybrid Stack Auth + API key system
+- **July 2025**: Simplified to JWT-only after realizing API keys weren't needed for MVP
+- Removed API key models and logic to reduce complexity
 
 **Implementation Decision**: Use Stack Auth user IDs directly as primary keys in local database instead of creating separate UUIDs. This eliminates unnecessary ID mapping complexity.
 
 ---
 
-### **Decision 3: Dual API Structure (Demo + Authenticated)**
+### **Decision 3: Database Schema Design (JSONB vs Normalized)**
+
+**What**: Simple schema with JSONB columns for AI-generated content.
+
+**Why**:
+- **Simplicity**: 5 tables instead of 27+ normalized tables
+- **AI Flexibility**: JSONB adapts to evolving AI prompts without schema changes
+- **Migration Ease**: Direct localStorage → JSONB mapping
+- **Performance**: PostgreSQL JSONB with indexing and query support
+- **Maintainability**: Much simpler to understand and modify
+
+**Schema Design**:
+```sql
+Users → Companies → TargetAccounts → TargetPersonas → Campaigns
+     (1:many)   (1:many)        (1:many)       (1:many)
+     
+Each table has basic fields + JSONB column for complex data
+```
+
+**Trade-offs**:
+- ✅ Simple schema, easy migration, AI flexibility, PostgreSQL JSONB performance
+- ❌ Slightly less query flexibility (but we don't need complex queries)
+- ❌ No referential integrity on nested data (acceptable for AI-generated content)
+
+**Evolution**: 
+- Initially considered normalized approach (over-engineered)
+- **July 2025**: Simplified to JSONB after recognizing we were over-engineering
+- Realized AI-generated content doesn't need complex relational structure
+
+**Implementation Decision**: Use JSONB columns that mirror localStorage structure exactly, making migration trivial.
+
+---
+
+### **Decision 4: localStorage to Database Migration Strategy**
+
+**What**: Progressive migration from localStorage to database with backwards compatibility.
+
+**Why**:
+- **Risk Management**: Avoid breaking existing user data
+- **Gradual Rollout**: Test database integration before full migration
+- **User Experience**: Seamless transition without data loss
+- **Development Velocity**: Can work in parallel on frontend and backend
+
+**Migration Strategy**:
+```
+Phase 1: Hybrid (write to both localStorage and DB)
+Phase 2: DB-first (read from DB, fallback to localStorage)
+Phase 3: DB-only (remove localStorage dependencies)
+```
+
+**Trade-offs**:
+- ✅ Safe migration, backwards compatibility, parallel development
+- ❌ Temporary complexity, duplicate data storage
+- ❌ Additional testing required for both storage systems
+
+**Implementation Decision**: Build migration utilities to bulk-import existing localStorage data rather than forcing users to recreate their data.
+
+---
+
+### **Decision 5: Dual API Structure (Demo + Authenticated)**
 
 **What**: Separate `/demo/*` and `/api/*` endpoints instead of single authenticated API.
 

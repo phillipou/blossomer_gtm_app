@@ -17,11 +17,12 @@ class TestGenerateTargetPersonaProfile:
     async def test_generate_target_persona_profile_success(self):
         """Test successful target persona profile generation."""
         request_data = TargetPersonaRequest(
+            website_url="https://example.com",
             persona_profile_name="Chief Technology Officer",
             hypothesis="CTOs are primary decision makers for enterprise software",
             additional_context="Focus on CTOs at mid-market companies",
-            company_context="Enterprise software company",
-            target_account_context="Mid-market SaaS companies",
+            company_context={"description": "Enterprise software company"},
+            target_account_context={"description": "Mid-market SaaS companies"},
             website_content="Company website content",
         )
 
@@ -160,9 +161,10 @@ class TestGenerateTargetPersonaProfile:
     async def test_generate_target_persona_profile_name_override(self):
         """Test that persona_profile_name overrides target_persona_name."""
         request_data = TargetPersonaRequest(
+            website_url="https://example.com",
             persona_profile_name="VP of Engineering",
             hypothesis="VPs are key technical decision makers",
-            company_context="Tech company context",
+            company_context={"description": "Tech company context"},
         )
 
         # Mock response with different target_persona_name
@@ -239,7 +241,9 @@ class TestGenerateTargetPersonaProfile:
     async def test_generate_target_persona_profile_no_name_override(self):
         """Test that target_persona_name is not overridden when persona_profile_name is None."""
         request_data = TargetPersonaRequest(
-            hypothesis="Test hypothesis", company_context="Test context"
+            website_url="https://example.com",
+            hypothesis="Test hypothesis",
+            company_context={"description": "Test context"},
         )
 
         mock_response = TargetPersonaResponse(
@@ -313,7 +317,10 @@ class TestGenerateTargetPersonaProfile:
     @pytest.mark.asyncio
     async def test_generate_target_persona_profile_minimal_request(self):
         """Test target persona profile generation with minimal request data."""
-        request_data = TargetPersonaRequest(company_context="Basic company context")
+        request_data = TargetPersonaRequest(
+            website_url="https://example.com",
+            company_context={"description": "Basic company context"},
+        )
 
         minimal_response = TargetPersonaResponse(
             target_persona_name="Generic Persona",
@@ -388,11 +395,16 @@ class TestGenerateTargetPersonaProfile:
     async def test_generate_target_persona_profile_with_all_fields(self):
         """Test target persona profile generation with all optional fields."""
         request_data = TargetPersonaRequest(
+            website_url="https://example.com",
             persona_profile_name="Senior Product Manager",
             hypothesis="Product managers are key stakeholders for product-related decisions",
             additional_context="Focus on B2B product managers with enterprise experience",
-            company_context="Enterprise software company with product-led growth",
-            target_account_context="Mid-market and enterprise B2B companies",
+            company_context={
+                "description": "Enterprise software company with product-led growth"
+            },
+            target_account_context={
+                "description": "Mid-market and enterprise B2B companies"
+            },
             website_content="Comprehensive product information and case studies",
         )
 
@@ -527,7 +539,10 @@ class TestGenerateTargetPersonaProfile:
     @pytest.mark.asyncio
     async def test_generate_target_persona_profile_service_error(self):
         """Test handling of service errors."""
-        request_data = TargetPersonaRequest(company_context="Test context")
+        request_data = TargetPersonaRequest(
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+        )
 
         with patch(
             "backend.app.services.target_persona_service.ContextOrchestratorService"
@@ -547,7 +562,10 @@ class TestGenerateTargetPersonaProfile:
     @pytest.mark.asyncio
     async def test_generate_target_persona_profile_validation_error(self):
         """Test handling of validation errors."""
-        request_data = TargetPersonaRequest(company_context="Test context")
+        request_data = TargetPersonaRequest(
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+        )
 
         with patch(
             "backend.app.services.target_persona_service.ContextOrchestratorService"
@@ -571,7 +589,10 @@ class TestGenerateTargetPersonaProfile:
     @pytest.mark.asyncio
     async def test_generate_target_persona_profile_response_structure(self):
         """Test that response has correct structure and required fields."""
-        request_data = TargetPersonaRequest(company_context="Test context")
+        request_data = TargetPersonaRequest(
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+        )
 
         structured_response = TargetPersonaResponse(
             target_persona_name="Test Persona",
@@ -712,7 +733,10 @@ class TestGenerateTargetPersonaProfile:
     @pytest.mark.asyncio
     async def test_generate_target_persona_profile_no_preprocessing(self):
         """Test that preprocessing is disabled for target persona analysis."""
-        request_data = TargetPersonaRequest(company_context="Test context")
+        request_data = TargetPersonaRequest(
+            website_url="https://example.com",
+            company_context={"description": "Test context"},
+        )
 
         mock_response = TargetPersonaResponse(
             target_persona_name="Test Persona",

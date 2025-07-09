@@ -48,23 +48,6 @@ async def fake_generate_structured_output(prompt, response_model):
     ).model_dump()
 
 
-# Remove this line:
-# app.dependency_overrides[rate_limit_dependency] = lambda x: lambda: None
-
-
-# Remove this line:
-# class DummyAPIKey:
-#     id = "test-id"
-#     tier = "free"
-#     key_prefix = "bloss_test_sk_..."
-#     is_active = True
-#     user = type("User", (), {"rate_limit_exempt": True})()
-
-
-# Remove this line:
-# app.dependency_overrides[authenticate_api_key] = lambda: DummyAPIKey()
-
-
 def test_target_account_endpoint_success(monkeypatch):
     """
     Test the /accounts endpoint for a successful response.
@@ -118,7 +101,7 @@ def test_target_account_endpoint_success(monkeypatch):
         return fake_response
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
 
@@ -160,7 +143,7 @@ def test_target_account_endpoint_value_error(monkeypatch):
         raise ValueError("Invalid input")
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
 
@@ -188,7 +171,7 @@ def test_target_account_endpoint_http_exception(monkeypatch):
         raise HTTPException(status_code=400, detail="Bad request")
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
 
@@ -345,7 +328,7 @@ def test_target_account_endpoint_llm_response_empty_lists(monkeypatch):
         return fake_response
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
 
@@ -368,11 +351,11 @@ def test_target_account_endpoint_llm_response_missing_optional_fields(monkeypatc
         "account_profile_name": "SaaS Innovators",
         "hypothesis": "These are good companies",
     }
-    fake_response_dict = {
-        "target_account_name": "SaaS Innovators",
-        "target_account_description": "Tech-forward SaaS companies",
-        "target_account_rationale": ["Rationale 1"],
-        "firmographics": Firmographics(
+    fake_response_dict = TargetAccountResponse(
+        target_account_name="SaaS Innovators",
+        target_account_description="Tech-forward SaaS companies",
+        target_account_rationale=["Rationale 1"],
+        firmographics=Firmographics(
             industry=["SaaS"],
             employees="100-500",
             revenue="$10M-$50M",
@@ -381,7 +364,7 @@ def test_target_account_endpoint_llm_response_missing_optional_fields(monkeypatc
             funding_stage=["Series A"],
             keywords=["keyword1"],
         ),
-        "buying_signals": [
+        buying_signals=[
             {
                 "title": "Signal 1",
                 "description": "Description 1",
@@ -390,14 +373,24 @@ def test_target_account_endpoint_llm_response_missing_optional_fields(monkeypatc
                 "detection_method": "Clay",
             }
         ],
-        "buying_signals_rationale": ["Rationale 1"],
-    }
+        buying_signals_rationale=["Rationale 1"],
+        metadata={
+            "primary_context_source": "user",
+            "sources_used": ["user input"],
+            "confidence_assessment": {
+                "overall_confidence": "high",
+                "data_quality": "high",
+                "inference_level": "minimal",
+                "recommended_improvements": [],
+            },
+        },
+    )
 
     async def fake_generate_target_account_profile(request):
-        return TargetAccountResponse(**fake_response_dict).model_dump()
+        return fake_response_dict.model_dump()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
     response = client.post(
@@ -418,11 +411,11 @@ def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch
         "account_profile_name": "SaaS Innovators",
         "hypothesis": "These are good companies",
     }
-    fake_response_dict = {
-        "target_account_name": "SaaS Innovators",
-        "target_account_description": "Tech-forward SaaS companies",
-        "target_account_rationale": ["Rationale 1"],
-        "firmographics": Firmographics(
+    fake_response_dict = TargetAccountResponse(
+        target_account_name="SaaS Innovators",
+        target_account_description="Tech-forward SaaS companies",
+        target_account_rationale=["Rationale 1"],
+        firmographics=Firmographics(
             industry=["NotARealIndustry"],
             employees="InvalidRange",
             revenue="N/A",
@@ -431,7 +424,7 @@ def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch
             funding_stage=["Pre-Seed"],
             keywords=["random", "words"],
         ),
-        "buying_signals": [
+        buying_signals=[
             {
                 "title": "Bad Signal",
                 "description": "This signal is bad.",
@@ -440,8 +433,8 @@ def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch
                 "detection_method": "NoMethod",
             }
         ],
-        "buying_signals_rationale": ["Rationale 1"],
-        "metadata": {
+        buying_signals_rationale=["Rationale 1"],
+        metadata={
             "primary_context_source": "user",
             "sources_used": ["user input"],
             "confidence_assessment": {
@@ -451,13 +444,13 @@ def test_target_account_endpoint_llm_response_semantically_incorrect(monkeypatch
                 "recommended_improvements": ["Improve LLM output"],
             },
         },
-    }
+    )
 
     async def fake_generate_target_account_profile(request):
-        return TargetAccountResponse(**fake_response_dict).model_dump()
+        return fake_response_dict.model_dump()
 
     monkeypatch.setattr(
-        "backend.app.api.routes.customers.generate_target_account_profile",
+        "backend.app.api.routes.accounts.generate_target_account_profile",
         fake_generate_target_account_profile,
     )
     response = client.post(

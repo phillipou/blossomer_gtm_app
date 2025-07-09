@@ -19,12 +19,12 @@ class MockPromptVars(BaseModel):
 
     website_content: str = ""
     input_website_url: str = ""
-    user_inputted_context: str = ""
+    user_inputted_context: str | None = None
     persona_profile_name: str = ""
     hypothesis: str = ""
     additional_context: str = ""
-    company_context: str = ""
-    target_account_context: str = ""
+    company_context: dict = {}
+    target_account_context: dict = {}
     account_profile_name: str = ""
 
 
@@ -277,7 +277,7 @@ class TestContextOrchestratorService:
         service = ContextOrchestratorService()
         request_data = MockRequest(
             website_content="Test content",
-            company_context="Company context",
+            company_context={"description": "Company context"},
             account_profile_name="Test Account",
             hypothesis="Test hypothesis",
             additional_context="Additional context",
@@ -311,7 +311,7 @@ class TestContextOrchestratorService:
                 # Verify prompt vars contain target account specific fields
                 call_args = mock_render.call_args[0]
                 prompt_vars = call_args[1]
-                assert prompt_vars.company_context == "Company context"
+                assert prompt_vars.company_context == {"description": "Company context"}
                 assert prompt_vars.account_profile_name == "Test Account"
                 assert prompt_vars.hypothesis == "Test hypothesis"
                 assert prompt_vars.additional_context == "Additional context"
@@ -325,8 +325,8 @@ class TestContextOrchestratorService:
             persona_profile_name="Test Persona",
             hypothesis="Test hypothesis",
             additional_context="Additional context",
-            company_context="Company context",
-            target_account_context="Account context",
+            company_context={"description": "Company context"},
+            target_account_context={"description": "Account context"},
         )
 
         mock_response = MockResponseModel(result="success", confidence=0.95)
@@ -360,8 +360,10 @@ class TestContextOrchestratorService:
                 assert prompt_vars.persona_profile_name == "Test Persona"
                 assert prompt_vars.hypothesis == "Test hypothesis"
                 assert prompt_vars.additional_context == "Additional context"
-                assert prompt_vars.company_context == "Company context"
-                assert prompt_vars.target_account_context == "Account context"
+                assert prompt_vars.company_context == {"description": "Company context"}
+                assert prompt_vars.target_account_context == {
+                    "description": "Account context"
+                }
 
     @pytest.mark.asyncio
     async def test_analyze_validation_error(self):
@@ -385,16 +387,16 @@ class TestContextOrchestratorService:
                 with patch(
                     "backend.app.services.context_orchestrator_service.get_llm_client"
                 ) as mock_client:
-                    # Create a proper ValidationError
-                    try:
-                        MockResponseModel(
-                            result="", confidence="invalid"
-                        )  # This will raise ValidationError
-                    except ValidationError as e:
-                        validation_error = e
-
                     mock_client.return_value.generate_structured_output = AsyncMock(
-                        side_effect=validation_error
+                        side_effect=ValidationError(
+                            [
+                                {
+                                    "type": "missing",
+                                    "loc": ("result",),
+                                    "msg": "Field required",
+                                }
+                            ],
+                        ).with_model(MockResponseModel)
                     )
 
                     with pytest.raises(HTTPException) as exc_info:

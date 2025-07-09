@@ -113,46 +113,68 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 ```sql
 -- User management with Stack Auth integration
 users (
-    id VARCHAR PRIMARY KEY,  -- Stack Auth user ID (no separate UUID needed)
-    email VARCHAR NOT NULL,
+    id VARCHAR PRIMARY KEY,  -- Stack Auth user ID as primary key
+    email VARCHAR UNIQUE,
     name VARCHAR,
-    tier VARCHAR DEFAULT 'free',
-    rate_limit_exempt BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT NOW(),
     last_login TIMESTAMP
 )
 
--- API key management (optional, for power users who need programmatic access)
-api_keys (
+-- Company data from website analysis
+companies (
     id UUID PRIMARY KEY,
-    user_id VARCHAR REFERENCES users(id),  -- References Stack Auth user ID
-    key_hash VARCHAR NOT NULL,
-    key_prefix VARCHAR NOT NULL,
-    tier VARCHAR DEFAULT 'free',
-    name VARCHAR DEFAULT 'API Key',
-    is_active BOOLEAN DEFAULT true,
+    user_id VARCHAR REFERENCES users(id),  -- One user can have multiple companies
+    name VARCHAR NOT NULL,
+    url VARCHAR NOT NULL,
+    analysis_data JSONB,  -- All website analysis data (flexible)
     created_at TIMESTAMP DEFAULT NOW(),
-    last_used TIMESTAMP
+    updated_at TIMESTAMP DEFAULT NOW()
 )
 
--- Usage analytics and rate limiting
-api_usage (
+-- Target accounts (ideal customer profiles)
+target_accounts (
     id UUID PRIMARY KEY,
-    user_id VARCHAR REFERENCES users(id),  -- Track usage per Stack Auth user
-    endpoint VARCHAR NOT NULL,
-    status_code INTEGER,
-    response_time_ms INTEGER,
-    success BOOLEAN,
-    error_code VARCHAR,
-    created_at TIMESTAMP DEFAULT NOW()
+    company_id UUID REFERENCES companies(id),
+    name VARCHAR NOT NULL,
+    account_data JSONB NOT NULL,  -- All account data (firmographics, buying signals, etc.)
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 )
+
+-- Target personas (buyers within accounts)
+target_personas (
+    id UUID PRIMARY KEY,
+    target_account_id UUID REFERENCES target_accounts(id),
+    name VARCHAR NOT NULL,
+    persona_data JSONB NOT NULL,  -- All persona data (demographics, use cases, etc.)
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+)
+
+-- Generated campaigns (emails, LinkedIn, etc.)
+campaigns (
+    id UUID PRIMARY KEY,
+    target_account_id UUID REFERENCES target_accounts(id),
+    target_persona_id UUID REFERENCES target_personas(id),
+    name VARCHAR NOT NULL,
+    campaign_type VARCHAR NOT NULL,  -- flexible: email, linkedin, cold_call, ad
+    campaign_data JSONB NOT NULL,  -- All campaign content and configuration
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+)
+
+-- Rate limiting by JWT user ID (replaces API key system)
+-- Counters stored in Redis/memory keyed by Stack Auth user ID
 ```
 
 #### **Data Storage Strategy**
-- **Minimal database usage**: Only authentication and usage tracking
-- **No campaign/analysis persistence**: Results stored in frontend localStorage
+- **Database-first persistence**: All user data (companies, accounts, personas, campaigns) stored in Neon PostgreSQL
+- **LocalStorage transition**: Currently migrating from localStorage to database with progressive sync strategy
+- **Row-level security**: All data isolated by Stack Auth user ID
+- **JSONB schema**: Flexible storage for AI-generated content using PostgreSQL JSONB
+- **Direct localStorage mapping**: JSONB columns mirror localStorage structure for easy migration
 - **Development caching**: File-based cache for website scrapes (dev_cache/)
-- **Future schema**: Planned for user data, campaigns, and persistent sessions
+- **Rate limiting**: JWT-based using Stack Auth user ID (no API keys)
 
 ## Frontend Architecture
 
@@ -210,30 +232,30 @@ LLM Processing → Structured Output → Validation → API Response
 
 ## Authentication Architecture
 
-### **Hybrid Authentication System**
+### **JWT-Only Authentication System**
 
-The system uses a **two-layer authentication architecture** combining OAuth identity verification with business logic controls:
+The system uses **Stack Auth JWT tokens** for all authentication and authorization:
 
-#### **Layer 1: User Identity (Stack Auth)**
+#### **Stack Auth Integration**
 - **OAuth Providers**: Google sign-in with potential for GitHub, Microsoft, etc.
 - **JWT Tokens**: Short-lived access tokens (1 hour) with automatic refresh
 - **User Management**: Built-in user profiles, password reset, account linking
 - **Frontend Integration**: Seamless React hooks for authentication state
 - **Token Caching**: The frontend fetches the Stack Auth JWT token once after login and caches it in React state. The token is exposed as `useAuthState().token` and is available synchronously to all components for authenticated API calls.
 
-#### **Layer 2: Business Controls (Database)**
-- **User Records**: Local database links Stack Auth user IDs to business data
-- **Rate Limiting**: Per-user limits based on tier (free/paid/enterprise)
-- **Usage Tracking**: Detailed analytics and billing metrics
-- **Feature Gates**: Tier-based access to advanced features
+#### **Database Integration**
+- **User Records**: Stack Auth user ID as primary key, no separate UUID needed
+- **Rate Limiting**: Per-user limits based on JWT user ID (no API keys)
+- **Row-Level Security**: All data isolated by Stack Auth user ID
+- **One-to-Many**: User can have multiple companies (future-proofing)
 
 ### **Authentication Flow**
 ```
 1. User → Google OAuth → Stack Auth JWT token
 2. Frontend → API request with Bearer token
-3. Backend → Validates JWT → Extracts user ID
-4. Backend → Database lookup → User tier/limits
-5. Backend → Applies rate limits → Processes request
+3. Backend → Validates JWT → Extracts Stack Auth user ID
+4. Backend → Rate limiting by user ID → Processes request
+5. Backend → All data queries filtered by user ID (Row-Level Security)
 ```
 
 ### **Endpoint Structure**
