@@ -87,20 +87,20 @@ class Company(Base):
 
     # Relationships
     user = relationship("User", back_populates="companies")
-    target_accounts = relationship(
-        "TargetAccount", back_populates="company", cascade="all, delete-orphan"
+    accounts = relationship(
+        "Account", back_populates="company", cascade="all, delete-orphan"
     )
 
 
-class TargetAccount(Base):
+class Account(Base):
     """
-    Target account model for storing ideal customer profiles.
+    Account model for storing ideal customer profiles.
 
     Stores all account data in a single JSONB column for flexibility.
-    Mirrors the TargetAccountResponse structure from localStorage.
+    Mirrors the AccountResponse structure from localStorage.
     """
 
-    __tablename__ = "target_accounts"
+    __tablename__ = "accounts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
@@ -117,28 +117,28 @@ class TargetAccount(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    company = relationship("Company", back_populates="target_accounts")
-    target_personas = relationship(
-        "TargetPersona", back_populates="target_account", cascade="all, delete-orphan"
+    company = relationship("Company", back_populates="accounts")
+    personas = relationship(
+        "Persona", back_populates="account", cascade="all, delete-orphan"
     )
     campaigns = relationship(
-        "Campaign", back_populates="target_account", cascade="all, delete-orphan"
+        "Campaign", back_populates="account", cascade="all, delete-orphan"
     )
 
 
-class TargetPersona(Base):
+class Persona(Base):
     """
-    Target persona model for storing buyer personas.
+    Persona model for storing buyer personas.
 
     Stores all persona data in a single JSONB column for flexibility.
-    Mirrors the TargetPersonaResponse structure from localStorage.
+    Mirrors the PersonaResponse structure from localStorage.
     """
 
-    __tablename__ = "target_personas"
+    __tablename__ = "personas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    target_account_id = Column(
-        UUID(as_uuid=True), ForeignKey("target_accounts.id"), nullable=False
+    account_id = Column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
 
     # Basic persona information
@@ -153,9 +153,9 @@ class TargetPersona(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    target_account = relationship("TargetAccount", back_populates="target_personas")
+    account = relationship("Account", back_populates="personas")
     campaigns = relationship(
-        "Campaign", back_populates="target_persona", cascade="all, delete-orphan"
+        "Campaign", back_populates="persona", cascade="all, delete-orphan"
     )
 
 
@@ -170,11 +170,11 @@ class Campaign(Base):
     __tablename__ = "campaigns"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    target_account_id = Column(
-        UUID(as_uuid=True), ForeignKey("target_accounts.id"), nullable=False
+    account_id = Column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
-    target_persona_id = Column(
-        UUID(as_uuid=True), ForeignKey("target_personas.id"), nullable=False
+    persona_id = Column(
+        UUID(as_uuid=True), ForeignKey("personas.id"), nullable=False
     )
 
     # Basic campaign information
@@ -192,5 +192,5 @@ class Campaign(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    target_account = relationship("TargetAccount", back_populates="campaigns")
-    target_persona = relationship("TargetPersona", back_populates="campaigns")
+    account = relationship("Account", back_populates="campaigns")
+    persona = relationship("Persona", back_populates="campaigns")
