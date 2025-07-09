@@ -5,9 +5,10 @@ This module provides CRUD operations for companies, with proper user scoping
 and authentication through Stack Auth JWT tokens.
 """
 
-from typing import List, Optional
+from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
@@ -62,7 +63,7 @@ router = APIRouter(tags=["companies"])
 
 
 @router.post(
-    "/",
+    "",
     response_model=CompanyResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new company",
@@ -92,11 +93,20 @@ async def create_company(
 
     Returns the created company with auto-generated ID and timestamps.
     """
+    user_id = user.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User ID not found in JWT token.",
+        )
+
+    print(f"Attempting to create company for user_id: {user_id}")
+    print(f"Company data: {company_data.name}")
     db_service = DatabaseService(db)
-    return db_service.create_company(company_data, user["sub"])
+    return db_service.create_company(company_data, user_id)
 
 
-@router.get("/", response_model=List[CompanyResponse])
+@router.get("", response_model=List[CompanyResponse])
 async def get_companies(
     skip: int = Query(0, ge=0, description="Number of companies to skip"),
     limit: int = Query(
@@ -183,13 +193,13 @@ async def delete_company(
 @router.post(
     "/generate-ai",
     response_model=ProductOverviewResponse,
-    summary="AI Generate Company Overview (features, company & persona profiles, pricing)",
+    summary="AI Generate Company Overview",
     tags=["Companies", "AI"],
     response_description="A structured company overview for the given company context.",
 )
 async def prod_generate_product_overview(
     data: ProductOverviewRequest,
-    user=Depends(validate_stack_auth_jwt),
+    user: dict = Depends(validate_stack_auth_jwt),
     db: Session = Depends(get_db),
 ):
     """

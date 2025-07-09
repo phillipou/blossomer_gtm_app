@@ -14,11 +14,12 @@ import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import { Edit3, Trash2, Building2, Wand2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
-import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useGetCompanies } from "../lib/hooks/useCompany";
+import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
 import { useAuthState } from "../lib/auth";
 import ListInfoCardEditModal, { type ListInfoCardItem } from '../components/cards/ListInfoCardEditModal';
 import InputModal from '../components/modals/InputModal';
 import { isApiError } from "../lib/utils";
+import { getCompanies } from '../lib/companyService';
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -132,7 +133,10 @@ export default function Company() {
   const { data: overview, isLoading: isGetLoading, error: getError, refetch } = useGetCompany(token, companyId);
   const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token, companyId);
   const { mutate: updateCompany } = useUpdateCompany(token, companyId);
+  const { mutate: createCompany, isPending: isCreatingCompany } = useCreateCompany(token);
   const { isLoading: isLoadingCompanies } = useGetCompanies(token);
+
+  const [draftOverview, setDraftOverview] = useState<CompanyOverviewResponse | null>(null);
 
   const [progressStage, setProgressStage] = useState(() => {
     console.log("Company: Initializing progressStage state");
@@ -298,12 +302,55 @@ export default function Company() {
     navigate('/target-accounts');
   };
 
-  const handleGenerateCompany = ({ name, description }: { name: string; description: string }) => {
-    // name = websiteUrl, description = context
+  const handleGenerateCompany = useCallback(({ name, description }: { name: string; description: string }) => {
     console.log("Company: handleGenerateCompany called with:", { websiteUrl: name, userInputtedContext: description });
-    analyzeCompany({ websiteUrl: name, userInputtedContext: description });
-    setIsGenerationModalOpen(false);
-  };
+    analyzeCompany(
+      { websiteUrl: name, userInputtedContext: description },
+      {
+        onSuccess: (response) => {
+          const draft = { ...response, companyUrl: name, companyName: response.companyName || new URL(name).hostname };
+          if (token) {
+            setDraftOverview(draft);
+          } else {
+            localStorage.setItem('company_overview', JSON.stringify(draft));
+            setDraftOverview(draft);
+          }
+          setIsGenerationModalOpen(false);
+        },
+        onError: (err) => {
+          console.error('Error generating company overview:', err);
+        },
+      }
+    );
+  }, [analyzeCompany, token, navigate]);
+
+  useEffect(() => {
+    // This effect handles auto-saving a draft for authenticated users.
+    if (draftOverview && token && !companyId && !isCreatingCompany) {
+      // It's a new company that hasn't been saved yet.
+      const { companyId: _, ...analysisData } = draftOverview;
+      
+      const companyToCreate = {
+        name: draftOverview.companyName,
+        url: draftOverview.companyUrl,
+        analysis_data: analysisData,
+      };
+
+      createCompany(companyToCreate, {
+        onSuccess: (savedCompany) => {
+          setDraftOverview(null); // Clear the draft
+          // Invalidate companies list to refetch
+          queryClient.invalidateQueries({ queryKey: ['companies'] });
+          navigate(`/app/company/${savedCompany.id}`, { replace: true });
+        },
+        onError: (error) => {
+          console.error("Failed to auto-save company draft:", error);
+          // Optional: Display an error to the user
+        }
+      });
+    }
+  }, [draftOverview, token, companyId, createCompany, isCreatingCompany, queryClient, navigate]);
+
 
   // Show loading while checking for companies (authenticated users on /company)
   if (token && !companyId && isLoadingCompanies) {
@@ -332,13 +379,15 @@ export default function Company() {
     return <ErrorDisplay error={{ errorCode: 'UNKNOWN_ERROR', message: errorToDisplay.message }} onRetry={handleRetry} onHome={() => navigate('/')} />;
   }
 
-  // Handle authenticated users with no companies
-  const showNoCompanies = token && !companyId && companies && companies.length === 0;
-  // Handle unauthenticated users with no localStorage data
-  const showNoOverview = !overview;
+  const displayOverview = overview || draftOverview;
 
-  const companyName = overview?.companyName || "Company";
-  const domain = overview?.companyUrl || "";
+  // Handle authenticated users with no companies
+  const showNoCompanies = token && !companyId && companies && companies.length === 0 && !draftOverview;
+  // Handle unauthenticated users with no localStorage data
+  const showNoOverview = !displayOverview;
+
+  const companyName = displayOverview?.companyName || "Company";
+  const domain = displayOverview?.companyUrl || "";
 
   console.log("Company: About to render, isGenerationModalOpen =", isGenerationModalOpen);
 
@@ -390,13 +439,13 @@ export default function Company() {
                 title={companyName}
                 subtitle={domain}
                 bodyTitle="Company Overview"
-                bodyText={overview?.description || "No description available"}
+                bodyText={displayOverview?.description || "No description available"}
                 showButton={false}
                 entityType="company"
               />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {cardConfigs.map(({ key, label, getItems, subtitle, bulleted }) => {
-                  const items = overview ? getItems(overview) : [];
+                  const items = displayOverview ? getItems(displayOverview) : [];
                   const isEditable = true;
                   return (
                     <ListInfoCard

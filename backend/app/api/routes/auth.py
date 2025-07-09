@@ -37,8 +37,8 @@ class APIKeyValidationResponse(BaseModel):
 
 class UserProfileResponse(BaseModel):
     user_id: str
-    email: str
-    name: Optional[str]
+    email: Optional[str] = None
+    name: Optional[str] = None
     role: str
     rate_limit_exempt: bool
     created_at: datetime

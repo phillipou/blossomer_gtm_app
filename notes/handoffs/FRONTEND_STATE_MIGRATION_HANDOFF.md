@@ -1,53 +1,257 @@
-# Frontend State/Data Migration Handoff
+# Frontend Draft/Auto-Save Pattern Implementation Plan
 
 **Status:** In Progress  
-**Last Updated:** July 2025
+**Last Updated:** July 2025  
+**Target Pattern:** Draft → Auto-Save → Sync across Company, Account, Persona, Email
 
 ## Executive Summary
 
-This document outlines the plan and rationale for migrating the Blossomer frontend from legacy `localStorage`-based state management to a robust, API-driven architecture using TanStack Query. The goal is to provide a seamless, auto-saving user experience for all AI-generated entities (Accounts, Personas, Campaigns) while ensuring data integrity, maintainability, and a modern developer workflow.
+This document outlines the implementation plan for the draft/auto-save pattern across all AI-generated entities in the Blossomer GTM application. The goal is to provide a seamless, frictionless user experience where users never need to manually save their work, while maintaining data consistency between local drafts and backend persistence.
 
-## Goals
-- **Eliminate direct localStorage usage for canonical data** (except for drafts and resilience)
-- **Adopt TanStack Query** for all API data fetching, caching, and mutation
-- **Implement a frictionless auto-save pattern** for AI-generated entities (no manual save button)
-- **Ensure all data is persisted in the backend** and kept in sync with the frontend cache
-- **Enable easy migration and rollback** for existing users with localStorage data
-- **Document the process and rationale** for future maintainers
+## Current State Assessment
 
-## Why This Migration?
-- **Reliability:** API is the single source of truth; no more out-of-sync localStorage bugs
-- **UX:** Users get instant, auto-saving, draft-to-saved transitions with no friction
-- **Maintainability:** Modern, declarative data layer with TanStack Query hooks
-- **Scalability:** Pattern can be applied to all entities and future features
-- **Developer Experience:** Devtools, cache management, and optimistic updates out of the box
+### ✅ Already Implemented
+- **TanStack Query Setup**: Fully configured with QueryClient and DevTools
+- **Company Entity**: Draft generation on LandingPage → navigate to Company page → displays from location.state
+- **Authentication**: Stack Auth JWT integration with proper token management
+- **API Infrastructure**: All CRUD endpoints exist for Company, Account, Persona, Campaign entities
 
-## The Plan
+### ⚠️ Partially Implemented
+- **Account Entity**: Has `/generate-ai` endpoint but no draft pattern
+- **Company Auto-Save**: Missing auto-save on first edit (still shows from location.state)
+- **TanStack Query Hooks**: Basic hooks exist but need auto-save integration
 
-### Phase 1: Setup and Tooling
-- **Install TanStack Query:** Add the library to frontend dependencies
-- **Configure QueryClientProvider:** Wrap the main React application to provide the caching layer to all components
+### ❌ Not Implemented
+- **Persona Entity**: No draft/auto-save pattern
+- **Email/Campaign Entity**: No draft/auto-save pattern  
+- **Auto-Save Hooks**: No generic `useAutoSave` hook
+- **Draft Management**: No localStorage draft management system
 
-### Phase 2: Core Data Migration (from localStorage to API)
-- **Create Account Data Hooks:** Build custom hooks using TanStack Query (`useQuery`, `useMutation`) to handle all CRUD operations for accounts (`getAccounts`, `createAccount`, `updateAccount`, `deleteAccount`)
-- **Refactor Accounts Page:** Update the main `Accounts` page to fetch data using the new `useGetAccounts` hook instead of reading from `localStorage`
+## Target Pattern (Sequence Diagram)
 
-### Phase 3: Implement the "Generate & Auto-Save" Workflow
-- **Adapt AI Generation Flow:** Modify the "Generate AI" process to save the result as a "draft" in localStorage, separate from the main list of saved accounts
-- **Build the `useAutoSave` Hook:** Create a generic, debounced auto-save hook. This hook will intelligently decide whether to `POST` (for a new draft) or `PUT` (for an existing, saved entity)
-- **Integrate Auto-Save into Detail Page:** Use the `useAutoSave` hook in the `AccountDetail` page to automatically persist any changes in the background
+```
+User Interaction → AI Generation → Draft Storage → Auto-Save Trigger → Backend Persistence
+     ↓                 ↓              ↓                ↓                    ↓
+1. Click "Generate" → POST /api/{entity}/generate-ai → localStorage['draft_*'] → UI renders
+2. User edits field → debounce 500ms → POST /api/{entity} → TanStack Query cache
+3. Subsequent edits → debounce 500ms → PUT /api/{entity}/{id} → TanStack Query cache
+```
 
-### Phase 4: Rollout, Migration, and Cleanup
-- **Roll out to Other Entities:** Apply the same pattern (create hooks, refactor pages, implement auto-save) for **Personas** and **Campaigns**
-- **Build a Migration Utility:** Create a simple, one-time function that a user can trigger to migrate their existing localStorage data to the database
-- **Final Cleanup:** Remove all the old, direct localStorage manipulation logic from the codebase
-- **Documentation:** Update `ARCHITECTURE.md` and other relevant docs to reflect the use of TanStack Query and the final implementation of the auto-save pattern
+## Implementation Plan
 
-## Next Steps
-- Continue with the current phase as tracked in the project TODOs
-- Reference this document for rationale, implementation order, and onboarding new contributors
-- Update this handoff as the migration progresses or if the plan changes
+### Phase 1: Core Infrastructure (Week 1)
+
+#### 1.1 Create Auto-Save Hook
+```typescript
+// File: src/lib/hooks/useAutoSave.ts
+interface UseAutoSaveOptions<T> {
+  entity: 'company' | 'account' | 'persona' | 'email';
+  draftKey: string;
+  createMutation: UseMutationResult<T>;
+  updateMutation: UseMutationResult<T>;
+  debounceMs?: number;
+}
+
+export function useAutoSave<T>(options: UseAutoSaveOptions<T>) {
+  // Auto-save logic with debouncing
+  // Draft management
+  // First save vs subsequent saves
+}
+```
+
+#### 1.2 Create Draft Management Utilities
+```typescript
+// File: src/lib/draftManager.ts
+export class DraftManager {
+  static saveDraft(entity: string, data: any): void
+  static getDraft(entity: string): any | null
+  static removeDraft(entity: string): void
+  static hasDraft(entity: string): boolean
+}
+```
+
+#### 1.3 Update TanStack Query Hooks
+- Add optimistic updates to all mutation hooks
+- Implement proper cache invalidation
+- Add error handling and retry logic
+
+### Phase 2: Company Entity (Week 2)
+
+#### 2.1 Implement Company Draft Pattern
+- **Update LandingPage**: Store result in `localStorage['draft_company']`
+- **Update Company page**: Read from draft first, then from query cache
+- **Add auto-save**: First edit triggers POST → subsequent edits trigger PUT
+
+#### 2.2 Company Auto-Save Integration
+```typescript
+// In Company.tsx
+const { autoSave, isDraft, isSaving } = useAutoSave({
+  entity: 'company',
+  draftKey: 'draft_company',
+  createMutation: useCreateCompany(),
+  updateMutation: useUpdateCompany(),
+});
+
+// Trigger auto-save on field changes
+const handleFieldChange = (field: string, value: any) => {
+  autoSave({ [field]: value });
+};
+```
+
+### Phase 3: Account Entity (Week 3)
+
+#### 3.1 Implement Account Draft Pattern
+- **Update Account generation**: Store in `localStorage['draft_account']`
+- **Update Accounts page**: Show draft accounts in list with visual indicators
+- **Add auto-save**: First edit/timeout triggers POST → subsequent edits trigger PUT
+
+#### 3.2 Account List Integration
+```typescript
+// In Accounts.tsx
+const { data: accounts } = useGetAccounts();
+const draftAccounts = DraftManager.getDraft('accounts') || [];
+const allAccounts = [...accounts, ...draftAccounts];
+
+// Visual indicators for draft vs saved
+{allAccounts.map(account => (
+  <AccountCard 
+    key={account.id || account.tempId}
+    account={account}
+    isDraft={!account.id}
+    onAutoSave={handleAutoSave}
+  />
+))}
+```
+
+### Phase 4: Persona Entity (Week 4)
+
+#### 4.1 Create Persona Draft Pattern
+- **Add persona generation**: POST `/api/personas/generate-ai`
+- **Implement draft storage**: `localStorage['draft_personas']`
+- **Add auto-save**: Follow same pattern as accounts
+
+#### 4.2 Persona List Integration
+- Show draft personas in persona list
+- Auto-save on first edit or timeout
+- Sync with parent account relationship
+
+### Phase 5: Email/Campaign Entity (Week 5)
+
+#### 5.1 Create Email Draft Pattern
+- **Add email generation**: POST `/api/campaigns/generate-ai`
+- **Implement draft storage**: `localStorage['draft_emails']`
+- **Add auto-save**: Follow same pattern as other entities
+
+#### 5.2 Campaign View Integration
+- Show draft emails in campaign view
+- Auto-save on first edit or timeout
+- Sync with parent persona relationship
+
+### Phase 6: Polish & Optimization (Week 6)
+
+#### 6.1 User Experience Enhancements
+- **Loading States**: Show "Saving..." indicators
+- **Error Handling**: Retry logic with user notifications
+- **Conflict Resolution**: Handle concurrent edits gracefully
+- **Offline Support**: Queue changes when offline
+
+#### 6.2 Performance Optimizations
+- **Debouncing**: Optimize auto-save frequency
+- **Batch Updates**: Group related field changes
+- **Memory Management**: Clean up unused drafts
+- **Cache Optimization**: Minimize unnecessary re-renders
+
+## Technical Implementation Details
+
+### Auto-Save Triggers
+```typescript
+// Primary triggers
+onFieldBlur: () => autoSave(currentData),
+onTypingPause: debounce(() => autoSave(currentData), 500),
+onNavigation: () => autoSave(currentData),
+onTimeout: () => autoSave(currentData), // 30s fallback
+
+// Secondary triggers
+onWindowBeforeUnload: () => autoSave(currentData),
+onVisibilityChange: () => autoSave(currentData),
+```
+
+### Draft State Management
+```typescript
+// Draft lifecycle
+1. AI Generation → save to localStorage['draft_*']
+2. UI Render → read from draft + show visual indicators
+3. First Edit → POST /api/{entity} → remove draft → add to cache
+4. Subsequent Edits → PUT /api/{entity}/{id} → update cache
+5. Navigation → cleanup unused drafts
+```
+
+### Error Handling Strategy
+```typescript
+// Error scenarios
+NetworkError: () => keep in draft state, show retry button
+ValidationError: () => show inline errors, keep draft
+ServerError: () => fallback to draft, show notification
+ConflictError: () => show conflict resolution dialog
+```
+
+## Testing Strategy
+
+### Unit Tests
+- Draft management functions
+- Auto-save hook behavior
+- Error handling scenarios
+- Debouncing logic
+
+### Integration Tests
+- Full entity lifecycle (draft → save → edit)
+- Cross-entity relationships
+- Network failure scenarios
+- Cache invalidation
+
+### E2E Tests
+- User workflow from generation to final save
+- Multiple entities in sequence
+- Browser refresh scenarios
+- Offline/online transitions
+
+## Migration Strategy
+
+### Data Migration
+- **Existing localStorage**: One-time migration utility
+- **User Communication**: Clear messaging about auto-save
+- **Rollback Plan**: Ability to revert to manual save if needed
+
+### Rollout Plan
+1. **Company Entity**: Deploy and monitor
+2. **Account Entity**: Deploy if Company successful
+3. **Persona & Email**: Deploy together
+4. **Full Rollout**: All entities with auto-save
+
+## Success Metrics
+
+### UX Metrics
+- **Save Success Rate**: 99.5% auto-save success
+- **Data Loss Events**: 0 user-reported data loss
+- **User Satisfaction**: Positive feedback on auto-save experience
+
+### Technical Metrics
+- **API Response Time**: <2s for auto-save operations
+- **Cache Hit Rate**: >90% for TanStack Query
+- **Error Rate**: <1% for auto-save operations
+
+## Future Considerations
+
+### Scalability
+- **Real-time Sync**: WebSocket updates for collaborative editing
+- **Conflict Resolution**: Operational transforms for concurrent edits
+- **Performance**: Virtualization for large entity lists
+
+### Enhanced Features
+- **Version History**: Track entity changes over time
+- **Undo/Redo**: User-friendly change management
+- **Collaboration**: Multiple users editing same entity
 
 ---
 
-**For questions or clarifications, see the updated `ARCHITECTURE.md`, `DECISIONS.md`, and `TASKS.md`.** 
+**Next Steps**: Begin Phase 1 implementation with core infrastructure setup. Reference this document for implementation order and technical details.

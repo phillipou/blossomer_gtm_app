@@ -39,7 +39,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path="handler/oauth-callback" element={<OAuthCallback />} />
               <Route path="account-settings" element={<AccountSettings />} />
             </Route>
-            <Route element={<MainLayout />}>
+            {/* Unauthenticated/demo routes */}
+            <Route path="playground" element={<MainLayout />}>
               <Route path="company" element={<Company />} />
               <Route path="target-accounts" element={<Accounts />} />
               <Route path="target-accounts/:id" element={<AccountDetail />} />
@@ -47,7 +48,17 @@ createRoot(document.getElementById('root')!).render(
               <Route path="target-personas" element={<Personas />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-              {/* Add other routes here */}
+            </Route>
+            {/* Authenticated routes */}
+            <Route path="app" element={<MainLayout />}>
+              <Route path="company" element={<Company />} />
+              <Route path="company/:id" element={<Company />} />
+              <Route path="target-accounts" element={<Accounts />} />
+              <Route path="target-accounts/:id" element={<AccountDetail />} />
+              <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+              <Route path="target-personas" element={<Personas />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -536,6 +536,51 @@ painPoints: (response as any).painPoints || (response as any).pain_points
 
 ---
 
+### **Decision 21: Company Routing Structure - Dual Mode for Auth vs Demo (July 2025)**
+
+**What**: Implement dual routing pattern where authenticated users navigate to `/company/:id` while unauthenticated users use `/company` with localStorage-only data.
+
+**Why**:
+- **Multi-company support**: Backend already supports multiple companies per user, routing should reflect this
+- **Shareable URLs**: Authenticated users get bookmark-able, shareable company URLs
+- **Demo mode preservation**: Unauthenticated users maintain existing localStorage-based flow
+- **Future-proofing**: Sets up infrastructure for company selection UI when users have multiple companies
+- **Clean separation**: Clear distinction between persistent (database) vs temporary (localStorage) data
+
+**Implementation**:
+```typescript
+// Route structure
+<Route path="company" element={<Company />} />           // Demo mode only  
+<Route path="company/:id" element={<Company />} />       // Authenticated mode
+
+// Navigation logic
+const handleAuthenticatedNavigation = () => {
+  if (token && companies.length > 0) {
+    navigate(`/company/${companies[companies.length - 1].id}`);
+  }
+};
+
+const handleUnauthenticatedNavigation = () => {
+  navigate('/company');
+};
+```
+
+**Component Logic**:
+- Company component detects mode via `useParams()` and `useAuthState()`
+- Authenticated mode: Uses TanStack Query with company ID
+- Unauthenticated mode: Uses localStorage directly
+- Shared UI components, different data sources
+
+**Trade-offs**:
+- ✅ Clean URL structure, supports multi-company, maintains demo mode
+- ✅ Shareable URLs for authenticated users, future-proof design
+- ❌ Slight complexity in component logic to handle both modes
+- ❌ Need to update navigation logic throughout app
+
+**Status**: ✅ **PLANNED** - Ready for implementation, architecture documented
+
+---
+
 ## Evolution and Future Decisions
 
 ### **What We'd Do Differently**

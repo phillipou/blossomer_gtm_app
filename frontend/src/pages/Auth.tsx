@@ -1,6 +1,8 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { SignIn, SignUp, useUser } from "@stackframe/react";
+import { useAuthState } from '../lib/auth';
+import { useGetCompanies } from '../lib/hooks/useCompany';
 
 export function Auth() {
   const [searchParams] = useSearchParams();
@@ -8,6 +10,8 @@ export function Auth() {
   const mode = searchParams.get("mode") || "signin";
   const containerRef = useRef<HTMLDivElement>(null);
   const user = useUser();
+  const { token } = useAuthState();
+  const { data: companies } = useGetCompanies(token);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -35,9 +39,13 @@ export function Auth() {
   // If user is already signed in, redirect to /company
   useEffect(() => {
     if (user) {
-      navigate('/company');
+      if (companies && companies.length > 0) {
+        navigate(`/app/company/${companies[companies.length - 1].id}`);
+      } else {
+        navigate('/app/company');
+      }
     }
-  }, [user, navigate]);
+  }, [user, companies, navigate]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-gray-100">

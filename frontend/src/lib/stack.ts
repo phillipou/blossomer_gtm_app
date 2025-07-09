@@ -9,8 +9,8 @@ export const stackClientApp = new StackClientApp({
   urls: {
     signIn: '/auth?mode=signin',
     signUp: '/auth?mode=signup',
-    afterSignIn: '/company',
-    afterSignUp: '/company',
+    afterSignIn: '/handler/oauth-callback',
+    afterSignUp: '/handler/oauth-callback',
     afterSignOut: '/',
     error: '/handler/error',
     accountSettings: '/account-settings',

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser, UserButton } from "@stackframe/react";
 import React, { useEffect } from "react";
 import { useAuthState } from '../../lib/auth';
+import { useGetCompanies } from '../../lib/hooks/useCompany';
 
 interface NavbarProps {
   maxWidthClass?: string; // e.g., 'max-w-7xl mx-auto' or ''
@@ -12,17 +13,29 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
   const navigate = useNavigate();
   const user = useUser();
   const authState = useAuthState();
+  const { data: companies } = useGetCompanies(authState.token);
 
   useEffect(() => {
     console.log('Navbar AuthState:', authState);
   }, [authState]);
 
-
   const handleLogoClick = () => {
-    if (user) {
-      navigate('/company');
+    if (user && companies && companies.length > 0) {
+      navigate(`/app/company/${companies[companies.length - 1].id}`);
+    } else if (user) {
+      navigate('/app/company');
     } else {
       navigate('/');
+    }
+  };
+
+  const handleDashboardClick = () => {
+    if (user && companies && companies.length > 0) {
+      navigate(`/app/company/${companies[companies.length - 1].id}`);
+    } else if (user) {
+      navigate('/app/company');
+    } else {
+      navigate('/playground/company');
     }
   };
   return (
@@ -48,7 +61,7 @@ const Navbar: React.FC<NavbarProps> = ({ maxWidthClass = "" }) => {
               <>
                 <Button 
                   className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg" 
-                  onClick={() => navigate('/company')}
+                  onClick={handleDashboardClick}
                 >
                   Dashboard
                 </Button>

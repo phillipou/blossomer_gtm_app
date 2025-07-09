@@ -1,44 +1,69 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser, useStackApp } from '@stackframe/react'
+import { useAuthState } from '../../lib/auth'
+import { useGetCompanies } from '../../lib/hooks/useCompany'
+import { apiFetch } from '../../lib/apiClient'
 
 export function OAuthCallback() {
   const navigate = useNavigate()
   const user = useUser()
   const app = useStackApp()
-  const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { token } = useAuthState()
+  const { data: companies } = useGetCompanies(token)
+  const processed = useRef(false)
 
+  // This effect handles the post-authentication logic: user sync and redirect
   useEffect(() => {
-    let hasProcessed = false
+    // Wait until we have both the user from Stack and our own JWT token
+    if (user && token) {
+      const syncUserAndRedirect = async () => {
+        try {
+          console.log("OAuthCallback: Syncing user with backend...");
+          await apiFetch('/neon-auth/profile', { method: 'GET' }, token);
+          console.log("OAuthCallback: User synced successfully.");
+
+          // Redirect to the last company or the main company page
+          if (companies && companies.length > 0) {
+            navigate(`/app/company/${companies[companies.length - 1].id}`, { replace: true });
+          } else {
+            navigate('/app/company', { replace: true });
+          }
+        } catch (err) {
+          console.error('OAuthCallback: Failed to sync user or redirect:', err);
+          setError('Failed to initialize your profile. Please try again.');
+        }
+      };
+      syncUserAndRedirect();
+    }
+  }, [user, token, companies, navigate]);
+
+
+  // This effect handles the one-time processing of the OAuth callback from the URL
+  useEffect(() => {
+    if (processed.current || user) {
+      // Don't process if we already have a user from the session
+      // or if we've already tried to process the callback.
+      return
+    }
+    processed.current = true
     
     const processOAuthCallback = async () => {
-      if (hasProcessed) return
-      hasProcessed = true
-      
       try {
-        // Call Stack Auth's OAuth callback processing
-        const hasRedirected = await app.callOAuthCallback()
-        console.log('OAuthCallback user:', user);
-        
-        if (!hasRedirected) {
-          // If no automatic redirect happened, check if user is now authenticated
-          if (user) {
-            navigate('/company')
-          } else {
-            // Redirect to sign-in if OAuth failed
-            navigate('/auth?mode=signin')
-          }
-        }
-      } catch (err) {
+        console.log("OAuthCallback: Processing OAuth callback from URL...");
+        await app.callOAuthCallback()
+        console.log("OAuthCallback: Finished processing callback. Waiting for user and token...");
+        // After this succeeds, the `useUser` and `useAuthState` hooks will update,
+        // which will trigger the other useEffect to sync and redirect.
+      } catch (err: any) {
         console.error('OAuth callback error:', err)
-        setError('Authentication failed. Please try again.')
-        setIsProcessing(false)
+        setError(err.message || 'Authentication failed. Please try again.')
       }
     }
 
     processOAuthCallback()
-  }, [app, navigate, user])
+  }, [app, user])
 
   if (error) {
     return (

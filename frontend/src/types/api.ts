@@ -181,6 +181,12 @@ export interface CompanyUpdate {
   analysis_data?: any;
 }
 
+export interface CompanyCreate {
+  name: string;
+  url: string;
+  analysis_data: any;
+}
+
 export interface Persona {
   id: string;
   accountId: string;

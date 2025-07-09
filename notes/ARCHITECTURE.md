@@ -178,6 +178,110 @@ campaigns (
 
 ## Frontend Architecture
 
+### **Routing Structure**
+
+#### **Route Prefixes (July 2025 Migration)**
+- **Authenticated Users**: All authenticated, database-backed routes are now under `/app/*`.
+  - Example: `/app/company/:id`, `/app/target-accounts`, `/app/campaigns`, etc.
+- **Unauthenticated/Demo Users**: All unauthenticated, localStorage/demo routes are now under `/playground/*`.
+  - Example: `/playground/company`, `/playground/target-accounts`, etc.
+- **Public/Landing**: Marketing and landing routes (e.g., `/`) remain at the root.
+
+#### **Route Guards and Access Control (July 2025)**
+- **Authenticated user accesses `/playground`**: Immediately redirected to `/app/company` (or their most relevant `/app` subroute).
+- **Unauthenticated user accesses `/app`**: Immediately redirected to `/auth?mode=signin`.
+
+**Implementation:**
+- This is enforced in the `MainLayout` component using `useAuthState`, `useLocation`, and `useNavigate`.
+- Example:
+```typescript
+useEffect(() => {
+  const isAppRoute = location.pathname.startsWith('/app');
+  const isPlaygroundRoute = location.pathname.startsWith('/playground');
+  if (isAppRoute && !authState.token) {
+    navigate('/auth?mode=signin', { replace: true });
+  } else if (isPlaygroundRoute && authState.token) {
+    navigate('/app/company', { replace: true });
+  }
+}, [authState.token, location.pathname, navigate]);
+```
+
+**Rationale:**
+- Prevents authenticated users from using demo/localStorage flows.
+- Prevents unauthenticated users from accessing database-backed, persistent routes.
+- Ensures a clear, secure, and consistent user experience.
+
+#### **Route Configuration**
+```typescript
+// Main route structure
+<Route path="/" element={<LandingPage />} />
+<Route element={<NavbarOnlyLayout />}>
+  <Route path="auth" element={<Auth />} />
+  <Route path="handler/error" element={<AuthError />} />
+  <Route path="handler/oauth-callback" element={<OAuthCallback />} />
+  <Route path="account-settings" element={<AccountSettings />} />
+</Route>
+{/* Unauthenticated/demo routes */}
+<Route path="playground" element={<MainLayout />}>
+  <Route path="company" element={<Company />} />
+  <Route path="target-accounts" element={<Accounts />} />
+  <Route path="target-accounts/:id" element={<AccountDetail />} />
+  <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+  <Route path="target-personas" element={<Personas />} />
+  <Route path="campaigns" element={<Campaigns />} />
+  <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
+</Route>
+{/* Authenticated routes */}
+<Route path="app" element={<MainLayout />}>
+  <Route path="company/:id" element={<Company />} />
+  <Route path="target-accounts" element={<Accounts />} />
+  <Route path="target-accounts/:id" element={<AccountDetail />} />
+  <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+  <Route path="target-personas" element={<Personas />} />
+  <Route path="campaigns" element={<Campaigns />} />
+  <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
+</Route>
+```
+
+#### **Navigation Logic**
+```typescript
+// Authenticated users - redirect to last company (most recent)
+const handleAuthenticatedNavigation = () => {
+  if (token && companies.length > 0) {
+    navigate(`/app/company/${companies[companies.length - 1].id}`);
+  } else if (token) {
+    navigate('/app/company');
+  }
+};
+
+// Unauthenticated users - use playground mode
+const handleUnauthenticatedNavigation = () => {
+  navigate('/playground/company');
+};
+
+// Company component - handle /company redirect for authenticated users
+useEffect(() => {
+  if (token && !companyId && companies && companies.length > 0) {
+    // Authenticated user on /company - redirect to most recent company
+    navigate(`/app/company/${companies[companies.length - 1].id}`, { replace: true });
+  } else if (!token && companyId) {
+    // Unauthenticated user on /company/:id - redirect to /playground/company
+    navigate('/playground/company', { replace: true });
+  }
+}, [token, companyId, companies, navigate]);
+```
+
+#### **Rationale for Route Prefixes**
+- **Separation of concerns**: Clear distinction between authenticated (database-backed) and unauthenticated (localStorage/demo) experiences.
+- **Scalability**: Enables future expansion (e.g., /admin, /public, /api) without route collisions.
+- **Consistent navigation**: Simplifies route guards, layouts, and navigation logic.
+- **Migration clarity**: Makes it easy to identify and migrate legacy/demo code to production flows.
+
+#### **Migration Notes**
+- All navigation, redirects, and deep links must be updated to use the new prefixes.
+- Stack Auth and all authentication flows now redirect to `/app/company` after login.
+- Demo/unauthenticated flows are now consistently under `/playground/*`.
+
 ### **Component Structure**
 ```
 src/
@@ -195,26 +299,81 @@ src/
 ```
 
 ### **State Management**
-- **Local Component State**: React useState/useReducer for UI state
-- **Global State**: Custom hooks for cross-component data
-- **Persistent Storage**: localStorage for analysis results and session data
-- **API Integration**: Custom hooks for data fetching with error handling
-- **Auth Token Access**: The Stack Auth JWT token is cached after login and available via `useAuthState().token` for all authenticated requests.
 
-#### **AI Draft/Auto-Save Pattern**
-- **Draft Generation**: When the user generates an entity (e.g., account) via `/generate-ai`, the result is stored in localStorage as a draft (e.g., `localStorage['draft_account']`).
-- **Auto-Promotion to Saved**: On the first user commit (edit, navigation, or short delay), the draft is POSTed to the API and, on success, moved to the saved list (e.g., `localStorage['accounts']`).
-- **Auto-Save on Edit**: After the entity has an ID, further edits are auto-saved to the backend via debounced PUT requests, and the saved list in localStorage is updated.
-- **No Save Button**: The user never has to click "Save"; all transitions are automatic and seamless.
-- **Resilience**: If the user closes the tab before the first save, the draft is lost (acceptable for this workflow). Once saved, the entity is persisted in both backend and localStorage.
-- **Pattern Scope**: This pattern is used for all AI-generated entities (accounts, personas, campaigns, etc.) to provide a frictionless, modern UX.
+#### **TanStack Query Integration**
+- **Primary Data Layer**: TanStack Query manages all server state, caching, and synchronization
+- **Optimistic Updates**: Immediate UI feedback while API calls process in background
+- **Background Sync**: Automatic refetching, invalidation, and error recovery
+- **Query Hooks**: Custom hooks for each entity type (useGetCompany, useGetAccounts, etc.)
+- **Mutation Hooks**: Separate hooks for create, update, delete operations with cache updates
+
+#### **Hybrid State Architecture**
+- **Server State**: TanStack Query for all persisted data (companies, accounts, personas, campaigns)
+- **UI State**: React useState/useReducer for component-specific state (modals, forms, etc.)
+- **Draft State**: localStorage for temporary drafts during AI generation flow
+- **Auth State**: Stack Auth JWT token cached and available via `useAuthState().token`
+
+#### **Draft/Auto-Save Pattern (Core UX Flow)**
+
+**Current Implementation Status**:
+- ✅ **Company**: Implemented - generates draft, auto-navigates to Company page
+- ⚠️ **Account**: Partially implemented - has `/generate-ai` endpoint but no draft pattern
+- ❌ **Persona**: Not implemented - needs full draft/auto-save pattern
+- ❌ **Email**: Not implemented - needs full draft/auto-save pattern
+
+**Pattern Workflow**:
+```
+1. User clicks "Generate" → POST /api/{entity}/generate-ai
+2. Response stored as draft_* in localStorage (no backend save yet)
+3. UI renders immediately from draft data
+4. First user interaction triggers auto-save:
+   - POST /api/{entity} → creates entity with ID
+   - Remove draft_* from localStorage
+   - Add to TanStack Query cache
+5. Subsequent edits → debounced PUT /api/{entity}/{id}
+6. All changes sync to TanStack Query cache
+```
+
+**Entity-Specific Patterns**:
+- **Company**: Draft → navigate to Company page → auto-save on first edit
+- **Account**: Draft → render in list → auto-save on first edit or timeout
+- **Persona**: Draft → render in persona list → auto-save on first edit
+- **Email**: Draft → render in campaign view → auto-save on first edit
+
+**Technical Implementation**:
+- **Draft Storage**: `localStorage['draft_company']`, `localStorage['draft_account']`, etc.
+- **Auto-Save Triggers**: Field blur, typing pause (500ms), navigation, timeout (30s)
+- **Conflict Resolution**: Last-write-wins with optimistic updates
+- **Error Handling**: Retry logic, fallback to draft state, user notification
 
 ### **Data Flow**
-1. **User Input** → Landing page form
-2. **API Calls** → Backend analysis endpoints  
-3. **localStorage Storage** → Cache results for session persistence
-4. **Component Updates** → React state updates from localStorage
-5. **User Edits** → Local storage updates (no backend sync)
+1. **User Input** → Landing page or generation forms
+2. **AI Generation** → Backend `/generate-ai` endpoints
+3. **Draft Storage** → localStorage temporary storage for immediate UI
+4. **Auto-Save Trigger** → User interaction or timeout
+5. **API Persistence** → POST/PUT to backend with TanStack Query
+6. **Cache Updates** → TanStack Query invalidation and refetch
+7. **UI Sync** → Components re-render from updated cache
+
+### **Company-Specific Data Flow**
+#### **Authenticated Users**
+```
+1. User navigates to /company → Check auth state and companies
+2. If has companies: Auto-redirect to /company/{last_company_id}
+3. If no companies: Stay on /company (will show empty state)
+4. TanStack Query fetches company data by ID
+5. Component renders with database-backed data
+6. All edits persist to database via API
+```
+
+#### **Unauthenticated Users**
+```
+1. User navigates to /company → Check auth state
+2. Component uses localStorage-only mode
+3. All data reads/writes use localStorage
+4. No API calls for company data (demo endpoints for generation)
+5. If somehow on /company/:id → Auto-redirect to /company
+```
 
 ## AI Processing Architecture
 

@@ -3,6 +3,8 @@ import { Button } from "../ui/button";
 import { Building2, Users, UserCheck, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getEntityNavActiveClass, getEntityNavHoverClass, type EntityType } from "../../lib/entityColors";
+import { useAuthState } from '../../lib/auth';
+import { useGetCompanies } from '../../lib/hooks/useCompany';
 
 interface SidebarNavProps {
   companyName?: string;
@@ -24,6 +26,8 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { token } = useAuthState();
+  const { data: companies } = useGetCompanies(token);
 
   // Load collapsed state from localStorage
   useEffect(() => {
@@ -36,17 +40,28 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
 
+  // Helper to get company navigation path
+  const getCompanyPath = () => {
+    if (token && companies && companies.length > 0) {
+      return `/app/company/${companies[companies.length - 1].id}`;
+    } else if (token) {
+      return '/app/company';
+    }
+    return '/playground/company';
+  };
+
   // Determine active tab
   let activeTab = "";
-  if (/^\/company/.test(location.pathname)) {
+  const prefix = token ? '/app' : '/playground';
+  if (location.pathname.startsWith(`${prefix}/company`)) {
     activeTab = "company";
-  } else if (/^\/target-accounts\/[^/]+\/personas\//.test(location.pathname)) {
+  } else if (new RegExp(`^${prefix}/target-accounts/[^/]+/personas/`).test(location.pathname)) {
     activeTab = "personas";
-  } else if (location.pathname.startsWith("/target-accounts")) {
+  } else if (location.pathname.startsWith(`${prefix}/target-accounts`)) {
     activeTab = "accounts";
-  } else if (location.pathname.startsWith("/target-personas")) {
+  } else if (location.pathname.startsWith(`${prefix}/target-personas`)) {
     activeTab = "personas";
-  } else if (location.pathname.startsWith("/campaigns")) {
+  } else if (location.pathname.startsWith(`${prefix}/campaigns`)) {
     activeTab = "campaigns";
   }
 
@@ -55,28 +70,28 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       key: "company",
       label: "Company",
       icon: <Building2 className="w-5 h-5" />,
-      onClick: () => navigate("/company"),
+      onClick: () => navigate(getCompanyPath()),
       entityType: "company" as EntityType,
     },
     {
       key: "accounts",
       label: "Accounts",
       icon: <Users className="w-5 h-5" />,
-      onClick: () => navigate("/target-accounts"),
+      onClick: () => navigate(`${prefix}/target-accounts`),
       entityType: "account" as EntityType,
     },
     {
       key: "personas",
       label: "Personas",
       icon: <UserCheck className="w-5 h-5" />,
-      onClick: () => navigate("/target-personas"),
+      onClick: () => navigate(`${prefix}/target-personas`),
       entityType: "persona" as EntityType,
     },
     {
       key: "campaigns",
       label: "Campaigns",
       icon: <TrendingUp className="w-5 h-5" />,
-      onClick: () => navigate("/campaigns"),
+      onClick: () => navigate(`${prefix}/campaigns`),
       entityType: "campaign" as EntityType,
     },
   ];
