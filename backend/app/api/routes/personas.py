@@ -35,7 +35,7 @@ async def prod_generate_target_persona(
     """
     AI-generate a target persona profile for authenticated users (Stack Auth JWT required).
     """
-    return await run_service(generate_target_persona_profile, data=data)
+    return await run_service(generate_target_persona_profile, data)
 
 
 # CRUD Operations for Persona Management

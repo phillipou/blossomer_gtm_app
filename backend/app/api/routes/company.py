@@ -31,7 +31,7 @@ async def prod_generate_product_overview(
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
-        generate_product_overview_service, data=data, orchestrator=orchestrator
+        generate_product_overview_service, data, orchestrator=orchestrator
     )
 
 # CRUD endpoints for companies (POST, GET, PUT, DELETE, etc.)

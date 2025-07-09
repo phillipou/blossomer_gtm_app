@@ -858,14 +858,14 @@
         }
       }
     },
-    "/api/campaigns/campaigns-crud": {
+    "/api/campaigns/campaigns": {
       "post": {
         "tags": [
           "Campaigns"
         ],
         "summary": "Create Campaign",
         "description": "Create a new campaign for an account and persona.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Persona ID (must belong to the account)\n- **name**: Campaign name (required, max 255 chars)\n- **campaign_type**: Campaign type (email, linkedin, cold_call, ad)\n- **campaign_data**: JSON data with subject_line, content, segments, etc.",
-        "operationId": "create_campaign_api_campaigns_campaigns_crud_post",
+        "operationId": "create_campaign_api_campaigns_campaigns_post",
         "parameters": [
           {
             "name": "account_id",
@@ -931,7 +931,7 @@
         ],
         "summary": "Get Campaigns",
         "description": "Get all campaigns for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **persona_id**: Optional persona ID to filter campaigns\n- **skip**: Number of campaigns to skip (for pagination)\n- **limit**: Maximum number of campaigns to return (1-1000)",
-        "operationId": "get_campaigns_api_campaigns_campaigns_crud_get",
+        "operationId": "get_campaigns_api_campaigns_campaigns_get",
         "parameters": [
           {
             "name": "account_id",
@@ -1002,7 +1002,7 @@
                   "items": {
                     "$ref": "#/components/schemas/CampaignResponse"
                   },
-                  "title": "Response Get Campaigns Api Campaigns Campaigns Crud Get"
+                  "title": "Response Get Campaigns Api Campaigns Campaigns Get"
                 }
               }
             }
@@ -1020,14 +1020,14 @@
         }
       }
     },
-    "/api/campaigns/campaigns-crud/{campaign_id}": {
+    "/api/campaigns/campaigns/{campaign_id}": {
       "get": {
         "tags": [
           "Campaigns"
         ],
         "summary": "Get Campaign",
         "description": "Get a specific campaign by ID.\n\nOnly returns campaigns owned by the authenticated user (via account->company).",
-        "operationId": "get_campaign_api_campaigns_campaigns_crud__campaign_id__get",
+        "operationId": "get_campaign_api_campaigns_campaigns__campaign_id__get",
         "parameters": [
           {
             "name": "campaign_id",
@@ -1069,7 +1069,7 @@
         ],
         "summary": "Update Campaign",
         "description": "Update a campaign.\n\nOnly updates campaigns owned by the authenticated user (via account->company).\nAll fields are optional - only provided fields will be updated.",
-        "operationId": "update_campaign_api_campaigns_campaigns_crud__campaign_id__put",
+        "operationId": "update_campaign_api_campaigns_campaigns__campaign_id__put",
         "parameters": [
           {
             "name": "campaign_id",
@@ -1121,7 +1121,7 @@
         ],
         "summary": "Delete Campaign",
         "description": "Delete a campaign.\n\nOnly deletes campaigns owned by the authenticated user (via account->company).",
-        "operationId": "delete_campaign_api_campaigns_campaigns_crud__campaign_id__delete",
+        "operationId": "delete_campaign_api_campaigns_campaigns__campaign_id__delete",
         "parameters": [
           {
             "name": "campaign_id",

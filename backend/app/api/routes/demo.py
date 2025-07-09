@@ -53,7 +53,7 @@ async def demo_generate_product_overview(
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
-        generate_product_overview_service, data=data, orchestrator=orchestrator
+        generate_product_overview_service, data, orchestrator=orchestrator
     )
 
 @router.post(
@@ -72,7 +72,7 @@ async def demo_generate_target_account(
     """
     AI-generate a target account profile for demo users, with IP-based rate limiting.
     """
-    return await run_service(generate_target_account_profile, data=data)
+    return await run_service(generate_target_account_profile, data)
 
 @router.post(
     "/personas/generate-ai",
@@ -90,7 +90,7 @@ async def demo_generate_target_persona(
     """
     AI-generate a target persona profile for demo users, with IP-based rate limiting.
     """
-    return await run_service(generate_target_persona_profile, data=data)
+    return await run_service(generate_target_persona_profile, data)
 
 @router.post(
     "/campaigns/generate-ai",
@@ -111,5 +111,5 @@ async def demo_generate_email(
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
-        generate_email_campaign_service, data=request, orchestrator=orchestrator
+        generate_email_campaign_service, request, orchestrator=orchestrator
     ) 

@@ -35,7 +35,7 @@ async def prod_generate_target_account(
     """
     AI-generate a target account profile for authenticated users (Stack Auth JWT required).
     """
-    return await run_service(generate_target_account_profile, data=data)
+    return await run_service(generate_target_account_profile, data)
 
 
 # CRUD Operations for Account Management

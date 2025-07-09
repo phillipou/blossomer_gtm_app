@@ -104,14 +104,14 @@ async def generate_email(
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
-        generate_email_campaign_service, data=request, orchestrator=orchestrator
+        generate_email_campaign_service, request, orchestrator=orchestrator
     )
 
 
 # CRUD Operations for Campaign Management
 # ======================================
 
-@router.post("/campaigns-crud", response_model=CampaignResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/campaigns", response_model=CampaignResponse, status_code=status.HTTP_201_CREATED)
 async def create_campaign(
     campaign_data: CampaignCreate,
     account_id: UUID = Query(..., description="Account ID to create campaign for"),
@@ -132,7 +132,7 @@ async def create_campaign(
     return db_service.create_campaign(campaign_data, account_id, persona_id, user["sub"])
 
 
-@router.get("/campaigns-crud", response_model=List[CampaignResponse])
+@router.get("/campaigns", response_model=List[CampaignResponse])
 async def get_campaigns(
     account_id: UUID = Query(..., description="Account ID to get campaigns for"),
     persona_id: Optional[UUID] = Query(None, description="Optional persona ID to filter by"),
@@ -153,7 +153,7 @@ async def get_campaigns(
     return db_service.get_campaigns(account_id, user["sub"], persona_id=persona_id, skip=skip, limit=limit)
 
 
-@router.get("/campaigns-crud/{campaign_id}", response_model=CampaignResponse)
+@router.get("/campaigns/{campaign_id}", response_model=CampaignResponse)
 async def get_campaign(
     campaign_id: UUID,
     db: Session = Depends(get_db),
@@ -168,7 +168,7 @@ async def get_campaign(
     return db_service.get_campaign(campaign_id, user["sub"])
 
 
-@router.put("/campaigns-crud/{campaign_id}", response_model=CampaignResponse)
+@router.put("/campaigns/{campaign_id}", response_model=CampaignResponse)
 async def update_campaign(
     campaign_id: UUID,
     campaign_data: CampaignUpdate,
@@ -185,7 +185,7 @@ async def update_campaign(
     return db_service.update_campaign(campaign_id, campaign_data, user["sub"])
 
 
-@router.delete("/campaigns-crud/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/campaigns/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_campaign(
     campaign_id: UUID,
     db: Session = Depends(get_db),
