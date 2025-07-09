@@ -1,5 +1,8 @@
 import { apiFetch } from './apiClient';
 import type {
+  Account,
+  AccountCreate,
+  AccountUpdate,
   TargetCompanyRequest,
   TargetAccountResponse,
   TargetPersonaResponse,
@@ -7,6 +10,37 @@ import type {
   EmailGenerationRequest,
   EmailGenerationResponse,
 } from '../types/api';
+
+// =================================================================
+// Account CRUD API Functions
+// =================================================================
+
+export async function getAccounts(companyId: string, token?: string | null): Promise<Account[]> {
+  return apiFetch<Account[]>(`/accounts?company_id=${companyId}`, { method: 'GET' }, token);
+}
+
+export async function createAccount(companyId: string, accountData: AccountCreate, token?: string | null): Promise<Account> {
+  return apiFetch<Account>(`/accounts?company_id=${companyId}`, {
+    method: 'POST',
+    body: JSON.stringify(accountData),
+  }, token);
+}
+
+export async function updateAccount(accountId: string, accountData: AccountUpdate, token?: string | null): Promise<Account> {
+  return apiFetch<Account>(`/accounts/${accountId}`, {
+    method: 'PUT',
+    body: JSON.stringify(accountData),
+  }, token);
+}
+
+export async function deleteAccount(accountId: string, token?: string | null): Promise<void> {
+  await apiFetch<void>(`/accounts/${accountId}`, { method: 'DELETE' }, token);
+}
+
+
+// =================================================================
+// AI Generation Service Functions (Legacy - review for removal)
+// =================================================================
 
 // API service functions
 export async function generateTargetCompany(
@@ -69,6 +103,10 @@ export async function generateEmailCampaign(
     body: JSON.stringify(request),
   }, token);
 }
+
+// =================================================================
+// Local Storage Service Functions (To be deprecated)
+// =================================================================
 
 // Local storage service functions for canonical target accounts
 export function getStoredTargetAccounts(): (TargetAccountResponse & { id: string; createdAt: string; personas?: TargetPersonaResponse[] })[] {

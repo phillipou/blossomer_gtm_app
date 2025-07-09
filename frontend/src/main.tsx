@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import './index.css'
 import './App.css'
 import LandingPage from './pages/LandingPage'
@@ -21,31 +23,36 @@ import { OAuthCallback } from './components/auth/OAuthCallback'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
+const queryClient = new QueryClient()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StagewiseToolbar />
-    <NeonAuthWrapper>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route element={<NavbarOnlyLayout />}>
-            <Route path="auth" element={<Auth />} />
-            <Route path="handler/error" element={<AuthError />} />
-            <Route path="handler/oauth-callback" element={<OAuthCallback />} />
-            <Route path="account-settings" element={<AccountSettings />} />
-          </Route>
-          <Route element={<MainLayout />}>
-            <Route path="company" element={<Company />} />
-            <Route path="target-accounts" element={<Accounts />} />
-            <Route path="target-accounts/:id" element={<AccountDetail />} />
-            <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
-            <Route path="target-personas" element={<Personas />} />
-            <Route path="campaigns" element={<Campaigns />} />
-            <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-            {/* Add other routes here */}
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </NeonAuthWrapper>
+    <QueryClientProvider client={queryClient}>
+      <StagewiseToolbar />
+      <NeonAuthWrapper>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route element={<NavbarOnlyLayout />}>
+              <Route path="auth" element={<Auth />} />
+              <Route path="handler/error" element={<AuthError />} />
+              <Route path="handler/oauth-callback" element={<OAuthCallback />} />
+              <Route path="account-settings" element={<AccountSettings />} />
+            </Route>
+            <Route element={<MainLayout />}>
+              <Route path="company" element={<Company />} />
+              <Route path="target-accounts" element={<Accounts />} />
+              <Route path="target-accounts/:id" element={<AccountDetail />} />
+              <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+              <Route path="target-personas" element={<Personas />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
+              {/* Add other routes here */}
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </NeonAuthWrapper>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   </StrictMode>,
 )

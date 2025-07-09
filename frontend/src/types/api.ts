@@ -131,6 +131,30 @@ export interface TargetAccountResponse {
   metadata: ICPMetadata;
 }
 
+// =================================================================
+// Standard RESTful API Types
+// =================================================================
+
+export interface Account {
+  id: string;
+  companyId: string;
+  name: string;
+  accountData: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountCreate {
+  name: string;
+  accountData: Record<string, any>;
+}
+
+export interface AccountUpdate {
+  name?: string;
+  accountData?: Record<string, any>;
+}
+
+
 // Legacy interface for backward compatibility
 export interface CompanySummary {
   description: string;
