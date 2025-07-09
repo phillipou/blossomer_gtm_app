@@ -1,14 +1,12 @@
-// Force Tailwind to include these classes: bg-gradient-to-r from-blue-500 to-blue-600
-// Entity colors - force include: bg-green-400 bg-red-400 bg-blue-400 bg-purple-400 border-green-400 border-red-400 border-blue-400 border-purple-400
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import CustomersList from "./Accounts";
 import OverviewCard from "../components/cards/OverviewCard";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
-import { apiFetch } from "../lib/apiClient";
 import { ErrorDisplay } from "../components/ErrorDisplay";
-import type { ApiError, AnalysisState, CompanyOverviewResponse, TargetAccountResponse } from "../types/api";
+import type { CompanyOverviewResponse, TargetAccountResponse } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
 import PageHeader from "../components/navigation/PageHeader";
 import { getStoredTargetAccounts } from "../lib/accountService";
@@ -16,6 +14,9 @@ import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import { Edit3, Trash2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
+import { useGetCompany, useAnalyzeCompany, useUpdateCompany } from "../lib/hooks/useCompany";
+import { useAuthState } from "../lib/auth";
+import { migrateLocalStorageToDb } from "../lib/migration";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -99,234 +100,218 @@ const cardConfigs: {
 ];
 
 export default function Company() {
+  console.log("Company: Component rendered");
   const location = useLocation();
   const navigate = useNavigate();
-  // Helper to get cached overview
-  const getCachedOverview = useCallback(() => {
-    const stored = localStorage.getItem("dashboard_overview");
-    return stored ? JSON.parse(stored) : null;
-  }, []);
-  // Helper to get cached URL
-  const getCachedUrl = useCallback(() => {
-    const cached = getCachedOverview();
-    return cached?._input_url || null;
-  }, [getCachedOverview]);
-  // Helper to normalize URLs for comparison
-  function normalizeUrl(url?: string | null): string {
-    if (!url) return "";
-    return url.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
-  }
-  // Initial state: use cache if no new URL, else null
-  const [analysisState, setAnalysisState] = useState<AnalysisState>(() => {
-    const urlFromNav = location.state?.url;
-    const cached = getCachedOverview();
-    // If a new URL is provided and it's different from cached, ignore cache
-    if (urlFromNav && urlFromNav !== getCachedUrl()) {
-      return {
-        data: null,
-        loading: false,
-        error: null,
-        hasAttempted: false,
-        analysisId: null
-      };
-    }
-    return {
-      data: cached,
-      loading: false,
-      error: null,
-      hasAttempted: false,
-      analysisId: null
-    };
+  const { token } = useAuthState();
+
+  const queryClient = useQueryClient();
+  const { data: overview, isLoading: isGetLoading, error: getError, refetch } = useGetCompany(token);
+  const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token);
+  const { mutate: updateCompany } = useUpdateCompany(token);
+
+  const [progressStage, setProgressStage] = useState(() => {
+    console.log("Company: Initializing progressStage state");
+    return 0;
   });
-  const [progressStage, setProgressStage] = useState(0);
-  const [activeTab] = useState("company");
-  const [targetAccounts, setTargetAccounts] = useState<(TargetAccountResponse & { id: string; createdAt: string })[]>([]);
-  const initialMount = useRef(true);
+  const [activeTab] = useState(() => {
+    console.log("Company: Initializing activeTab state");
+    return "company";
+  });
+  const [targetAccounts, setTargetAccounts] = useState<(
+    TargetAccountResponse & { id: string; createdAt: string }
+  )[]>(() => {
+    console.log("Company: Initializing targetAccounts state");
+    return [];
+  });
+  const [hasLegacyData, setHasLegacyData] = useState(() => {
+    console.log("Company: Initializing hasLegacyData state");
+    return false;
+  });
+  const [migrationStatus, setMigrationStatus] = useState(() => {
+    console.log("Company: Initializing migrationStatus state");
+    return "";
+  });
 
-  // Generate unique analysis ID
-  const generateAnalysisId = useCallback((url: string, icp?: string) => {
-    return `${url}-${icp || ''}-${Date.now()}`;
+  // Log state changes
+  useEffect(() => {
+    console.log("Company: progressStage state changed to", progressStage);
+  }, [progressStage]);
+
+  useEffect(() => {
+    console.log("Company: targetAccounts state changed to", targetAccounts);
+  }, [targetAccounts]);
+
+  useEffect(() => {
+    console.log("Company: hasLegacyData state changed to", hasLegacyData);
+  }, [hasLegacyData]);
+
+  useEffect(() => {
+    console.log("Company: migrationStatus state changed to", migrationStatus);
+  }, [migrationStatus]);
+
+  useEffect(() => {
+    console.log("Company: useEffect for legacy data check");
+    const legacyAccounts = localStorage.getItem("target_accounts");
+    const legacyEmails = localStorage.getItem("emailHistory");
+    if (legacyAccounts || legacyEmails) {
+      console.log("Company: Legacy data detected.");
+      setHasLegacyData(true);
+    }
   }, []);
 
-  // Main analysis function
-  const startAnalysis = useCallback(async (url: string, icp?: string) => {
-    const analysisId = generateAnalysisId(url, icp);
-    setAnalysisState((prev: AnalysisState) => ({
-      ...prev,
-      loading: true,
-      error: null,
-      hasAttempted: true,
-      analysisId
-    }));
-    setProgressStage(0);
+  const handleMigration = async () => {
+    console.log("Company: handleMigration called");
+    setMigrationStatus("Migrating...");
     try {
-      const response = await apiFetch("/company", {
-        method: "POST",
-        body: JSON.stringify({
-          website_url: url,
-          user_inputted_context: icp || "",
-        }),
-      });
-      
-      // Only update state if this is still the current analysis
-      setAnalysisState((prev: AnalysisState) => {
-        if (prev.analysisId !== analysisId) return prev;
-        return {
-          ...prev,
-          data: response as CompanyOverviewResponse,
-          loading: false,
-          error: null
-        };
-      });
-      // Save the original input URL with the response
-      if (response && typeof response === 'object' && !Array.isArray(response)) {
-        localStorage.setItem(
-          "dashboard_overview",
-          JSON.stringify({ ...response, _input_url: url })
-        );
-      } else {
-        localStorage.setItem(
-          "dashboard_overview",
-          JSON.stringify({ _input_url: url, value: response })
-        );
-      }
-    } catch (error: unknown) {
-      let apiError: ApiError;
-      const hasStatusAndBody = (err: unknown): err is Error & { status: number; body?: ApiError } => {
-        return err instanceof Error && 'status' in err && typeof (err as Record<string, unknown>).status === 'number';
-      };
-      
-      if (hasStatusAndBody(error) && error.status === 422 && error.body?.errorCode) {
-        apiError = error.body;
-      } else if (hasStatusAndBody(error) && error.status === 429) {
-        apiError = {
-          errorCode: "RATE_LIMITED",
-          message: "Rate limit exceeded. Sign up for higher limits!",
-          retryRecommended: false
-        };
-      } else if (error instanceof Error) {
-        apiError = {
-          errorCode: "NETWORK_ERROR",
-          message: "Failed to analyze website. Please check your connection and try again.",
-          retryRecommended: true
-        };
-      } else {
-        apiError = {
-          errorCode: "UNKNOWN_ERROR",
-          message: "An unknown error occurred.",
-          retryRecommended: true
-        };
-      }
-      
-      // Only update state if this is still the current analysis
-      setAnalysisState((prev: AnalysisState) => {
-        if (prev.analysisId !== analysisId) return prev;
-        return {
-          ...prev,
-          data: null,
-          loading: false,
-          error: apiError
-        };
-      });
+      console.log("Company: Attempting to migrate local storage to DB.");
+      await migrateLocalStorageToDb(token!);
+      setMigrationStatus("Migration complete!");
+      setHasLegacyData(false);
+      refetch();
+      console.log("Company: Migration successful, refetching company data.");
+    } catch (error) {
+      setMigrationStatus("Migration failed. See console for details.");
+      console.error("Company: Migration failed:", error);
     }
-  }, [generateAnalysisId]);
+  };
 
-  // Effect to trigger analysis from navigation state
   useEffect(() => {
-
-    if (!initialMount.current) return;
-    initialMount.current = false;
-
-    const url = location.state?.url;
-    const icp = location.state?.icp;
-    const cachedUrl = getCachedUrl();
-    // If a new URL is provided and it's different from cached (normalized), trigger analysis
-    if (
-      url &&
-      normalizeUrl(url) !== normalizeUrl(cachedUrl) &&
-      !analysisState.loading
-    ) {
-      startAnalysis(url, icp);
+    console.log("Company: useEffect for API response/analysis. location.state:", location.state);
+    const apiResponse = location.state?.apiResponse;
+    if (apiResponse) {
+      console.log("Company: API response found in location.state, setting query data.", apiResponse);
+      queryClient.setQueryData(['company'], apiResponse);
+    } else {
+      console.log("Company: No API response in location.state, checking for URL to analyze.");
+      const url = location.state?.url;
+      const icp = location.state?.icp;
+      if (url) {
+        console.log("Company: Analyzing company with URL:", url, "and ICP:", icp);
+        analyzeCompany({ websiteUrl: url, userInputtedContext: icp });
+      }
     }
-  }, [location.state, startAnalysis, analysisState.loading, getCachedUrl]);
+  }, [location.state, analyzeCompany, queryClient]);
 
-  // Reset progress when loading starts
   useEffect(() => {
-    if (analysisState.loading) {
+    console.log("Company: useEffect for analysis progress. isAnalyzing:", isAnalyzing);
+    if (isAnalyzing) {
       setProgressStage(0);
+      const timer = setInterval(() => {
+        setProgressStage(prev => {
+          if (prev < STATUS_STAGES.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 4000);
+      return () => {
+        console.log("Company: Clearing analysis progress timer.");
+        clearInterval(timer);
+      };
     }
-  }, [analysisState.loading]);
+  }, [isAnalyzing]);
 
-  // Progress animation
   useEffect(() => {
-    if (!analysisState.loading) return;
-    const timer = setInterval(() => {
-      setProgressStage(prev => {
-        if (prev < STATUS_STAGES.length - 1) {
-          return prev + 1;
-        }
-        return prev;
-      });
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [analysisState.loading]);
-
-  // Load target accounts from localStorage
-  useEffect(() => {
+    console.log("Company: useEffect for target accounts from local storage.");
     const accounts = getStoredTargetAccounts();
     setTargetAccounts(accounts);
+    console.log("Company: Loaded target accounts:", accounts);
   }, []);
 
-  // Retry function
   const handleRetry = useCallback(() => {
+    console.log("Company: handleRetry called.");
     const url = location.state?.url;
+    const icp = location.state?.icp;
     if (url) {
-      setAnalysisState(prev => ({
-        ...prev,
-        hasAttempted: false,
-        error: null
-      }));
+      console.log("Company: Retrying analysis with URL:", url, "and ICP:", icp);
+      analyzeCompany({ websiteUrl: url, userInputtedContext: icp });
+    } else {
+      console.log("Company: No URL in state, refetching company data.");
+      refetch();
     }
-  }, [location.state?.url]);
+  }, [location.state, analyzeCompany, refetch]);
 
-  // Target account handlers
   const handleAccountClick = (accountId: string) => {
+    console.log("Company: handleAccountClick called with accountId:", accountId);
     navigate(`/target-accounts/${accountId}`);
   };
 
   const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
-    // For now, just navigate to the account detail page
+    console.log("Company: handleEditAccount called with account:", account);
     navigate(`/target-accounts/${account.id}`);
   };
 
   const handleDeleteAccount = (accountId: string) => {
-    setTargetAccounts(prev => prev.filter(account => account.id !== accountId));
-    // Update localStorage
+    console.log("Company: handleDeleteAccount called with accountId:", accountId);
+    setTargetAccounts(prev => {
+      const updated = prev.filter(account => account.id !== accountId);
+      console.log("Company: Updated targetAccounts after deletion:", updated);
+      return updated;
+    });
     const updatedAccounts = getStoredTargetAccounts().filter(account => account.id !== accountId);
     localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
+    console.log("Company: Removed account from local storage.");
   };
 
   const handleAddAccount = () => {
+    console.log("Company: handleAddAccount called.");
     navigate('/target-accounts');
   };
 
-  // Loading state
-  if (analysisState.loading) {
+  const handleListEdit = (field: CardKey) => (newItems: string[]) => {
+    console.log("Company: handleListEdit called for field:", field, "with newItems:", newItems);
+    if (!overview) {
+      console.log("Company: No overview data, returning from handleListEdit.");
+      return;
+    }
+
+    let updatedData: Partial<any> = {};
+
+    if (field === "business_profile") {
+      const category = newItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
+      const businessModel = newItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
+      const existingCustomers = newItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
+      updatedData.businessProfile = { category, businessModel, existingCustomers };
+    } else if (field === "capabilities") {
+      updatedData.capabilities = newItems;
+    } else if (field === "positioning_insights") {
+      const keyMarketBelief = newItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
+      const uniqueApproach = newItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
+      const languageUsed = newItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
+      updatedData.positioning = { keyMarketBelief, uniqueApproach, languageUsed };
+    } else if (field === "use_case_insights") {
+      const processImpact = newItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
+      const problemsAddressed = newItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
+      const howTheyDoItToday = newItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
+      updatedData.useCaseAnalysis = { processImpact, problemsAddressed, howTheyDoItToday };
+    } else if (field === "target_customer_insights") {
+      const targetAccountHypothesis = newItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
+      const targetPersonaHypothesis = newItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
+      updatedData.icpHypothesis = { targetAccountHypothesis, targetPersonaHypothesis };
+    } else if (field === "objections") {
+      updatedData.objections = newItems;
+    }
+
+    console.log("Company: Calling updateCompany with data:", updatedData);
+    updateCompany(updatedData);
+  };
+
+  if (isGetLoading || isAnalyzing) {
     return (
       <DashboardLoading
         loading={true}
-        progressPercent={STATUS_STAGES[progressStage]?.percent || 0}
+        progressPercent={isAnalyzing ? (STATUS_STAGES[progressStage]?.percent || 0) : 100}
       />
     );
   }
 
-  // Error state with specific handling
-  if (analysisState.error) {
-    return <ErrorDisplay error={analysisState.error} onRetry={handleRetry} onHome={() => navigate("/")} />;
+  const error = getError || analyzeError;
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={handleRetry} onHome={() => navigate("/")} />;
   }
 
-  // No data state
-  if (!analysisState.data && !location.state?.url) {
+  if (!overview) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <div className="text-center">
@@ -338,83 +323,8 @@ export default function Company() {
     );
   }
 
-  // Success state - render company page with real data
-  const overview = analysisState.data;
   const companyName = overview?.companyName || "Company";
   const domain = overview?.companyUrl || "";
-
-  // Edit logic for OverviewBlock
-  const handleListEdit = (field: CardKey) => (newItems: string[]) => {
-    setAnalysisState((prev: AnalysisState) => {
-      if (!prev.data) return prev;
-      
-      // Update the specific field based on the card type
-      let updated = { ...prev.data };
-      
-      if (field === "business_profile") {
-        // For business profile, parse the formatted strings back to individual fields
-        const category = newItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
-        const businessModel = newItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
-        const existingCustomers = newItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
-        
-        updated = {
-          ...updated,
-          businessProfile: {
-            category,
-            businessModel,
-            existingCustomers
-          }
-        };
-      } else if (field === "capabilities") {
-        updated = { ...updated, capabilities: newItems };
-      } else if (field === "positioning_insights") {
-        // For positioning insights, we need to parse the formatted strings back to individual fields
-        const keyMarketBelief = newItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
-        const uniqueApproach = newItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
-        const languageUsed = newItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
-        
-        updated = {
-          ...updated,
-          positioning: {
-            keyMarketBelief,
-            uniqueApproach,
-            languageUsed
-          }
-        };
-      } else if (field === "use_case_insights") {
-        // For use case insights, parse the formatted strings back to individual fields
-        const processImpact = newItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
-        const problemsAddressed = newItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
-        const howTheyDoItToday = newItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
-        
-        updated = {
-          ...updated,
-          useCaseAnalysis: {
-            processImpact,
-            problemsAddressed,
-            howTheyDoItToday
-          }
-        };
-      } else if (field === "target_customer_insights") {
-        // For target customer insights, parse the formatted strings back to individual fields
-        const targetAccountHypothesis = newItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
-        const targetPersonaHypothesis = newItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
-        
-        updated = {
-          ...updated,
-          icpHypothesis: {
-            targetAccountHypothesis,
-            targetPersonaHypothesis
-          }
-        };
-      } else if (field === "objections") {
-        updated = { ...updated, objections: newItems };
-      }
-      
-      localStorage.setItem("dashboard_overview", JSON.stringify(updated));
-      return { ...prev, data: updated };
-    });
-  };
 
   return (
     <>
@@ -429,10 +339,18 @@ export default function Company() {
           subtitle="Company analysis and insights"
         />
         
-        {/* Remove SidebarNav and HeaderBar, only render main content */}
+        {hasLegacyData && (
+          <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+            <p>We've detected data from a previous version. Please migrate your data to our new system.</p>
+            <Button onClick={handleMigration} className="mt-2">
+              Migrate Data
+            </Button>
+            {migrationStatus && <p className="mt-2">{migrationStatus}</p>}
+          </div>
+        )}
+
         {activeTab === "company" && (
           <div className="flex-1 p-8 space-y-8">
-            {/* Overview Block */}
             <OverviewCard
                title={companyName}
                subtitle={domain}
@@ -442,11 +360,10 @@ export default function Company() {
                entityType="company"
              />
             
-            {/* Analysis Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {cardConfigs.map(({ key, label, getItems, subtitle, bulleted }) => {
                 const items = overview ? getItems(overview) : [];
-                const isEditable = true; // All cards are now editable
+                const isEditable = true;
                 
                 return (
                   <ListInfoCard
@@ -468,7 +385,6 @@ export default function Company() {
               })}
             </div>
             
-            {/* Target Accounts Section */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Target Accounts</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
@@ -491,7 +407,6 @@ export default function Company() {
                     </Button>
                   </SummaryCard>
                 ))}
-                {/* Add New Account Card */}
                 <AddCard onClick={handleAddAccount} label="Add New" />
               </div>
             </div>
@@ -502,7 +417,6 @@ export default function Company() {
             <CustomersList />
           </div>
         )}
-        {/* TODO: Add campaigns tab content here */}
       </div>
     </>
   );

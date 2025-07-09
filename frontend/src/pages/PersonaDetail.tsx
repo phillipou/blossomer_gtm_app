@@ -10,17 +10,21 @@ import { CriteriaTable } from "../components/tables/CriteriaTable";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
-import { getPersonasForTargetAccount, getStoredTargetAccounts, updatePersonaForTargetAccount } from "../lib/accountService";
-import type { TargetPersonaResponse, BuyingSignal, Demographics, UseCase } from "../types/api";
+import { useGetPersona, useUpdatePersona } from "../lib/hooks/usePersonas";
+import type { Persona, BuyingSignal, Demographics, UseCase } from "../types/api";
 import UseCasesCard from "../components/cards/UseCasesCard";
+import { useAuthState } from "../lib/auth";
 
 export default function PersonaDetail() {
-  const { id: accountId, personaId } = useParams();
+  const { id: accountId, personaId } = useParams<{ accountId: string; personaId: string }>();
+  const { token } = useAuthState();
 
-  const [persona, setPersona] = React.useState<TargetPersonaResponse | null>(null);
+  const { data: persona, isLoading, error, refetch } = useGetPersona(personaId!, token);
+  const { mutate: updatePersona } = useUpdatePersona(accountId!, personaId!, token);
+
   const [accountName, setAccountName] = React.useState<string>("");
 
-  // Buying signals modal state (copied from CustomerDetail)
+  // Buying signals modal state
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalEditingSignal, setModalEditingSignal] = React.useState<BuyingSignal | null>(null);
   const [buyingSignals, setBuyingSignals] = React.useState<BuyingSignal[]>([]);
@@ -36,65 +40,18 @@ export default function PersonaDetail() {
     { key: "buyingSignalsRationale", title: "Buying Signals Rationale", editModalSubtitle: "Logic behind buying signal choices." },
   ];
 
-  // Helper function to transform demographics to criteria table format
   const transformDemographicsToCriteria = (demographics: Demographics | undefined) => {
     if (!demographics) return [];
-    
     const criteria = [];
-    
-    if (demographics.jobTitles?.length) {
-      criteria.push({
-        label: "Job Titles",
-        values: demographics.jobTitles.map(title => ({ text: title, color: "blue" }))
-      });
-    }
-    
-    if (demographics.departments?.length) {
-      criteria.push({
-        label: "Departments", 
-        values: demographics.departments.map(dept => ({ text: dept, color: "green" }))
-      });
-    }
-    
-    if (demographics.seniority?.length) {
-      criteria.push({
-        label: "Seniority",
-        values: demographics.seniority.map(level => ({ text: level, color: "purple" }))
-      });
-    }
-    
-    if (demographics.buyingRoles?.length) {
-      criteria.push({
-        label: "Buying Roles",
-        values: demographics.buyingRoles.map(role => ({ text: role, color: "indigo" }))
-      });
-    }
-    
-    if (demographics.jobDescriptionKeywords?.length) {
-      criteria.push({
-        label: "Keywords",
-        values: demographics.jobDescriptionKeywords.map(keyword => ({ text: keyword, color: "yellow" }))
-      });
-    }
-    
+    if (demographics.jobTitles?.length) criteria.push({ label: "Job Titles", values: demographics.jobTitles.map(title => ({ text: title, color: "blue" })) });
+    if (demographics.departments?.length) criteria.push({ label: "Departments", values: demographics.departments.map(dept => ({ text: dept, color: "green" })) });
+    if (demographics.seniority?.length) criteria.push({ label: "Seniority", values: demographics.seniority.map(level => ({ text: level, color: "purple" })) });
+    if (demographics.buyingRoles?.length) criteria.push({ label: "Buying Roles", values: demographics.buyingRoles.map(role => ({ text: role, color: "indigo" })) });
+    if (demographics.jobDescriptionKeywords?.length) criteria.push({ label: "Keywords", values: demographics.jobDescriptionKeywords.map(keyword => ({ text: keyword, color: "yellow" })) });
     return criteria.map((item, index) => ({ ...item, id: String(index) }));
   };
 
   React.useEffect(() => {
-    if (accountId && personaId) {
-      const personas = getPersonasForTargetAccount(accountId);
-      const found = personas.find((p) => p.id === personaId) || null;
-      setPersona(found);
-              // Fetch account name from target account
-      const profiles = getStoredTargetAccounts();
-      const profile = profiles.find((p) => p.id === accountId);
-      setAccountName(profile?.targetAccountName || "Account");
-      console.log('Loaded persona object:', found);
-    }
-  }, [accountId, personaId]);
-
-  React.useEffect(() => {
-    // Handle buying signals structure
     if (persona?.buyingSignals) {
       const transformedSignals = persona.buyingSignals.map((signal, idx) => ({
         id: String(idx),
@@ -111,13 +68,12 @@ export default function PersonaDetail() {
     }
   }, [persona]);
 
-  if (!persona) {
-    return <div className="p-8 text-center text-gray-500">Persona not found.</div>;
-  }
+  if (isLoading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">Error: {error.message}</div>;
+  if (!persona) return <div className="p-8 text-center text-gray-500">Persona not found.</div>;
 
-
-  const handleListEdit = (field: keyof TargetPersonaResponse) => (newItems: string[]) => {
-    setPersona(persona => persona ? { ...persona, [field]: newItems } : persona);
+  const handleListEdit = (field: keyof Persona) => (newItems: string[]) => {
+    updatePersona({ [field]: newItems });
   };
 
   return (
@@ -135,7 +91,6 @@ export default function PersonaDetail() {
         entityType="persona"
       />
       <div className="flex-1 p-8 space-y-8">
-        {/* Overview Card */}
         <OverviewCard
           title={persona.targetPersonaName}
           subtitle={"Account: " + accountName}
@@ -143,20 +98,10 @@ export default function PersonaDetail() {
           bodyText={persona.targetPersonaDescription}
           showButton={false}
           onEdit={({ name, description }) => {
-            setPersona(prev => prev ? {
-              ...prev,
-              targetPersonaName: name,
-              targetPersonaDescription: description
-            } : null);
-            // Also update the stored persona
-            if (accountId && persona) {
-              const updatedPersona = { ...persona, targetPersonaName: name, targetPersonaDescription: description };
-              updatePersonaForTargetAccount(accountId, updatedPersona);
-            }
+            updatePersona({ targetPersonaName: name, targetPersonaDescription: description });
           }}
         >
         </OverviewCard>
-        {/* Targeting Criteria Section */}
         <Card>
           <CardHeader>
             <CardTitle>Targeting Criteria</CardTitle>
@@ -170,14 +115,11 @@ export default function PersonaDetail() {
                 onEdit={() => setDemographicsModalOpen(true)}
               />
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No demographics data available
-              </div>
+              <div className="text-center py-8 text-gray-500">No demographics data available</div>
             )}
           </CardContent>
         </Card>
 
-        {/* Target Persona Rationale Section */}
         <ListInfoCard
           title="Target Persona Rationale"
           items={Array.isArray(persona.targetPersonaRationale) ? persona.targetPersonaRationale : []}
@@ -188,7 +130,6 @@ export default function PersonaDetail() {
           editModalSubtitle="Why this persona is ideal for your solution."
         />
 
-        {/* Buying Signals Section */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between mb-2">
@@ -209,14 +150,11 @@ export default function PersonaDetail() {
                 onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
               />
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No buying signals identified
-              </div>
+              <div className="text-center py-8 text-gray-500">No buying signals identified</div>
             )}
           </CardContent>
         </Card>
 
-        {/* Buying Signals Rationale Section */}
         <ListInfoCard
           title="Buying Signals Rationale"
           items={Array.isArray(persona.buyingSignalsRationale) ? persona.buyingSignalsRationale : []}
@@ -227,7 +165,6 @@ export default function PersonaDetail() {
           editModalSubtitle="Logic behind buying signal choices."
         />
 
-        {/* Persona Goals & Purchase Journey - Two Column Split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ListInfoCard
             title="Persona Goals"
@@ -249,7 +186,6 @@ export default function PersonaDetail() {
           />
         </div>
 
-        {/* Likely Objections Section */}
         <ListInfoCard
           title="Likely Objections"
           items={Array.isArray(persona.objections) ? persona.objections : []}
@@ -260,85 +196,39 @@ export default function PersonaDetail() {
           editModalSubtitle="Common concerns about adopting this solution."
         />
 
-        {/* Use Cases Section */}
         <UseCasesCard
           useCases={persona.useCases || []}
           onAdd={(newUseCase: UseCase) => {
-            setPersona(prev => prev ? {
-              ...prev,
-              useCases: prev.useCases ? [...prev.useCases, newUseCase] : [newUseCase]
-            } : prev);
-            if (accountId && persona) {
-              const updatedPersona = {
-                ...persona,
-                useCases: persona.useCases ? [...persona.useCases, newUseCase] : [newUseCase]
-              };
-              updatePersonaForTargetAccount(accountId, updatedPersona);
-            }
+            const updatedUseCases = persona.useCases ? [...persona.useCases, newUseCase] : [newUseCase];
+            updatePersona({ useCases: updatedUseCases });
           }}
           onEdit={(idx: number, updatedUseCase: UseCase) => {
-            setPersona(prev => prev ? {
-              ...prev,
-              useCases: prev.useCases ? prev.useCases.map((uc, i) => i === idx ? updatedUseCase : uc) : []
-            } : prev);
-            if (accountId && persona) {
-              const updatedPersona = {
-                ...persona,
-                useCases: persona.useCases ? persona.useCases.map((uc, i) => i === idx ? updatedUseCase : uc) : []
-              };
-              updatePersonaForTargetAccount(accountId, updatedPersona);
-            }
+            const updatedUseCases = persona.useCases ? persona.useCases.map((uc, i) => i === idx ? updatedUseCase : uc) : [];
+            updatePersona({ useCases: updatedUseCases });
           }}
           onDelete={(idx: number) => {
-            setPersona(prev => prev ? {
-              ...prev,
-              useCases: prev.useCases ? prev.useCases.filter((_, i) => i !== idx) : []
-            } : prev);
-            if (accountId && persona) {
-              const updatedPersona = {
-                ...persona,
-                useCases: persona.useCases ? persona.useCases.filter((_, i) => i !== idx) : []
-              };
-              updatePersonaForTargetAccount(accountId, updatedPersona);
-            }
+            const updatedUseCases = persona.useCases ? persona.useCases.filter((_, i) => i !== idx) : [];
+            updatePersona({ useCases: updatedUseCases });
           }}
         />
         
-        {/* Demographics Edit Modal */}
         <EditCriteriaModal
           isOpen={demographicsModalOpen}
           onClose={() => setDemographicsModalOpen(false)}
           initialRows={transformDemographicsToCriteria(persona?.demographics)}
           onSave={(rows: any[]) => {
-            // Convert criteria rows back to Demographics format
             const newDemographics: Demographics = {};
-            
             rows.forEach((row: any) => {
               const values = row.values.map((v: any) => v.text);
               switch (row.label.toLowerCase()) {
-                case 'job titles':
-                  newDemographics.jobTitles = values;
-                  break;
-                case 'departments':
-                  newDemographics.departments = values;
-                  break;
-                case 'seniority':
-                  newDemographics.seniority = values;
-                  break;
-                case 'buying roles':
-                  newDemographics.buyingRoles = values;
-                  break;
-                case 'keywords':
-                  newDemographics.jobDescriptionKeywords = values;
-                  break;
+                case 'job titles': newDemographics.jobTitles = values; break;
+                case 'departments': newDemographics.departments = values; break;
+                case 'seniority': newDemographics.seniority = values; break;
+                case 'buying roles': newDemographics.buyingRoles = values; break;
+                case 'keywords': newDemographics.jobDescriptionKeywords = values; break;
               }
             });
-            
-            setPersona(prev => prev ? { ...prev, demographics: newDemographics } : prev);
-            if (accountId && persona) {
-              const updatedPersona = { ...persona, demographics: newDemographics };
-              updatePersonaForTargetAccount(accountId, updatedPersona);
-            }
+            updatePersona({ demographics: newDemographics });
           }}
           title="Edit Demographics"
         />
@@ -351,10 +241,8 @@ export default function PersonaDetail() {
           const label = String(values.label || '').trim();
           const description = String(values.description || '').trim();
           if (modalEditingSignal) {
-            // Edit
             setBuyingSignals(signals => signals.map(s => s.id === modalEditingSignal.id ? { ...s, label, description } : s));
           } else {
-            // Add
             setBuyingSignals(signals => [
               ...signals,
               { id: String(Date.now()), label, description, enabled: true },

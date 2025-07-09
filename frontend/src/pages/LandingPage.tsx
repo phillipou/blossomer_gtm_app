@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -12,18 +12,86 @@ import './LandingPage.css';
 import Navbar from "../components/layout/Navbar";
 
 export default function LandingPage() {
-  const [url, setUrl] = useState("");
-  const [icp, setIcp] = useState("");
-  const [showOptions, setShowOptions] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
+  console.log("LandingPage: Component rendered");
+  const [url, setUrl] = useState(() => {
+    console.log("LandingPage: Initializing url state");
+    return "";
+  });
+  const [icp, setIcp] = useState(() => {
+    console.log("LandingPage: Initializing icp state");
+    return "";
+  });
+  const [showOptions, setShowOptions] = useState(() => {
+    console.log("LandingPage: Initializing showOptions state");
+    return false;
+  });
+  const [error, setError] = useState<string | null>(() => {
+    console.log("LandingPage: Initializing error state");
+    return null;
+  });
+  const [isNavigating, setIsNavigating] = useState(() => {
+    console.log("LandingPage: Initializing isNavigating state");
+    return false;
+  });
   const navigate = useNavigate();
 
+  // Log state changes
+  useEffect(() => {
+    console.log("LandingPage: url state changed to", url);
+  }, [url]);
+
+  useEffect(() => {
+    console.log("LandingPage: icp state changed to", icp);
+  }, [icp]);
+
+  useEffect(() => {
+    console.log("LandingPage: showOptions state changed to", showOptions);
+  }, [showOptions]);
+
+  useEffect(() => {
+    console.log("LandingPage: error state changed to", error);
+  }, [error]);
+
+  useEffect(() => {
+    console.log("LandingPage: isNavigating state changed to", isNavigating);
+  }, [isNavigating]);
+
   const handleAnalyze = async () => {
-    if (!url.trim()) return;
+    console.log("LandingPage: handleAnalyze called");
+    if (!url.trim()) {
+      console.log("LandingPage: URL is empty, returning.");
+      return;
+    }
     setError(null);
     setIsNavigating(true);
-    navigate("/company", { state: { url, icp } });
+    console.log("LandingPage: Setting isNavigating to true");
+
+    try {
+      console.log("LandingPage: Making API request to /api/companies/generate-ai with URL:", url, "and ICP:", icp);
+      const response = await fetch("/api/companies/generate-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url, icp }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("LandingPage: API request failed with status", response.status, "and error data:", errorData);
+        throw new Error(errorData.detail || "Failed to generate GTM strategy.");
+      }
+
+      const data = await response.json();
+      console.log("LandingPage: API request successful, received data:", data);
+      console.log("LandingPage: Navigating to /company with state:", { url, icp, apiResponse: data });
+      navigate("/company", { state: { url, icp, apiResponse: data } });
+    } catch (err: any) {
+      console.error("LandingPage: Error during API call or navigation:", err.message);
+      setError(err.message);
+      setIsNavigating(false);
+      console.log("LandingPage: Setting isNavigating to false due to error");
+    }
   };
 
   return (
