@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from backend.app.core.user_rate_limiter import jwt_rate_limit_dependency
 from backend.app.core.auth import validate_stack_auth_jwt
 
-from .helpers import run_service
+from backend.app.api.helpers import run_service
 
 
 class UniqueSellingPoint(BaseModel):
@@ -87,10 +87,10 @@ async def generate_positioning(
 
 
 @router.post(
-    "/generate-email",
+    "/campaigns/generate-ai",
     response_model=EmailGenerationResponse,
-    summary="Generate Email Campaign",
-    tags=["Campaigns", "Email Generation", "AI"],
+    summary="AI Generate Email Campaign",
+    tags=["Campaigns", "AI"],
     response_description="A complete email campaign with subjects, body segments, and breakdown metadata.",
 )
 async def generate_email(
@@ -100,16 +100,7 @@ async def generate_email(
     _: None = Depends(jwt_rate_limit_dependency("campaign_generate")),
 ):
     """
-    Generate a personalized email campaign based on company context, target account/persona,
-    and user preferences from the Email Campaign Wizard.
-
-    This endpoint synthesizes:
-    - Company overview and capabilities
-    - Target account firmographics and buying signals
-    - Target persona demographics and use cases
-    - User preferences for emphasis, opening line strategy, and CTA type
-
-    Returns structured email content with modular segments and metadata for UI rendering.
+    AI-generate a personalized email campaign based on company context, target account/persona, and user preferences.
     """
     orchestrator = ContextOrchestrator()
     return await run_service(

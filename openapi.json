@@ -24,17 +24,16 @@
     }
   ],
   "paths": {
-    "/api/company/": {
+    "/api/company/companies/generate-ai": {
       "post": {
         "tags": [
           "Company",
-          "Company",
-          "Overview",
+          "Companies",
           "AI"
         ],
-        "summary": "Generate Company Overview (features, company & persona profiles, pricing)",
-        "description": "Generate a company overview for authenticated users (Stack Auth JWT required).",
-        "operationId": "prod_generate_product_overview_api_company__post",
+        "summary": "AI Generate Company Overview (features, company & persona profiles, pricing)",
+        "description": "AI-generate a company overview for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_product_overview_api_company_companies_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -69,16 +68,16 @@
         }
       }
     },
-    "/api/accounts": {
+    "/api/accounts/generate-ai": {
       "post": {
         "tags": [
           "Accounts",
           "Accounts",
           "AI"
         ],
-        "summary": "Generate Target Account Profile (discovery call preparation)",
-        "description": "Generate a target account profile for authenticated users (Stack Auth JWT required).",
-        "operationId": "prod_generate_target_account_api_accounts_post",
+        "summary": "AI Generate Target Account Profile (discovery call preparation)",
+        "description": "AI-generate a target account profile for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_target_account_api_accounts_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -113,14 +112,14 @@
         }
       }
     },
-    "/api/accounts-crud": {
+    "/api/accounts": {
       "post": {
         "tags": [
           "Accounts"
         ],
         "summary": "Create Account",
-        "description": "Create a new account for a company.\n\n- **company_id**: Company ID (must be owned by authenticated user)\n- **name**: Account name (required, max 255 chars)\n- **account_data**: JSON data with firmographics, buying signals, rationale",
-        "operationId": "create_account_api_accounts_crud_post",
+        "description": "Create a new account for a company.",
+        "operationId": "create_account_api_accounts_post",
         "parameters": [
           {
             "name": "company_id",
@@ -173,8 +172,8 @@
           "Accounts"
         ],
         "summary": "Get Accounts",
-        "description": "Get all accounts for a company.\n\n- **company_id**: Company ID (must be owned by authenticated user)\n- **skip**: Number of accounts to skip (for pagination)\n- **limit**: Maximum number of accounts to return (1-1000)",
-        "operationId": "get_accounts_api_accounts_crud_get",
+        "description": "Get all accounts for a company.",
+        "operationId": "get_accounts_api_accounts_get",
         "parameters": [
           {
             "name": "company_id",
@@ -226,7 +225,7 @@
                   "items": {
                     "$ref": "#/components/schemas/AccountResponse"
                   },
-                  "title": "Response Get Accounts Api Accounts Crud Get"
+                  "title": "Response Get Accounts Api Accounts Get"
                 }
               }
             }
@@ -244,14 +243,14 @@
         }
       }
     },
-    "/api/accounts-crud/{account_id}": {
+    "/api/accounts/{account_id}": {
       "get": {
         "tags": [
           "Accounts"
         ],
         "summary": "Get Account",
-        "description": "Get a specific account by ID.\n\nOnly returns accounts owned by the authenticated user (via company).",
-        "operationId": "get_account_api_accounts_crud__account_id__get",
+        "description": "Get a specific account by ID.",
+        "operationId": "get_account_api_accounts__account_id__get",
         "parameters": [
           {
             "name": "account_id",
@@ -292,8 +291,8 @@
           "Accounts"
         ],
         "summary": "Update Account",
-        "description": "Update an account.\n\nOnly updates accounts owned by the authenticated user (via company).\nAll fields are optional - only provided fields will be updated.",
-        "operationId": "update_account_api_accounts_crud__account_id__put",
+        "description": "Update an account.",
+        "operationId": "update_account_api_accounts__account_id__put",
         "parameters": [
           {
             "name": "account_id",
@@ -344,8 +343,8 @@
           "Accounts"
         ],
         "summary": "Delete Account",
-        "description": "Delete an account and all related data.\n\nOnly deletes accounts owned by the authenticated user (via company).\nThis will cascade delete all personas and campaigns.",
-        "operationId": "delete_account_api_accounts_crud__account_id__delete",
+        "description": "Delete an account and all related data.",
+        "operationId": "delete_account_api_accounts__account_id__delete",
         "parameters": [
           {
             "name": "account_id",
@@ -375,14 +374,14 @@
         }
       }
     },
-    "/api/accounts-crud/{account_id}/relations": {
+    "/api/accounts/{account_id}/relations": {
       "get": {
         "tags": [
           "Accounts"
         ],
         "summary": "Get Account With Relations",
-        "description": "Get an account with all related personas and campaigns.\n\nOnly returns accounts owned by the authenticated user (via company).\nIncludes nested persona and campaign data.",
-        "operationId": "get_account_with_relations_api_accounts_crud__account_id__relations_get",
+        "description": "Get an account with all related personas and campaigns.",
+        "operationId": "get_account_with_relations_api_accounts__account_id__relations_get",
         "parameters": [
           {
             "name": "account_id",
@@ -419,16 +418,16 @@
         }
       }
     },
-    "/api/personas": {
+    "/api/personas/generate-ai": {
       "post": {
         "tags": [
           "Personas",
           "Personas",
           "AI"
         ],
-        "summary": "Generate Target Persona Profile (attributes, buying signals, rationale)",
-        "description": "Generate a target persona profile for authenticated users (Stack Auth JWT required).",
-        "operationId": "prod_generate_target_persona_api_personas_post",
+        "summary": "AI Generate Target Persona Profile (attributes, buying signals, rationale)",
+        "description": "AI-generate a target persona profile for authenticated users (Stack Auth JWT required).",
+        "operationId": "prod_generate_target_persona_api_personas_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -463,14 +462,14 @@
         }
       }
     },
-    "/api/personas-crud": {
+    "/api/personas": {
       "post": {
         "tags": [
           "Personas"
         ],
         "summary": "Create Persona",
-        "description": "Create a new persona for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **name**: Persona name (required, max 255 chars)\n- **persona_data**: JSON data with demographics, use cases, goals, objections",
-        "operationId": "create_persona_api_personas_crud_post",
+        "description": "Create a new persona for an account.",
+        "operationId": "create_persona_api_personas_post",
         "parameters": [
           {
             "name": "account_id",
@@ -523,8 +522,8 @@
           "Personas"
         ],
         "summary": "Get Personas",
-        "description": "Get all personas for an account.\n\n- **account_id**: Account ID (must be owned by authenticated user via company)\n- **skip**: Number of personas to skip (for pagination)\n- **limit**: Maximum number of personas to return (1-1000)",
-        "operationId": "get_personas_api_personas_crud_get",
+        "description": "Get all personas for an account.",
+        "operationId": "get_personas_api_personas_get",
         "parameters": [
           {
             "name": "account_id",
@@ -576,7 +575,7 @@
                   "items": {
                     "$ref": "#/components/schemas/PersonaResponse"
                   },
-                  "title": "Response Get Personas Api Personas Crud Get"
+                  "title": "Response Get Personas Api Personas Get"
                 }
               }
             }
@@ -594,14 +593,14 @@
         }
       }
     },
-    "/api/personas-crud/{persona_id}": {
+    "/api/personas/{persona_id}": {
       "get": {
         "tags": [
           "Personas"
         ],
         "summary": "Get Persona",
-        "description": "Get a specific persona by ID.\n\nOnly returns personas owned by the authenticated user (via account->company).",
-        "operationId": "get_persona_api_personas_crud__persona_id__get",
+        "description": "Get a specific persona by ID.",
+        "operationId": "get_persona_api_personas__persona_id__get",
         "parameters": [
           {
             "name": "persona_id",
@@ -642,8 +641,8 @@
           "Personas"
         ],
         "summary": "Update Persona",
-        "description": "Update a persona.\n\nOnly updates personas owned by the authenticated user (via account->company).\nAll fields are optional - only provided fields will be updated.",
-        "operationId": "update_persona_api_personas_crud__persona_id__put",
+        "description": "Update a persona.",
+        "operationId": "update_persona_api_personas__persona_id__put",
         "parameters": [
           {
             "name": "persona_id",
@@ -694,8 +693,8 @@
           "Personas"
         ],
         "summary": "Delete Persona",
-        "description": "Delete a persona and all related campaigns.\n\nOnly deletes personas owned by the authenticated user (via account->company).\nThis will cascade delete all campaigns.",
-        "operationId": "delete_persona_api_personas_crud__persona_id__delete",
+        "description": "Delete a persona and all related campaigns.",
+        "operationId": "delete_persona_api_personas__persona_id__delete",
         "parameters": [
           {
             "name": "persona_id",
@@ -725,14 +724,14 @@
         }
       }
     },
-    "/api/personas-crud/{persona_id}/relations": {
+    "/api/personas/{persona_id}/relations": {
       "get": {
         "tags": [
           "Personas"
         ],
         "summary": "Get Persona With Relations",
-        "description": "Get a persona with all related campaigns.\n\nOnly returns personas owned by the authenticated user (via account->company).\nIncludes nested campaign data.",
-        "operationId": "get_persona_with_relations_api_personas_crud__persona_id__relations_get",
+        "description": "Get a persona with all related campaigns.",
+        "operationId": "get_persona_with_relations_api_personas__persona_id__relations_get",
         "parameters": [
           {
             "name": "persona_id",
@@ -815,17 +814,16 @@
         }
       }
     },
-    "/api/campaigns/generate-email": {
+    "/api/campaigns/campaigns/generate-ai": {
       "post": {
         "tags": [
           "Campaigns",
           "Campaigns",
-          "Email Generation",
           "AI"
         ],
-        "summary": "Generate Email Campaign",
-        "description": "Generate a personalized email campaign based on company context, target account/persona,\nand user preferences from the Email Campaign Wizard.\n\nThis endpoint synthesizes:\n- Company overview and capabilities\n- Target account firmographics and buying signals\n- Target persona demographics and use cases\n- User preferences for emphasis, opening line strategy, and CTA type\n\nReturns structured email content with modular segments and metadata for UI rendering.",
-        "operationId": "generate_email_api_campaigns_generate_email_post",
+        "summary": "AI Generate Email Campaign",
+        "description": "AI-generate a personalized email campaign based on company context, target account/persona, and user preferences.",
+        "operationId": "generate_email_api_campaigns_campaigns_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1670,18 +1668,17 @@
         }
       }
     },
-    "/demo/company/overview": {
+    "/demo/companies/generate-ai": {
       "post": {
         "tags": [
           "Demo",
           "Demo",
-          "Company",
-          "Overview",
+          "Companies",
           "AI"
         ],
-        "summary": "[DEMO] Generate Company Overview (features, company & persona profiles, pricing)",
-        "description": "Generate a company overview for demo users, with IP-based rate limiting.",
-        "operationId": "demo_generate_product_overview_demo_company_overview_post",
+        "summary": "[DEMO] AI Generate Company Overview (features, company & persona profiles, pricing)",
+        "description": "AI-generate a company overview for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_product_overview_demo_companies_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1716,7 +1713,7 @@
         }
       }
     },
-    "/demo/accounts": {
+    "/demo/accounts/generate-ai": {
       "post": {
         "tags": [
           "Demo",
@@ -1724,9 +1721,9 @@
           "Accounts",
           "AI"
         ],
-        "summary": "[DEMO] Generate Target Account Profile (discovery call preparation)",
-        "description": "Generate a target account profile for demo users, with IP-based rate limiting.",
-        "operationId": "demo_generate_target_account_demo_accounts_post",
+        "summary": "[DEMO] AI Generate Target Account Profile (discovery call preparation)",
+        "description": "AI-generate a target account profile for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_target_account_demo_accounts_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1761,7 +1758,7 @@
         }
       }
     },
-    "/demo/personas": {
+    "/demo/personas/generate-ai": {
       "post": {
         "tags": [
           "Demo",
@@ -1769,9 +1766,9 @@
           "Personas",
           "AI"
         ],
-        "summary": "[DEMO] Generate Target Persona Profile (attributes, buying signals, rationale)",
-        "description": "Generate a target persona profile for demo users, with IP-based rate limiting.",
-        "operationId": "demo_generate_target_persona_demo_personas_post",
+        "summary": "[DEMO] AI Generate Target Persona Profile (attributes, buying signals, rationale)",
+        "description": "AI-generate a target persona profile for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_target_persona_demo_personas_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1806,18 +1803,17 @@
         }
       }
     },
-    "/demo/campaigns/generate-email": {
+    "/demo/campaigns/generate-ai": {
       "post": {
         "tags": [
           "Demo",
           "Demo",
           "Campaigns",
-          "Email Generation",
           "AI"
         ],
-        "summary": "[DEMO] Generate Email Campaign",
-        "description": "Generate a personalized email campaign for demo users,\nwith IP-based rate limiting.",
-        "operationId": "demo_generate_email_demo_campaigns_generate_email_post",
+        "summary": "[DEMO] AI Generate Email Campaign",
+        "description": "AI-generate a personalized email campaign for demo users, with IP-based rate limiting.",
+        "operationId": "demo_generate_email_demo_campaigns_generate_ai_post",
         "requestBody": {
           "content": {
             "application/json": {

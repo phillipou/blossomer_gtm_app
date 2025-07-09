@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
+from fastapi import APIRouter, Depends, status
+from backend.app.schemas import CompanyCreate, CompanyUpdate, CompanyResponse, CompanyWithRelations, ProductOverviewRequest, ProductOverviewResponse
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.services.product_overview_service import (
     generate_product_overview_service,
@@ -9,17 +9,15 @@ from backend.app.core.user_rate_limiter import jwt_rate_limit_dependency
 from sqlalchemy.orm import Session
 from backend.app.core.auth import validate_stack_auth_jwt
 
-from .helpers import run_service
-
+from backend.app.api.helpers import run_service
 
 router = APIRouter()
 
-
 @router.post(
-    "/",
+    "/companies/generate-ai",
     response_model=ProductOverviewResponse,
-    summary="Generate Company Overview (features, company & persona profiles, pricing)",
-    tags=["Company", "Overview", "AI"],
+    summary="AI Generate Company Overview (features, company & persona profiles, pricing)",
+    tags=["Companies", "AI"],
     response_description="A structured company overview for the given company context.",
 )
 async def prod_generate_product_overview(
@@ -29,9 +27,12 @@ async def prod_generate_product_overview(
     _: None = Depends(jwt_rate_limit_dependency("company_generate")),
 ):
     """
-    Generate a company overview for authenticated users (Stack Auth JWT required).
+    AI-generate a company overview for authenticated users (Stack Auth JWT required).
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
         generate_product_overview_service, data=data, orchestrator=orchestrator
     )
+
+# CRUD endpoints for companies (POST, GET, PUT, DELETE, etc.)
+# ... (existing CRUD code would go here, not shown in your snippet) ...

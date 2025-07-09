@@ -30,16 +30,15 @@ from backend.app.services.product_overview_service import (
 from backend.app.services.target_account_service import generate_target_account_profile
 from backend.app.services.target_persona_service import generate_target_persona_profile
 
-from .helpers import run_service
+from backend.app.api.helpers import run_service
 
 router = APIRouter()
 
-
 @router.post(
-    "/company/overview",
+    "/companies/generate-ai",
     response_model=ProductOverviewResponse,
-    summary="[DEMO] Generate Company Overview (features, company & persona profiles, pricing)",
-    tags=["Demo", "Company", "Overview", "AI"],
+    summary="[DEMO] AI Generate Company Overview (features, company & persona profiles, pricing)",
+    tags=["Demo", "Companies", "AI"],
     response_description="A structured company overview for the given company context.",
 )
 async def demo_generate_product_overview(
@@ -50,18 +49,17 @@ async def demo_generate_product_overview(
     _: None = Depends(demo_ip_rate_limit_dependency("company_generate")),
 ):
     """
-    Generate a company overview for demo users, with IP-based rate limiting.
+    AI-generate a company overview for demo users, with IP-based rate limiting.
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
         generate_product_overview_service, data=data, orchestrator=orchestrator
     )
 
-
 @router.post(
-    "/accounts",
+    "/accounts/generate-ai",
     response_model=TargetAccountResponse,
-    summary="[DEMO] Generate Target Account Profile (discovery call preparation)",
+    summary="[DEMO] AI Generate Target Account Profile (discovery call preparation)",
     tags=["Demo", "Accounts", "AI"],
     response_description="A structured discovery call preparation report with company analysis and ICP hypothesis.",
 )
@@ -72,15 +70,14 @@ async def demo_generate_target_account(
     db: Session = Depends(get_db),
 ):
     """
-    Generate a target account profile for demo users, with IP-based rate limiting.
+    AI-generate a target account profile for demo users, with IP-based rate limiting.
     """
     return await run_service(generate_target_account_profile, data=data)
 
-
 @router.post(
-    "/personas",
+    "/personas/generate-ai",
     response_model=TargetPersonaResponse,
-    summary="[DEMO] Generate Target Persona Profile (attributes, buying signals, rationale)",
+    summary="[DEMO] AI Generate Target Persona Profile (attributes, buying signals, rationale)",
     tags=["Demo", "Personas", "AI"],
     response_description="A structured target persona profile for the given company context.",
 )
@@ -91,16 +88,15 @@ async def demo_generate_target_persona(
     db: Session = Depends(get_db),
 ):
     """
-    Generate a target persona profile for demo users, with IP-based rate limiting.
+    AI-generate a target persona profile for demo users, with IP-based rate limiting.
     """
     return await run_service(generate_target_persona_profile, data=data)
 
-
 @router.post(
-    "/campaigns/generate-email",
+    "/campaigns/generate-ai",
     response_model=EmailGenerationResponse,
-    summary="[DEMO] Generate Email Campaign",
-    tags=["Demo", "Campaigns", "Email Generation", "AI"],
+    summary="[DEMO] AI Generate Email Campaign",
+    tags=["Demo", "Campaigns", "AI"],
     response_description="A complete email campaign with subjects, body segments, and breakdown metadata.",
 )
 async def demo_generate_email(
@@ -111,8 +107,7 @@ async def demo_generate_email(
     _: None = Depends(demo_ip_rate_limit_dependency("email_generation")),
 ):
     """
-    Generate a personalized email campaign for demo users,
-    with IP-based rate limiting.
+    AI-generate a personalized email campaign for demo users, with IP-based rate limiting.
     """
     orchestrator = ContextOrchestrator()
     return await run_service(
