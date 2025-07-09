@@ -24,7 +24,7 @@ RUN poetry config virtualenvs.create false \
 COPY backend/ ./backend/
 # Use a heredoc to create the .env.example file
 RUN <<EOF cat > .env.example
-# Example environment variables for blossomer-gtm-api
+# Example environment variables for blossomer-gtm-app
 
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/blossomer

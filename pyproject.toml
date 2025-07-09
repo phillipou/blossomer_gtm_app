@@ -1,5 +1,5 @@
 [project]
-name = "blossomer-gtm-api"
+name = "blossomer_gtm_app"
 version = "0.1.0"
 description = "AI-powered go-to-market campaign generator API for B2B founders"
 authors = [
@@ -13,7 +13,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "blossomer-gtm-api"
+name = "blossomer_gtm_app"
 version = "0.1.0"
 description = "AI-powered go-to-market campaign generator API for B2B founders"
 authors = ["Phillip Ou"]

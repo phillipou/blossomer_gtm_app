@@ -92,7 +92,7 @@ All models implemented with flexible schema:
 
 ### **2. Generate Alembic Migration** (10 min)
 ```bash
-cd /Users/phillipou/dev/active/blossomer-gtm-api
+cd /Users/phillipou/dev/active/blossomer_gtm_app
 alembic revision --autogenerate -m "Add business data models (Company, TargetAccount, TargetPersona, Campaign)"
 alembic upgrade head
 ```

@@ -18,7 +18,7 @@ alwaysApply: false
 - **Clear rule hierarchy**: Manual > Auto Attached > Always > Agent Requested
 
 ## Rule File References
-- **Project guidelines**: [blossomer-gtm-api.mdc](mdc:.cursor/rules/blossomer-gtm-api.mdc) - Always applied
+- **Project guidelines**: [blossomer-gtm-app.mdc](mdc:.cursor/rules/blossomer-gtm-app.mdc) - Always applied
 - **Python/FastAPI**: [python-api-best-practices.mdc](mdc:.cursor/rules/python-api-best-practices.mdc) - Backend files
 - **React/TypeScript**: [react-best-practices.mdc](mdc:.cursor/rules/react-best-practices.mdc) - Frontend files
 - **Tailwind CSS**: [tailwind-best-practices.mdc](mdc:.cursor/rules/tailwind-best-practices.mdc) - Styling files

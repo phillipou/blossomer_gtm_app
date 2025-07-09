@@ -57,7 +57,7 @@ Blossomer GTM API is an API-first, AI-powered service that helps early-stage B2B
 
 ```sh
 git clone <repo-url>
-cd blossomer-gtm-api
+cd blossomer_gtm_app
 ```
 
 ### 2. Install Poetry (if not already)

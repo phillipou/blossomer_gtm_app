@@ -8,7 +8,7 @@ This API reference provides complete documentation for frontend integration with
 
 ### Base URLs
 - **Development**: `http://localhost:8000`
-- **Production**: `https://blossomer-gtm-api.onrender.com`
+- **Production**: `https://blossomer-gtm-app.onrender.com`
 
 ### API Structure
 - **Demo endpoints**: `/demo/*` - No authentication, IP rate limited

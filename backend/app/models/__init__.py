@@ -46,7 +46,9 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(String, primary_key=True)  # Stack Auth user ID
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )  # Stack Auth user ID
     email = Column(String(255), unique=True, nullable=True)
     name = Column(String(255), nullable=True)
     role = Column(String(20), default=UserRole.USER.value)  # user, admin, super_admin
@@ -70,7 +72,7 @@ class Company(Base):
     __tablename__ = "companies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     # Basic company information
     name = Column(String(255), nullable=False)

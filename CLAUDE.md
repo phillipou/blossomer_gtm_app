@@ -67,7 +67,7 @@
 
 ## Directory Structure
 ```
-blossomer-gtm-api/
+blossomer_gtm_app/
 ├── backend/app/           # FastAPI application
 │   ├── api/              # API routes
 │   ├── core/             # Core services (auth, database, LLM)
