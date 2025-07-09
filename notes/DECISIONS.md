@@ -318,6 +318,30 @@ Phase 3: DB-only (remove localStorage dependencies)
 
 ---
 
+### **Decision 20: AI Draft/Auto-Save and localStorage Sync Pattern (July 2025)**
+
+**What**: Implemented a frontend pattern where AI-generated entities (accounts, personas, campaigns, etc.) are first stored as drafts in localStorage, then auto-promoted to saved entities on first user commit (edit, navigation, or short delay), and subsequently auto-saved on every edit with debounce, all without a manual save button.
+
+**Why**:
+- **Zero-friction UX**: Users never have to click "Save"; the system feels magical and modern.
+- **User control**: Users can edit the AI draft before it is saved, but if they accept the output, it is saved automatically.
+- **Resilience**: Drafts are cached in localStorage until saved, so accidental reloads before first save are recoverable (if desired).
+- **Consistency**: All AI-generated entities use the same pattern, making the app predictable and robust.
+
+**How**:
+- **Draft state**: AI output is stored in localStorage as a draft (no ID).
+- **Auto-promotion**: On first edit, navigation, or after a short delay, the draft is POSTed to the backend and, on success, moved to the saved list (with ID).
+- **Auto-save**: Further edits are debounced and sent as PUT requests, updating both backend and localStorage.
+- **No manual save**: There is no save button; all transitions are automatic.
+
+**Trade-offs**:
+- ✅ Best-in-class UX, no friction, robust state management
+- ❌ Slightly more complex frontend logic, but worth it for user experience
+
+**Status**: ✅ Standard for all AI-generated entities as of July 2025
+
+---
+
 ## Data & State Management Decisions
 
 ### **Decision 11: Minimal Database Schema**

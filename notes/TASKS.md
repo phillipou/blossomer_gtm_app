@@ -45,6 +45,15 @@
 
 ---
 
+### **3. AI Draft/Auto-Save and localStorage Sync Pattern** - CRITICAL
+- [ ] **Document and implement the AI draft/auto-save/localStorage sync pattern**
+    - [ ] Ensure all AI-generated entities (accounts, personas, campaigns, etc.) use the draft → auto-save → localStorage sync workflow
+    - [ ] No manual save button; all transitions are automatic (edit, navigation, or delay triggers save)
+    - [ ] Debounced auto-save for subsequent edits
+    - [ ] Reference updated ARCHITECTURE.md and DECISIONS.md for rationale and implementation details
+
+---
+
 ## 🚨 Deployment/Production Readiness
 - [x] **TODO: Configure a separate Stack Auth project for production**
   - [x] Create a new Stack Auth project for production use

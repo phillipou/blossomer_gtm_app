@@ -201,6 +201,14 @@ src/
 - **API Integration**: Custom hooks for data fetching with error handling
 - **Auth Token Access**: The Stack Auth JWT token is cached after login and available via `useAuthState().token` for all authenticated requests.
 
+#### **AI Draft/Auto-Save Pattern**
+- **Draft Generation**: When the user generates an entity (e.g., account) via `/generate-ai`, the result is stored in localStorage as a draft (e.g., `localStorage['draft_account']`).
+- **Auto-Promotion to Saved**: On the first user commit (edit, navigation, or short delay), the draft is POSTed to the API and, on success, moved to the saved list (e.g., `localStorage['accounts']`).
+- **Auto-Save on Edit**: After the entity has an ID, further edits are auto-saved to the backend via debounced PUT requests, and the saved list in localStorage is updated.
+- **No Save Button**: The user never has to click "Save"; all transitions are automatic and seamless.
+- **Resilience**: If the user closes the tab before the first save, the draft is lost (acceptable for this workflow). Once saved, the entity is persisted in both backend and localStorage.
+- **Pattern Scope**: This pattern is used for all AI-generated entities (accounts, personas, campaigns, etc.) to provide a frictionless, modern UX.
+
 ### **Data Flow**
 1. **User Input** → Landing page form
 2. **API Calls** → Backend analysis endpoints  
