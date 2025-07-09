@@ -5,8 +5,8 @@ import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
-import { useGetAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from "../lib/hooks/useAccounts";
-import type { Account } from "../types/api";
+import { useGetAccounts, useUpdateAccount, useDeleteAccount, useGenerateAccount } from "../lib/hooks/useAccounts";
+import type { Account, AccountUpdate } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
 import { getEntityColorForParent, getAddCardHoverClasses } from "../lib/entityColors";
@@ -27,7 +27,7 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
   return (
     <SummaryCard
       title={targetAccount.name}
-      description={targetAccount.description}
+      description={targetAccount.accountData?.description as string || ""}
       parents={[{ name: companyName, color: getEntityColorForParent('company'), label: "Company" }]}
       onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
       entityType="account"
@@ -60,10 +60,11 @@ export default function TargetAccountsList() {
   console.log("AccountsPage: Rendering");
   const overview = useCompanyOverview();
   const { token } = useAuthState();
-  const { data: accounts, isLoading, error } = useGetAccounts(overview?.companyId || "", token);
-  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(overview?.companyId || "", token);
-  const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount(overview?.companyId || "", token);
-  const { mutate: deleteAccount } = useDeleteAccount(overview?.companyId || "", token);
+  const companyId = overview?.companyId || "";
+  const { data: accounts, isLoading, error } = useGetAccounts(companyId, token);
+  const { mutate: generateAccount, isPending: isCreating } = useGenerateAccount(companyId, token);
+  const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount(companyId, token);
+  const { mutate: deleteAccount } = useDeleteAccount(companyId, token);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -84,7 +85,27 @@ export default function TargetAccountsList() {
 
   const handleAddAccount = async ({ name, description }: { name: string; description: string }) => {
     console.log("AccountsPage: handleAddAccount called with", { name, description });
-    createAccount({ name, description });
+    if (!overview) {
+      console.error("Cannot generate account without company overview.");
+      return;
+    }
+    
+    const companyContext = {
+      companyName: overview.companyName || '',
+      companyUrl: overview.companyUrl || '',
+      business_profile: JSON.stringify(overview.businessProfile) || '',
+      capabilities: JSON.stringify(overview.capabilities) || '',
+      positioning: JSON.stringify(overview.positioning) || '',
+      use_case_analysis: JSON.stringify(overview.useCaseAnalysis) || '',
+      icp_hypothesis: JSON.stringify(overview.icpHypothesis) || '',
+    };
+
+    generateAccount({
+      websiteUrl: overview.companyUrl,
+      accountProfileName: name,
+      hypothesis: description,
+      companyContext,
+    });
     setIsAddModalOpen(false);
   };
 
@@ -97,7 +118,14 @@ export default function TargetAccountsList() {
   const handleUpdateAccount = async ({ name, description }: { name: string; description: string }) => {
     console.log("AccountsPage: handleUpdateAccount called with", { name, description });
     if (!editingAccount) return;
-    updateAccount({ accountId: editingAccount.id, accountData: { name, description } });
+    const accountData: AccountUpdate = {
+      name,
+      accountData: {
+        ...editingAccount.accountData,
+        description,
+      }
+    };
+    updateAccount({ accountId: editingAccount.id, accountData });
     setIsAddModalOpen(false);
     setEditingAccount(null);
   };
@@ -111,7 +139,7 @@ export default function TargetAccountsList() {
     (account) => {
       const matchesSearch =
         account.name.toLowerCase().includes(search.toLowerCase()) ||
-        (account.description && account.description.toLowerCase().includes(search.toLowerCase()));
+        (account.accountData?.description as string || "").toLowerCase().includes(search.toLowerCase());
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
     }
@@ -232,7 +260,7 @@ export default function TargetAccountsList() {
         submitLabel={editingAccount ? "Update" : <><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
         cancelLabel="Cancel"
         defaultName={editingAccount ? editingAccount.name : ""}
-        defaultDescription={editingAccount ? editingAccount.description : ""}
+        defaultDescription={editingAccount ? editingAccount.accountData?.description as string || "" : ""}
         isLoading={isCreating || isUpdating}
       />
     </div>

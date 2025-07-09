@@ -5,10 +5,21 @@ import {
   updateAccount,
   deleteAccount,
   getAccount,
+  generateAccount,
 } from '../accountService';
-import type { Account, AccountCreate, AccountUpdate } from '../../types/api';
+import type { Account, AccountCreate, AccountUpdate, TargetCompanyRequest, TargetAccountResponse } from '../../types/api';
 
 const ACCOUNT_QUERY_KEY = 'accounts';
+
+export function useGenerateAccount(companyId: string, token?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<TargetAccountResponse, Error, TargetCompanyRequest>({
+    mutationFn: (request) => generateAccount(request, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ACCOUNT_QUERY_KEY, companyId] });
+    },
+  });
+}
 
 export function useGetAccounts(companyId: string, token?: string | null) {
   return useQuery<Account[], Error>({

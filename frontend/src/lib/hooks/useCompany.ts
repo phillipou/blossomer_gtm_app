@@ -12,6 +12,7 @@ export function useGetCompany(token?: string | null) {
   return useQuery<CompanyOverviewResponse, Error>({
     queryKey: [COMPANY_QUERY_KEY],
     queryFn: () => getCompany(token),
+    // Only enabled when authenticated - demo mode doesn't GET existing data
     enabled: !!token,
   });
 }

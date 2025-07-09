@@ -121,14 +121,14 @@ export function useAsyncAuthToken() {
 
 // Check if user should use authenticated endpoints
 export function shouldUseAuthenticatedEndpoints(): boolean {
-  // Enable authenticated endpoints now that Stack Auth is integrated
-  // This will route to /api/* instead of /demo/* when user is authenticated
-  return true
+  // Use /api only if authenticated
+  const authState = getAuthState();
+  return !!authState.isAuthenticated && !!authState.token;
 }
 
 // Get API base path (demo vs authenticated)
 export function getApiBasePath(): string {
-  return shouldUseAuthenticatedEndpoints() ? '/api' : '/demo'
+  return shouldUseAuthenticatedEndpoints() ? '/api' : '/demo';
 }
 
 // Rate limit helper - check headers from API responses

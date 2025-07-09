@@ -1,5 +1,6 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { ApiError } from "../types/api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -65,4 +66,8 @@ export function transformKeysToSnakeCase<T = unknown>(obj: unknown): T {
   }
   
   return obj as T
+}
+
+export function isApiError(error: any): error is ApiError {
+  return error && typeof error.errorCode === 'string' && typeof error.message === 'string';
 }

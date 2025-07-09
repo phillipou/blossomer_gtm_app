@@ -7,7 +7,7 @@ import { useGetPersonas, useUpdatePersona, useDeletePersona, useGeneratePersona 
 import { useGetAccounts } from "../lib/hooks/useAccounts";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
-import type { Persona, ApiError } from "../types/api";
+import type { Persona, ApiError, PersonaUpdate } from "../types/api";
 import { getEntityColorForParent } from "../lib/entityColors";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
@@ -29,12 +29,10 @@ export default function TargetPersonas() {
 
   const { mutate: updatePersona, isPending: isSaving } = useUpdatePersona(
     accounts?.[0]?.id || "",
-    "", // personaId is set in handleSavePersona
     token
   );
   const { mutate: deletePersona } = useDeletePersona(
     accounts?.[0]?.id || "",
-    "", // personaId is set in handleDeletePersona
     token
   );
   const { mutate: generatePersona, isPending: addPersonaLoading } = useGeneratePersona(
@@ -60,7 +58,15 @@ export default function TargetPersonas() {
 
   const handleSavePersona = async ({ name, description }: { name: string; description: string }) => {
     if (!editingPersona) return;
-    updatePersona({ id: editingPersona.id, targetPersonaName: name, targetPersonaDescription: description });
+    const personaData: PersonaUpdate = {
+      name: editingPersona.name,
+      personaData: {
+        ...editingPersona.personaData,
+        targetPersonaName: editingPersona.name,
+        targetPersonaDescription: description,
+      }
+    };
+    updatePersona({ personaId: editingPersona.id, personaData });
     setEditModalOpen(false);
     setEditingPersona(null);
   };
@@ -76,8 +82,8 @@ export default function TargetPersonas() {
 
   const filteredPersonas = personas?.filter((persona) => {
     const matchesSearch =
-      persona.targetPersonaName?.toLowerCase().includes(search.toLowerCase()) ||
-      (persona.targetPersonaDescription && persona.targetPersonaDescription.toLowerCase().includes(search.toLowerCase()));
+      persona.name?.toLowerCase().includes(search.toLowerCase()) ||
+      (persona.personaData?.targetPersonaDescription as string || "").toLowerCase().includes(search.toLowerCase());
     if (filterBy === "all") return matchesSearch;
     return matchesSearch;
   });
@@ -148,10 +154,10 @@ export default function TargetPersonas() {
                 {filteredPersonas.map((persona) => (
                   <SummaryCard
                     key={`${persona.accountId}-${persona.id}`}
-                    title={persona.targetPersonaName}
-                    description={persona.targetPersonaDescription}
+                    title={persona.name}
+                    description={persona.personaData?.targetPersonaDescription as string || ""}
                     parents={[
-                      { name: persona.accountName, color: getEntityColorForParent('account'), label: "Account" },
+                      { name: accounts?.find(a => a.id === persona.accountId)?.name || 'Account', color: getEntityColorForParent('account'), label: "Account" },
                       { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
                     ]}
                     onClick={() => handlePersonaClick(persona.accountId, persona.id)}
@@ -214,8 +220,8 @@ export default function TargetPersonas() {
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
         submitLabel={isSaving ? "Saving..." : "Update"}
         cancelLabel="Cancel"
-        defaultName={editingPersona?.targetPersonaName || ""}
-        defaultDescription={editingPersona?.targetPersonaDescription || ""}
+        defaultName={editingPersona?.name || ""}
+        defaultDescription={editingPersona?.personaData?.targetPersonaDescription as string || ""}
         isLoading={isSaving}
       />
 
@@ -223,8 +229,29 @@ export default function TargetPersonas() {
         isOpen={addModalOpen}
         onClose={() => { setAddModalOpen(false); setSelectedAccountId(""); }}
         onSubmit={async ({ name, description, accountId }) => {
-          if (!accountId) return;
-          generatePersona({ personaName: name, personaDescription: description });
+          if (!accountId || !overview) return;
+          const selectedAccount = accounts?.find(acc => acc.id === accountId);
+          if (!selectedAccount) return;
+
+          const companyContext = {
+            companyName: overview.companyName || '',
+            companyUrl: overview.companyUrl || '',
+            business_profile: JSON.stringify(overview.businessProfile) || '',
+            capabilities: JSON.stringify(overview.capabilities) || '',
+            positioning: JSON.stringify(overview.positioning) || '',
+            use_case_analysis: JSON.stringify(overview.useCaseAnalysis) || '',
+            icp_hypothesis: JSON.stringify(overview.icpHypothesis) || '',
+          };
+
+          const targetAccountContext = selectedAccount.accountData;
+
+          generatePersona({ 
+            websiteUrl: overview.companyUrl,
+            personaProfileName: name, 
+            hypothesis: description,
+            companyContext,
+            targetAccountContext,
+          });
           setAddModalOpen(false);
           setSelectedAccountId("");
         }}

@@ -64,33 +64,18 @@ export default function LandingPage() {
     }
     setError(null);
     setIsNavigating(true);
-    console.log("LandingPage: Setting isNavigating to true");
-
+    
     try {
-      console.log("LandingPage: Making API request to /api/companies/generate-ai with URL:", url, "and ICP:", icp);
-      const response = await fetch("/api/companies/generate-ai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url, icp }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("LandingPage: API request failed with status", response.status, "and error data:", errorData);
-        throw new Error(errorData.detail || "Failed to generate GTM strategy.");
-      }
-
-      const data = await response.json();
-      console.log("LandingPage: API request successful, received data:", data);
-      console.log("LandingPage: Navigating to /company with state:", { url, icp, apiResponse: data });
-      navigate("/company", { state: { url, icp, apiResponse: data } });
-    } catch (err: any) {
-      console.error("LandingPage: Error during API call or navigation:", err.message);
-      setError(err.message);
+      console.log("LandingPage: Making API call to analyze company");
+      // Import the analyzeCompany function and make the API call here
+      const { analyzeCompany } = await import("../lib/companyService");
+      const result = await analyzeCompany(url, icp);
+      console.log("LandingPage: API call successful, navigating to /company with result");
+      navigate("/company", { state: { apiResponse: result } });
+    } catch (error) {
+      console.error("LandingPage: API call failed:", error);
+      setError("Failed to analyze company. Please try again.");
       setIsNavigating(false);
-      console.log("LandingPage: Setting isNavigating to false due to error");
     }
   };
 

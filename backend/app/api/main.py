@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from backend.app.api.routes import (
-    company,
     accounts,
     personas,
     campaigns,
@@ -86,7 +85,7 @@ app.add_middleware(
 )
 
 # Register API endpoints (AI generation endpoints)
-app.include_router(company.router, prefix="/api/company", tags=["Company"])
+app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 app.include_router(accounts.router, prefix="/api", tags=["Accounts"])
 app.include_router(personas.router, prefix="/api", tags=["Personas"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["Campaigns"])

@@ -6,7 +6,7 @@ import CustomersList from "./Accounts";
 import OverviewCard from "../components/cards/OverviewCard";
 import DashboardLoading from "../components/dashboard/DashboardLoading";
 import { ErrorDisplay } from "../components/ErrorDisplay";
-import type { CompanyOverviewResponse, TargetAccountResponse } from "../types/api";
+import type { CompanyOverviewResponse, TargetAccountResponse, ApiError } from "../types/api";
 import ListInfoCard from "../components/cards/ListInfoCard";
 import PageHeader from "../components/navigation/PageHeader";
 import { getStoredTargetAccounts } from "../lib/accountService";
@@ -16,7 +16,8 @@ import { Edit3, Trash2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
 import { useGetCompany, useAnalyzeCompany, useUpdateCompany } from "../lib/hooks/useCompany";
 import { useAuthState } from "../lib/auth";
-import { migrateLocalStorageToDb } from "../lib/migration";
+import ListInfoCardEditModal, { type ListInfoCardItem } from '../components/cards/ListInfoCardEditModal';
+import { isApiError } from "../lib/utils";
 
 const STATUS_STAGES = [
   { label: "Loading website...", percent: 20 },
@@ -105,6 +106,13 @@ export default function Company() {
   const navigate = useNavigate();
   const { token } = useAuthState();
 
+  // Only redirect to /auth if we're trying to use authenticated endpoints but don't have a token
+  // Demo mode should work without authentication
+  useEffect(() => {
+    // Don't redirect - allow demo usage without authentication
+    // The API calls will automatically use /demo endpoints when not authenticated
+  }, [token, navigate]);
+
   const queryClient = useQueryClient();
   const { data: overview, isLoading: isGetLoading, error: getError, refetch } = useGetCompany(token);
   const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token);
@@ -124,14 +132,9 @@ export default function Company() {
     console.log("Company: Initializing targetAccounts state");
     return [];
   });
-  const [hasLegacyData, setHasLegacyData] = useState(() => {
-    console.log("Company: Initializing hasLegacyData state");
-    return false;
-  });
-  const [migrationStatus, setMigrationStatus] = useState(() => {
-    console.log("Company: Initializing migrationStatus state");
-    return "";
-  });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingField, setEditingField] = useState<CardKey | null>(null);
+  const [editingItems, setEditingItems] = useState<ListInfoCardItem[]>([]);
 
   // Log state changes
   useEffect(() => {
@@ -142,56 +145,16 @@ export default function Company() {
     console.log("Company: targetAccounts state changed to", targetAccounts);
   }, [targetAccounts]);
 
-  useEffect(() => {
-    console.log("Company: hasLegacyData state changed to", hasLegacyData);
-  }, [hasLegacyData]);
+
 
   useEffect(() => {
-    console.log("Company: migrationStatus state changed to", migrationStatus);
-  }, [migrationStatus]);
-
-  useEffect(() => {
-    console.log("Company: useEffect for legacy data check");
-    const legacyAccounts = localStorage.getItem("target_accounts");
-    const legacyEmails = localStorage.getItem("emailHistory");
-    if (legacyAccounts || legacyEmails) {
-      console.log("Company: Legacy data detected.");
-      setHasLegacyData(true);
-    }
-  }, []);
-
-  const handleMigration = async () => {
-    console.log("Company: handleMigration called");
-    setMigrationStatus("Migrating...");
-    try {
-      console.log("Company: Attempting to migrate local storage to DB.");
-      await migrateLocalStorageToDb(token!);
-      setMigrationStatus("Migration complete!");
-      setHasLegacyData(false);
-      refetch();
-      console.log("Company: Migration successful, refetching company data.");
-    } catch (error) {
-      setMigrationStatus("Migration failed. See console for details.");
-      console.error("Company: Migration failed:", error);
-    }
-  };
-
-  useEffect(() => {
-    console.log("Company: useEffect for API response/analysis. location.state:", location.state);
+    console.log("Company: useEffect for API response. location.state:", location.state);
     const apiResponse = location.state?.apiResponse;
     if (apiResponse) {
       console.log("Company: API response found in location.state, setting query data.", apiResponse);
       queryClient.setQueryData(['company'], apiResponse);
-    } else {
-      console.log("Company: No API response in location.state, checking for URL to analyze.");
-      const url = location.state?.url;
-      const icp = location.state?.icp;
-      if (url) {
-        console.log("Company: Analyzing company with URL:", url, "and ICP:", icp);
-        analyzeCompany({ websiteUrl: url, userInputtedContext: icp });
-      }
     }
-  }, [location.state, analyzeCompany, queryClient]);
+  }, [location.state, queryClient]);
 
   useEffect(() => {
     console.log("Company: useEffect for analysis progress. isAnalyzing:", isAnalyzing);
@@ -219,7 +182,59 @@ export default function Company() {
     console.log("Company: Loaded target accounts:", accounts);
   }, []);
 
+  const handleListEdit = (field: CardKey, items: string[]) => {
+    setEditingField(field);
+    setEditingItems(items.map((text, i) => ({ id: i.toString(), text })));
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSave = (newItems: ListInfoCardItem[]) => {
+    if (!editingField || !overview) return;
+    
+    const updatedItems = newItems.map(item => item.text);
+
+    let updatedOverview = { ...overview };
+
+    if (editingField === 'capabilities' || editingField === 'objections') {
+      updatedOverview = { ...updatedOverview, [editingField]: updatedItems };
+    } else if (editingField === 'business_profile') {
+      const category = updatedItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
+      const businessModel = updatedItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
+      const existingCustomers = updatedItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
+      updatedOverview.businessProfile = { category, businessModel, existingCustomers };
+    } else if (editingField === 'positioning_insights') {
+      const keyMarketBelief = updatedItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
+      const uniqueApproach = updatedItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
+      const languageUsed = updatedItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
+      updatedOverview.positioning = { keyMarketBelief, uniqueApproach, languageUsed };
+    } else if (editingField === 'use_case_insights') {
+      const processImpact = updatedItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
+      const problemsAddressed = updatedItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
+      const howTheyDoItToday = updatedItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
+      updatedOverview.useCaseAnalysis = { processImpact, problemsAddressed, howTheyDoItToday };
+    } else if (editingField === 'target_customer_insights') {
+        const targetAccountHypothesis = updatedItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
+        const targetPersonaHypothesis = updatedItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
+        updatedOverview.icpHypothesis = { targetAccountHypothesis, targetPersonaHypothesis };
+    }
+    
+    const { companyId, ...analysis_data } = updatedOverview;
+
+    updateCompany({
+      companyId: companyId,
+      analysis_data: analysis_data,
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingField(null);
+    setEditingItems([]);
+  };
+
   const handleRetry = useCallback(() => {
+    if (!token) {
+      navigate("/auth", { replace: true });
+      return;
+    }
     console.log("Company: handleRetry called.");
     const url = location.state?.url;
     const icp = location.state?.icp;
@@ -230,7 +245,7 @@ export default function Company() {
       console.log("Company: No URL in state, refetching company data.");
       refetch();
     }
-  }, [location.state, analyzeCompany, refetch]);
+  }, [location.state, analyzeCompany, refetch, token, navigate]);
 
   const handleAccountClick = (accountId: string) => {
     console.log("Company: handleAccountClick called with accountId:", accountId);
@@ -259,44 +274,6 @@ export default function Company() {
     navigate('/target-accounts');
   };
 
-  const handleListEdit = (field: CardKey) => (newItems: string[]) => {
-    console.log("Company: handleListEdit called for field:", field, "with newItems:", newItems);
-    if (!overview) {
-      console.log("Company: No overview data, returning from handleListEdit.");
-      return;
-    }
-
-    let updatedData: Partial<any> = {};
-
-    if (field === "business_profile") {
-      const category = newItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
-      const businessModel = newItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
-      const existingCustomers = newItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
-      updatedData.businessProfile = { category, businessModel, existingCustomers };
-    } else if (field === "capabilities") {
-      updatedData.capabilities = newItems;
-    } else if (field === "positioning_insights") {
-      const keyMarketBelief = newItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
-      const uniqueApproach = newItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
-      const languageUsed = newItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
-      updatedData.positioning = { keyMarketBelief, uniqueApproach, languageUsed };
-    } else if (field === "use_case_insights") {
-      const processImpact = newItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
-      const problemsAddressed = newItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
-      const howTheyDoItToday = newItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
-      updatedData.useCaseAnalysis = { processImpact, problemsAddressed, howTheyDoItToday };
-    } else if (field === "target_customer_insights") {
-      const targetAccountHypothesis = newItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
-      const targetPersonaHypothesis = newItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
-      updatedData.icpHypothesis = { targetAccountHypothesis, targetPersonaHypothesis };
-    } else if (field === "objections") {
-      updatedData.objections = newItems;
-    }
-
-    console.log("Company: Calling updateCompany with data:", updatedData);
-    updateCompany(updatedData);
-  };
-
   if (isGetLoading || isAnalyzing) {
     return (
       <DashboardLoading
@@ -306,22 +283,15 @@ export default function Company() {
     );
   }
 
-  const error = getError || analyzeError;
-  if (error) {
-    return <ErrorDisplay error={error} onRetry={handleRetry} onHome={() => navigate("/")} />;
+  const errorToDisplay = getError || analyzeError;
+  if (errorToDisplay) {
+    if (isApiError(errorToDisplay)) {
+      return <ErrorDisplay error={errorToDisplay} onRetry={handleRetry} onHome={() => navigate('/')} />;
+    }
+    return <ErrorDisplay error={{ errorCode: 'UNKNOWN_ERROR', message: errorToDisplay.message }} onRetry={handleRetry} onHome={() => navigate('/')} />;
   }
 
-  if (!overview) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-4">No Analysis Found</h2>
-          <p className="text-gray-600 mb-6">Start by analyzing a website from the home page.</p>
-          <Button onClick={() => navigate("/")}>Analyze a Website</Button>
-        </div>
-      </div>
-    );
-  }
+  if (!overview) return <div>No company data available.</div>;
 
   const companyName = overview?.companyName || "Company";
   const domain = overview?.companyUrl || "";
@@ -339,15 +309,6 @@ export default function Company() {
           subtitle="Company analysis and insights"
         />
         
-        {hasLegacyData && (
-          <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
-            <p>We've detected data from a previous version. Please migrate your data to our new system.</p>
-            <Button onClick={handleMigration} className="mt-2">
-              Migrate Data
-            </Button>
-            {migrationStatus && <p className="mt-2">{migrationStatus}</p>}
-          </div>
-        )}
 
         {activeTab === "company" && (
           <div className="flex-1 p-8 space-y-8">
@@ -370,7 +331,7 @@ export default function Company() {
                      key={key}
                      title={label}
                      items={items}
-                     onEdit={isEditable ? handleListEdit(key) : undefined}
+                     onEdit={isEditable ? () => handleListEdit(key, items) : undefined}
                      renderItem={(item: string, idx: number) => (
                        bulleted ? (
                          <span key={idx} className="text-sm text-gray-700 blue-bullet mb-2">{item}</span>
@@ -418,6 +379,14 @@ export default function Company() {
           </div>
         )}
       </div>
+      <ListInfoCardEditModal
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSave={handleSave}
+        initialItems={editingItems}
+        title={`Edit ${editingField?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+        subtitle="Update the list of items below."
+      />
     </>
   );
 }

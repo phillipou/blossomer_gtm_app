@@ -1,5 +1,5 @@
 import { apiFetch } from './apiClient';
-import type { Persona, PersonaCreate, PersonaUpdate, GeneratePersonaRequest } from '../types/api';
+import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest } from '../types/api';
 
 // =================================================================
 // Persona CRUD API Functions
@@ -31,7 +31,7 @@ export async function deletePersona(personaId: string, token?: string | null): P
   await apiFetch<void>(`/personas/${personaId}`, { method: 'DELETE' }, token);
 }
 
-export async function generatePersona(accountId: string, personaData: GeneratePersonaRequest, token?: string | null): Promise<Persona> {
+export async function generatePersona(accountId: string, personaData: TargetPersonaRequest, token?: string | null): Promise<Persona> {
     return apiFetch<Persona>(`/accounts/${accountId}/personas/generate`, {
         method: 'POST',
         body: JSON.stringify(personaData),

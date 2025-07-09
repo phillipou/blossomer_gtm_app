@@ -3,7 +3,10 @@ import type {
   Account,
   AccountCreate,
   AccountUpdate,
+  TargetCompanyRequest,
+  TargetAccountResponse,
 } from '../types/api';
+import { transformKeysToCamelCase } from "../lib/utils";
 
 // =================================================================
 // Account CRUD API Functions
@@ -34,6 +37,20 @@ export async function updateAccount(accountId: string, accountData: AccountUpdat
 export async function deleteAccount(accountId: string, token?: string | null): Promise<void> {
   await apiFetch<void>(`/accounts/${accountId}`, { method: 'DELETE' }, token);
 }
+
+// =================================================================
+// AI Generation Service Functions
+// =================================================================
+
+export async function generateAccount(
+  request: TargetCompanyRequest,
+  token?: string | null
+): Promise<TargetAccountResponse> {
+  return apiFetch<TargetAccountResponse>('/accounts/generate-ai', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  }, token);
+}
  
 // LocalStorage utilities for legacy data (used in migration and modals)
 export function getStoredTargetAccounts(): any[] {
@@ -41,8 +58,7 @@ export function getStoredTargetAccounts(): any[] {
     const raw = localStorage.getItem('target_accounts');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    // Optionally: run through transformKeysToCamelCase if needed
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? transformKeysToCamelCase(parsed) : [];
   } catch {
     return [];
   }

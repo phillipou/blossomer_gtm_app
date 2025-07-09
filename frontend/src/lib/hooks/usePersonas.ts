@@ -7,7 +7,7 @@ import {
   deletePersona,
   generatePersona,
 } from '../personaService';
-import type { Persona, PersonaCreate, PersonaUpdate, GeneratePersonaRequest } from '../../types/api';
+import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest } from '../../types/api';
 
 const PERSONA_QUERY_KEY = 'personas';
 
@@ -37,21 +37,21 @@ export function useCreatePersona(accountId: string, token?: string | null) {
   });
 }
 
-export function useUpdatePersona(accountId: string, personaId: string, token?: string | null) {
+export function useUpdatePersona(accountId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Persona, Error, PersonaUpdate>({
-    mutationFn: (personaData) => updatePersona(personaId, personaData, token),
-    onSuccess: () => {
+  return useMutation<Persona, Error, { personaId: string; personaData: PersonaUpdate }>({
+    mutationFn: ({ personaId, personaData }) => updatePersona(personaId, personaData, token),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });
-      queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, personaId] });
+      queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, data.id] });
     },
   });
 }
 
-export function useDeletePersona(accountId: string, personaId: string, token?: string | null) {
+export function useDeletePersona(accountId: string, token?: string | null) {
   const queryClient = useQueryClient();
   return useMutation<void, Error, string>({
-    mutationFn: () => deletePersona(personaId, token),
+    mutationFn: (personaId) => deletePersona(personaId, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });
     },
@@ -60,7 +60,7 @@ export function useDeletePersona(accountId: string, personaId: string, token?: s
 
 export function useGeneratePersona(accountId: string, token?: string | null) {
     const queryClient = useQueryClient();
-    return useMutation<Persona, Error, GeneratePersonaRequest>({
+    return useMutation<Persona, Error, TargetPersonaRequest>({
         mutationFn: (personaData) => generatePersona(accountId, personaData, token),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });

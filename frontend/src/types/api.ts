@@ -75,16 +75,17 @@ export interface ICPHypothesis {
 }
 
 export interface CompanyOverviewResponse {
+  companyId: string; // Add companyId
   companyName: string;
   companyUrl: string;
   description: string;
-  businessProfile: BusinessProfile;
-  capabilities: string[];
-  useCaseAnalysis: UseCaseAnalysis;
-  positioning: Positioning;
-  objections: string[];
-  icpHypothesis: ICPHypothesis;
-  metadata: Record<string, unknown>;
+  businessProfile?: BusinessProfile;
+  capabilities?: string[];
+  useCaseAnalysis?: UseCaseAnalysis;
+  positioning?: Positioning;
+  objections?: string[];
+  icpHypothesis?: ICPHypothesis;
+  metadata?: Record<string, unknown>;
 }
 
 // New target account response structure matching the updated backend (ICP analysis format)
@@ -152,6 +153,51 @@ export interface AccountCreate {
 export interface AccountUpdate {
   name?: string;
   accountData?: Record<string, any>;
+}
+
+export interface CompanyResponse {
+  id: string;
+  user_id: string;
+  name: string;
+  url: string;
+  analysis_data: {
+    description?: string;
+    business_profile?: BusinessProfile;
+    capabilities?: string[];
+    use_case_analysis?: UseCaseAnalysis;
+    positioning?: Positioning;
+    objections?: string[];
+    icp_hypothesis?: ICPHypothesis;
+    metadata?: Record<string, unknown>;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyUpdate {
+  companyId: string;
+  name?: string;
+  url?: string;
+  analysis_data?: any;
+}
+
+export interface Persona {
+  id: string;
+  accountId: string;
+  name: string;
+  personaData: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersonaCreate {
+    name: string;
+    personaData: Record<string, any>;
+}
+
+export interface PersonaUpdate {
+    name?: string;
+    personaData?: Record<string, any>;
 }
 
 

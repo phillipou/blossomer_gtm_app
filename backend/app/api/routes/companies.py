@@ -19,9 +19,10 @@ from backend.app.schemas import (
     CompanyResponse,
     CompanyWithRelations,
 )
-from backend.app.services.website_scraper import WebsiteScraper
-from backend.app.services.product_overview_service import ProductOverviewService
-from backend.app.services.llm_service import LLMService
+from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
+from backend.app.services.product_overview_service import generate_product_overview_service
+from backend.app.services.context_orchestrator_agent import ContextOrchestrator
+from backend.app.api.helpers import run_service
 
 # OpenAPI Examples
 company_create_example = {
@@ -175,3 +176,24 @@ async def delete_company(
     db_service = DatabaseService(db)
     db_service.delete_company(company_id, user["sub"])
     return None
+
+
+@router.post(
+    "/generate-ai",
+    response_model=ProductOverviewResponse,
+    summary="AI Generate Company Overview (features, company & persona profiles, pricing)",
+    tags=["Companies", "AI"],
+    response_description="A structured company overview for the given company context.",
+)
+async def prod_generate_product_overview(
+    data: ProductOverviewRequest,
+    user=Depends(validate_stack_auth_jwt),
+    db: Session = Depends(get_db),
+):
+    """
+    AI-generate a company overview for authenticated users (Stack Auth JWT required).
+    """
+    orchestrator = ContextOrchestrator()
+    return await run_service(
+        generate_product_overview_service, data, orchestrator=orchestrator
+    )
