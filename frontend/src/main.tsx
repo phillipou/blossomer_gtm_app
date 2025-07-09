@@ -11,6 +11,7 @@ import PersonaDetail from './pages/PersonaDetail'
 import Personas from './pages/Personas'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
+import AccountSettings from './pages/AccountSettings'
 import MainLayout from './components/layout/MainLayout'
 import NavbarOnlyLayout from "./components/layout/NavbarOnlyLayout";
 import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="auth" element={<Auth />} />
             <Route path="handler/error" element={<AuthError />} />
             <Route path="handler/oauth-callback" element={<OAuthCallback />} />
+            <Route path="account-settings" element={<AccountSettings />} />
           </Route>
           <Route element={<MainLayout />}>
             <Route path="company" element={<Company />} />
