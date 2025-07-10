@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -14,7 +14,7 @@ import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import { Edit3, Trash2, Building2, Wand2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
-import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useUpdateCompanyPreserveFields, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
+import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useUpdateCompanyPreserveFields, useUpdateCompanyListFieldsPreserveFields, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
 import { useAuthState } from "../lib/auth";
 import { useAutoSave } from "../lib/hooks/useAutoSave";
 import { DraftManager } from "../lib/draftManager";
@@ -31,73 +31,58 @@ const STATUS_STAGES = [
 ];
 
 type CardKey =
-  | "business_profile"
+  | "businessProfileInsights"
   | "capabilities"
-  | "positioning_insights"
-  | "use_case_insights"
-  | "target_customer_insights"
+  | "positioningInsights"
+  | "useCaseAnalysisInsights"
+  | "targetCustomerInsights"
   | "objections";
 
-const cardConfigs: { 
-  key: CardKey; 
-  label: string; 
+const cardConfigs: {
+  key: CardKey;
+  label: string;
   bulleted?: boolean;
   getItems: (overview: CompanyOverviewResponse) => string[];
   subtitle: string;
 }[] = [
-  { 
-    key: "business_profile", 
-    label: "Business Profile", 
+  {
+    key: "businessProfileInsights",
+    label: "Business Profile",
     bulleted: true,
-    getItems: (overview) => [
-      `Category: ${overview.businessProfile?.category || 'N/A'}`,
-      `Business Model: ${overview.businessProfile?.businessModel || 'N/A'}`,
-      `Existing Customers: ${overview.businessProfile?.existingCustomers || 'N/A'}`
-    ],
+    getItems: (overview) => overview.businessProfileInsights || [],
     subtitle: "Core business information and customer profile."
   },
-  { 
-    key: "capabilities", 
-    label: "Key Features & Capabilities", 
+  {
+    key: "capabilities",
+    label: "Key Features & Capabilities",
     bulleted: true,
     getItems: (overview) => overview.capabilities || [],
     subtitle: "Core features and strengths of the company/product."
   },
-  { 
-    key: "positioning_insights", 
-    label: "Positioning", 
+  {
+    key: "positioningInsights",
+    label: "Positioning",
     bulleted: true,
-    getItems: (overview) => [
-      `Market Belief: ${overview.positioning?.keyMarketBelief || 'N/A'}`,
-      `Unique Approach: ${overview.positioning?.uniqueApproach || 'N/A'}`,
-      `Language Used: ${overview.positioning?.languageUsed || 'N/A'}`
-    ],
+    getItems: (overview) => overview.positioningInsights || [],
     subtitle: "How they position themselves in the market."
   },
-  { 
-    key: "use_case_insights", 
-    label: "Process & Impact Analysis", 
+  {
+    key: "useCaseAnalysisInsights",
+    label: "Process & Impact Analysis",
     bulleted: true,
-    getItems: (overview) => [
-      `Process Impact: ${overview.useCaseAnalysis?.processImpact || 'N/A'}`,
-      `Problems Addressed: ${overview.useCaseAnalysis?.problemsAddressed || 'N/A'}`,
-      `Current State: ${overview.useCaseAnalysis?.howTheyDoItToday || 'N/A'}`
-    ],
+    getItems: (overview) => overview.useCaseAnalysisInsights || [],
     subtitle: "Analysis of processes and problems this solution addresses."
   },
-  { 
-    key: "target_customer_insights", 
-    label: "Target Customer Insights", 
+  {
+    key: "targetCustomerInsights",
+    label: "Target Customer Insights",
     bulleted: true,
-    getItems: (overview) => [
-      `Target Accounts: ${overview.icpHypothesis?.targetAccountHypothesis || 'N/A'}`,
-      `Key Personas: ${overview.icpHypothesis?.targetPersonaHypothesis || 'N/A'}`
-    ],
+    getItems: (overview) => overview.targetCustomerInsights || [],
     subtitle: "Ideal customer profile and decision-maker insights."
   },
-  { 
-    key: "objections", 
-    label: "Potential Concerns", 
+  {
+    key: "objections",
+    label: "Potential Concerns",
     bulleted: true,
     getItems: (overview) => overview.objections || [],
     subtitle: "Common concerns prospects might have about this solution."
@@ -146,10 +131,11 @@ export default function Company() {
   const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token, companyId);
   const updateCompanyMutation = useUpdateCompany(token, companyId);
   const { mutate: updateCompany } = updateCompanyMutation;
-  const { mutate: updateCompanyWithFieldPreservation } = useUpdateCompanyPreserveFields(token, companyId);
+  const { mutateAsync: updateCompanyListFieldsWithFieldPreservationAsync } = useUpdateCompanyListFieldsPreserveFields(token, companyId);
   const createCompanyMutation = useCreateCompany(token);
   const { mutate: createCompany, isPending: isCreatingCompany } = createCompanyMutation;
   const { isLoading: isLoadingCompanies } = useGetCompanies(token);
+  const { mutate: updateCompanyWithFieldPreservation } = useUpdateCompanyPreserveFields(token, companyId);
 
   const [generatedCompanyData, setGeneratedCompanyData] = useState<any>(null);
 
@@ -179,7 +165,9 @@ export default function Company() {
   const draftCompanies = DraftManager.getDrafts('company');
   const draftOverview = draftCompanies.length > 0 ? draftCompanies[0].data : null;
 
-  // Auto-save hook for generated companies  
+  console.log('[DEBUG] Before useAutoSave, generatedCompanyData is:', generatedCompanyData);
+
+  // Auto-save hook for generated companies
   const autoSave = useAutoSave({
     entity: 'company',
     data: generatedCompanyData,
@@ -196,6 +184,10 @@ export default function Company() {
       console.error("Company: Auto-save failed", error);
     },
   });
+
+  useEffect(() => {
+    console.log('[DEBUG] generatedCompanyData state changed, new value:', generatedCompanyData);
+  }, [generatedCompanyData]);
 
   // Debug modal state
   useEffect(() => {
@@ -216,14 +208,14 @@ export default function Company() {
   useEffect(() => {
     console.log("Company: useEffect for API response. location.state:", location.state);
     const apiResponse = location.state?.apiResponse;
-    
+
     // Only process location.state apiResponse for unauthenticated users
     // Authenticated users should not use demo/playground data from navigation state
     if (apiResponse && !apiResponseProcessed.current && !token) {
       console.log("Company: API response found in location.state for unauthenticated user, setting query data.", apiResponse);
       apiResponseProcessed.current = true;
       queryClient.setQueryData(['company', companyId], apiResponse);
-      
+
       console.log("Company: Unauthenticated user - triggering auto-save for draft creation");
       // Store the full AI response format for consistent display logic
       setGeneratedCompanyData(apiResponse);
@@ -261,50 +253,96 @@ export default function Company() {
   const handleListEdit = (field: CardKey, items: string[]) => {
     setEditingField(field);
     setEditingItems(items.map((text, i) => ({ id: i.toString(), text })));
-    setIsEditDialogOpen(true);
+    // Do NOT open the modal here; let useEffect handle it
   };
 
-  const handleSave = (newItems: ListInfoCardItem[]) => {
-    if (!editingField || !overview) return;
-    
-    const updatedItems = newItems.map(item => item.text);
-
-    let updatedOverview = { ...overview };
-
-    if (editingField === 'capabilities' || editingField === 'objections') {
-      updatedOverview = { ...updatedOverview, [editingField]: updatedItems };
-    } else if (editingField === 'business_profile') {
-      const category = updatedItems.find(item => item.startsWith("Category:"))?.replace("Category: ", "") || "";
-      const businessModel = updatedItems.find(item => item.startsWith("Business Model:"))?.replace("Business Model: ", "") || "";
-      const existingCustomers = updatedItems.find(item => item.startsWith("Existing Customers:"))?.replace("Existing Customers: ", "") || "";
-      updatedOverview.businessProfile = { category, businessModel, existingCustomers };
-    } else if (editingField === 'positioning_insights') {
-      const keyMarketBelief = updatedItems.find(item => item.startsWith("Market Belief:"))?.replace("Market Belief: ", "") || "";
-      const uniqueApproach = updatedItems.find(item => item.startsWith("Unique Approach:"))?.replace("Unique Approach: ", "") || "";
-      const languageUsed = updatedItems.find(item => item.startsWith("Language Used:"))?.replace("Language Used: ", "") || "";
-      updatedOverview.positioning = { keyMarketBelief, uniqueApproach, languageUsed };
-    } else if (editingField === 'use_case_insights') {
-      const processImpact = updatedItems.find(item => item.startsWith("Process Impact:"))?.replace("Process Impact: ", "") || "";
-      const problemsAddressed = updatedItems.find(item => item.startsWith("Problems Addressed:"))?.replace("Problems Addressed: ", "") || "";
-      const howTheyDoItToday = updatedItems.find(item => item.startsWith("Current State:"))?.replace("Current State: ", "") || "";
-      updatedOverview.useCaseAnalysis = { processImpact, problemsAddressed, howTheyDoItToday };
-    } else if (editingField === 'target_customer_insights') {
-        const targetAccountHypothesis = updatedItems.find(item => item.startsWith("Target Accounts:"))?.replace("Target Accounts: ", "") || "";
-        const targetPersonaHypothesis = updatedItems.find(item => item.startsWith("Key Personas:"))?.replace("Key Personas: ", "") || "";
-        updatedOverview.icpHypothesis = { targetAccountHypothesis, targetPersonaHypothesis };
+  // Open the edit dialog only after both editingField and editingItems are set
+  useEffect(() => {
+    if (editingField && editingItems.length > 0 && !isEditDialogOpen) {
+      setIsEditDialogOpen(true);
     }
-    
-    const { companyId, ...data } = updatedOverview;
+  }, [editingField, editingItems, isEditDialogOpen]);
 
-    updateCompany({
-      companyId: companyId,
-      data: data,
-    });
+  // Replace the existing handleSave definition with a useCallback version
+  const handleSave = useCallback(async (newItems: ListInfoCardItem[]): Promise<void> => {
+    console.log('[LIST-EDIT][DEBUG] === HANDLE SAVE STARTED ===');
+    console.log('[LIST-EDIT][DEBUG] Function called with items:', newItems);
+    if (!editingField) {
+      console.log('[LIST-EDIT][DEBUG] No editingField, returning early');
+      return;
+    }
 
-    setIsEditDialogOpen(false);
-    setEditingField(null);
-    setEditingItems([]);
-  };
+    const updatedItems = newItems.map(item => item.text);
+    let listFieldUpdates: Record<string, string[]> = {};
+    listFieldUpdates[editingField] = updatedItems;
+    console.log('[LIST-EDIT][DEBUG] editingField:', editingField);
+    console.log('[LIST-EDIT][DEBUG] listFieldUpdates object:', listFieldUpdates);
+    console.log('[LIST-EDIT][DEBUG] token:', !!token);
+    console.log('[LIST-EDIT][DEBUG] companyId:', companyId);
+    console.log('[LIST-EDIT][DEBUG] overview:', !!overview);
+
+    if (token && companyId && overview) {
+      console.log('[LIST-EDIT][DEBUG] === AUTHENTICATED PATH ===');
+      if (!(editingField in overview)) {
+        console.warn(`[LIST-EDIT][DEBUG] WARNING: editingField '${editingField}' not present in overview`, overview);
+      } else {
+        console.log('[LIST-EDIT][DEBUG] editingField found in overview ✅');
+      }
+      console.log('[LIST-EDIT][DEBUG] overview before update:', overview);
+      console.log('[LIST-EDIT][DEBUG] About to call mutateAsync...');
+      try {
+        console.log('[LIST-EDIT][DEBUG] Calling mutateAsync with:', {
+          currentOverview: overview,
+          listFieldUpdates,
+        });
+        const result = await updateCompanyListFieldsWithFieldPreservationAsync({
+          currentOverview: overview,
+          listFieldUpdates,
+        });
+        console.log('[LIST-EDIT][DEBUG] mutateAsync completed successfully:', result);
+        closeEditDialog();
+        console.log('[LIST-EDIT][DEBUG] === HANDLE SAVE COMPLETED SUCCESSFULLY ===');
+      } catch (err) {
+        console.error('[LIST-EDIT][DEBUG] mutateAsync failed:', err);
+        console.error('[LIST-EDIT][DEBUG] Error details:', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined,
+          err
+        });
+        throw err;
+      }
+    } else {
+      console.log('[LIST-EDIT][DEBUG] === UNAUTHENTICATED PATH ===');
+      const currentDraft = draftCompanies.find(draft => draft.tempId);
+      if (currentDraft) {
+        if (!(editingField in currentDraft.data)) {
+          console.warn(`[LIST-EDIT][DEBUG] WARNING: editingField '${editingField}' not present in draft data`, currentDraft.data);
+        }
+        console.log('[LIST-EDIT][DEBUG] draft data before update:', currentDraft.data);
+        const updateSuccess = DraftManager.updateDraftPreserveFields('company', currentDraft.tempId, listFieldUpdates);
+        const updatedDraft = DraftManager.getDraft('company', currentDraft.tempId);
+        if (updateSuccess) {
+          console.log('[LIST-EDIT][DEBUG] DraftManager.updateDraftPreserveFields SUCCESS');
+          console.log('[LIST-EDIT][DEBUG] draft data after update:', updatedDraft?.data);
+          queryClient.setQueryData(['company', companyId], (prevData: any) => {
+            const updated = {
+              ...prevData,
+              ...listFieldUpdates,
+            };
+            console.log('[LIST-EDIT][DEBUG] Updated React Query cache for draft', updated);
+            return updated;
+          });
+          closeEditDialog();
+        } else {
+          console.error('[LIST-EDIT][DEBUG] Failed to update draft with field preservation');
+          throw new Error('Failed to update draft');
+        }
+      } else {
+        console.error('[LIST-EDIT][DEBUG] No current draft found for unauthenticated update');
+        throw new Error('No current draft found');
+      }
+    }
+  }, [editingField, overview, token, companyId, draftCompanies, queryClient]);
 
   const handleRetry = useCallback(() => {
     if (!token) {
@@ -357,13 +395,13 @@ export default function Company() {
       { websiteUrl: name, userInputtedContext: description },
       {
         onSuccess: (response) => {
-          console.log("Company: Company generated successfully", response);
-          const companyData = { 
-            ...response, 
-            companyUrl: name, 
-            companyName: response.companyName || new URL(name).hostname 
+          console.log("Company: AI analysis/generation successful (from /generate-ai)", response);
+          const companyData = {
+            ...response,
+            companyUrl: name,
+            companyName: response.companyName || new URL(name).hostname
           };
-          
+
           // Use AI response format consistently
           setGeneratedCompanyData(companyData);
           setIsGenerationModalOpen(false);
@@ -405,7 +443,7 @@ export default function Company() {
   // For authenticated users: ONLY use backend data (never localStorage drafts)
   // For unauthenticated users: use drafts as fallback during generation flow
   const displayOverview = token ? overview : (overview || draftOverview);
-  
+
   // Debug: Detailed data source analysis for authenticated users
   if (token) {
     console.log("Company: AUTHENTICATED USER DATA ANALYSIS", {
@@ -420,7 +458,7 @@ export default function Company() {
       usingBackendData: displayOverview === overview,
       draftCount: draftCompanies.length
     });
-    
+
     // Critical warning if localStorage data differs from backend
     if (draftOverview && overview !== draftOverview) {
       console.warn("Company: CRITICAL - Authenticated user has localStorage draft data that differs from backend!", {
@@ -432,51 +470,63 @@ export default function Company() {
   }
 
   const handleOverviewEdit = (values: { name: string; description: string }) => {
+    console.log('[EDIT-OVERVIEW] handleOverviewEdit called', { values, token, companyId });
     const updatedName = values.name;
     const updatedDescription = values.description;
-    
+
     if (token && companyId) {
       // Authenticated user - use field-preserving update
       const currentOverview = overview || displayOverview;
       if (!currentOverview) {
-        console.error("Company: Cannot update - no current overview data available");
+        console.error('[EDIT-OVERVIEW] Cannot update - no current overview data available');
         return;
       }
-      
+      console.log('[EDIT-OVERVIEW] Calling updateCompanyWithFieldPreservation', { currentOverview, updatedName, updatedDescription });
       updateCompanyWithFieldPreservation({
         currentOverview,
         updates: {
           name: updatedName,
           description: updatedDescription,
         },
+      }, {
+        onSuccess: (result: any) => {
+          console.log('[EDIT-OVERVIEW] updateCompanyWithFieldPreservation SUCCESS', result);
+        },
+        onError: (err: unknown) => {
+          console.error('[EDIT-OVERVIEW] updateCompanyWithFieldPreservation ERROR', err);
+        }
       });
     } else {
       // Unauthenticated user - update draft with field preservation
       const currentDraft = draftCompanies.find(draft => draft.tempId);
       if (currentDraft) {
-        // Use field-preserving update to prevent data loss
+        console.log('[EDIT-OVERVIEW] Calling DraftManager.updateDraftPreserveFields', { tempId: currentDraft.tempId, updatedName, updatedDescription });
         const updateSuccess = DraftManager.updateDraftPreserveFields('company', currentDraft.tempId, {
           name: updatedName,
           description: updatedDescription,
         });
-        
         if (updateSuccess) {
+          console.log('[EDIT-OVERVIEW] DraftManager.updateDraftPreserveFields SUCCESS');
           // Update React Query cache to reflect the change
           queryClient.setQueryData(['company', companyId], (prevData: any) => {
-            return {
+            const updated = {
               ...prevData,
               companyName: updatedName,
               description: updatedDescription,
             };
+            console.log('[EDIT-OVERVIEW] Updated React Query cache for draft', updated);
+            return updated;
           });
         } else {
-          console.error("Company: Failed to update draft with field preservation");
+          console.error('[EDIT-OVERVIEW] Failed to update draft with field preservation');
         }
+      } else {
+        console.error('[EDIT-OVERVIEW] No current draft found for unauthenticated update');
       }
     }
   };
 
-  // Handle authenticated users with no companies  
+  // Handle authenticated users with no companies
   const showNoCompanies = token && !companyId && companies && companies.length === 0 && !draftOverview;
   // Handle unauthenticated users with no localStorage data
   const showNoOverview = !displayOverview;
@@ -485,6 +535,13 @@ export default function Company() {
   const domain = displayOverview?.companyUrl || "";
 
   console.log("Company: About to render, isGenerationModalOpen =", isGenerationModalOpen);
+
+  // Helper to close and reset edit dialog state
+  const closeEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setEditingField(null);
+    setEditingItems([]);
+  };
 
   return (
     <>
@@ -505,11 +562,11 @@ export default function Company() {
                 <Building2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                 <h2 className="text-2xl font-semibold mb-3">Generate Your First Company</h2>
                 <p className="text-gray-600 mb-6">
-                  Create your first company profile with our AI-powered wizard. 
+                  Create your first company profile with our AI-powered wizard.
                   Enter your website URL and let us help you generate detailed business insights.
                 </p>
               </div>
-              <Button 
+              <Button
                 onClick={() => {
                   console.log("Company: Button clicked, opening modal");
                   setIsGenerationModalOpen(true);
@@ -543,14 +600,14 @@ export default function Company() {
                 {cardConfigs.map(({ key, label, getItems, subtitle, bulleted }) => {
                   const items = displayOverview ? getItems(displayOverview) : [];
                   const isEditable = true;
-                  
-                  
+
+
                   return (
                     <ListInfoCard
                       key={key}
                       title={label}
                       items={items}
-                      onEdit={isEditable ? () => handleListEdit(key, items) : undefined}
+                      onEditRequest={isEditable ? (items) => handleListEdit(key, items) : undefined}
                       renderItem={(item: string, idx: number) => (
                         bulleted ? (
                           <span key={idx} className="text-sm text-gray-700 blue-bullet mb-2">{item}</span>
@@ -598,14 +655,27 @@ export default function Company() {
           )}
         </div>
       )}
-      <ListInfoCardEditModal
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        onSave={handleSave}
-        initialItems={editingItems}
-        title={`Edit ${editingField?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
-        subtitle="Update the list of items below."
-      />
+      {/* Only render ListInfoCardEditModal when ready: isEditDialogOpen and editingItems.length > 0 */}
+      {isEditDialogOpen && editingItems.length > 0 && (
+        <ListInfoCardEditModal
+          key={editingField} // Force remount on field change
+          isOpen={isEditDialogOpen}
+          onClose={closeEditDialog}
+          onSave={handleSave}
+          initialItems={editingItems}
+          // Use the label from cardConfigs for the modal title
+          title={(() => {
+            const config = cardConfigs.find(cfg => cfg.key === editingField);
+            return config ? config.label : '';
+          })()}
+          subtitle={(() => {
+            const config = cardConfigs.find(cfg => cfg.key === editingField);
+            return config ? config.subtitle : 'Update the list of items below.';
+          })()}
+        />
+      )}
+      {/* Debug: Log the handleSave function reference */}
+      {console.log('[LIST-EDIT][DEBUG] Modal onSave prop:', handleSave)}
       <InputModal
         isOpen={isGenerationModalOpen}
         onClose={() => {

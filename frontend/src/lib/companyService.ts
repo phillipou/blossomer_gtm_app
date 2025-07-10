@@ -1,6 +1,7 @@
 import { apiFetch } from './apiClient';
 import type { CompanyOverviewResponse, CompanyUpdate, CompanyResponse, CompanyCreate } from '../types/api';
 import { transformKeysToCamelCase } from "./utils";
+import { transformKeysToSnakeCase } from './utils';
 
 // =================================================================
 // Company API Functions

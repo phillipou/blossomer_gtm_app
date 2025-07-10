@@ -192,16 +192,21 @@ async def update_company(
     All fields are optional - only provided fields will be updated.
     """
     user_id = user.get("sub")
-    print(f"✏️ [UPDATE-COMPANY] Updating company {company_id} for user {user_id}")
-    print(f"📝 [UPDATE-COMPANY] Update data: name='{company_data.name}', has_data={bool(company_data.data)}")
+    print(f"✏️ [UPDATE-COMPANY] Incoming PUT /companies/{company_id} for user {user_id}")
+    raw_payload = company_data.model_dump(exclude_unset=False)
+    print(f"📝 [UPDATE-COMPANY] Raw payload: {raw_payload}")
+    print(f"📝 [UPDATE-COMPANY] Update data: name='{company_data.name}', "
+          f"has_data={bool(company_data.data)}")
     if company_data.data:
         print(f"📊 [UPDATE-COMPANY] Data keys: {list(company_data.data.keys())}")
-    
+        data_preview = str(company_data.data)
+        print(f"📄 [UPDATE-COMPANY] Data preview: {data_preview[:200]}")
     db_service = DatabaseService(db)
     result = db_service.update_company(company_id, company_data, user_id)
-    
-    print(f"✅ [UPDATE-COMPANY] Company updated successfully: name='{result.name}'")
-    
+    print(f"✅ [UPDATE-COMPANY] Company updated successfully: name='{result.name}', "
+          f"id={result.id}")
+    updated_keys = list(result.data.keys()) if result.data else 'No data'
+    print(f"📊 [UPDATE-COMPANY] Updated data keys: {updated_keys}")
     return result
 
 
