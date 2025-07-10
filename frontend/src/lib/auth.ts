@@ -1,7 +1,8 @@
 // Authentication utilities and API client updates
 import { useUser, useStackApp } from '@stackframe/react'
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DraftManager } from './draftManager';
 
 export interface UserInfo {
   user_id: string
@@ -44,6 +45,11 @@ export function useAuthState(): AuthState & { loading: boolean } {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const prevAuthState = useRef<AuthState>({
+    isAuthenticated: false,
+    token: null,
+    userInfo: null
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -84,23 +90,28 @@ export function useAuthState(): AuthState & { loading: boolean } {
     updateGlobalAuthState(authState);
   }, [authState.isAuthenticated, authState.token, authState.userInfo]);
 
-  // Clear React Query cache when authentication state changes
+  // Clear React Query cache and localStorage drafts when authentication state changes
   useEffect(() => {
-    const previousAuthState = globalAuthState;
+    const previousAuthState = prevAuthState.current;
     const wasUnauthenticated = !previousAuthState.isAuthenticated;
     const isNowAuthenticated = authState.isAuthenticated;
-    
-    // Clear cache when transitioning from unauthenticated to authenticated
-    if (wasUnauthenticated && isNowAuthenticated) {
-      console.log('Auth state changed: clearing React Query cache on authentication');
+    console.log('[AUTH DEBUG] useEffect fired:', {
+      previousAuthState,
+      currentAuthState: authState,
+      wasUnauthenticated,
+      isNowAuthenticated
+    });
+    if (wasUnauthenticated !== !authState.isAuthenticated) {
+      console.log('[AUTH DEBUG] Auth state changed: clearing cache and drafts', {
+        wasUnauthenticated,
+        isNowAuthenticated,
+        previousState: previousAuthState.isAuthenticated,
+        currentState: authState.isAuthenticated
+      });
+      DraftManager.clearDraftsOnAuthChange(wasUnauthenticated, isNowAuthenticated);
       queryClient.clear();
     }
-    
-    // Also clear cache when signing out (authenticated to unauthenticated)
-    if (previousAuthState.isAuthenticated && !authState.isAuthenticated) {
-      console.log('Auth state changed: clearing React Query cache on sign out');
-      queryClient.clear();
-    }
+    prevAuthState.current = authState;
   }, [authState.isAuthenticated, queryClient]);
 
   return { ...authState, loading };
