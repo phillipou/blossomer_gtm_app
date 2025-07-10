@@ -129,8 +129,8 @@ async def create_campaign(
     - **account_id**: Account ID (must be owned by authenticated user via company)
     - **persona_id**: Persona ID (must belong to the account)
     - **name**: Campaign name (required, max 255 chars)
-    - **campaign_type**: Campaign type (email, linkedin, cold_call, ad)
-    - **campaign_data**: JSON data with subject_line, content, segments, etc.
+    - **type**: Campaign type (email, linkedin, cold_call, ad)
+    - **data**: JSON data with subject_line, content, segments, etc.
     """
     db_service = DatabaseService(db)
     return db_service.create_campaign(

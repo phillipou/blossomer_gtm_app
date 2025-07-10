@@ -76,7 +76,7 @@ class Company(Base):
     url = Column(String(500), nullable=False)
 
     # All analysis data stored as JSONB for flexibility
-    analysis_data = Column(JSONB, nullable=True)
+    data = Column(JSONB, nullable=True)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -107,7 +107,7 @@ class Account(Base):
 
     # All account data stored as JSONB for flexibility
     # Includes: firmographics, buyingSignals, rationale, metadata, etc.
-    account_data = Column(JSONB, nullable=False)
+    data = Column(JSONB, nullable=False)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -141,7 +141,7 @@ class Persona(Base):
 
     # All persona data stored as JSONB for flexibility
     # Includes: demographics, useCases, buyingSignals, objections, goals, etc.
-    persona_data = Column(JSONB, nullable=False)
+    data = Column(JSONB, nullable=False)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -170,13 +170,13 @@ class Campaign(Base):
 
     # Basic campaign information
     name = Column(String(255), nullable=False)
-    campaign_type = Column(
+    type = Column(
         String(50), nullable=False
     )  # flexible: email, linkedin, cold_call, ad
 
     # All campaign data stored as JSONB for flexibility
     # Includes: subject_line, content, segments, alternatives, configuration, etc.
-    campaign_data = Column(JSONB, nullable=False)
+    data = Column(JSONB, nullable=False)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)

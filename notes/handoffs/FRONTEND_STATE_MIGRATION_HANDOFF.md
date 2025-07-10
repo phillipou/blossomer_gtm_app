@@ -110,9 +110,9 @@ const handleFieldChange = (field: string, value: any) => {
 ### Phase 3: Account Entity (Week 3)
 
 #### 3.1 Implement Account Draft Pattern
-- **Update Account generation**: Store in `localStorage['draft_account']`
-- **Update Accounts page**: Show draft accounts in list with visual indicators
-- **Add auto-save**: First edit/timeout triggers POST → subsequent edits trigger PUT
+- **Update Account generation**: Implement immediate auto-save after AI generation
+- **Update Accounts page**: Show draft accounts in list with visual indicators  
+- **Add auto-save**: POST immediately after generation → PUT on subsequent edits
 
 #### 3.2 Account List Integration
 ```typescript
@@ -134,26 +134,26 @@ const allAccounts = [...accounts, ...draftAccounts];
 
 ### Phase 4: Persona Entity (Week 4)
 
-#### 4.1 Create Persona Draft Pattern
-- **Add persona generation**: POST `/api/personas/generate-ai`
-- **Implement draft storage**: `localStorage['draft_personas']`
-- **Add auto-save**: Follow same pattern as accounts
+#### 4.1 Create Persona Draft Pattern  
+- **Persona generation**: POST `/api/personas/generate-ai` already exists
+- **Implement immediate auto-save**: POST to create immediately after generation
+- **Add auto-save**: Follow same immediate save pattern as Company/Accounts
 
 #### 4.2 Persona List Integration
-- Show draft personas in persona list
-- Auto-save on first edit or timeout
+- Show draft personas in persona list with visual indicators
+- Immediate auto-save after generation (no timeout needed)
 - Sync with parent account relationship
 
 ### Phase 5: Email/Campaign Entity (Week 5)
 
 #### 5.1 Create Email Draft Pattern
-- **Add email generation**: POST `/api/campaigns/generate-ai`
-- **Implement draft storage**: `localStorage['draft_emails']`
-- **Add auto-save**: Follow same pattern as other entities
+- **Email generation**: POST `/api/campaigns/generate-ai` already exists  
+- **Implement immediate auto-save**: POST to create immediately after generation
+- **Add auto-save**: Follow same immediate save pattern as other entities
 
 #### 5.2 Campaign View Integration
-- Show draft emails in campaign view
-- Auto-save on first edit or timeout
+- Show draft emails in campaign view with visual indicators
+- Immediate auto-save after generation (no timeout needed)
 - Sync with parent persona relationship
 
 ### Phase 6: Polish & Optimization (Week 6)
@@ -187,12 +187,14 @@ onVisibilityChange: () => autoSave(currentData),
 
 ### Draft State Management
 ```typescript
-// Draft lifecycle
-1. AI Generation → save to localStorage['draft_*']
-2. UI Render → read from draft + show visual indicators
-3. First Edit → POST /api/{entity} → remove draft → add to cache
-4. Subsequent Edits → PUT /api/{entity}/{id} → update cache
-5. Navigation → cleanup unused drafts
+// Updated draft lifecycle - immediate auto-save
+1. AI Generation → Immediate save attempt
+   - If authenticated: POST /api/{entity} → Navigate to saved entity
+   - If unauthenticated: localStorage['draft_*'] → Show draft with save CTA
+   - If save fails: localStorage['draft_*'] → Show retry UI
+2. UI Render → Show saved entity or draft with visual indicators
+3. User Edits → PUT /api/{entity}/{id} → Update cache
+4. Navigation → Cleanup unused drafts (authenticated flow handles this automatically)
 ```
 
 ### Error Handling Strategy
@@ -263,4 +265,25 @@ ConflictError: () => show conflict resolution dialog
 
 ---
 
-**Next Steps**: Begin Phase 1 implementation with core infrastructure setup. Reference this document for implementation order and technical details.
+---
+
+## Current Implementation Status (Updated July 2025)
+
+### ✅ Completed
+- **Company Entity**: Full immediate auto-save pattern implemented (Company.tsx:327-352)
+  - AI generation → immediate POST for authenticated users
+  - localStorage fallback for unauthenticated users
+  - Auto-save on subsequent edits working correctly
+
+### 🔄 Next Priority (Phase 1 Continuation)
+1. **Enhance useAutoSave Hook**: Make more robust and configurable  
+2. **Create DraftManager Utility**: Centralized localStorage management
+3. **Implement Account Immediate Auto-Save**: Apply Company pattern to Accounts
+4. **Add Visual Draft Indicators**: UI to show draft vs saved state
+
+### 📋 Remaining Work
+- **Persona Entity**: Apply immediate auto-save pattern
+- **Campaign Entity**: Apply immediate auto-save pattern  
+- **Polish & UX**: Error handling, loading states, offline support
+
+**Next Steps**: The Company entity proves the immediate auto-save pattern works. Focus on standardizing this pattern across Account, Persona, and Campaign entities using enhanced infrastructure.

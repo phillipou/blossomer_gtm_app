@@ -5,8 +5,8 @@ import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
-import { useGetAccounts, useUpdateAccount, useDeleteAccount, useGenerateAccount } from "../lib/hooks/useAccounts";
-import type { Account, AccountUpdate } from "../types/api";
+import { useGetAccounts, useUpdateAccount, useDeleteAccount, useGenerateAccount, useCreateAccount } from "../lib/hooks/useAccounts";
+import type { Account, AccountUpdate, AccountCreate } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
 import { getEntityColorForParent, getAddCardHoverClasses } from "../lib/entityColors";
@@ -14,9 +14,11 @@ import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
 import { useAuthState } from '../lib/auth';
+import { useAutoSave } from "../lib/hooks/useAutoSave";
+import { DraftManager } from "../lib/draftManager";
 
 interface TargetAccountCardProps {
-  targetAccount: Account;
+  targetAccount: Account & { isDraft?: boolean };
   onEdit: (account: Account) => void;
   onDelete: (id: string) => void;
   companyName: string;
@@ -27,8 +29,11 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
   return (
     <SummaryCard
       title={targetAccount.name}
-      description={targetAccount.accountData?.description as string || ""}
-      parents={[{ name: companyName, color: getEntityColorForParent('company'), label: "Company" }]}
+      description={targetAccount.data?.description as string || ""}
+      parents={[
+        { name: companyName, color: getEntityColorForParent('company'), label: "Company" },
+        ...(targetAccount.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
+      ]}
       onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
       entityType="account"
     >
@@ -60,9 +65,12 @@ export default function TargetAccountsList() {
   console.log("AccountsPage: Rendering");
   const overview = useCompanyOverview();
   const { token } = useAuthState();
+  const navigate = useNavigate();
   const companyId = overview?.companyId || "";
+  
   const { data: accounts, isLoading, error } = useGetAccounts(companyId, token);
-  const { mutate: generateAccount, isPending: isCreating } = useGenerateAccount(companyId, token);
+  const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
+  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
   const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount(companyId, token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId, token);
 
@@ -70,6 +78,36 @@ export default function TargetAccountsList() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [generatedAccountData, setGeneratedAccountData] = useState<any>(null);
+
+  // Get draft accounts and combine with saved accounts
+  const draftAccounts = DraftManager.getDraftsByParent('account', companyId);
+  const allAccounts = [
+    ...(accounts || []),
+    ...draftAccounts.map(draft => ({
+      ...draft.data,
+      id: draft.tempId,
+      isDraft: true,
+    }))
+  ];
+
+  // Auto-save hook for generated accounts
+  const autoSave = useAutoSave({
+    entity: 'account',
+    data: generatedAccountData,
+    createMutation: createAccount,
+    updateMutation: updateAccount,
+    isAuthenticated: !!token,
+    parentId: companyId,
+    onSaveSuccess: (savedAccount) => {
+      console.log("AccountsPage: Account auto-saved successfully", savedAccount);
+      setGeneratedAccountData(null);
+      navigate(`/target-accounts/${savedAccount.id}`);
+    },
+    onSaveError: (error) => {
+      console.error("AccountsPage: Auto-save failed", error);
+    },
+  });
 
   useEffect(() => {
     console.log("AccountsPage: accounts data changed", accounts);
@@ -105,6 +143,19 @@ export default function TargetAccountsList() {
       accountProfileName: name,
       hypothesis: description,
       companyContext,
+    }, {
+      onSuccess: (generatedData) => {
+        console.log("AccountsPage: Account generated successfully", generatedData);
+        // Convert to AccountCreate format and trigger auto-save
+        const accountToSave: AccountCreate = {
+          name: generatedData.targetAccountName || name,
+          data: generatedData,
+        };
+        setGeneratedAccountData(accountToSave);
+      },
+      onError: (error) => {
+        console.error("AccountsPage: Account generation failed", error);
+      },
     });
     setIsAddModalOpen(false);
   };
@@ -118,14 +169,14 @@ export default function TargetAccountsList() {
   const handleUpdateAccount = async ({ name, description }: { name: string; description: string }) => {
     console.log("AccountsPage: handleUpdateAccount called with", { name, description });
     if (!editingAccount) return;
-    const accountData: AccountUpdate = {
+    const data: AccountUpdate = {
       name,
-      accountData: {
-        ...editingAccount.accountData,
+      data: {
+        ...editingAccount.data,
         description,
       }
     };
-    updateAccount({ accountId: editingAccount.id, accountData });
+    updateAccount({ accountId: editingAccount.id, data });
     setIsAddModalOpen(false);
     setEditingAccount(null);
   };
@@ -135,11 +186,11 @@ export default function TargetAccountsList() {
     deleteAccount(id);
   };
 
-  const filteredAccounts = accounts?.filter(
+  const filteredAccounts = allAccounts?.filter(
     (account) => {
       const matchesSearch =
         account.name.toLowerCase().includes(search.toLowerCase()) ||
-        (account.accountData?.description as string || "").toLowerCase().includes(search.toLowerCase());
+        (account.data?.description as string || "").toLowerCase().includes(search.toLowerCase());
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
     }
@@ -179,7 +230,12 @@ export default function TargetAccountsList() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">All Accounts</h2>
-            <p className="text-sm text-gray-500">{accounts?.length} accounts created</p>
+            <p className="text-sm text-gray-500">
+              {allAccounts?.length} accounts 
+              {draftAccounts.length > 0 && (
+                <span className="text-orange-600"> ({draftAccounts.length} draft{draftAccounts.length !== 1 ? 's' : ''})</span>
+              )}
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -260,8 +316,8 @@ export default function TargetAccountsList() {
         submitLabel={editingAccount ? "Update" : <><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
         cancelLabel="Cancel"
         defaultName={editingAccount ? editingAccount.name : ""}
-        defaultDescription={editingAccount ? editingAccount.accountData?.description as string || "" : ""}
-        isLoading={isCreating || isUpdating}
+        defaultDescription={editingAccount ? editingAccount.data?.description as string || "" : ""}
+        isLoading={isGenerating || isCreating || isUpdating || autoSave.isSaving}
       />
     </div>
   );

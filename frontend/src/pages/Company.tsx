@@ -16,6 +16,8 @@ import { Edit3, Trash2, Building2, Wand2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
 import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
 import { useAuthState } from "../lib/auth";
+import { useAutoSave } from "../lib/hooks/useAutoSave";
+import { DraftManager } from "../lib/draftManager";
 import ListInfoCardEditModal, { type ListInfoCardItem } from '../components/cards/ListInfoCardEditModal';
 import InputModal from '../components/modals/InputModal';
 import { isApiError } from "../lib/utils";
@@ -136,7 +138,7 @@ export default function Company() {
   const { mutate: createCompany, isPending: isCreatingCompany } = useCreateCompany(token);
   const { isLoading: isLoadingCompanies } = useGetCompanies(token);
 
-  const [draftOverview, setDraftOverview] = useState<CompanyOverviewResponse | null>(null);
+  const [generatedCompanyData, setGeneratedCompanyData] = useState<any>(null);
 
   const [progressStage, setProgressStage] = useState(() => {
     console.log("Company: Initializing progressStage state");
@@ -158,6 +160,28 @@ export default function Company() {
   const [isGenerationModalOpen, setIsGenerationModalOpen] = useState(false);
   const [companyUrlInput, setCompanyUrlInput] = useState("");
   const [companyContextInput, setCompanyContextInput] = useState("");
+
+  // Get draft company and combine with existing overview
+  const draftCompanies = DraftManager.getDrafts('company');
+  const draftOverview = draftCompanies.length > 0 ? draftCompanies[0].data : null;
+
+  // Auto-save hook for generated companies
+  const autoSave = useAutoSave({
+    entity: 'company',
+    data: generatedCompanyData,
+    createMutation: createCompany,
+    updateMutation: updateCompany,
+    isAuthenticated: !!token,
+    entityId: companyId,
+    onSaveSuccess: (savedCompany) => {
+      console.log("Company: Company auto-saved successfully", savedCompany);
+      setGeneratedCompanyData(null);
+      navigate(`/app/company/${savedCompany.id}`, { replace: true });
+    },
+    onSaveError: (error) => {
+      console.error("Company: Auto-save failed", error);
+    },
+  });
 
   // Debug modal state
   useEffect(() => {
@@ -246,11 +270,11 @@ export default function Company() {
         updatedOverview.icpHypothesis = { targetAccountHypothesis, targetPersonaHypothesis };
     }
     
-    const { companyId, ...analysis_data } = updatedOverview;
+    const { companyId, ...data } = updatedOverview;
 
     updateCompany({
       companyId: companyId,
-      analysis_data: analysis_data,
+      data: data,
     });
 
     setIsEditDialogOpen(false);
@@ -308,49 +332,29 @@ export default function Company() {
       { websiteUrl: name, userInputtedContext: description },
       {
         onSuccess: (response) => {
-          const draft = { ...response, companyUrl: name, companyName: response.companyName || new URL(name).hostname };
-          if (token) {
-            setDraftOverview(draft);
-          } else {
-            localStorage.setItem('company_overview', JSON.stringify(draft));
-            setDraftOverview(draft);
-          }
+          console.log("Company: Company generated successfully", response);
+          const companyData = { 
+            ...response, 
+            companyUrl: name, 
+            companyName: response.companyName || new URL(name).hostname 
+          };
+          
+          // Convert to CompanyCreate format and trigger auto-save
+          const { companyId: _, ...analysisData } = companyData;
+          const companyToSave = {
+            name: companyData.companyName,
+            url: companyData.companyUrl,
+            data: analysisData,
+          };
+          setGeneratedCompanyData(companyToSave);
           setIsGenerationModalOpen(false);
         },
         onError: (err) => {
-          console.error('Error generating company overview:', err);
+          console.error('Company: Company generation failed:', err);
         },
       }
     );
-  }, [analyzeCompany, token, navigate]);
-
-  useEffect(() => {
-    // This effect handles auto-saving a draft for authenticated users.
-    if (draftOverview && token && !companyId && !isCreatingCompany) {
-      // It's a new company that hasn't been saved yet.
-      const { companyId: _, ...analysisData } = draftOverview;
-      
-      const companyToCreate = {
-        name: draftOverview.companyName,
-        url: draftOverview.companyUrl,
-        analysis_data: analysisData,
-      };
-
-      createCompany(companyToCreate, {
-        onSuccess: (savedCompany) => {
-          setDraftOverview(null); // Clear the draft
-          // Invalidate companies list to refetch
-          queryClient.invalidateQueries({ queryKey: ['companies'] });
-          navigate(`/app/company/${savedCompany.id}`, { replace: true });
-        },
-        onError: (error) => {
-          console.error("Failed to auto-save company draft:", error);
-          // Optional: Display an error to the user
-        }
-      });
-    }
-  }, [draftOverview, token, companyId, createCompany, isCreatingCompany, queryClient, navigate]);
-
+  }, [analyzeCompany]);
 
   // Show loading while checking for companies (authenticated users on /company)
   if (token && !companyId && isLoadingCompanies) {
@@ -381,7 +385,7 @@ export default function Company() {
 
   const displayOverview = overview || draftOverview;
 
-  // Handle authenticated users with no companies
+  // Handle authenticated users with no companies  
   const showNoCompanies = token && !companyId && companies && companies.length === 0 && !draftOverview;
   // Handle unauthenticated users with no localStorage data
   const showNoOverview = !displayOverview;
@@ -431,7 +435,7 @@ export default function Company() {
         <div className="flex flex-col h-full">
           <PageHeader
             title="Your Company"
-            subtitle="Company analysis and insights"
+            subtitle={draftOverview && !overview ? "Company analysis and insights (Draft - not yet saved)" : "Company analysis and insights"}
           />
           {activeTab === "company" && (
             <div className="flex-1 p-8 space-y-8">
@@ -524,9 +528,9 @@ export default function Company() {
         descriptionPlaceholder="e.g., We're a B2B SaaS company focused on marketing automation for small businesses..."
         showDescription={true}
         descriptionRequired={false}
-        submitLabel={isAnalyzing ? (<><Wand2 className="w-4 h-4 mr-2" />Analyzing...</>) : (<><Wand2 className="w-4 h-4 mr-2" />Generate Overview</>)}
+        submitLabel={isAnalyzing || autoSave.isSaving ? (<><Wand2 className="w-4 h-4 mr-2" />Analyzing...</>) : (<><Wand2 className="w-4 h-4 mr-2" />Generate Overview</>)}
         cancelLabel="Cancel"
-        isLoading={isAnalyzing}
+        isLoading={isAnalyzing || autoSave.isSaving}
         error={typeof analyzeError === 'object' && analyzeError && 'message' in analyzeError ? (analyzeError as any).message : undefined}
       />
     </>

@@ -140,19 +140,19 @@ export interface Account {
   id: string;
   companyId: string;
   name: string;
-  accountData: Record<string, any>;
+  data: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AccountCreate {
   name: string;
-  accountData: Record<string, any>;
+  data: Record<string, any>;
 }
 
 export interface AccountUpdate {
   name?: string;
-  accountData?: Record<string, any>;
+  data?: Record<string, any>;
 }
 
 export interface CompanyResponse {
@@ -160,7 +160,7 @@ export interface CompanyResponse {
   user_id: string;
   name: string;
   url: string;
-  analysis_data: {
+  data: {
     description?: string;
     business_profile?: BusinessProfile;
     capabilities?: string[];
@@ -178,32 +178,55 @@ export interface CompanyUpdate {
   companyId: string;
   name?: string;
   url?: string;
-  analysis_data?: any;
+  data?: any;
 }
 
 export interface CompanyCreate {
   name: string;
   url: string;
-  analysis_data: any;
+  data: any;
 }
 
 export interface Persona {
   id: string;
   accountId: string;
   name: string;
-  personaData: Record<string, any>;
+  data: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PersonaCreate {
     name: string;
-    personaData: Record<string, any>;
+    data: Record<string, any>;
 }
 
 export interface PersonaUpdate {
     name?: string;
-    personaData?: Record<string, any>;
+    data?: Record<string, any>;
+}
+
+export interface Campaign {
+  id: string;
+  accountId: string;
+  personaId: string;
+  name: string;
+  type: string;
+  data: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CampaignCreate {
+  name: string;
+  type: string;
+  data: Record<string, any>;
+}
+
+export interface CampaignUpdate {
+  name?: string;
+  type?: string;
+  data?: Record<string, any>;
 }
 
 

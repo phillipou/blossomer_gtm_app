@@ -537,7 +537,7 @@ class CompanyBase(BaseModel):
     """Base company schema."""
     name: str = Field(..., max_length=255)
     url: str = Field(..., max_length=500)
-    analysis_data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None
 
 class CompanyCreate(CompanyBase):
     """Schema for creating a new company."""
@@ -547,7 +547,7 @@ class CompanyCreate(CompanyBase):
             "example": {
                 "name": "TechFlow Solutions",
                 "url": "https://techflowsolutions.com",
-                "analysis_data": {
+                "data": {
                     "description": "AI-powered workflow automation platform for software teams",
                     "business_profile": {
                         "category": "B2B SaaS workflow automation",
@@ -572,13 +572,13 @@ class CompanyUpdate(BaseModel):
     """Schema for updating company information."""
     name: Optional[str] = Field(None, max_length=255)
     url: Optional[str] = Field(None, max_length=500)
-    analysis_data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None
     
     class Config:
         json_schema_extra = {
             "example": {
                 "name": "TechFlow Solutions (Updated)",
-                "analysis_data": {
+                "data": {
                     "description": "Updated: AI-powered workflow automation platform for software teams",
                     "last_updated": "2024-Q4"
                 }
@@ -598,7 +598,7 @@ class CompanyResponse(CompanyBase):
 class AccountBase(BaseModel):
     """Base account schema."""
     name: str = Field(..., max_length=255)
-    account_data: Dict[str, Any] = Field(..., description="Account data including firmographics, buying signals, rationale, metadata")
+    data: Dict[str, Any] = Field(..., description="Account data including firmographics, buying signals, rationale, metadata")
 
 class AccountCreate(AccountBase):
     """Schema for creating a new account."""
@@ -607,7 +607,7 @@ class AccountCreate(AccountBase):
         json_schema_extra = {
             "example": {
                 "name": "Mid-market SaaS Companies",
-                "account_data": {
+                "data": {
                     "firmographics": {
                         "industry": ["Software", "SaaS", "Technology"],
                         "employees": "50-500",
@@ -644,7 +644,7 @@ class AccountCreate(AccountBase):
 class AccountUpdate(BaseModel):
     """Schema for updating account information."""
     name: Optional[str] = Field(None, max_length=255)
-    account_data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None
 
 class AccountResponse(AccountBase):
     """Schema for account responses."""
@@ -659,7 +659,7 @@ class AccountResponse(AccountBase):
 class PersonaBase(BaseModel):
     """Base persona schema."""
     name: str = Field(..., max_length=255)
-    persona_data: Dict[str, Any] = Field(..., description="Persona data including demographics, use cases, buying signals, objections, goals")
+    data: Dict[str, Any] = Field(..., description="Persona data including demographics, use cases, buying signals, objections, goals")
 
 class PersonaCreate(PersonaBase):
     """Schema for creating a new persona."""
@@ -668,7 +668,7 @@ class PersonaCreate(PersonaBase):
         json_schema_extra = {
             "example": {
                 "name": "VP of Engineering",
-                "persona_data": {
+                "data": {
                     "demographics": {
                         "job_titles": ["VP Engineering", "Head of Engineering", "Engineering Director"],
                         "departments": ["Engineering", "Technology"],
@@ -708,7 +708,7 @@ class PersonaCreate(PersonaBase):
 class PersonaUpdate(BaseModel):
     """Schema for updating persona information."""
     name: Optional[str] = Field(None, max_length=255)
-    persona_data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None
 
 class PersonaResponse(PersonaBase):
     """Schema for persona responses."""
@@ -723,8 +723,8 @@ class PersonaResponse(PersonaBase):
 class CampaignBase(BaseModel):
     """Base campaign schema."""
     name: str = Field(..., max_length=255)
-    campaign_type: str = Field(..., max_length=50, description="Campaign type: email, linkedin, cold_call, ad")
-    campaign_data: Dict[str, Any] = Field(..., description="Campaign data including subject_line, content, segments, alternatives, configuration")
+    type: str = Field(..., max_length=50, description="Campaign type: email, linkedin, cold_call, ad")
+    data: Dict[str, Any] = Field(..., description="Campaign data including subject_line, content, segments, alternatives, configuration")
 
 class CampaignCreate(CampaignBase):
     """Schema for creating a new campaign."""
@@ -733,8 +733,8 @@ class CampaignCreate(CampaignBase):
         json_schema_extra = {
             "example": {
                 "name": "Q4 VP Engineering Outreach",
-                "campaign_type": "email",
-                "campaign_data": {
+                "type": "email",
+                "data": {
                     "subject_line": "Quick question about your development workflow",
                     "content": "Hi {{name}}, I noticed {{company}} has been growing rapidly...",
                     "segments": [
@@ -781,8 +781,8 @@ class CampaignCreate(CampaignBase):
 class CampaignUpdate(BaseModel):
     """Schema for updating campaign information."""
     name: Optional[str] = Field(None, max_length=255)
-    campaign_type: Optional[str] = Field(None, max_length=50)
-    campaign_data: Optional[Dict[str, Any]] = None
+    type: Optional[str] = Field(None, max_length=50)
+    data: Optional[Dict[str, Any]] = None
 
 class CampaignResponse(CampaignBase):
     """Schema for campaign responses."""

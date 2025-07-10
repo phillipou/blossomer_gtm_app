@@ -65,7 +65,7 @@ class DatabaseService:
         db_company = Company(
             name=company_data.name,
             url=company_data.url,
-            analysis_data=company_data.analysis_data,
+            data=company_data.data,
             user_id=user_id,
         )
         self.db.add(db_company)
@@ -144,14 +144,14 @@ class DatabaseService:
         self.db.commit()
 
     def create_account(
-        self, account_data: AccountCreate, company_id: UUID, user_id: str
+        self, data: AccountCreate, company_id: UUID, user_id: str
     ) -> Account:
         """
         Creates a new account for a company.
         """
         # First, ensure the user has access to the parent company
         self.get_company(company_id, user_id)
-        db_account = Account(**account_data.model_dump(), company_id=company_id)
+        db_account = Account(**data.model_dump(), company_id=company_id)
         self.db.add(db_account)
         self.db.commit()
         self.db.refresh(db_account)
@@ -197,13 +197,13 @@ class DatabaseService:
         return account
 
     def update_account(
-        self, account_id: UUID, account_data: AccountUpdate, user_id: str
+        self, account_id: UUID, data: AccountUpdate, user_id: str
     ) -> Account:
         """
         Updates an account's information.
         """
         account = self.get_account(account_id, user_id)  # Enforce ownership
-        update_data = account_data.model_dump(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(account, key, value)
         self.db.commit()
@@ -219,14 +219,14 @@ class DatabaseService:
         self.db.commit()
 
     def create_persona(
-        self, persona_data: PersonaCreate, account_id: UUID, user_id: str
+        self, data: PersonaCreate, account_id: UUID, user_id: str
     ) -> Persona:
         """
         Creates a new persona for an account.
         """
         # Ensure user has access to the parent account
         self.get_account(account_id, user_id)
-        db_persona = Persona(**persona_data.model_dump(), account_id=account_id)
+        db_persona = Persona(**data.model_dump(), account_id=account_id)
         self.db.add(db_persona)
         self.db.commit()
         self.db.refresh(db_persona)
@@ -273,13 +273,13 @@ class DatabaseService:
         return persona
 
     def update_persona(
-        self, persona_id: UUID, persona_data: PersonaUpdate, user_id: str
+        self, persona_id: UUID, data: PersonaUpdate, user_id: str
     ) -> Persona:
         """
         Updates a persona's information.
         """
         persona = self.get_persona(persona_id, user_id)  # Enforce ownership
-        update_data = persona_data.model_dump(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(persona, key, value)
         self.db.commit()
@@ -296,7 +296,7 @@ class DatabaseService:
 
     def create_campaign(
         self,
-        campaign_data: CampaignCreate,
+        data: CampaignCreate,
         account_id: UUID,
         persona_id: UUID,
         user_id: str,
@@ -307,7 +307,7 @@ class DatabaseService:
         # Ensure user has access to the parent persona
         self.get_persona(persona_id, user_id)
         db_campaign = Campaign(
-            **campaign_data.model_dump(),
+            **data.model_dump(),
             account_id=account_id,
             persona_id=persona_id,
         )
@@ -350,13 +350,13 @@ class DatabaseService:
         return campaign
 
     def update_campaign(
-        self, campaign_id: UUID, campaign_data: CampaignUpdate, user_id: str
+        self, campaign_id: UUID, data: CampaignUpdate, user_id: str
     ) -> Campaign:
         """
         Updates a campaign's information.
         """
         campaign = self.get_campaign(campaign_id, user_id)  # Enforce ownership
-        update_data = campaign_data.model_dump(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(campaign, key, value)
         self.db.commit()
