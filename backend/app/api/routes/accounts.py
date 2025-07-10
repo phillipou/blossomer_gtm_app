@@ -35,7 +35,15 @@ async def prod_generate_target_account(
     """
     AI-generate a target account profile for authenticated users (Stack Auth JWT required).
     """
-    return await run_service(generate_target_account_profile, data)
+    print(f"🏢 [AI-GEN] Generating account profile for user {user.get('sub')}")
+    print(f"🎯 [AI-GEN] Account profile name: {data.account_profile_name}")
+    print(f"💡 [AI-GEN] Hypothesis: {data.hypothesis[:100] if data.hypothesis else 'None'}...")
+    
+    result = await run_service(generate_target_account_profile, data)
+    
+    print(f"✅ [AI-GEN] Account profile generated successfully")
+    print(f"📊 [AI-GEN] Generated account name: {getattr(result, 'target_account_name', 'Unknown')}")
+    return result
 
 
 # CRUD Operations for Account Management
@@ -51,8 +59,14 @@ async def create_account(
     """
     Create a new account for a company.
     """
+    print(f"🏢 [AUTO-SAVE] Creating account for user {user['sub']}, company {company_id}")
+    print(f"📊 [AUTO-SAVE] Account data: name='{account_data.name}'")
+    
     db_service = DatabaseService(db)
-    return db_service.create_account(account_data, company_id, user["sub"])
+    result = db_service.create_account(account_data, company_id, user["sub"])
+    
+    print(f"✅ [AUTO-SAVE] Account created successfully: id={result.id}")
+    return result
 
 @router.get("/accounts", response_model=List[AccountResponse])
 async def get_accounts(

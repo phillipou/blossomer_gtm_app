@@ -100,10 +100,15 @@ async def create_company(
             detail="User ID not found in JWT token.",
         )
 
-    print(f"Attempting to create company for user_id: {user_id}")
-    print(f"Company data: {company_data.name}")
+    print(f"🏢 [AUTO-SAVE] Creating company for user {user_id}")
+    print(f"📊 [AUTO-SAVE] Company data: name='{company_data.name}', url='{company_data.url}'")
+    print(f"📄 [AUTO-SAVE] Company data keys: {list(company_data.data.keys()) if company_data.data else 'No data'}")
+    
     db_service = DatabaseService(db)
-    return db_service.create_company(company_data, user_id)
+    result = db_service.create_company(company_data, user_id)
+    
+    print(f"✅ [AUTO-SAVE] Company created successfully: id={result.id}")
+    return result
 
 
 @router.get("", response_model=List[CompanyResponse])
@@ -205,7 +210,15 @@ async def prod_generate_product_overview(
     """
     AI-generate a company overview for authenticated users (Stack Auth JWT required).
     """
+    print(f"🤖 [AI-GEN] Generating company overview for user {user.get('sub')}")
+    print(f"🌐 [AI-GEN] Website URL: {data.website_url}")
+    print(f"💡 [AI-GEN] User context: {data.user_inputted_context[:100] if data.user_inputted_context else 'None'}...")
+    
     orchestrator = ContextOrchestrator()
-    return await run_service(
+    result = await run_service(
         generate_product_overview_service, data, orchestrator=orchestrator
     )
+    
+    print(f"✅ [AI-GEN] Company overview generated successfully")
+    print(f"📊 [AI-GEN] Generated company name: {getattr(result, 'company_name', 'Unknown')}")
+    return result

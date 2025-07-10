@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { UseMutationResult } from '@tanstack/react-query';
-import { DraftManager, EntityType } from '../draftManager';
+import type { UseMutationResult } from '@tanstack/react-query';
+import { DraftManager } from '../draftManager';
+import type { EntityType } from '../entityColors';
 
 export interface UseAutoSaveOptions<T, CreateInput, UpdateInput> {
   entity: EntityType;
