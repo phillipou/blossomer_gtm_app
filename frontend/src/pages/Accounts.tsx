@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
@@ -27,6 +27,10 @@ interface TargetAccountCardProps {
 
 function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: TargetAccountCardProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAuthenticated = location.pathname.startsWith('/app');
+  const prefix = isAuthenticated ? '/app' : '/playground';
+  
   return (
     <SummaryCard
       title={getAccountName(targetAccount)}
@@ -35,7 +39,7 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
         { name: companyName, color: getEntityColorForParent('company'), label: "Company" },
         ...(targetAccount.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
       ]}
-      onClick={() => navigate(`/target-accounts/${targetAccount.id}`)}
+      onClick={() => navigate(`${prefix}/accounts/${targetAccount.id}`)}
       entityType="account"
     >
       <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEdit(targetAccount); }} className="text-blue-600">
@@ -105,7 +109,8 @@ export default function TargetAccountsList() {
     onSaveSuccess: (savedAccount) => {
       console.log("AccountsPage: Account auto-saved successfully", savedAccount);
       setGeneratedAccountData(null);
-      navigate(`/target-accounts/${savedAccount.id}`);
+      const prefix = token ? '/app' : '/playground';
+      navigate(`${prefix}/accounts/${savedAccount.id}`);
     },
     onSaveError: (error) => {
       console.error("AccountsPage: Auto-save failed", error);
