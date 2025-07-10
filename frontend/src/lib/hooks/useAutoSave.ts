@@ -46,36 +46,49 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
 
   // Immediate save function
   const saveImmediately = useCallback(() => {
-    if (!data) return;
+    if (!data) {
+      console.log(`❌ useAutoSave (${entity}): saveImmediately called but no data`);
+      return;
+    }
+
+    console.log(`💾 useAutoSave (${entity}): saveImmediately called`, { data, isExistingEntity, tempId });
 
     if (isExistingEntity) {
       // Update existing entity
+      console.log(`🔄 useAutoSave (${entity}): Updating existing entity`);
       updateMutation.mutate(data as UpdateInput, {
         onSuccess: (savedEntity) => {
+          console.log(`✅ useAutoSave (${entity}): Update successful`, savedEntity);
           setSaveError(null);
           onSaveSuccess?.(savedEntity);
         },
         onError: (error) => {
+          console.log(`❌ useAutoSave (${entity}): Update failed`, error);
           setSaveError(error);
           onSaveError?.(error);
         },
       });
     } else {
       // Create new entity
+      console.log(`🆕 useAutoSave (${entity}): Creating new entity`);
       createMutation.mutate(data as CreateInput, {
         onSuccess: (savedEntity) => {
+          console.log(`✅ useAutoSave (${entity}): Create successful`, savedEntity);
           setSaveError(null);
           // Clean up draft on successful save
           if (tempId) {
+            console.log(`🧹 useAutoSave (${entity}): Cleaning up draft with tempId: ${tempId}`);
             DraftManager.removeDraft(entity, tempId);
             setTempId(undefined);
           }
           onSaveSuccess?.(savedEntity);
         },
         onError: (error) => {
+          console.log(`❌ useAutoSave (${entity}): Create failed`, error);
           setSaveError(error);
           // Save to draft on failure
           if (!tempId && data) {
+            console.log(`📝 useAutoSave (${entity}): Saving to draft due to create failure`);
             const newTempId = DraftManager.saveDraft(entity, data, parentId);
             setTempId(newTempId);
           }
