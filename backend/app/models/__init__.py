@@ -134,9 +134,7 @@ class Persona(Base):
     __tablename__ = "personas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    account_id = Column(
-        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
-    )
+    account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
 
     # Basic persona information
     name = Column(String(255), nullable=False)
@@ -167,12 +165,8 @@ class Campaign(Base):
     __tablename__ = "campaigns"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    account_id = Column(
-        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
-    )
-    persona_id = Column(
-        UUID(as_uuid=True), ForeignKey("personas.id"), nullable=False
-    )
+    account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey("personas.id"), nullable=False)
 
     # Basic campaign information
     name = Column(String(255), nullable=False)
