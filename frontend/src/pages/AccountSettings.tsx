@@ -3,6 +3,7 @@ import { useUser } from '@stackframe/react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { apiFetch } from '../lib/apiClient';
 
 const AccountSettings: React.FC = () => {
   const user = useUser();
@@ -27,11 +28,21 @@ const AccountSettings: React.FC = () => {
     
     if (confirmed) {
       try {
+        // First delete from our Neon database
+        const { accessToken } = await user.getAuthJson();
+        await apiFetch('/neon-auth/user', { method: 'DELETE' }, accessToken);
+
+        // Then delete from Stack Auth
         await user.delete();
         navigate('/');
       } catch (error) {
         console.error('Account deletion failed:', error);
-        alert('Failed to delete account. Please try again or contact support.');
+        console.error('Error details:', {
+          message: error?.message,
+          errorCode: error?.errorCode,
+          rateLimitInfo: error?.rateLimitInfo
+        });
+        alert(`Failed to delete account: ${error?.message || 'Unknown error'}. Please try again or contact support.`);
       }
     }
   };

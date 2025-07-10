@@ -37,8 +37,7 @@ class User(Base):
 
     Attributes:
         id: Stack Auth user ID as primary key
-        email: User email (optional, can be synced from Stack Auth)
-        name: User name (optional, can be synced from Stack Auth)
+        role: User role (user, admin, super_admin)
         created_at: Account creation timestamp
         last_login: Last login timestamp
         companies: One-to-many relationship with Company
@@ -49,8 +48,6 @@ class User(Base):
     id = Column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )  # Stack Auth user ID
-    email = Column(String(255), unique=True, nullable=True)
-    name = Column(String(255), nullable=True)
     role = Column(String(20), default=UserRole.USER.value)  # user, admin, super_admin
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime)

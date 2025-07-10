@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional, List, Annotated
 from datetime import datetime
 from jose import jwt, JWTError
@@ -18,15 +18,11 @@ router = APIRouter()
 # Request/Response Models for Neon Auth Integration
 class NeonAuthUserRequest(BaseModel):
     neon_auth_user_id: str
-    email: EmailStr
-    name: Optional[str] = None
 
 
 class UserProfileResponse(BaseModel):
     user_id: str
     neon_auth_user_id: str
-    email: Optional[str] = None
-    name: Optional[str] = None
     role: str
     created_at: datetime
     last_login: Optional[datetime] = None
@@ -90,12 +86,10 @@ async def validate_stack_auth_token(
         print(
             f"validate_stack_auth_token: Token is valid. Payload sub: {payload.get('sub')}"
         )
-        # Extract user info from payload (customize as needed)
+
+        # Extract user info from payload
         return {
             "user_id": payload.get("sub"),
-            "email": payload.get("email"),
-            "name": payload.get("name"),
-            # Add more fields as needed
         }
     except JWTError as e:
         print(f"validate_stack_auth_token: Invalid Stack Auth token. Error: {e}")
@@ -125,8 +119,6 @@ async def sync_neon_auth_user(
 
     user = User(
         neon_auth_user_id=request.neon_auth_user_id,
-        email=request.email,
-        name=request.name,
     )
     db.add(user)
     db.commit()
@@ -169,8 +161,6 @@ async def get_user_profile(
         # Create user if they don't exist
         user = User(
             id=user_uuid,
-            email=neon_auth_user["email"],
-            name=neon_auth_user.get("name"),
             role="user",  # Explicitly set the default role
         )
         try:
@@ -193,12 +183,81 @@ async def get_user_profile(
         neon_auth_user_id=str(
             user.id
         ),  # Use the same ID since it's the Stack Auth user ID
-        email=user.email,
-        name=user.name,
         role=user.role,
         created_at=user.created_at,
         last_login=user.last_login,
     )
+
+
+@router.delete("/user")
+async def delete_user(
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete user from Neon database.
+    This should be called when a user is deleted from Stack Auth.
+    All related data (companies, accounts, personas, campaigns) will be cascade deleted.
+    """
+    user_id = neon_auth_user.get("user_id")
+    print(f"Attempting to delete user with ID: {user_id}")
+
+    # Convert string user_id to UUID for database operations
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError as e:
+        print(f"Invalid UUID format for user_id: {user_id}. Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user ID format"
+        )
+
+    user = db.query(User).filter(User.id == user_uuid).first()
+
+    if not user:
+        print(f"User not found for user_id: {user_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found in database"
+        )
+
+    try:
+        # Delete user - cascade will handle related data
+        db.delete(user)
+        db.commit()
+        print(f"Successfully deleted user with ID: {user_id}")
+
+        # Clear the JWKS cache to prevent any cached authentication issues
+        get_jwks.cache_clear()
+        print("JWKS cache cleared")
+
+        return {
+            "message": "User successfully deleted from database",
+            "user_id": user_id,
+        }
+    except Exception as e:
+        print(f"Failed to delete user for user_id: {user_id}. Error: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user from database",
+        )
+
+
+@router.post("/logout")
+async def logout(
+    neon_auth_user: dict = Depends(validate_stack_auth_token),
+):
+    """
+    Handle user logout by clearing server-side caches.
+    The actual JWT invalidation should be handled by Stack Auth on the client side.
+    """
+    user_id = neon_auth_user.get("user_id")
+    print(f"User {user_id} logging out, clearing caches")
+
+    # Clear the JWKS cache to ensure fresh key validation
+    get_jwks.cache_clear()
+    print("JWKS cache cleared for logout")
+
+    return {"message": "Logout successful, caches cleared", "user_id": user_id}
 
 
 # API key management is no longer supported - authentication is now handled via Stack Auth JWT tokens
