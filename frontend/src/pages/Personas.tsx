@@ -95,15 +95,15 @@ export default function TargetPersonas() {
 
   const handleSavePersona = async ({ name, description }: { name: string; description: string }) => {
     if (!editingPersona) return;
-    const personaData: PersonaUpdate = {
+    const data: PersonaUpdate = {
       name: editingPersona.name,
-      personaData: {
-        ...editingPersona.personaData,
+      data: {
+        ...editingPersona.data,
         targetPersonaName: editingPersona.name,
         targetPersonaDescription: description,
       }
     };
-    updatePersonaMutation.mutate({ personaId: editingPersona.id, personaData });
+    updatePersonaMutation.mutate({ personaId: editingPersona.id, data });
     setEditModalOpen(false);
     setEditingPersona(null);
   };
@@ -120,7 +120,7 @@ export default function TargetPersonas() {
   const filteredPersonas = allPersonasWithDrafts?.filter((persona) => {
     const matchesSearch =
       persona.name?.toLowerCase().includes(search.toLowerCase()) ||
-      (persona.personaData?.targetPersonaDescription as string || "").toLowerCase().includes(search.toLowerCase());
+      (persona.data?.targetPersonaDescription as string || "").toLowerCase().includes(search.toLowerCase());
     if (filterBy === "all") return matchesSearch;
     return matchesSearch;
   });
@@ -197,7 +197,7 @@ export default function TargetPersonas() {
                   <SummaryCard
                     key={`${persona.accountId}-${persona.id}`}
                     title={persona.name}
-                    description={persona.personaData?.targetPersonaDescription as string || ""}
+                    description={persona.data?.targetPersonaDescription as string || ""}
                     parents={[
                       { name: accounts?.find(a => a.id === persona.accountId)?.name || 'Account', color: getEntityColorForParent('account'), label: "Account" },
                       { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
@@ -264,7 +264,7 @@ export default function TargetPersonas() {
         submitLabel={updatePersonaMutation.isPending ? "Saving..." : "Update"}
         cancelLabel="Cancel"
         defaultName={editingPersona?.name || ""}
-        defaultDescription={editingPersona?.personaData?.targetPersonaDescription as string || ""}
+        defaultDescription={editingPersona?.data?.targetPersonaDescription as string || ""}
         isLoading={updatePersonaMutation.isPending}
       />
 
@@ -286,7 +286,7 @@ export default function TargetPersonas() {
             icp_hypothesis: JSON.stringify(overview.icpHypothesis) || '',
           };
 
-          const targetAccountContext = selectedAccount.accountData;
+          const targetAccountContext = selectedAccount.data;
 
           setSelectedAccountId(accountId);
           generatePersona({ 
@@ -300,8 +300,8 @@ export default function TargetPersonas() {
               console.log("PersonasPage: Persona generated successfully", generatedData);
               // Convert to PersonaCreate format and trigger auto-save
               const personaToSave: PersonaCreate = {
-                name: (generatedData.personaData?.targetPersonaName || name) as string,
-                personaData: generatedData,
+                name: (generatedData.data?.targetPersonaName || name) as string,
+                data: generatedData,
               };
               setGeneratedPersonaData(personaToSave);
             },
