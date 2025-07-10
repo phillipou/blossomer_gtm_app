@@ -12,28 +12,37 @@ This document outlines the implementation plan for the draft/auto-save pattern a
 
 ### ✅ Already Implemented
 - **TanStack Query Setup**: Fully configured with QueryClient and DevTools
-- **Company Entity**: Draft generation on LandingPage → navigate to Company page → displays from location.state
+- **Company Entity**: Complete draft/auto-save pattern implemented
+  - AI generation → immediate auto-save attempt for authenticated users
+  - localStorage fallback for unauthenticated users  
+  - Auto-save on edits with proper TanStack Query integration
 - **Authentication**: Stack Auth JWT integration with proper token management
 - **API Infrastructure**: All CRUD endpoints exist for Company, Account, Persona, Campaign entities
+- **Basic Auto-Save Hook**: Simple `useAutoSave` hook exists but needs enhancement
 
 ### ⚠️ Partially Implemented
-- **Account Entity**: Has `/generate-ai` endpoint but no draft pattern
-- **Company Auto-Save**: Missing auto-save on first edit (still shows from location.state)
-- **TanStack Query Hooks**: Basic hooks exist but need auto-save integration
+- **Account Entity**: Has `/generate-ai` endpoint but no immediate auto-save pattern
+- **TanStack Query Hooks**: All CRUD hooks exist with cache invalidation but need auto-save integration
 
 ### ❌ Not Implemented
-- **Persona Entity**: No draft/auto-save pattern
-- **Email/Campaign Entity**: No draft/auto-save pattern  
-- **Auto-Save Hooks**: No generic `useAutoSave` hook
-- **Draft Management**: No localStorage draft management system
+- **Persona Entity**: No immediate auto-save pattern after generation
+- **Email/Campaign Entity**: No immediate auto-save pattern after generation  
+- **Enhanced Auto-Save Hook**: Current hook too basic for the target pattern
+- **Draft Management Utility**: No centralized DraftManager class
+- **Visual Draft Indicators**: No UI to distinguish draft vs saved states
 
 ## Target Pattern (Sequence Diagram)
 
 ```
-User Interaction → AI Generation → Draft Storage → Auto-Save Trigger → Backend Persistence
-     ↓                 ↓              ↓                ↓                    ↓
-1. Click "Generate" → POST /api/{entity}/generate-ai → localStorage['draft_*'] → UI renders
-2. User edits field → debounce 500ms → POST /api/{entity} → TanStack Query cache
+User Interaction → AI Generation → Immediate Auto-Save → Success/Fallback Flow
+     ↓                 ↓                    ↓                    ↓
+1. Click "Generate" → POST /api/{entity}/generate-ai → Draft storage + immediate save attempt
+   ↓
+   If authenticated: → POST /api/{entity}/create → Navigate to saved entity
+   If unauthenticated: → localStorage['draft_*'] → Show draft with save CTA
+   If save fails: → localStorage['draft_*'] → Show retry UI
+   
+2. User edits field → debounce 500ms → PUT /api/{entity}/{id} → TanStack Query cache
 3. Subsequent edits → debounce 500ms → PUT /api/{entity}/{id} → TanStack Query cache
 ```
 
@@ -77,10 +86,10 @@ export class DraftManager {
 
 ### Phase 2: Company Entity (Week 2)
 
-#### 2.1 Implement Company Draft Pattern
-- **Update LandingPage**: Store result in `localStorage['draft_company']`
-- **Update Company page**: Read from draft first, then from query cache
-- **Add auto-save**: First edit triggers POST → subsequent edits trigger PUT
+#### 2.1 Implement Company Draft Pattern ✅ COMPLETED
+- **LandingPage**: AI generation working correctly
+- **Company page**: Immediate auto-save implemented for authenticated users
+- **Auto-save**: POST on generation → PUT on subsequent edits working
 
 #### 2.2 Company Auto-Save Integration
 ```typescript
