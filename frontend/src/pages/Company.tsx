@@ -339,6 +339,11 @@ export default function Company() {
     navigate('/target-accounts');
   };
 
+  const handleOverviewButtonClick = () => {
+    // Handle the main Edit button click - could navigate somewhere or open a different modal
+    console.log('Edit button clicked');
+  };
+
   const handleGenerateCompany = useCallback(({ name, description }: { name: string; description: string }) => {
     console.log("Company: handleGenerateCompany called with:", { websiteUrl: name, userInputtedContext: description });
     analyzeCompany(
@@ -391,6 +396,51 @@ export default function Company() {
   }
 
   const displayOverview = overview || draftOverview;
+
+  const handleOverviewEdit = (values: { name: string; description: string }) => {
+    const updatedName = values.name;
+    const updatedDescription = values.description;
+    
+    if (token && companyId) {
+      // Authenticated user - update backend
+      // Backend expects: name field for company name, data.description for description
+      updateCompany({
+        companyId,
+        data: {
+          name: updatedName,
+          data: {
+            description: updatedDescription,
+          },
+        },
+      });
+    } else {
+      // Unauthenticated user - update draft
+      const currentDraft = draftCompanies.find(draft => draft.tempId);
+      if (currentDraft) {
+        const updatedDraft = {
+          ...currentDraft,
+          data: {
+            ...currentDraft.data,
+            companyName: updatedName,
+            description: updatedDescription,
+          },
+        };
+        
+        // Update localStorage with the same tempId
+        const draftKey = `draft_company_${currentDraft.tempId}`;
+        localStorage.setItem(draftKey, JSON.stringify(updatedDraft));
+        
+        // Update the query cache to reflect the change
+        queryClient.setQueryData(['company', companyId], (prevData: any) => {
+          return {
+            ...prevData,
+            companyName: updatedName,
+            description: updatedDescription,
+          };
+        });
+      }
+    }
+  };
 
   // Handle authenticated users with no companies  
   const showNoCompanies = token && !companyId && companies && companies.length === 0 && !draftOverview;
@@ -451,7 +501,10 @@ export default function Company() {
                 subtitle={domain}
                 bodyTitle="Company Overview"
                 bodyText={displayOverview?.description || "No description available"}
-                showButton={false}
+                showButton={true}
+                buttonTitle={"Edit"}
+                onButtonClick={handleOverviewButtonClick}
+                onEdit={handleOverviewEdit}
                 entityType="company"
               />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

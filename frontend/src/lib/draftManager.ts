@@ -155,6 +155,29 @@ export class DraftManager {
     console.log('DraftManager: Cleared all drafts');
   }
 
+  /**
+   * Handle draft cleanup during authentication state changes
+   * Called when users transition between unauthenticated/authenticated states
+   */
+  static clearDraftsOnAuthChange(wasUnauthenticated: boolean, isNowAuthenticated: boolean): void {
+    // Clear playground drafts when user authenticates
+    if (wasUnauthenticated && isNowAuthenticated) {
+      console.log('DraftManager: User authenticated - clearing all playground drafts to prevent contamination');
+      this.clearAllDrafts();
+      return;
+    }
+    
+    // Clear authenticated drafts when user signs out
+    if (!wasUnauthenticated && !isNowAuthenticated) {
+      console.log('DraftManager: User signed out - clearing all authenticated drafts');
+      this.clearAllDrafts();
+      return;
+    }
+    
+    // No action needed for other transitions
+    console.log('DraftManager: No draft clearing needed for this auth state change');
+  }
+
 
   /**
    * Private methods for managing the draft list

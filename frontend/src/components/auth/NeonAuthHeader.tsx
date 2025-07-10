@@ -1,14 +1,17 @@
 import React, { useState } from 'react'
 import { useStackApp, useUser } from '@stackframe/react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '../ui/button'
 import { User, LogOut, Settings } from 'lucide-react'
 import { APIKeyModal } from './APIKeyModal'
+import { DraftManager } from '../../lib/draftManager'
 
 export function NeonAuthHeader() {
   const app = useStackApp()
   const user = useUser()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
 
   const handleSignIn = () => {
@@ -20,6 +23,12 @@ export function NeonAuthHeader() {
   }
 
   const handleSignOut = async () => {
+    console.log('NeonAuthHeader: Signing out user - clearing drafts and cache')
+    
+    // Clear localStorage drafts and React Query cache before signing out
+    DraftManager.clearAllDrafts()
+    queryClient.clear()
+    
     await app.signOut()
   }
 

@@ -55,12 +55,12 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
   const prefix = token ? '/app' : '/playground';
   if (location.pathname.startsWith(`${prefix}/company`)) {
     activeTab = "company";
-  } else if (new RegExp(`^${prefix}/target-accounts/[^/]+/personas/`).test(location.pathname)) {
+  } else if (location.pathname.startsWith(`${prefix}/personas/`) && location.pathname.split('/').length > 4) {
     activeTab = "personas";
-  } else if (location.pathname.startsWith(`${prefix}/target-accounts`)) {
+  } else if (location.pathname.startsWith(`${prefix}/personas`)) {
     activeTab = "accounts";
-  } else if (location.pathname.startsWith(`${prefix}/target-personas`)) {
-    activeTab = "personas";
+  } else if (location.pathname.startsWith(`${prefix}/personas-list`)) {
+    activeTab = "personas-list";
   } else if (location.pathname.startsWith(`${prefix}/campaigns`)) {
     activeTab = "campaigns";
   }
@@ -77,20 +77,20 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       key: "accounts",
       label: "Accounts",
       icon: <Users className="w-5 h-5" />,
-      onClick: () => navigate(`${prefix}/target-accounts`),
+      onClick: () => navigate(`${prefix}/personas`),
       entityType: "account" as EntityType,
     },
     {
-      key: "personas",
+      key: "personas-list",
       label: "Personas",
-      icon: <UserCheck className="w-5 h-5" />,
-      onClick: () => navigate(`${prefix}/target-personas`),
+      icon: <Users className="w-5 h-5" />,
+      onClick: () => navigate(`${prefix}/personas-list`),
       entityType: "persona" as EntityType,
     },
     {
       key: "campaigns",
       label: "Campaigns",
-      icon: <TrendingUp className="w-5 h-5" />,
+      icon: <Users className="w-5 h-5" />,
       onClick: () => navigate(`${prefix}/campaigns`),
       entityType: "campaign" as EntityType,
     },

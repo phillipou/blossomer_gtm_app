@@ -1,17 +1,26 @@
 import React from 'react';
 import { useUser } from '@stackframe/react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { apiFetch } from '../lib/apiClient';
+import { DraftManager } from '../lib/draftManager';
 
 const AccountSettings: React.FC = () => {
   const user = useUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleSignOut = async () => {
     if (!user) return;
     try {
+      console.log('AccountSettings: Signing out user - clearing drafts and cache');
+      
+      // Clear localStorage drafts and React Query cache before signing out
+      DraftManager.clearAllDrafts();
+      queryClient.clear();
+      
       await user.signOut();
       navigate('/');
     } catch (error) {
@@ -28,6 +37,12 @@ const AccountSettings: React.FC = () => {
     
     if (confirmed) {
       try {
+        console.log('AccountSettings: Deleting account - clearing drafts and cache');
+        
+        // Clear localStorage drafts and React Query cache before account deletion
+        DraftManager.clearAllDrafts();
+        queryClient.clear();
+        
         // First delete from our Neon database
         const { accessToken } = await user.getAuthJson();
         await apiFetch('/neon-auth/user', { method: 'DELETE' }, accessToken);

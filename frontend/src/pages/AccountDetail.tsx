@@ -23,16 +23,16 @@ import { useAuthState } from '../lib/auth';
 
 export default function AccountDetail() {
   console.log("AccountDetail: Rendering");
-  const { id: accountId } = useParams<{ accountId: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { token } = useAuthState();
   const overview = useCompanyOverview();
 
-  const { data: account, isLoading, error } = useGetAccount(accountId!, token);
-  const { mutate: updateAccount } = useUpdateAccount(accountId!, token);
-  const { data: personas, isLoading: personasLoading, error: personasError } = useGetPersonas(accountId!, token);
-  const { mutate: createPersona } = useCreatePersona(accountId!, token);
-  const { mutate: deletePersona } = useDeletePersona(accountId!, "", token);
+  const { data: account, isLoading, error } = useGetAccount(id!, token);
+  const { mutate: updateAccount } = useUpdateAccount(id!, token);
+  const { data: personas, isLoading: personasLoading, error: personasError } = useGetPersonas(id!, token);
+  const { mutate: createPersona } = useCreatePersona(id!, token);
+  const { mutate: deletePersona } = useDeletePersona(id!, "", token);
 
   const [localAccount, setLocalAccount] = useState<Account | null>(null);
 
@@ -64,7 +64,8 @@ export default function AccountDetail() {
 
   const handlePersonaClick = (personaId: string) => {
     console.log("AccountDetail: handlePersonaClick called with personaId", personaId);
-    navigate(`/target-accounts/${accountId}/personas/${personaId}`);
+    const prefix = token ? '/app' : '/playground';
+    navigate(`${prefix}/personas/${id}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: Persona) => {
@@ -78,24 +79,21 @@ export default function AccountDetail() {
   };
 
   const handleEditRationale = (newItems: string[]) => {
-    console.log("AccountDetail: handleEditRationale called with newItems", newItems);
-    setLocalAccount(prev => prev ? { ...prev, rationale: newItems } : prev);
+    setLocalAccount(prev => prev ? { ...prev, data: { ...prev.data, rationale: newItems } } : prev);
   };
 
   const handleEditBuyingSignalsRationale = (newItems: string[]) => {
-    console.log("AccountDetail: handleEditBuyingSignalsRationale called with newItems", newItems);
-    setLocalAccount(prev => prev ? { ...prev, buyingSignalsRationale: newItems } : prev);
+    setLocalAccount(prev => prev ? { ...prev, data: { ...prev.data, buyingSignalsRationale: newItems } } : prev);
   };
 
   useEffect(() => {
-    console.log("AccountDetail: localAccount changed for derived states");
     if (localAccount) {
-      const firmographicsData = Array.isArray(localAccount.firmographics)
-        ? localAccount.firmographics as FirmographicRow[]
-        : (localAccount.firmographics ? transformFirmographicsToTable(localAccount.firmographics as unknown as Record<string, string | string[]>) : []);
+      const firmographicsData = localAccount.data && localAccount.data.firmographics
+        ? transformFirmographicsToTable(localAccount.data.firmographics)
+        : [];
       setFirmographics(firmographicsData);
-      setBuyingSignals(transformBuyingSignalsToCards(localAccount.buyingSignals || []));
-      setRationale(localAccount.rationale);
+      setBuyingSignals(transformBuyingSignalsToCards(localAccount.data?.buyingSignals || []));
+      setRationale(localAccount.data?.rationale || []);
     }
   }, [localAccount]);
 
@@ -142,13 +140,12 @@ export default function AccountDetail() {
       <div className="flex-1 p-8 space-y-8">
         <OverviewCard
           title={localAccount?.name}
-          bodyText={localAccount?.description}
+          bodyText={localAccount?.data?.description}
           showButton={false}
           onEdit={({ name, description }) => {
-            console.log("AccountDetail: OverviewCard onEdit called with", { name, description });
             setLocalAccount((prev) => {
               if (!prev) return null;
-              return { ...prev, name, description };
+              return { ...prev, name, data: { ...prev.data, description } };
             });
           }}
         />
@@ -172,7 +169,7 @@ export default function AccountDetail() {
           <div className="flex-1">
             <ListInfoCard
               title={"Why they're a good fit"}
-              items={rationale}
+              items={localAccount?.data?.rationale || []}
               onEdit={handleEditRationale}
               renderItem={(item: string, idx: number) => (
                 <span key={idx} className="text-sm text-gray-700">{item}</span>
@@ -216,7 +213,7 @@ export default function AccountDetail() {
         </Card>
         <ListInfoCard
           title={"Buying Signals Rationale"}
-          items={localAccount.buyingSignalsRationale || []}
+          items={localAccount?.data?.buyingSignalsRationale || []}
           onEdit={handleEditBuyingSignalsRationale}
           renderItem={(item: string, idx: number) => (
             <span key={idx} className="text-sm text-gray-700">{item}</span>
@@ -230,7 +227,7 @@ export default function AccountDetail() {
               <SummaryCard
                 key={persona.id}
                 title={persona.name}
-                description={persona.description}
+                description={persona.data?.targetPersonaDescription}
                 parents={[
                   { name: overview?.companyName || "", color: "bg-green-400", label: "Company" },
                   { name: localAccount?.name || "Account", color: "bg-red-400", label: "Account" },
@@ -277,7 +274,7 @@ export default function AccountDetail() {
                 { id: String(Date.now()), label, description, priority, enabled: true },
               ];
             }
-            setLocalAccount(prev => prev ? { ...prev, buyingSignals: updatedSignals } : prev);
+            setLocalAccount(prev => prev ? { ...prev, data: { ...prev.data, buyingSignals: updatedSignals } } : prev);
             return updatedSignals;
           });
         }}
@@ -291,7 +288,7 @@ export default function AccountDetail() {
         initialRows={firmographics}
         onSave={(rows) => {
           console.log("AccountDetail: EditCriteriaModal onSave called with rows", rows);
-          setLocalAccount(prev => prev ? { ...prev, firmographics: rows } : prev);
+          setLocalAccount(prev => prev ? { ...prev, data: { ...prev.data, firmographics: rows } } : prev);
         }}
         title="Edit Firmographics"
       />
@@ -305,7 +302,7 @@ export default function AccountDetail() {
         }}
         onSubmit={async ({ name, description }) => {
           console.log("AccountDetail: InputModal (Persona) onSubmit called with", { name, description });
-          createPersona({ name, description });
+          createPersona({ name, data: { targetPersonaDescription: description } });
           setPersonaModalOpen(false);
         }}
         title={"Describe a Persona"}
@@ -318,7 +315,7 @@ export default function AccountDetail() {
         cancelLabel="Cancel"
         isLoading={personaLoading}
         defaultName={editingPersona ? editingPersona.name : ""}
-        defaultDescription={editingPersona ? editingPersona.description : ""}
+        defaultDescription={editingPersona ? editingPersona.data?.targetPersonaDescription : ""}
         error={personaError || undefined}
       />
     </div>
