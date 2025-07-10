@@ -16,6 +16,7 @@ import { Search, Filter } from "lucide-react";
 import { useAuthState } from '../lib/auth';
 import { useAutoSave } from "../lib/hooks/useAutoSave";
 import { DraftManager } from "../lib/draftManager";
+import { getAccountName, getAccountDescription } from "../lib/entityDisplayUtils";
 
 interface TargetAccountCardProps {
   targetAccount: Account & { isDraft?: boolean };
@@ -28,8 +29,8 @@ function TargetAccountCard({ targetAccount, onEdit, onDelete, companyName }: Tar
   const navigate = useNavigate();
   return (
     <SummaryCard
-      title={targetAccount.name}
-      description={targetAccount.data?.description as string || ""}
+      title={getAccountName(targetAccount)}
+      description={getAccountDescription(targetAccount)}
       parents={[
         { name: companyName, color: getEntityColorForParent('company'), label: "Company" },
         ...(targetAccount.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
@@ -70,8 +71,10 @@ export default function TargetAccountsList() {
   
   const { data: accounts, isLoading, error } = useGetAccounts(companyId, token);
   const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
-  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
-  const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount(companyId, token);
+  const createAccountMutation = useCreateAccount(companyId, token);
+  const { mutate: createAccount, isPending: isCreating } = createAccountMutation;
+  const updateAccountMutation = useUpdateAccount(companyId, token);
+  const { mutate: updateAccount, isPending: isUpdating } = updateAccountMutation;
   const { mutate: deleteAccount } = useDeleteAccount(companyId, token);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -95,8 +98,8 @@ export default function TargetAccountsList() {
   const autoSave = useAutoSave({
     entity: 'account',
     data: generatedAccountData,
-    createMutation: createAccount,
-    updateMutation: updateAccount,
+    createMutation: createAccountMutation,
+    updateMutation: updateAccountMutation,
     isAuthenticated: !!token,
     parentId: companyId,
     onSaveSuccess: (savedAccount) => {
@@ -189,8 +192,8 @@ export default function TargetAccountsList() {
   const filteredAccounts = allAccounts?.filter(
     (account) => {
       const matchesSearch =
-        account.name.toLowerCase().includes(search.toLowerCase()) ||
-        (account.data?.description as string || "").toLowerCase().includes(search.toLowerCase());
+        getAccountName(account).toLowerCase().includes(search.toLowerCase()) ||
+        getAccountDescription(account).toLowerCase().includes(search.toLowerCase());
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
     }

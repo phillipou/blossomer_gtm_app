@@ -70,8 +70,8 @@ export default function LandingPage() {
       // Import the analyzeCompany function and make the API call here
       const { analyzeCompany } = await import("../lib/companyService");
       const result = await analyzeCompany(url, icp);
-      console.log("LandingPage: API call successful, navigating to /company with result");
-      navigate("/company", { state: { apiResponse: result } });
+      console.log("LandingPage: API call successful, navigating to /playground/company with result");
+      navigate("/playground/company", { state: { apiResponse: result } });
     } catch (error) {
       console.error("LandingPage: API call failed:", error);
       setError("Failed to analyze company. Please try again.");

@@ -7,7 +7,7 @@ import {
   deletePersona,
   generatePersona,
 } from '../personaService';
-import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest } from '../../types/api';
+import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest, TargetPersonaResponse } from '../../types/api';
 
 const PERSONA_QUERY_KEY = 'personas';
 
@@ -29,7 +29,7 @@ export function useGetPersona(personaId: string, token?: string | null) {
 
 export function useCreatePersona(accountId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Persona, Error, PersonaCreate>({
+  return useMutation<Persona, Error, TargetPersonaResponse>({
     mutationFn: (personaData) => createPersona(accountId, personaData, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });
@@ -60,7 +60,7 @@ export function useDeletePersona(accountId: string, token?: string | null) {
 
 export function useGeneratePersona(accountId: string, token?: string | null) {
     const queryClient = useQueryClient();
-    return useMutation<Persona, Error, TargetPersonaRequest>({
+    return useMutation<TargetPersonaResponse, Error, TargetPersonaRequest>({
         mutationFn: (personaData) => generatePersona(accountId, personaData, token),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });

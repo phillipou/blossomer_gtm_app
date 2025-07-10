@@ -7,7 +7,7 @@ import { useGetPersonas, useUpdatePersona, useDeletePersona, useGeneratePersona,
 import { useGetAccounts } from "../lib/hooks/useAccounts";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
-import type { Persona, PersonaUpdate, PersonaCreate } from "../types/api";
+import type { Persona, PersonaUpdate, TargetPersonaResponse } from "../types/api";
 import { getEntityColorForParent } from "../lib/entityColors";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
@@ -18,6 +18,7 @@ import { Search, Filter } from "lucide-react";
 import { useAuthState } from '../lib/auth';
 import { useAutoSave } from "../lib/hooks/useAutoSave";
 import { DraftManager } from "../lib/draftManager";
+import { getPersonaName, getPersonaDescription } from "../lib/entityDisplayUtils";
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function TargetPersonas() {
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [generatedPersonaData, setGeneratedPersonaData] = useState<any>(null);
+  const [generatedPersonaData, setGeneratedPersonaData] = useState<TargetPersonaResponse | null>(null);
 
   // Get draft personas for all accounts
   const allDraftPersonas = accounts?.flatMap(account => 
@@ -119,8 +120,8 @@ export default function TargetPersonas() {
 
   const filteredPersonas = allPersonasWithDrafts?.filter((persona) => {
     const matchesSearch =
-      persona.name?.toLowerCase().includes(search.toLowerCase()) ||
-      (persona.data?.targetPersonaDescription as string || "").toLowerCase().includes(search.toLowerCase());
+      getPersonaName(persona).toLowerCase().includes(search.toLowerCase()) ||
+      getPersonaDescription(persona).toLowerCase().includes(search.toLowerCase());
     if (filterBy === "all") return matchesSearch;
     return matchesSearch;
   });
@@ -196,8 +197,8 @@ export default function TargetPersonas() {
                 {filteredPersonas.map((persona) => (
                   <SummaryCard
                     key={`${persona.accountId}-${persona.id}`}
-                    title={persona.name}
-                    description={persona.data?.targetPersonaDescription as string || ""}
+                    title={getPersonaName(persona)}
+                    description={getPersonaDescription(persona)}
                     parents={[
                       { name: accounts?.find(a => a.id === persona.accountId)?.name || 'Account', color: getEntityColorForParent('account'), label: "Account" },
                       { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
@@ -298,12 +299,8 @@ export default function TargetPersonas() {
           }, {
             onSuccess: (generatedData) => {
               console.log("PersonasPage: Persona generated successfully", generatedData);
-              // Convert to PersonaCreate format and trigger auto-save
-              const personaToSave: PersonaCreate = {
-                name: (generatedData.data?.targetPersonaName || name) as string,
-                data: generatedData,
-              };
-              setGeneratedPersonaData(personaToSave);
+              // Use AI response format consistently
+              setGeneratedPersonaData(generatedData);
             },
             onError: (error) => {
               console.error("PersonasPage: Persona generation failed", error);

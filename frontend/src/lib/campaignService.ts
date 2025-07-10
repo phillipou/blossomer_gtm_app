@@ -13,10 +13,22 @@ export async function getCampaign(campaignId: string, token?: string | null): Pr
   return apiFetch<Campaign>(`/campaigns/${campaignId}`, { method: 'GET' }, token);
 }
 
-export async function createCampaign(campaignData: CampaignCreate, token?: string | null): Promise<Campaign> {
+// Helper to transform AI response format to backend CRUD format
+function transformToCreateFormat(aiResponse: GeneratedEmail): CampaignCreate {
+  return {
+    name: aiResponse.subject,
+    type: 'email',
+    data: aiResponse,
+  };
+}
+
+export async function createCampaign(campaignData: GeneratedEmail, token?: string | null): Promise<Campaign> {
+  // Transform AI format to backend CRUD format
+  const createData = transformToCreateFormat(campaignData);
+  
   return apiFetch<Campaign>('/campaigns', {
     method: 'POST',
-    body: JSON.stringify(campaignData),
+    body: JSON.stringify(createData),
   }, token);
 }
 

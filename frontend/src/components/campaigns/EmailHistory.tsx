@@ -4,14 +4,15 @@ import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Clock, Search, Filter, Pencil, Trash } from "lucide-react"
 import SummaryCard from "../cards/SummaryCard"
-import type { GeneratedEmail } from "../../types/api"
+import type { GeneratedEmail, Campaign } from "../../types/api"
 import { getEntityColorForParent } from "../../lib/entityColors"
+import { getCampaignSubject, getCampaignBody, getCampaignTimestamp, getCampaignParents } from "../../lib/entityDisplayUtils"
 
 interface EmailHistoryProps {
-  emails: GeneratedEmail[]
-  onSelectEmail: (email: GeneratedEmail) => void
-  onEditEmail: (email: GeneratedEmail) => void
-  onDeleteEmail: (email: GeneratedEmail) => void
+  emails: (Campaign & { isDraft?: boolean })[] | GeneratedEmail[]
+  onSelectEmail: (email: Campaign | GeneratedEmail) => void
+  onEditEmail: (email: Campaign | GeneratedEmail) => void
+  onDeleteEmail: (email: Campaign | GeneratedEmail) => void
   extraItem?: React.ReactNode;
 }
 
@@ -21,8 +22,8 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
 
   const filteredEmails = emails.filter((email) => {
     const matchesSearch =
-      email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      email.body.toLowerCase().includes(searchTerm.toLowerCase())
+      getCampaignSubject(email).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getCampaignBody(email).toLowerCase().includes(searchTerm.toLowerCase())
 
     if (filterBy === "all") return matchesSearch
     return matchesSearch
@@ -75,26 +76,16 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
       {/* Email Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
         {filteredEmails.map((email) => {
-          // Prefer snapshot fields for parent info, fallback to config, then placeholders
-          let parents = [];
-          if (email.companySnapshot?.companyName) parents.push({ name: email.companySnapshot.companyName, color: getEntityColorForParent('company'), label: "Company" });
-          else if (email.config?.companyName) parents.push({ name: email.config.companyName, color: getEntityColorForParent('company'), label: "Company" });
-          else parents.push({ name: "Demo Company", color: getEntityColorForParent('company'), label: "Company" });
-
-          if (email.accountSnapshot?.targetAccountName) parents.push({ name: email.accountSnapshot.targetAccountName, color: getEntityColorForParent('account'), label: "Account" });
-          else if (email.config?.accountName) parents.push({ name: email.config.accountName, color: getEntityColorForParent('account'), label: "Account" });
-          else parents.push({ name: "Demo Account", color: getEntityColorForParent('account'), label: "Account" });
-
-          if (email.personaSnapshot?.targetPersonaName) parents.push({ name: email.personaSnapshot.targetPersonaName, color: getEntityColorForParent('persona'), label: "Persona" });
-          else if (email.config?.personaName) parents.push({ name: email.config.personaName, color: getEntityColorForParent('persona'), label: "Persona" });
-          else parents.push({ name: "Demo Persona", color: getEntityColorForParent('persona'), label: "Persona" });
-
+          const parents = getCampaignParents(email);
+          const subject = getCampaignSubject(email);
+          const body = getCampaignBody(email);
+          
           return (
             <SummaryCard
               key={email.id}
-              title={email.subject}
-              description={email.body.substring(0, 120) + (email.body.length > 120 ? "..." : "")}
-              parents={parents}
+              title={subject}
+              description={body.substring(0, 120) + (body.length > 120 ? "..." : "")}
+              parents={[...parents, ...(email.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])]}
               onClick={() => onSelectEmail(email)}
               entityType="campaign"
             >

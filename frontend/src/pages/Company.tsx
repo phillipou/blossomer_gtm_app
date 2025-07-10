@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -134,8 +134,10 @@ export default function Company() {
   const queryClient = useQueryClient();
   const { data: overview, isLoading: isGetLoading, error: getError, refetch } = useGetCompany(token, companyId);
   const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token, companyId);
-  const { mutate: updateCompany } = useUpdateCompany(token, companyId);
-  const { mutate: createCompany, isPending: isCreatingCompany } = useCreateCompany(token);
+  const updateCompanyMutation = useUpdateCompany(token, companyId);
+  const { mutate: updateCompany } = updateCompanyMutation;
+  const createCompanyMutation = useCreateCompany(token);
+  const { mutate: createCompany, isPending: isCreatingCompany } = createCompanyMutation;
   const { isLoading: isLoadingCompanies } = useGetCompanies(token);
 
   const [generatedCompanyData, setGeneratedCompanyData] = useState<any>(null);
@@ -160,17 +162,18 @@ export default function Company() {
   const [isGenerationModalOpen, setIsGenerationModalOpen] = useState(false);
   const [companyUrlInput, setCompanyUrlInput] = useState("");
   const [companyContextInput, setCompanyContextInput] = useState("");
+  const apiResponseProcessed = useRef(false);
 
   // Get draft company and combine with existing overview
   const draftCompanies = DraftManager.getDrafts('company');
   const draftOverview = draftCompanies.length > 0 ? draftCompanies[0].data : null;
 
-  // Auto-save hook for generated companies
+  // Auto-save hook for generated companies  
   const autoSave = useAutoSave({
     entity: 'company',
     data: generatedCompanyData,
-    createMutation: createCompany,
-    updateMutation: updateCompany,
+    createMutation: createCompanyMutation,
+    updateMutation: updateCompanyMutation,
     isAuthenticated: !!token,
     entityId: companyId,
     onSaveSuccess: (savedCompany) => {
@@ -202,11 +205,19 @@ export default function Company() {
   useEffect(() => {
     console.log("Company: useEffect for API response. location.state:", location.state);
     const apiResponse = location.state?.apiResponse;
-    if (apiResponse) {
+    if (apiResponse && !apiResponseProcessed.current) {
       console.log("Company: API response found in location.state, setting query data.", apiResponse);
+      apiResponseProcessed.current = true;
       queryClient.setQueryData(['company', companyId], apiResponse);
+      
+      // For unauthenticated users, trigger auto-save logic (which will save to draft)
+      if (!token) {
+        console.log("Company: Unauthenticated user - triggering auto-save for draft creation");
+        // Store the full AI response format for consistent display logic
+        setGeneratedCompanyData(apiResponse);
+      }
     }
-  }, [location.state, queryClient, companyId]);
+  }, [location.state, queryClient, companyId, token]);
 
   useEffect(() => {
     console.log("Company: useEffect for analysis progress. isAnalyzing:", isAnalyzing);
@@ -339,14 +350,8 @@ export default function Company() {
             companyName: response.companyName || new URL(name).hostname 
           };
           
-          // Convert to CompanyCreate format and trigger auto-save
-          const { companyId: _, ...analysisData } = companyData;
-          const companyToSave = {
-            name: companyData.companyName,
-            url: companyData.companyUrl,
-            data: analysisData,
-          };
-          setGeneratedCompanyData(companyToSave);
+          // Use AI response format consistently
+          setGeneratedCompanyData(companyData);
           setIsGenerationModalOpen(false);
         },
         onError: (err) => {

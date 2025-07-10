@@ -29,7 +29,7 @@ export function useGetCampaign(campaignId: string, token?: string | null) {
 
 export function useCreateCampaign(token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Campaign, Error, CampaignCreate>({
+  return useMutation<Campaign, Error, GeneratedEmail>({
     mutationFn: (campaignData) => createCampaign(campaignData, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [CAMPAIGN_QUERY_KEY] });

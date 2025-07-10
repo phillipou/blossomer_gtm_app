@@ -384,6 +384,9 @@ export interface EmailGenerationRequest {
   preferences: EmailPreferences;
 }
 
+// Alias for backward compatibility
+export type GenerateEmailRequest = EmailGenerationRequest;
+
 export interface EmailSubjects {
   primary: string;
   alternatives: string[];

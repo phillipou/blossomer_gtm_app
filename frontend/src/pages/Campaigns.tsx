@@ -7,12 +7,13 @@ import { EmailHistory } from "../components/campaigns/EmailHistory";
 import PageHeader from "../components/navigation/PageHeader";
 import AddCard from "../components/ui/AddCard";
 import InputModal from "../components/modals/InputModal";
-import type { Campaign, EmailConfig, GenerateEmailRequest, CampaignCreate } from "../types/api";
+import type { Campaign, EmailConfig, GenerateEmailRequest, GeneratedEmail } from "../types/api";
 import { useGetCampaigns, useUpdateCampaign, useDeleteCampaign, useGenerateEmail, useCreateCampaign } from "../lib/hooks/useCampaigns";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import { useAuthState } from '../lib/auth';
 import { useAutoSave } from "../lib/hooks/useAutoSave";
 import { DraftManager } from "../lib/draftManager";
+import { getCampaignSubject, getCampaignBody } from "../lib/entityDisplayUtils";
 
 export default function CampaignsPage() {
   const navigate = useNavigate();
@@ -20,10 +21,12 @@ export default function CampaignsPage() {
   const overview = useCompanyOverview();
 
   const { data: campaigns, isLoading, error } = useGetCampaigns(token);
-  const { mutate: updateCampaign, isPending: isSaving } = useUpdateCampaign("", token); // campaignId is set in handleSaveEmailEdit
+  const updateCampaignMutation = useUpdateCampaign("", token); // campaignId is set in handleSaveEmailEdit
+  const { mutate: updateCampaign, isPending: isSaving } = updateCampaignMutation;
   const { mutate: deleteCampaign } = useDeleteCampaign(token);
   const { mutate: generateEmail, isPending: isGenerating } = useGenerateEmail(token);
-  const { mutate: createCampaign, isPending: isCreating } = useCreateCampaign(token);
+  const createCampaignMutation = useCreateCampaign(token);
+  const { mutate: createCampaign, isPending: isCreating } = createCampaignMutation;
 
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardMode, setWizardMode] = useState<"create" | "edit">("create");
@@ -34,7 +37,7 @@ export default function CampaignsPage() {
   const [currentEmailConfig, setCurrentEmailConfig] = useState<EmailConfig | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingEmail, setEditingEmail] = useState<Campaign | null>(null);
-  const [generatedCampaignData, setGeneratedCampaignData] = useState<any>(null);
+  const [generatedCampaignData, setGeneratedCampaignData] = useState<GeneratedEmail | null>(null);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>("");
 
   // Get draft campaigns and combine with saved campaigns
@@ -52,8 +55,8 @@ export default function CampaignsPage() {
   const autoSave = useAutoSave({
     entity: 'campaign',
     data: generatedCampaignData,
-    createMutation: createCampaign,
-    updateMutation: updateCampaign,
+    createMutation: createCampaignMutation,
+    updateMutation: updateCampaignMutation,
     isAuthenticated: !!token,
     parentId: selectedPersonaId,
     onSaveSuccess: (savedCampaign) => {
@@ -93,13 +96,8 @@ export default function CampaignsPage() {
     generateEmail(request, {
       onSuccess: (generatedEmail) => {
         console.log("CampaignsPage: Email generated successfully", generatedEmail);
-        // Convert to CampaignCreate format and trigger auto-save
-        const campaignToSave: CampaignCreate = {
-          subject: generatedEmail.subject,
-          body: generatedEmail.body,
-          // Add other required fields as needed
-        };
-        setGeneratedCampaignData(campaignToSave);
+        // Use AI response format consistently
+        setGeneratedCampaignData(generatedEmail);
         setIsWizardOpen(false);
       },
       onError: (error) => {
@@ -209,8 +207,8 @@ export default function CampaignsPage() {
         descriptionPlaceholder="Enter the email body content..."
         submitLabel={isSaving ? "Saving..." : "Update Email"}
         cancelLabel="Cancel"
-        defaultName={editingEmail?.subject || ""}
-        defaultDescription={editingEmail?.body || ""}
+        defaultName={getCampaignSubject(editingEmail)}
+        defaultDescription={getCampaignBody(editingEmail)}
         isLoading={isSaving}
       />
     </div>

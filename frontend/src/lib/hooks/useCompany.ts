@@ -37,7 +37,7 @@ export function useAnalyzeCompany(token?: string | null, companyId?: string) {
 
 export function useCreateCompany(token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<CompanyResponse, Error, CompanyCreate>({
+  return useMutation<CompanyResponse, Error, CompanyOverviewResponse>({
     mutationFn: (newCompany) => createCompany(newCompany, token),
     onSuccess: (savedCompany) => {
       // When a company is successfully created, invalidate the list of companies

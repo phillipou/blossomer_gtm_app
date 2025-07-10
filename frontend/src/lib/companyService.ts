@@ -69,11 +69,24 @@ export async function analyzeCompany(websiteUrl: string, userInputtedContext?: s
   };
 }
 
-export async function createCompany(companyData: CompanyCreate, token?: string | null): Promise<CompanyResponse> {
+// Helper to transform AI response format to backend CRUD format
+function transformToCreateFormat(aiResponse: CompanyOverviewResponse): CompanyCreate {
+  const { companyId, companyName, companyUrl, ...analysisData } = aiResponse;
+  return {
+    name: companyName,
+    url: companyUrl,
+    data: analysisData,
+  };
+}
+
+export async function createCompany(companyData: CompanyOverviewResponse, token?: string | null): Promise<CompanyResponse> {
+  // Transform AI format to backend CRUD format
+  const createData = transformToCreateFormat(companyData);
+  
   // The backend endpoint is /companies, using POST
   return await apiFetch<CompanyResponse>('/companies', {
     method: 'POST',
-    body: JSON.stringify(companyData),
+    body: JSON.stringify(createData),
     headers: {
       'Content-Type': 'application/json',
     },

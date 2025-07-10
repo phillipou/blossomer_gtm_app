@@ -52,6 +52,11 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
       return;
     }
 
+    if (!isAuthenticated) {
+      console.log(`❌ useAutoSave (${entity}): saveImmediately called but user not authenticated - should only save to draft`);
+      return;
+    }
+
     console.log(`💾 useAutoSave (${entity}): saveImmediately called`, { data, isExistingEntity, tempId });
 
     if (isExistingEntity) {
@@ -103,6 +108,7 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
     tempId,
     parentId,
     isExistingEntity,
+    isAuthenticated,
     createMutation,
     updateMutation,
     onSaveSuccess,
