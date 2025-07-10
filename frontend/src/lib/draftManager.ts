@@ -24,6 +24,8 @@ export class DraftManager {
    * Save a draft entity to localStorage
    */
   static saveDraft(entityType: EntityType, data: any, parentId?: string): string {
+    console.log(`🔄 DraftManager.saveDraft: Saving ${entityType} draft`, { data, parentId });
+    
     const tempId = `temp_${entityType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const draft: DraftEntity = {
@@ -40,7 +42,7 @@ export class DraftManager {
     // Update the draft list for easier tracking
     this.addToDraftList(tempId, entityType);
     
-    console.log(`DraftManager: Saved draft ${entityType} with tempId: ${tempId}`);
+    console.log(`✅ DraftManager: Saved draft ${entityType} with tempId: ${tempId}`, draft);
     return tempId;
   }
 
@@ -94,10 +96,11 @@ export class DraftManager {
    * Remove a specific draft
    */
   static removeDraft(entityType: EntityType, tempId: string): void {
+    console.log(`🗑️ DraftManager.removeDraft: Removing ${entityType} draft with tempId: ${tempId}`);
     const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     localStorage.removeItem(key);
     this.removeFromDraftList(tempId);
-    console.log(`DraftManager: Removed draft ${entityType} with tempId: ${tempId}`);
+    console.log(`✅ DraftManager: Removed draft ${entityType} with tempId: ${tempId}`);
   }
 
   /**

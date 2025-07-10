@@ -110,17 +110,26 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
   useEffect(() => {
     if (!data || initialSaveAttempted.current) return;
     
+    console.log(`🚀 useAutoSave (${entity}): Initial save attempt triggered`, {
+      data,
+      isAuthenticated,
+      isExistingEntity,
+      parentId
+    });
+    
     initialSaveAttempted.current = true;
 
     if (isAuthenticated && !isExistingEntity) {
       // Immediate save for authenticated users with new entities
-      console.log(`useAutoSave: Attempting immediate save for new ${entity}`);
+      console.log(`💾 useAutoSave (${entity}): Attempting immediate save for authenticated user`);
       saveImmediately();
     } else if (!isAuthenticated && !isExistingEntity) {
       // Save to draft for unauthenticated users
-      console.log(`useAutoSave: Saving ${entity} to draft for unauthenticated user`);
+      console.log(`📝 useAutoSave (${entity}): Saving to draft for unauthenticated user`);
       const newTempId = DraftManager.saveDraft(entity, data, parentId);
       setTempId(newTempId);
+    } else {
+      console.log(`⏭️ useAutoSave (${entity}): Skipping save - existing entity or no data`);
     }
   }, [data, isAuthenticated, isExistingEntity, entity, parentId, saveImmediately]);
 
