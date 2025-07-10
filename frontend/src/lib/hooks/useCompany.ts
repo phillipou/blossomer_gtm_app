@@ -29,6 +29,15 @@ export function useGetCompany(token?: string | null, companyId?: string) {
   });
 }
 
+export function useGetUserCompany(token?: string | null) {
+  return useQuery<CompanyOverviewResponse, Error>({
+    queryKey: [COMPANY_QUERY_KEY],
+    queryFn: () => getCompany(token),
+    // Enabled when authenticated (will fetch user's company)
+    enabled: !!token,
+  });
+}
+
 export function useAnalyzeCompany(token?: string | null, companyId?: string) {
   const queryClient = useQueryClient();
   return useMutation<CompanyOverviewResponse, Error, { websiteUrl: string; userInputtedContext?: string }>({

@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
 import InputModal from "../components/modals/InputModal";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
+import { useGetUserCompany } from "../lib/hooks/useCompany";
 import { useGetAccounts, useUpdateAccount, useDeleteAccount, useGenerateAccount, useCreateAccount } from "../lib/hooks/useAccounts";
 import type { Account, AccountUpdate, AccountCreate } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
@@ -68,12 +69,30 @@ function AddAccountCard({ onClick }: { onClick: () => void }) {
 
 export default function TargetAccountsList() {
   console.log("AccountsPage: Rendering");
-  const overview = useCompanyOverview();
   const { token } = useAuthState();
   const navigate = useNavigate();
+  
+  // Try to get company from cache first, then fetch if needed
+  const cachedOverview = useCompanyOverview();
+  const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
+  const overview = cachedOverview || fetchedOverview;
   const companyId = overview?.companyId || "";
   
   const { data: accounts, isLoading, error } = useGetAccounts(companyId, token);
+  
+  // Debug logging
+  console.log("AccountsPage: Debug info", {
+    companyId,
+    token: !!token,
+    isLoading,
+    accounts,
+    error,
+    cachedOverview: !!cachedOverview,
+    fetchedOverview: !!fetchedOverview,
+    overview: !!overview,
+    isCompanyLoading
+  });
+  
   const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
   const createAccountMutation = useCreateAccount(companyId, token);
   const { mutate: createAccount, isPending: isCreating } = createAccountMutation;
@@ -204,18 +223,25 @@ export default function TargetAccountsList() {
     }
   );
 
-  if (isLoading) {
-    console.log("AccountsPage: Loading accounts...");
-    return <div>Loading...</div>;
-  }
-
   if (error) {
     console.error("AccountsPage: Error loading accounts", error);
     return <div>Error: {error.message}</div>;
   }
 
+  // Show loading if we're fetching company data
+  if (isCompanyLoading) {
+    console.log("AccountsPage: Loading company data...");
+    return <div>Loading...</div>;
+  }
+
   if (!overview) {
-    console.log("AccountsPage: Company overview not available.");
+    console.log("AccountsPage: Company overview not available after fetch.");
+    return <div>Loading...</div>;
+  }
+
+  // Show loading if we're fetching accounts data
+  if (isLoading) {
+    console.log("AccountsPage: Loading accounts...");
     return <div>Loading...</div>;
   }
 
@@ -239,7 +265,7 @@ export default function TargetAccountsList() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900">All Accounts</h2>
             <p className="text-sm text-gray-500">
-              {allAccounts?.length} accounts 
+              {allAccounts?.length || 0} accounts 
               {draftAccounts.length > 0 && (
                 <span className="text-orange-600"> ({draftAccounts.length} draft{draftAccounts.length !== 1 ? 's' : ''})</span>
               )}
