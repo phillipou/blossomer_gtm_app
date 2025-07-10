@@ -109,7 +109,13 @@ export function useAuthState(): AuthState & { loading: boolean } {
         currentState: authState.isAuthenticated
       });
       DraftManager.clearDraftsOnAuthChange(wasUnauthenticated, isNowAuthenticated);
+      
+      // Clear all React Query cache to prevent contamination between auth states
       queryClient.clear();
+      
+      // Also explicitly invalidate company queries to force fresh data fetch
+      queryClient.invalidateQueries({ queryKey: ['company'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
     }
     prevAuthState.current = authState;
   }, [authState.isAuthenticated, queryClient]);

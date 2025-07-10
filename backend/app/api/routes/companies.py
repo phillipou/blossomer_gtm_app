@@ -126,8 +126,17 @@ async def get_companies(
     - **skip**: Number of companies to skip (for pagination)
     - **limit**: Maximum number of companies to return (1-1000)
     """
+    user_id = user.get("sub")
+    print(f"📋 [GET-COMPANIES] Fetching companies for user {user_id} (skip={skip}, limit={limit})")
+    
     db_service = DatabaseService(db)
-    return db_service.get_companies(user["sub"], skip=skip, limit=limit)
+    result = db_service.get_companies(user_id, skip=skip, limit=limit)
+    
+    print(f"✅ [GET-COMPANIES] Found {len(result)} companies for user {user_id}")
+    if result:
+        print(f"📊 [GET-COMPANIES] Company names: {[c.name for c in result]}")
+    
+    return result
 
 
 @router.get("/{company_id}", response_model=CompanyResponse)
@@ -141,8 +150,16 @@ async def get_company(
 
     Only returns companies owned by the authenticated user.
     """
+    user_id = user.get("sub")
+    print(f"📋 [GET-COMPANY] Fetching company {company_id} for user {user_id}")
+    
     db_service = DatabaseService(db)
-    return db_service.get_company(company_id, user["sub"])
+    result = db_service.get_company(company_id, user_id)
+    
+    print(f"✅ [GET-COMPANY] Company fetched successfully: name='{result.name}', url='{result.url}'")
+    print(f"📊 [GET-COMPANY] Company data keys: {list(result.data.keys()) if result.data else 'No data'}")
+    
+    return result
 
 
 @router.get("/{company_id}/relations", response_model=CompanyWithRelations)
@@ -174,8 +191,18 @@ async def update_company(
     Only updates companies owned by the authenticated user.
     All fields are optional - only provided fields will be updated.
     """
+    user_id = user.get("sub")
+    print(f"✏️ [UPDATE-COMPANY] Updating company {company_id} for user {user_id}")
+    print(f"📝 [UPDATE-COMPANY] Update data: name='{company_data.name}', has_data={bool(company_data.data)}")
+    if company_data.data:
+        print(f"📊 [UPDATE-COMPANY] Data keys: {list(company_data.data.keys())}")
+    
     db_service = DatabaseService(db)
-    return db_service.update_company(company_id, company_data, user["sub"])
+    result = db_service.update_company(company_id, company_data, user_id)
+    
+    print(f"✅ [UPDATE-COMPANY] Company updated successfully: name='{result.name}'")
+    
+    return result
 
 
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)

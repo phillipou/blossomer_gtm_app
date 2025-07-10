@@ -87,23 +87,61 @@ export async function createCompany(companyData: CompanyOverviewResponse, token?
   }, token);
 }
 
+/**
+ * Merge partial updates with existing company data, preserving all fields
+ */
+function mergeCompanyUpdates(
+  currentOverview: CompanyOverviewResponse,
+  updates: { name?: string; description?: string }
+): CompanyUpdate {
+  // Transform the normalized frontend data back to backend format using existing utilities
+  const frontendData = {
+    description: updates.description || currentOverview.description,
+    companyName: updates.name || currentOverview.companyName,
+    businessProfile: currentOverview.businessProfile,
+    capabilities: currentOverview.capabilities,
+    useCaseAnalysis: currentOverview.useCaseAnalysis,
+    positioning: currentOverview.positioning,
+    objections: currentOverview.objections,
+    icpHypothesis: currentOverview.icpHypothesis,
+    metadata: currentOverview.metadata,
+  };
+
+  // Use existing utility to convert to snake_case for backend
+  const backendData = transformKeysToSnakeCase(frontendData);
+
+  return {
+    companyId: currentOverview.companyId,
+    name: updates.name,
+    data: backendData,
+  };
+}
+
 export async function updateCompany(companyData: CompanyUpdate, token?: string | null): Promise<CompanyOverviewResponse> {
   const response = await apiFetch<CompanyResponse>(`/companies/${companyData.companyId}`, {
     method: 'PUT',
     body: JSON.stringify(companyData),
   }, token);
 
-  return {
-    companyId: response.id,
-    companyName: response.name,
-    companyUrl: response.url,
-    description: response.data?.description || '',
-    businessProfile: response.data?.business_profile,
-    capabilities: response.data?.capabilities || [],
-    useCaseAnalysis: response.data?.use_case_analysis,
-    positioning: response.data?.positioning,
-    objections: response.data?.objections || [],
-    icpHypothesis: response.data?.icp_hypothesis,
-    metadata: response.data?.metadata || {},
-  };
+  return normalizeCompanyResponse(response);
+}
+
+/**
+ * Update company with field preservation - recommended for partial updates
+ */
+export async function updateCompanyPreserveFields(
+  companyId: string,
+  currentOverview: CompanyOverviewResponse,
+  updates: { name?: string; description?: string },
+  token?: string | null
+): Promise<CompanyOverviewResponse> {
+  const mergedUpdate = mergeCompanyUpdates(currentOverview, updates);
+  
+  console.log("Company Service: Updating with preserved fields:", {
+    companyId,
+    updates,
+    preservedFieldCount: Object.keys(mergedUpdate.data || {}).length
+  });
+  
+  return updateCompany(mergedUpdate, token);
 }

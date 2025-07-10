@@ -156,6 +156,50 @@ export class DraftManager {
   }
 
   /**
+   * Update draft entity with field preservation - prevents data loss during partial updates
+   */
+  static updateDraftPreserveFields(
+    entityType: EntityType, 
+    tempId: string, 
+    updates: { name?: string; description?: string; [key: string]: any }
+  ): boolean {
+    console.log(`🔄 DraftManager.updateDraftPreserveFields: Updating ${entityType} draft ${tempId}`, updates);
+    
+    const currentDraft = this.getDraft(entityType, tempId);
+    if (!currentDraft) {
+      console.error(`DraftManager: Cannot update - draft ${tempId} not found`);
+      return false;
+    }
+    
+    // Preserve all existing fields, only update specified ones
+    const preservedData = {
+      ...currentDraft.data, // Preserve all existing analysis data
+      ...updates, // Apply updates
+      // Ensure critical name fields are properly mapped
+      ...(updates.name && { 
+        [`${entityType}Name`]: updates.name,
+        companyName: updates.name, // For backward compatibility
+      }),
+    };
+    
+    const updatedDraft = {
+      ...currentDraft,
+      data: preservedData,
+    };
+    
+    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    localStorage.setItem(key, JSON.stringify(updatedDraft));
+    
+    console.log(`✅ DraftManager: Updated draft ${entityType} with field preservation`, {
+      tempId,
+      preservedFieldCount: Object.keys(preservedData).length,
+      updatedFields: Object.keys(updates)
+    });
+    
+    return true;
+  }
+
+  /**
    * Handle draft cleanup during authentication state changes
    * Called when users transition between unauthenticated/authenticated states
    */

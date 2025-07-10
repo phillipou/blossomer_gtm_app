@@ -45,9 +45,25 @@ export async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
+  // Log the outgoing request
+  console.log(`🚀 API REQUEST: ${transformedOptions.method || 'GET'} ${url}`, {
+    endpoint,
+    basePath,
+    hasAuth: !!authToken,
+    headers: { ...headers, Authorization: authToken ? 'Bearer [REDACTED]' : undefined },
+    body: transformedOptions.body ? JSON.parse(transformedOptions.body as string) : undefined
+  });
+
   const response = await fetch(url, {
     ...transformedOptions,
     headers,
+  });
+
+  // Log the response
+  console.log(`📥 API RESPONSE: ${response.status} ${transformedOptions.method || 'GET'} ${url}`, {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
   });
 
   // Parse rate limit headers
@@ -57,6 +73,15 @@ export async function apiFetch<T>(
   const text = await response.text();
   try {
     const rawData = text ? JSON.parse(text) : {};
+    
+    // Log API responses for debugging (can be removed in production)
+    if (endpoint.includes('/companies')) {
+      console.log(`📋 API Response for ${endpoint}:`, {
+        dataKeys: Object.keys(rawData),
+        dataType: Array.isArray(rawData) ? 'array' : typeof rawData,
+      });
+    }
+    
     // Transform snake_case keys to camelCase
     data = transformKeysToCamelCase<T | ApiError>(rawData);
   } catch {

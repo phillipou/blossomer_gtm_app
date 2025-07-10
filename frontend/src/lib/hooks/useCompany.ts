@@ -4,6 +4,7 @@ import {
   getCompany,
   analyzeCompany,
   updateCompany,
+  updateCompanyPreserveFields,
   createCompany,
   normalizeCompanyResponse,
 } from '../companyService';
@@ -69,6 +70,22 @@ export function useUpdateCompany(token?: string | null, companyId?: string) {
       const normalized = normalizeCompanyResponse(savedCompany as any);
       console.log('[NORMALIZE] (onUpdateSuccess) Normalized company overview:', normalized);
       queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], normalized);
+    },
+  });
+}
+
+export function useUpdateCompanyPreserveFields(token?: string | null, companyId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    CompanyOverviewResponse, 
+    Error, 
+    { currentOverview: CompanyOverviewResponse; updates: { name?: string; description?: string } }
+  >({
+    mutationFn: ({ currentOverview, updates }) => 
+      updateCompanyPreserveFields(companyId!, currentOverview, updates, token),
+    onSuccess: (savedCompany) => {
+      console.log('[PRESERVE-FIELDS] Company updated with field preservation:', savedCompany);
+      queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], savedCompany);
     },
   });
 }

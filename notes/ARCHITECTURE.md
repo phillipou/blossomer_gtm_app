@@ -1,6 +1,6 @@
 # Blossomer GTM API - System Architecture
 
-*Last updated: July 5, 2025*
+*Last updated: July 10, 2025*
 
 ## Overview
 
@@ -15,7 +15,7 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 - **Migrations**: Alembic for schema versioning
 - **AI/LLM**: Multi-provider (OpenAI, Anthropic, Google Generative AI)
 - **Content Processing**: Custom pipeline with LangChain integration
-- **Authentication**: Hybrid Stack Auth (OAuth) + API key system
+- **Authentication**: Stack Auth (OAuth) with JWT validation
 - **Deployment**: Docker containers on Render
 
 ### **Frontend**
@@ -62,7 +62,7 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 │ Context Orchestrator       │  │ Neon PostgreSQL     │
 │ LLM Service (Multi-provider)│  │ SQLAlchemy ORM     │
 │ Content Preprocessing      │  │ Alembic Migrations  │
-│ Website Scraper            │  │ User/API Key Tables │
+│ Website Scraper            │  │ User Data Tables    │
 │ Circuit Breakers           │  │                     │
 └────────────────────────────┘  └─────────────────────┘
                 │
@@ -169,12 +169,10 @@ campaigns (
 
 #### **Data Storage Strategy**
 - **Database-first persistence**: All user data (companies, accounts, personas, campaigns) stored in Neon PostgreSQL
-- **LocalStorage transition**: Currently migrating from localStorage to database with progressive sync strategy
 - **Row-level security**: All data isolated by Stack Auth user ID
 - **JSONB schema**: Flexible storage for AI-generated content using PostgreSQL JSONB
-- **Direct localStorage mapping**: JSONB columns mirror localStorage structure for easy migration
 - **Development caching**: File-based cache for website scrapes (dev_cache/)
-- **Rate limiting**: JWT-based using Stack Auth user ID (no API keys)
+- **Rate limiting**: JWT-based using Stack Auth user ID
 
 ## Frontend Architecture
 
@@ -342,10 +340,11 @@ src/
 - **Email**: Draft → render in campaign view → auto-save on first edit
 
 **Technical Implementation**:
-- **Draft Storage**: `localStorage['draft_company']`, `localStorage['draft_account']`, etc.
+- **Draft Storage**: `localStorage['draft_company_${tempId}']` with unique IDs
 - **Auto-Save Triggers**: Field blur, typing pause (500ms), navigation, timeout (30s)
+- **Auth-Aware Fallbacks**: Never use drafts as fallback for authenticated users
 - **Conflict Resolution**: Last-write-wins with optimistic updates
-- **Error Handling**: Retry logic, fallback to draft state, user notification
+- **Error Handling**: Retry logic, fallback to draft state only for unauthenticated users
 
 ### **Data Flow**
 1. **User Input** → Landing page or generation forms
@@ -356,29 +355,48 @@ src/
 6. **Cache Updates** → TanStack Query invalidation and refetch
 7. **UI Sync** → Components re-render from updated cache
 
-### **Cache Management (PLG Pattern)**
-- **Authentication Boundaries**: React Query cache automatically clears when users transition between unauthenticated (demo) and authenticated (app) modes
-- **Data Isolation**: Prevents playground/localStorage data from contaminating authenticated database views
-- **Standard Practice**: Follows common PLG SaaS patterns (Linear, Notion, Figma) for clean auth transitions
+### **Cache Management & Data Isolation (CRITICAL)**
+
+#### **Authentication-Based Data Separation**
+- **Authenticated Users (`/app/*`)**: ONLY use backend database data via React Query
+- **Unauthenticated Users (`/playground/*`)**: ONLY use localStorage drafts for generation flow
+- **Zero Cross-Contamination**: Authenticated users never see localStorage data, even as fallback
+
+#### **Implementation Pattern**
+```typescript
+// CORRECT: Auth-aware data source selection
+const displayOverview = token ? overview : (overview || draftOverview);
+
+// WRONG: Can show corrupted drafts to authenticated users
+const displayOverview = overview || draftOverview;
+```
+
+#### **Cache Clearing Strategy**
+- **React Query cache clears** on authentication state changes
+- **localStorage drafts clear** when transitioning between auth states
+- **Component state resets** prevent stale data persistence
+- **Standard PLG pattern**: Follows Linear, Notion, Figma for clean auth transitions
 
 ### **Company-Specific Data Flow**
-#### **Authenticated Users**
+
+#### **Authenticated Users (`/app/company/:id`)**
 ```
-1. User navigates to /company → Check auth state and companies
-2. If has companies: Auto-redirect to /company/{last_company_id}
-3. If no companies: Stay on /company (will show empty state)
-4. TanStack Query fetches company data by ID
-5. Component renders with database-backed data
-6. All edits persist to database via API
+1. User navigates → Check auth state and companies
+2. If has companies: Auto-redirect to /app/company/{last_company_id}
+3. If no companies: Show empty state with "Generate" option
+4. React Query fetches company data by ID from database
+5. Component renders ONLY with database-backed data
+6. localStorage drafts NEVER used as fallback (prevents corruption)
+7. All edits persist to database via PUT /api/companies/{id}
 ```
 
-#### **Unauthenticated Users**
+#### **Unauthenticated Users (`/playground/company`)**
 ```
-1. User navigates to /company → Check auth state
-2. Component uses localStorage-only mode
-3. All data reads/writes use localStorage
-4. No API calls for company data (demo endpoints for generation)
-5. If somehow on /company/:id → Auto-redirect to /company
+1. User navigates → Check auth state
+2. Component uses localStorage-only mode for drafts
+3. Generation creates localStorage draft → immediate UI render
+4. No database calls (uses /demo/* endpoints for generation)
+5. localStorage drafts cleared when user authenticates
 ```
 
 ## AI Processing Architecture
@@ -434,7 +452,7 @@ The system uses **Stack Auth JWT tokens** for all authentication and authorizati
 ### **Endpoint Structure**
 - **`/demo/*` endpoints**: Unauthenticated access with IP-based rate limiting
 - **`/api/*` endpoints**: Requires Stack Auth token with user-specific rate limiting
-- **`/auth/*` endpoints**: Stack Auth token management (create API keys, etc.)
+- **`/auth/*` endpoints**: Stack Auth token management
 
 ### **Rate Limiting Strategy**
 ```python
@@ -458,16 +476,11 @@ The system uses **Stack Auth JWT tokens** for all authentication and authorizati
 ## Security Architecture
 
 ### **Data Security**
-- **No sensitive data storage**: Analysis results not persisted in database
+- **Row-level data isolation**: All user data strictly separated by Stack Auth user ID
 - **Environment separation**: Separate configs for dev/staging/production  
 - **Secrets management**: Environment variables for API keys and database URLs
 - **HTTPS enforcement**: All API communication over secure connections
-
-### **Data Security**
-- **No sensitive data storage**: Analysis results not persisted in database
-- **Environment separation**: Separate configs for dev/staging/production  
-- **Secrets management**: Environment variables for API keys and database URLs
-- **HTTPS enforcement**: All API communication over secure connections
+- **JWT validation**: Real-time token validation with Stack Auth JWKS endpoint
 
 ## Performance Architecture
 
@@ -515,7 +528,7 @@ The system uses **Stack Auth JWT tokens** for all authentication and authorizati
 - **Context Orchestrator**: Central coordination of AI workflows
 - **Website Scraper**: Content extraction and caching
 - **LLM Service**: Multi-provider AI integration
-- **Authentication Service**: API key validation and user management
+- **Authentication Service**: JWT validation and user management
 
 ## Monitoring & Observability
 

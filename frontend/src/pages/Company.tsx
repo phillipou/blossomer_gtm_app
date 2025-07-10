@@ -14,7 +14,7 @@ import SummaryCard from "../components/cards/SummaryCard";
 import AddCard from "../components/ui/AddCard";
 import { Edit3, Trash2, Building2, Wand2 } from "lucide-react";
 import { getEntityColorForParent } from "../lib/entityColors";
-import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
+import { useGetCompany, useAnalyzeCompany, useUpdateCompany, useUpdateCompanyPreserveFields, useGetCompanies, useCreateCompany } from "../lib/hooks/useCompany";
 import { useAuthState } from "../lib/auth";
 import { useAutoSave } from "../lib/hooks/useAutoSave";
 import { DraftManager } from "../lib/draftManager";
@@ -132,10 +132,21 @@ export default function Company() {
   }, [token, companyId, companies, navigate]);
 
   const queryClient = useQueryClient();
+
+  // Clear any stale cache data when authenticated user lands on company page
+  useEffect(() => {
+    if (token && companyId) {
+      console.log("Company: Authenticated user with companyId - ensuring fresh data by clearing stale cache");
+      // Remove any stale cache entries that might have localStorage contamination
+      queryClient.removeQueries({ queryKey: ['company', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['company', companyId] });
+    }
+  }, [token, companyId, queryClient]);
   const { data: overview, isLoading: isGetLoading, error: getError, refetch } = useGetCompany(token, companyId);
   const { mutate: analyzeCompany, isPending: isAnalyzing, error: analyzeError } = useAnalyzeCompany(token, companyId);
   const updateCompanyMutation = useUpdateCompany(token, companyId);
   const { mutate: updateCompany } = updateCompanyMutation;
+  const { mutate: updateCompanyWithFieldPreservation } = useUpdateCompanyPreserveFields(token, companyId);
   const createCompanyMutation = useCreateCompany(token);
   const { mutate: createCompany, isPending: isCreatingCompany } = createCompanyMutation;
   const { isLoading: isLoadingCompanies } = useGetCompanies(token);
@@ -339,10 +350,6 @@ export default function Company() {
     navigate('/target-accounts');
   };
 
-  const handleOverviewButtonClick = () => {
-    // Handle the main Edit button click - could navigate somewhere or open a different modal
-    console.log('Edit button clicked');
-  };
 
   const handleGenerateCompany = useCallback(({ name, description }: { name: string; description: string }) => {
     console.log("Company: handleGenerateCompany called with:", { websiteUrl: name, userInputtedContext: description });
@@ -395,49 +402,76 @@ export default function Company() {
     return <ErrorDisplay error={{ errorCode: 'UNKNOWN_ERROR', message: errorToDisplay.message }} onRetry={handleRetry} onHome={() => navigate('/')} />;
   }
 
-  const displayOverview = overview || draftOverview;
+  // For authenticated users: ONLY use backend data (never localStorage drafts)
+  // For unauthenticated users: use drafts as fallback during generation flow
+  const displayOverview = token ? overview : (overview || draftOverview);
+  
+  // Debug: Detailed data source analysis for authenticated users
+  if (token) {
+    console.log("Company: AUTHENTICATED USER DATA ANALYSIS", {
+      hasBackendData: !!overview,
+      hasLocalStorageDrafts: !!draftOverview,
+      backendCompanyName: overview?.companyName,
+      backendDescription: overview?.description?.substring(0, 50) + "...",
+      draftCompanyName: draftOverview?.companyName,
+      draftDescription: draftOverview?.description?.substring(0, 50) + "...",
+      finalDisplayName: displayOverview?.companyName,
+      finalDisplayDescription: displayOverview?.description?.substring(0, 50) + "...",
+      usingBackendData: displayOverview === overview,
+      draftCount: draftCompanies.length
+    });
+    
+    // Critical warning if localStorage data differs from backend
+    if (draftOverview && overview !== draftOverview) {
+      console.warn("Company: CRITICAL - Authenticated user has localStorage draft data that differs from backend!", {
+        backend: overview,
+        localStorage: draftOverview,
+        willUseBackend: displayOverview === overview
+      });
+    }
+  }
 
   const handleOverviewEdit = (values: { name: string; description: string }) => {
     const updatedName = values.name;
     const updatedDescription = values.description;
     
     if (token && companyId) {
-      // Authenticated user - update backend
-      // Backend expects: name field for company name, data.description for description
-      updateCompany({
-        companyId,
-        data: {
+      // Authenticated user - use field-preserving update
+      const currentOverview = overview || displayOverview;
+      if (!currentOverview) {
+        console.error("Company: Cannot update - no current overview data available");
+        return;
+      }
+      
+      updateCompanyWithFieldPreservation({
+        currentOverview,
+        updates: {
           name: updatedName,
-          data: {
-            description: updatedDescription,
-          },
+          description: updatedDescription,
         },
       });
     } else {
-      // Unauthenticated user - update draft
+      // Unauthenticated user - update draft with field preservation
       const currentDraft = draftCompanies.find(draft => draft.tempId);
       if (currentDraft) {
-        const updatedDraft = {
-          ...currentDraft,
-          data: {
-            ...currentDraft.data,
-            companyName: updatedName,
-            description: updatedDescription,
-          },
-        };
-        
-        // Update localStorage with the same tempId
-        const draftKey = `draft_company_${currentDraft.tempId}`;
-        localStorage.setItem(draftKey, JSON.stringify(updatedDraft));
-        
-        // Update the query cache to reflect the change
-        queryClient.setQueryData(['company', companyId], (prevData: any) => {
-          return {
-            ...prevData,
-            companyName: updatedName,
-            description: updatedDescription,
-          };
+        // Use field-preserving update to prevent data loss
+        const updateSuccess = DraftManager.updateDraftPreserveFields('company', currentDraft.tempId, {
+          name: updatedName,
+          description: updatedDescription,
         });
+        
+        if (updateSuccess) {
+          // Update React Query cache to reflect the change
+          queryClient.setQueryData(['company', companyId], (prevData: any) => {
+            return {
+              ...prevData,
+              companyName: updatedName,
+              description: updatedDescription,
+            };
+          });
+        } else {
+          console.error("Company: Failed to update draft with field preservation");
+        }
       }
     }
   };
@@ -501,9 +535,7 @@ export default function Company() {
                 subtitle={domain}
                 bodyTitle="Company Overview"
                 bodyText={displayOverview?.description || "No description available"}
-                showButton={true}
-                buttonTitle={"Edit"}
-                onButtonClick={handleOverviewButtonClick}
+                showButton={false}
                 onEdit={handleOverviewEdit}
                 entityType="company"
               />
@@ -511,6 +543,8 @@ export default function Company() {
                 {cardConfigs.map(({ key, label, getItems, subtitle, bulleted }) => {
                   const items = displayOverview ? getItems(displayOverview) : [];
                   const isEditable = true;
+                  
+                  
                   return (
                     <ListInfoCard
                       key={key}
