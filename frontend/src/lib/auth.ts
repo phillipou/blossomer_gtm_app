@@ -1,6 +1,7 @@
 // Authentication utilities and API client updates
 import { useUser, useStackApp } from '@stackframe/react'
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface UserInfo {
   user_id: string
@@ -42,6 +43,7 @@ export function useAuthState(): AuthState & { loading: boolean } {
   const app = useStackApp();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let isMounted = true;
@@ -81,6 +83,25 @@ export function useAuthState(): AuthState & { loading: boolean } {
   useEffect(() => {
     updateGlobalAuthState(authState);
   }, [authState.isAuthenticated, authState.token, authState.userInfo]);
+
+  // Clear React Query cache when authentication state changes
+  useEffect(() => {
+    const previousAuthState = globalAuthState;
+    const wasUnauthenticated = !previousAuthState.isAuthenticated;
+    const isNowAuthenticated = authState.isAuthenticated;
+    
+    // Clear cache when transitioning from unauthenticated to authenticated
+    if (wasUnauthenticated && isNowAuthenticated) {
+      console.log('Auth state changed: clearing React Query cache on authentication');
+      queryClient.clear();
+    }
+    
+    // Also clear cache when signing out (authenticated to unauthenticated)
+    if (previousAuthState.isAuthenticated && !authState.isAuthenticated) {
+      console.log('Auth state changed: clearing React Query cache on sign out');
+      queryClient.clear();
+    }
+  }, [authState.isAuthenticated, queryClient]);
 
   return { ...authState, loading };
 }

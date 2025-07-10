@@ -581,6 +581,60 @@ const handleUnauthenticatedNavigation = () => {
 
 ---
 
+### **Decision 22: React Query Cache Invalidation on Auth State Changes (July 2025)**
+
+**What**: Implement automatic React Query cache clearing when users transition between authenticated and unauthenticated states.
+
+**Why**:
+- **Clean boundaries**: Prevents playground/demo data from persisting into authenticated app experience
+- **Data isolation**: Ensures unauthenticated localStorage data doesn't contaminate authenticated database data
+- **Standard PLG pattern**: Common practice in product-led growth SaaS applications (Linear, Notion, Figma)
+- **User experience**: Eliminates confusion from stale demo data appearing in authenticated views
+
+**Problem Solved**:
+User flow causing data contamination:
+1. User generates company analysis on `/playground/company` (unauthenticated)
+2. User signs up → Auth state changes to authenticated 
+3. User navigates to `/app/company` → Cached playground data incorrectly displays
+4. Creates confusion about data persistence and app state
+
+**Implementation**:
+```typescript
+// In useAuthState hook - clear cache on auth transitions
+useEffect(() => {
+  const previousAuthState = globalAuthState;
+  const wasUnauthenticated = !previousAuthState.isAuthenticated;
+  const isNowAuthenticated = authState.isAuthenticated;
+  
+  // Clear cache when transitioning from unauthenticated to authenticated
+  if (wasUnauthenticated && isNowAuthenticated) {
+    console.log('Auth state changed: clearing React Query cache on authentication');
+    queryClient.clear();
+  }
+  
+  // Also clear cache when signing out (authenticated to unauthenticated)
+  if (previousAuthState.isAuthenticated && !authState.isAuthenticated) {
+    console.log('Auth state changed: clearing React Query cache on sign out');
+    queryClient.clear();
+  }
+}, [authState.isAuthenticated, queryClient]);
+```
+
+**Trade-offs**:
+- ✅ Clean user experience, prevents data contamination, follows PLG standards
+- ✅ Automatic cache management, no manual intervention required
+- ❌ Slight performance impact on auth state changes (rare occurrence)
+- ❌ Users lose any unsaved demo work when authenticating (acceptable trade-off)
+
+**Alternative Approaches Considered**:
+1. **Scoped query keys**: `['company', 'demo']` vs `['company', userId]` - More complex implementation
+2. **Session isolation**: Demo data in sessionStorage - Would require broader refactoring
+3. **Manual cache management** - Error-prone and requires developer discipline
+
+**Status**: ✅ **IMPLEMENTED** - Cache clearing logic added to `useAuthState` hook in auth.ts
+
+---
+
 ## Evolution and Future Decisions
 
 ### **What We'd Do Differently**

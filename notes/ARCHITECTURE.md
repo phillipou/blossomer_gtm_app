@@ -306,6 +306,7 @@ src/
 - **Background Sync**: Automatic refetching, invalidation, and error recovery
 - **Query Hooks**: Custom hooks for each entity type (useGetCompany, useGetAccounts, etc.)
 - **Mutation Hooks**: Separate hooks for create, update, delete operations with cache updates
+- **Cache Invalidation**: Automatic cache clearing on authentication state changes to prevent data contamination between demo and authenticated modes
 
 #### **Hybrid State Architecture**
 - **Server State**: TanStack Query for all persisted data (companies, accounts, personas, campaigns)
@@ -354,6 +355,11 @@ src/
 5. **API Persistence** → POST/PUT to backend with TanStack Query
 6. **Cache Updates** → TanStack Query invalidation and refetch
 7. **UI Sync** → Components re-render from updated cache
+
+### **Cache Management (PLG Pattern)**
+- **Authentication Boundaries**: React Query cache automatically clears when users transition between unauthenticated (demo) and authenticated (app) modes
+- **Data Isolation**: Prevents playground/localStorage data from contaminating authenticated database views
+- **Standard Practice**: Follows common PLG SaaS patterns (Linear, Notion, Figma) for clean auth transitions
 
 ### **Company-Specific Data Flow**
 #### **Authenticated Users**

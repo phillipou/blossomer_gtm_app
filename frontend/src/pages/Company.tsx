@@ -205,17 +205,19 @@ export default function Company() {
   useEffect(() => {
     console.log("Company: useEffect for API response. location.state:", location.state);
     const apiResponse = location.state?.apiResponse;
-    if (apiResponse && !apiResponseProcessed.current) {
-      console.log("Company: API response found in location.state, setting query data.", apiResponse);
+    
+    // Only process location.state apiResponse for unauthenticated users
+    // Authenticated users should not use demo/playground data from navigation state
+    if (apiResponse && !apiResponseProcessed.current && !token) {
+      console.log("Company: API response found in location.state for unauthenticated user, setting query data.", apiResponse);
       apiResponseProcessed.current = true;
       queryClient.setQueryData(['company', companyId], apiResponse);
       
-      // For unauthenticated users, trigger auto-save logic (which will save to draft)
-      if (!token) {
-        console.log("Company: Unauthenticated user - triggering auto-save for draft creation");
-        // Store the full AI response format for consistent display logic
-        setGeneratedCompanyData(apiResponse);
-      }
+      console.log("Company: Unauthenticated user - triggering auto-save for draft creation");
+      // Store the full AI response format for consistent display logic
+      setGeneratedCompanyData(apiResponse);
+    } else if (apiResponse && token) {
+      console.log("Company: Ignoring location.state apiResponse for authenticated user - would contaminate database mode");
     }
   }, [location.state, queryClient, companyId, token]);
 
