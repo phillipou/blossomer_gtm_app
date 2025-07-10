@@ -1,5 +1,6 @@
 import { apiFetch } from './apiClient';
 import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest, TargetPersonaResponse } from '../types/api';
+import { transformKeysToCamelCase } from "./utils";
 
 // =================================================================
 // Persona CRUD API Functions
@@ -9,8 +10,21 @@ export async function getPersonas(accountId: string, token?: string | null): Pro
   return apiFetch<Persona[]>(`/accounts/${accountId}/personas`, { method: 'GET' }, token);
 }
 
+export function normalizePersonaResponse(persona: Persona): Persona {
+  console.log('[NORMALIZE] Raw persona response:', persona);
+  const data = transformKeysToCamelCase<Record<string, any>>(persona.data || {});
+  const normalized = {
+    ...persona,
+    ...data,
+    data,
+  };
+  console.log('[NORMALIZE] Normalized persona:', normalized);
+  return normalized;
+}
+
 export async function getPersona(personaId: string, token?: string | null): Promise<Persona> {
-  return apiFetch<Persona>(`/personas/${personaId}`, { method: 'GET' }, token);
+  const persona = await apiFetch<Persona>(`/personas/${personaId}`, { method: 'GET' }, token);
+  return normalizePersonaResponse(persona);
 }
 
 

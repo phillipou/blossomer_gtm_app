@@ -6,6 +6,7 @@ import {
   updatePersona,
   deletePersona,
   generatePersona,
+  normalizePersonaResponse,
 } from '../personaService';
 import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest, TargetPersonaResponse } from '../../types/api';
 
@@ -29,21 +30,25 @@ export function useGetPersona(personaId: string, token?: string | null) {
 
 export function useCreatePersona(accountId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Persona, Error, TargetPersonaResponse>({
+  return useMutation<Persona, Error, PersonaCreate>({
     mutationFn: (personaData) => createPersona(accountId, personaData, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });
+    onSuccess: (savedPersona) => {
+      const normalized = normalizePersonaResponse(savedPersona);
+      console.log('[NORMALIZE] (onCreateSuccess) Normalized persona:', normalized);
+      queryClient.invalidateQueries({ queryKey: ['personas', accountId] });
+      queryClient.setQueryData(['persona', normalized.id], normalized);
     },
   });
 }
 
 export function useUpdatePersona(accountId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Persona, Error, { personaId: string; personaData: PersonaUpdate }>({
-    mutationFn: ({ personaId, personaData }) => updatePersona(personaId, personaData, token),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, accountId] });
-      queryClient.invalidateQueries({ queryKey: [PERSONA_QUERY_KEY, data.id] });
+  return useMutation<Persona, Error, { personaId: string; data: PersonaUpdate }>({
+    mutationFn: ({ personaId, data }) => updatePersona(personaId, data, token),
+    onSuccess: (savedPersona) => {
+      const normalized = normalizePersonaResponse(savedPersona);
+      console.log('[NORMALIZE] (onUpdateSuccess) Normalized persona:', normalized);
+      queryClient.setQueryData(['persona', normalized.id], normalized);
     },
   });
 }

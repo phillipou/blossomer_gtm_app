@@ -1,5 +1,6 @@
 import { apiFetch } from './apiClient';
 import type { Campaign, CampaignCreate, CampaignUpdate, GenerateEmailRequest, GeneratedEmail } from '../types/api';
+import { transformKeysToCamelCase } from "./utils";
 
 // =================================================================
 // Campaign CRUD API Functions
@@ -9,8 +10,22 @@ export async function getCampaigns(token?: string | null): Promise<Campaign[]> {
   return apiFetch<Campaign[]>('/campaigns', { method: 'GET' }, token);
 }
 
+export function normalizeCampaignResponse(campaign: Campaign): Campaign {
+  console.log('[NORMALIZE] Raw campaign response:', campaign);
+  const data = transformKeysToCamelCase<Record<string, any>>(campaign.data || {});
+  const normalized = {
+    ...campaign,
+    ...data,
+    data,
+    type: campaign.type, // always preserve top-level type
+  };
+  console.log('[NORMALIZE] Normalized campaign:', normalized);
+  return normalized;
+}
+
 export async function getCampaign(campaignId: string, token?: string | null): Promise<Campaign> {
-  return apiFetch<Campaign>(`/campaigns/${campaignId}`, { method: 'GET' }, token);
+  const campaign = await apiFetch<Campaign>(`/campaigns/${campaignId}`, { method: 'GET' }, token);
+  return normalizeCampaignResponse(campaign);
 }
 
 // Helper to transform AI response format to backend CRUD format

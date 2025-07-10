@@ -1,5 +1,6 @@
 import { apiFetch } from './apiClient';
 import type { CompanyOverviewResponse, CompanyUpdate, CompanyResponse, CompanyCreate } from '../types/api';
+import { transformKeysToCamelCase } from "./utils";
 
 // =================================================================
 // Company API Functions
@@ -9,48 +10,41 @@ export async function getCompanies(token?: string | null): Promise<CompanyRespon
   return await apiFetch<CompanyResponse[]>('/companies', { method: 'GET' }, token);
 }
 
+export function normalizeCompanyResponse(company: CompanyResponse): CompanyOverviewResponse {
+  // Log the input for debugging
+  console.log('[NORMALIZE] Raw company response:', company);
+  const data = transformKeysToCamelCase<Record<string, any>>(company.data || {});
+  const normalized = {
+    companyId: company.id,
+    companyName: company.name,
+    companyUrl: company.url,
+    description: data.description || '',
+    businessProfile: data.businessProfile || { category: '', businessModel: '', existingCustomers: '' },
+    capabilities: data.capabilities || [],
+    useCaseAnalysis: data.useCaseAnalysis || { processImpact: '', problemsAddressed: '', howTheyDoItToday: '' },
+    positioning: data.positioning || { keyMarketBelief: '', uniqueApproach: '', languageUsed: '' },
+    objections: data.objections || [],
+    icpHypothesis: data.icpHypothesis || { targetAccountHypothesis: '', targetPersonaHypothesis: '' },
+    metadata: data.metadata || {},
+    ...data,
+  };
+  // Log the output for debugging
+  console.log('[NORMALIZE] Normalized company overview:', normalized);
+  return normalized;
+}
+
 export async function getCompany(token?: string | null, companyId?: string): Promise<CompanyOverviewResponse> {
   if (companyId) {
     // Fetch specific company by ID
     const company = await apiFetch<CompanyResponse>(`/companies/${companyId}`, { method: 'GET' }, token);
-    
-    // The backend's CompanyResponse needs to be mapped to the frontend's CompanyOverviewResponse
-    return {
-      companyId: company.id,
-      companyName: company.name,
-      companyUrl: company.url,
-      description: company.data?.description || '',
-      businessProfile: company.data?.business_profile,
-      capabilities: company.data?.capabilities || [],
-      useCaseAnalysis: company.data?.use_case_analysis,
-      positioning: company.data?.positioning,
-      objections: company.data?.objections || [],
-      icpHypothesis: company.data?.icp_hypothesis,
-      metadata: company.data?.metadata || {},
-    };
+    return normalizeCompanyResponse(company);
   } else {
     // Fetch the list of companies and return the first one.
-    // This is a temporary solution until multi-company selection is implemented.
     const companies = await apiFetch<CompanyResponse[]>('/companies', { method: 'GET' }, token);
     if (companies.length === 0) {
       throw new Error("No companies found for this user.");
     }
-    const company = companies[0];
-    
-    // The backend's CompanyResponse needs to be mapped to the frontend's CompanyOverviewResponse
-    return {
-      companyId: company.id,
-      companyName: company.name,
-      companyUrl: company.url,
-      description: company.data?.description || '',
-      businessProfile: company.data?.business_profile,
-      capabilities: company.data?.capabilities || [],
-      useCaseAnalysis: company.data?.use_case_analysis,
-      positioning: company.data?.positioning,
-      objections: company.data?.objections || [],
-      icpHypothesis: company.data?.icp_hypothesis,
-      metadata: company.data?.metadata || {},
-    };
+    return normalizeCompanyResponse(companies[0]);
   }
 }
 

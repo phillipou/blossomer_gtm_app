@@ -6,6 +6,7 @@ import {
   deleteAccount,
   getAccount,
   generateAccount,
+  normalizeAccountResponse,
 } from '../accountService';
 import type { Account, AccountCreate, AccountUpdate, TargetCompanyRequest, TargetAccountResponse } from '../../types/api';
 
@@ -33,18 +34,23 @@ export function useCreateAccount(companyId: string, token?: string | null) {
   const queryClient = useQueryClient();
   return useMutation<Account, Error, AccountCreate>({
     mutationFn: (accountData) => createAccount(companyId, accountData, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [ACCOUNT_QUERY_KEY, companyId] });
+    onSuccess: (savedAccount) => {
+      const normalized = normalizeAccountResponse(savedAccount);
+      console.log('[NORMALIZE] (onCreateSuccess) Normalized account:', normalized);
+      queryClient.invalidateQueries({ queryKey: ['accounts', companyId] });
+      queryClient.setQueryData(['account', normalized.id], normalized);
     },
   });
 }
 
 export function useUpdateAccount(companyId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Account, Error, { accountId: string; accountData: AccountUpdate }>({
-    mutationFn: ({ accountId, accountData }) => updateAccount(accountId, accountData, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [ACCOUNT_QUERY_KEY, companyId] });
+  return useMutation<Account, Error, { accountId: string; data: AccountUpdate }>({
+    mutationFn: ({ accountId, data }) => updateAccount(accountId, data, token),
+    onSuccess: (savedAccount) => {
+      const normalized = normalizeAccountResponse(savedAccount);
+      console.log('[NORMALIZE] (onUpdateSuccess) Normalized account:', normalized);
+      queryClient.setQueryData(['account', normalized.id], normalized);
     },
   });
 }

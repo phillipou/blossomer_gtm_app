@@ -6,6 +6,7 @@ import {
   updateCampaign,
   deleteCampaign,
   generateEmail,
+  normalizeCampaignResponse,
 } from '../campaignService';
 import type { Campaign, CampaignCreate, CampaignUpdate, GenerateEmailRequest, GeneratedEmail } from '../../types/api';
 
@@ -29,21 +30,25 @@ export function useGetCampaign(campaignId: string, token?: string | null) {
 
 export function useCreateCampaign(token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Campaign, Error, GeneratedEmail>({
+  return useMutation<Campaign, Error, CampaignCreate>({
     mutationFn: (campaignData) => createCampaign(campaignData, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [CAMPAIGN_QUERY_KEY] });
+    onSuccess: (savedCampaign) => {
+      const normalized = normalizeCampaignResponse(savedCampaign);
+      console.log('[NORMALIZE] (onCreateSuccess) Normalized campaign:', normalized);
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      queryClient.setQueryData(['campaign', normalized.id], normalized);
     },
   });
 }
 
-export function useUpdateCampaign(campaignId: string, token?: string | null) {
+export function useUpdateCampaign(token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<Campaign, Error, CampaignUpdate>({
-    mutationFn: (campaignData) => updateCampaign(campaignId, campaignData, token),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [CAMPAIGN_QUERY_KEY] });
-      queryClient.setQueryData([CAMPAIGN_QUERY_KEY, campaignId], data);
+  return useMutation<Campaign, Error, { campaignId: string; data: CampaignUpdate }>({
+    mutationFn: ({ campaignId, data }) => updateCampaign(campaignId, data, token),
+    onSuccess: (savedCampaign) => {
+      const normalized = normalizeCampaignResponse(savedCampaign);
+      console.log('[NORMALIZE] (onUpdateSuccess) Normalized campaign:', normalized);
+      queryClient.setQueryData(['campaign', normalized.id], normalized);
     },
   });
 }

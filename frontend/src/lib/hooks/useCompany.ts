@@ -5,6 +5,7 @@ import {
   analyzeCompany,
   updateCompany,
   createCompany,
+  normalizeCompanyResponse,
 } from '../companyService';
 import type { CompanyOverviewResponse, CompanyUpdate, CompanyResponse, CompanyCreate } from '../../types/api';
 
@@ -40,11 +41,13 @@ export function useCreateCompany(token?: string | null) {
   return useMutation<CompanyResponse, Error, CompanyOverviewResponse>({
     mutationFn: (newCompany) => createCompany(newCompany, token),
     onSuccess: (savedCompany) => {
+      const normalized = normalizeCompanyResponse(savedCompany);
+      console.log('[NORMALIZE] (onCreateSuccess) Normalized company overview:', normalized);
       // When a company is successfully created, invalidate the list of companies
       // so it can be refetched with the new data.
       queryClient.invalidateQueries({ queryKey: [COMPANIES_QUERY_KEY] });
       // Also, add the new company to the cache immediately for a better UX
-      queryClient.setQueryData([COMPANY_QUERY_KEY, savedCompany.id], savedCompany);
+      queryClient.setQueryData([COMPANY_QUERY_KEY, normalized.companyId], normalized);
     },
   });
 }
@@ -53,8 +56,10 @@ export function useUpdateCompany(token?: string | null, companyId?: string) {
   const queryClient = useQueryClient();
   return useMutation<CompanyOverviewResponse, Error, CompanyUpdate>({
     mutationFn: (companyData) => updateCompany(companyData, token),
-    onSuccess: (data) => {
-      queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], data);
+    onSuccess: (savedCompany) => {
+      const normalized = normalizeCompanyResponse(savedCompany as any);
+      console.log('[NORMALIZE] (onUpdateSuccess) Normalized company overview:', normalized);
+      queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], normalized);
     },
   });
 }

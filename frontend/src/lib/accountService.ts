@@ -16,8 +16,21 @@ export async function getAccounts(companyId: string, token?: string | null): Pro
   return apiFetch<Account[]>(`/accounts?company_id=${companyId}`, { method: 'GET' }, token);
 }
 
+export function normalizeAccountResponse(account: Account): Account {
+  console.log('[NORMALIZE] Raw account response:', account);
+  const data = transformKeysToCamelCase<Record<string, any>>(account.data || {});
+  const normalized = {
+    ...account,
+    ...data,
+    data,
+  };
+  console.log('[NORMALIZE] Normalized account:', normalized);
+  return normalized;
+}
+
 export async function getAccount(accountId: string, token?: string | null): Promise<Account> {
-    return apiFetch<Account>(`/accounts/${accountId}`, { method: 'GET' }, token);
+  const account = await apiFetch<Account>(`/accounts/${accountId}`, { method: 'GET' }, token);
+  return normalizeAccountResponse(account);
 }
 
 export async function createAccount(companyId: string, accountData: AccountCreate, token?: string | null): Promise<Account> {
