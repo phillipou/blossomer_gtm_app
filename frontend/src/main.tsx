@@ -53,10 +53,10 @@ createRoot(document.getElementById('root')!).render(
             <Route path="app" element={<MainLayout />}>
               <Route path="company" element={<Company />} />
               <Route path="company/:id" element={<Company />} />
-              <Route path="target-accounts" element={<Accounts />} />
-              <Route path="target-accounts/:id" element={<AccountDetail />} />
-              <Route path="target-accounts/:id/personas/:personaId" element={<PersonaDetail />} />
-              <Route path="target-personas" element={<Personas />} />
+              <Route path="accounts" element={<Accounts />} />
+              <Route path="accounts/:id" element={<AccountDetail />} />
+              <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+              <Route path="personas" element={<Personas />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>
