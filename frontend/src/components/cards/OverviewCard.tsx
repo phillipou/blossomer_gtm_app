@@ -94,7 +94,37 @@ export default function OverviewCard({
           </div>
           <div>
             {bodyTitle && <h3 className="text-sm font-medium text-gray-700 mb-2">{bodyTitle}</h3>}
-            <p className="text-gray-600 text-sm leading-relaxed">{bodyText}</p>
+            <div 
+              className="text-gray-600 text-sm leading-relaxed"
+              style={{
+                listStyle: 'none',
+                paddingLeft: 0
+              }}
+            >
+              <style jsx>{`
+                div :global(ul) {
+                  list-style: none !important;
+                  padding-left: 0 !important;
+                }
+                div :global(li) {
+                  position: relative !important;
+                  padding-left: 1rem !important;
+                  list-style: none !important;
+                  margin-bottom: 0.5rem !important;
+                }
+                div :global(li::before) {
+                  content: "•" !important;
+                  position: absolute !important;
+                  left: 0 !important;
+                  color: #9ca3af !important;
+                }
+                div :global(li span) {
+                  display: block !important;
+                  text-align: left !important;
+                }
+              `}</style>
+              <div dangerouslySetInnerHTML={{ __html: bodyText || '' }} />
+            </div>
           </div>
           {children}
         </CardContent>

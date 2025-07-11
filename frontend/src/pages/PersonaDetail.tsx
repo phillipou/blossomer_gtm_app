@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Plus } from "lucide-react";
 import { useGetPersona, useUpdatePersona } from "../lib/hooks/usePersonas";
-import type { Persona, BuyingSignal, Demographics, UseCase } from "../types/api";
+import type { Persona, APIBuyingSignal, Demographics, UseCase } from "../types/api";
 import UseCasesCard from "../components/cards/UseCasesCard";
 import { useAuthState } from "../lib/auth";
 
@@ -27,7 +27,7 @@ export default function PersonaDetail() {
   // Buying signals modal state
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalEditingSignal, setModalEditingSignal] = React.useState<BuyingSignal | null>(null);
-  const [buyingSignals, setBuyingSignals] = React.useState<BuyingSignal[]>([]);
+  const [buyingSignals, setBuyingSignals] = React.useState<APIBuyingSignal[]>([]);
   
   // Demographics edit modal state
   const [demographicsModalOpen, setDemographicsModalOpen] = React.useState(false);
@@ -53,16 +53,7 @@ export default function PersonaDetail() {
 
   React.useEffect(() => {
     if (persona?.buyingSignals) {
-      const transformedSignals = persona.buyingSignals.map((signal, idx) => ({
-        id: String(idx),
-        label: signal.title,
-        description: signal.description,
-        enabled: true,
-        priority: signal.priority,
-        detectionMethod: signal.detection_method,
-        type: signal.type
-      }));
-      setBuyingSignals(transformedSignals);
+      setBuyingSignals(persona.buyingSignals);
     } else {
       setBuyingSignals([]);
     }
@@ -145,9 +136,13 @@ export default function PersonaDetail() {
           <CardContent>
             {buyingSignals.length > 0 ? (
               <BuyingSignalsCard
-                signals={buyingSignals}
-                onEdit={(signal) => { setModalEditingSignal(signal); setModalOpen(true); }}
-                onDelete={(id) => setBuyingSignals(signals => signals.filter(s => s.id !== id))}
+                buyingSignals={buyingSignals}
+                editable={true}
+                onEdit={(signals) => {
+                  // For now, just open the modal to add new signals
+                  setModalEditingSignal(null);
+                  setModalOpen(true);
+                }}
               />
             ) : (
               <div className="text-center py-8 text-gray-500">No buying signals identified</div>
