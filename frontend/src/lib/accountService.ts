@@ -105,23 +105,27 @@ export async function deleteAccount(accountId: string, token?: string | null): P
  * Assumes currentAccount is always in normalized camelCase format from cache
  */
 function mergeAccountUpdates(
-  currentAccount: Record<string, any>, 
+  currentAccount: Record<string, any> | null | undefined, 
   updates: Record<string, any>
 ): AccountUpdate {
   console.log('[MERGE-ACCOUNT-UPDATES] Simplified merge:', {
     currentKeys: Object.keys(currentAccount || {}),
     updateKeys: Object.keys(updates || {}),
-    inputFormat: 'normalized-camelCase'
+    inputFormat: 'normalized-camelCase',
+    hasCurrentAccount: !!currentAccount
   });
+  
+  // Handle null/undefined currentAccount case
+  const safeCurrentAccount = currentAccount || {};
   
   // Simple object spread merge - all fields preserved automatically
   const mergedData = {
-    ...currentAccount,
+    ...safeCurrentAccount,
     ...updates
   };
   
   // Extract name for backend compatibility
-  const accountName = updates.targetAccountName || currentAccount.targetAccountName || 'Untitled Account';
+  const accountName = updates.targetAccountName || safeCurrentAccount.targetAccountName || 'Untitled Account';
   
   console.log('[MERGE-ACCOUNT-UPDATES] Merge complete:', {
     preservedFieldCount: Object.keys(mergedData).length,
@@ -140,7 +144,7 @@ function mergeAccountUpdates(
  * No longer needed as separate function, but kept for backward compatibility
  */
 function mergeAccountListFieldUpdates(
-  currentAccount: Record<string, any>,
+  currentAccount: Record<string, any> | null | undefined,
   listFieldUpdates: Record<string, string[]>
 ): AccountUpdate {
   console.log('[MERGE-ACCOUNT-LIST-FIELDS] Using simplified merge pattern:', {

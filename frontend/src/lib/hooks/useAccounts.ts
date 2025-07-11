@@ -181,10 +181,10 @@ export function useUpdateAccountListFieldsPreserveFields(token?: string | null, 
   return useMutation<
     Account, 
     Error, 
-    { currentAccount: any; listFieldUpdates: Record<string, string[]> }
+    { currentOverview: any; listFieldUpdates: Record<string, string[]> }
   >({
-    mutationFn: ({ currentAccount, listFieldUpdates }) => 
-      updateAccountListFieldsPreserveFields(accountId!, currentAccount, listFieldUpdates, token),
+    mutationFn: ({ currentOverview, listFieldUpdates }) => 
+      updateAccountListFieldsPreserveFields(accountId!, currentOverview, listFieldUpdates, token),
     onSuccess: (savedAccount) => {
       console.log('[PRESERVE-LIST-FIELDS] Account list fields updated with field preservation:', savedAccount);
       

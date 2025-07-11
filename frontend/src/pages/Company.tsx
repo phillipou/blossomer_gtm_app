@@ -28,6 +28,10 @@ export default function Company() {
     (TargetAccountResponse & { id: string; createdAt: string })[]
   >([]);
 
+  // Direct hooks for generation and creation flow
+  const { mutate: analyzeCompany, isPending: isAnalyzing } = useAnalyzeCompany(token);
+  const { mutate: createCompany, isPending: isCreating } = useCreateCompany(token);
+  
   // Initialize entity page hook
   const entityPageState = useEntityPage<CompanyOverviewResponse>({
     config: companyConfig,
@@ -49,17 +53,44 @@ export default function Company() {
     setTargetAccounts(accounts);
   }, []);
 
-  // Generation handler
+  // Generation handler with proper create flow
   const handleGenerate = ({ name, description }: { name: string; description: string }) => {
-    entityPageState.generateEntity(
+    if (!token) {
+      console.error('Cannot generate company without authentication');
+      return;
+    }
+    
+    console.log('[COMPANY-GENERATION] Starting company analysis and creation flow:', {
+      websiteUrl: name,
+      userContext: description,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Step 1: Analyze/Generate company data
+    analyzeCompany(
       { websiteUrl: name, userInputtedContext: description },
       {
-        onSuccess: (response: CompanyOverviewResponse) => {
-          console.log('Company generation successful', response);
-          // The useEntityPage hook handles the auto-save and navigation
+        onSuccess: (generatedData: CompanyOverviewResponse) => {
+          console.log('[COMPANY-GENERATION] Analysis successful, creating company:', generatedData);
+          
+          // Step 2: Create/Save the generated company
+          createCompany(generatedData, {
+            onSuccess: (savedCompany) => {
+              console.log('[COMPANY-CREATION] Company saved successfully:', savedCompany);
+              
+              // Step 3: Close modal and navigate
+              entityPageState.setIsGenerationModalOpen(false);
+              navigate(`/app/company/${savedCompany.id}`, { replace: true });
+            },
+            onError: (createError) => {
+              console.error('[COMPANY-CREATION] Failed to save company:', createError);
+              // Keep modal open for retry
+            }
+          });
         },
-        onError: (err: any) => {
-          console.error('Company generation failed:', err);
+        onError: (analyzeError) => {
+          console.error('[COMPANY-GENERATION] Company analysis failed:', analyzeError);
+          // Keep modal open for retry
         },
       }
     );
@@ -95,7 +126,10 @@ export default function Company() {
       config={companyConfig}
       entityPageState={entityPageState}
       onGenerate={handleGenerate}
-      generateModalProps={generationModalConfigs.company}
+      generateModalProps={{
+        ...generationModalConfigs.company,
+        isLoading: isAnalyzing || isCreating
+      }}
       overviewProps={{
         title: companyName,
         subtitle: entityPageState.displayEntity?.companyUrl || '',

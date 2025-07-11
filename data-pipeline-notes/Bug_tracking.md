@@ -321,6 +321,64 @@ if (showEmptyState) {
 
 ---
 
+### **Issue #6: Parameter Name Mismatch in Account List Field Updates**
+**Status:** Resolved  
+**Priority:** Critical  
+**Component:** useAccounts.ts, accountService.ts
+
+#### **Symptoms:**
+- "Cannot read properties of undefined (reading 'targetAccountName')" error
+- Error occurs when editing account list fields (Target Account Rationale, Buying Signals Strategy)  
+- `currentAccount` parameter is undefined in `mergeAccountUpdates()`
+- Save operation fails and modal remains open
+
+#### **Root Cause:**
+Parameter name mismatch between `useEntityPage` hook and `useUpdateAccountListFieldsPreserveFields` hook:
+
+**useEntityPage.ts calls with:**
+```typescript
+await updateListFieldsAsync({
+  currentOverview: entity,  // ⚠️ Parameter name: 'currentOverview'
+  listFieldUpdates,
+});
+```
+
+**useUpdateAccountListFieldsPreserveFields expects:**
+```typescript
+{ currentAccount: any; listFieldUpdates: Record<string, string[]> }
+//  ⚠️ Parameter name: 'currentAccount'
+```
+
+This caused `currentAccount` to be `undefined` since the parameter names didn't match.
+
+#### **Resolution:**
+**Primary Fix:** Updated parameter name in `useUpdateAccountListFieldsPreserveFields` hook to match what `useEntityPage` provides.
+
+**Secondary Fix:** Added null safety to `mergeAccountUpdates()` function to handle undefined cases gracefully.
+
+**Code Changes:**
+1. **useAccounts.ts**: Changed parameter from `currentAccount` to `currentOverview`
+2. **accountService.ts**: Added null safety checks in merge functions
+
+#### **Files Modified:**
+- `/frontend/src/lib/hooks/useAccounts.ts` - Fixed parameter name mismatch
+- `/frontend/src/lib/accountService.ts` - Added null safety to merge functions
+
+#### **Testing Verification:**
+- ✅ Account list field editing works correctly
+- ✅ Target Account Rationale editing saves successfully  
+- ✅ Buying Signals Strategy editing saves successfully
+- ✅ No regression in other account update operations
+- ✅ Proper error handling for edge cases
+
+#### **Impact:**
+- Account list field editing now works reliably
+- Consistent parameter naming across hooks
+- Improved error handling for edge cases
+- Enhanced developer debugging experience
+
+---
+
 ## Resolution Tracking
 
 ### **Completed Fixes**
@@ -329,6 +387,7 @@ if (showEmptyState) {
 - ✅ Added comprehensive logging to field preservation functions
 - ✅ Centralized modal logic in parent components (Company.tsx pattern)
 - ✅ **CRITICAL: Fixed generation modal not displaying in empty state**
+- ✅ **CRITICAL: Fixed parameter name mismatch in account list field updates**
 
 ### **In Progress**
 - 🔄 Standardizing data format across all transformation points
