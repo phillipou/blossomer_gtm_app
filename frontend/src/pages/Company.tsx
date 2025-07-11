@@ -42,6 +42,7 @@ export default function Company() {
     },
   });
 
+
   // Load target accounts
   useEffect(() => {
     const accounts = getStoredTargetAccounts();

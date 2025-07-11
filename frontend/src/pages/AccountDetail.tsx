@@ -30,6 +30,57 @@ import { Button } from '../components/ui/button';
 import { DraftManager } from '../lib/draftManager';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Standardized error handling - Stage 4 improvement
+const handleComponentError = (operation: string, error: any) => {
+  console.error(`[COMPONENT-ERROR] ${operation} failed:`, {
+    error: error?.message || error,
+    operation,
+    timestamp: new Date().toISOString(),
+    stack: error?.stack
+  });
+  
+  // TODO: Add user-facing error notifications here
+  // For now, just log for debugging
+};
+
+// Component state synchronization testing - Stage 4 improvement
+const testComponentStateSync = (
+  queryClient: any, 
+  accountId: string, 
+  displayEntity: any, 
+  operation: string
+) => {
+  const cachedAccount = queryClient.getQueryData(['account', accountId]);
+  
+  console.log(`[STATE-SYNC-TEST] ${operation} synchronization check:`, {
+    accountId,
+    operation,
+    displayEntityExists: !!displayEntity,
+    cachedAccountExists: !!cachedAccount,
+    formatConsistency: {
+      displayEntity: displayEntity ? {
+        hasTargetAccountName: !!displayEntity.targetAccountName,
+        isNormalized: !Object.keys(displayEntity).some((k: string) => k.includes('_')),
+        fieldCount: Object.keys(displayEntity).length
+      } : null,
+      cachedAccount: cachedAccount ? {
+        hasTargetAccountName: !!(cachedAccount as any).targetAccountName,
+        isNormalized: !Object.keys(cachedAccount as any).some((k: string) => k.includes('_')),
+        fieldCount: Object.keys(cachedAccount as any).length
+      } : null
+    },
+    stateSync: displayEntity && cachedAccount ? 
+      JSON.stringify(displayEntity) === JSON.stringify(cachedAccount) : 'partial-data',
+    timestamp: new Date().toISOString()
+  });
+  
+  return {
+    inSync: displayEntity && cachedAccount && 
+           JSON.stringify(displayEntity) === JSON.stringify(cachedAccount),
+    bothExist: !!displayEntity && !!cachedAccount
+  };
+};
+
 export default function AccountDetail() {
   const { token } = useAuthState();
   const { id: accountId } = useParams<{ id: string }>();
@@ -167,6 +218,18 @@ export default function AccountDetail() {
       setBuyingSignals([]);
     }
   }, [entityPageState.displayEntity]);
+
+  // Component state synchronization testing - Stage 4 improvement
+  useEffect(() => {
+    if (accountId && entityPageState.displayEntity) {
+      testComponentStateSync(
+        queryClient, 
+        accountId, 
+        entityPageState.displayEntity, 
+        'component-mount-or-update'
+      );
+    }
+  }, [accountId, entityPageState.displayEntity, queryClient]);
   
   // Handle creation modal close
   const handleCreationModalClose = () => {
@@ -212,12 +275,12 @@ export default function AccountDetail() {
             navigate(`/app/accounts/${savedAccount.id}`, { replace: true });
           },
           onError: (error) => {
-            console.error("Account creation failed", error);
+            handleComponentError("Account creation", error);
           },
         });
       },
       onError: (error) => {
-        console.error("Account generation failed", error);
+        handleComponentError("Account generation", error);
       },
     });
   };
@@ -266,37 +329,32 @@ export default function AccountDetail() {
     });
   };
 
-  // Handle firmographics update with field preservation (following Company.tsx pattern)
+  // Simplified firmographics update - Stage 4 improvement
   const handleFirmographicsUpdate = (newFirmographics: any) => {
-    console.log('🔍 [AccountDetail] Firmographics update requested', {
-      newFirmographics,
-      currentAccount: entityPageState.displayEntity,
-      currentAccountKeys: entityPageState.displayEntity ? Object.keys(entityPageState.displayEntity) : [],
-      isAuthenticated: !!token,
-      accountId
+    console.log('[COMPONENT-UPDATE] Firmographics update initiated:', {
+      accountId,
+      updateType: 'firmographics',
+      currentFormat: 'normalized-camelCase',
+      updateKeys: ['firmographics'],
+      timestamp: new Date().toISOString()
     });
 
     if (token && accountId && entityPageState.displayEntity) {
-      // Authenticated user - use field-preserving backend update
-      console.log('📡 [AccountDetail] Updating firmographics via backend with field preservation');
-      
+      // Authenticated update - simplified with new service layer
       updateWithFieldPreservation({
         currentAccount: entityPageState.displayEntity,
         updates: { firmographics: newFirmographics },
       }, {
-        onSuccess: (updatedAccount) => {
-          console.log('✅ [AccountDetail] Firmographics updated successfully via backend', updatedAccount);
+        onSuccess: () => {
+          console.log('[COMPONENT-UPDATE] Firmographics updated successfully');
           setFirmographicsModalOpen(false);
         },
         onError: (error) => {
-          console.error('❌ [AccountDetail] Failed to update firmographics via backend', error);
-          // Keep modal open on error so user can retry
+          handleComponentError("Firmographics update", error);
         }
       });
     } else {
-      // Unauthenticated user - use localStorage draft update with field preservation
-      console.log('💾 [AccountDetail] Updating firmographics via localStorage draft');
-      
+      // Draft update for unauthenticated users
       const draftAccounts = DraftManager.getDrafts('account');
       const currentDraft = draftAccounts.find(draft => draft.tempId);
       
@@ -343,36 +401,32 @@ export default function AccountDetail() {
     }
   };
 
-  // Handle buying signals update with field preservation (following same pattern)
+  // Simplified buying signals update - Stage 4 improvement  
   const handleBuyingSignalsUpdate = (updatedSignals: APIBuyingSignal[]) => {
-    console.log('🔍 [AccountDetail] Buying signals update requested', {
-      updatedSignals,
-      currentAccount: entityPageState.displayEntity,
-      isAuthenticated: !!token,
-      accountId
+    console.log('[COMPONENT-UPDATE] Buying signals update initiated:', {
+      accountId,
+      updateType: 'buyingSignals',
+      currentFormat: 'normalized-camelCase',
+      updateKeys: ['buyingSignals'],
+      timestamp: new Date().toISOString()
     });
 
     if (token && accountId && entityPageState.displayEntity) {
-      // Authenticated user - use field-preserving backend update
-      console.log('📡 [AccountDetail] Updating buying signals via backend with field preservation');
-      
+      // Authenticated update - simplified with new service layer
       updateWithFieldPreservation({
         currentAccount: entityPageState.displayEntity,
         updates: { buyingSignals: updatedSignals },
       }, {
-        onSuccess: (updatedAccount) => {
-          console.log('✅ [AccountDetail] Buying signals updated successfully via backend', updatedAccount);
+        onSuccess: () => {
+          console.log('[COMPONENT-UPDATE] Buying signals updated successfully');
           setBuyingSignalsModalOpen(false);
         },
         onError: (error) => {
-          console.error('❌ [AccountDetail] Failed to update buying signals via backend', error);
-          // Keep modal open on error so user can retry
+          handleComponentError("Buying signals update", error);
         }
       });
     } else {
-      // Unauthenticated user - use localStorage draft update with field preservation
-      console.log('💾 [AccountDetail] Updating buying signals via localStorage draft');
-      
+      // Draft update for unauthenticated users
       const draftAccounts = DraftManager.getDrafts('account');
       const currentDraft = draftAccounts.find(draft => draft.tempId);
       

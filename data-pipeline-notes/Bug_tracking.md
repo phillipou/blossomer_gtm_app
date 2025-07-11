@@ -258,6 +258,69 @@ console.log('[FIELD-PRESERVATION] Debug trace:', {
 });
 ```
 
+---
+
+### **Issue #5: Generation Modal Not Displaying in Empty State**
+**Status:** Resolved  
+**Priority:** Critical  
+**Component:** EntityPageLayout.tsx, InputModal.tsx
+
+#### **Symptoms:**
+- "Generate Your First Company" button click had no visible effect
+- No modal appeared despite button click being registered
+- State updates occurred correctly but UI did not reflect changes
+- Issue only occurred in empty state (when no company data exists)
+
+#### **Root Cause:**
+The generation modal was only rendered at the bottom of the `EntityPageLayout` component within the main content section. However, when the application is in empty state (no existing entities), the component returns early from the empty state conditional block and never reaches the modal rendering code at the bottom.
+
+**Code Flow Problem:**
+```typescript
+// EntityPageLayout.tsx
+if (showEmptyState) {
+  return (
+    <div>
+      {/* Empty state UI with generation button */}
+      <Button onClick={() => setIsGenerationModalOpen(true)}>
+        Generate Your First Company
+      </Button>
+    </div>
+  ); // Early return - never reaches modal code below
+}
+
+// This modal code was never reached in empty state:
+{generateModalProps && (
+  <InputModal isOpen={isGenerationModalOpen} ... />
+)}
+```
+
+#### **Resolution:**
+**Primary Fix:** Moved modal rendering inside the empty state return block to ensure it's available when needed.
+
+**Secondary Fix:** Added conditional rendering guard (`if (!isOpen) return null;`) to InputModal component to ensure proper modal lifecycle management.
+
+**Code Changes:**
+1. **EntityPageLayout.tsx**: Added modal rendering directly within empty state JSX
+2. **InputModal.tsx**: Added early return when `isOpen` is false for better performance
+
+#### **Files Modified:**
+- `/frontend/src/components/EntityPageLayout.tsx` - Added modal to empty state return
+- `/frontend/src/components/modals/InputModal.tsx` - Added conditional rendering guard
+
+#### **Testing Verification:**
+- ✅ Empty state modal opens correctly
+- ✅ Modal state management works properly  
+- ✅ Modal closes correctly via close button and overlay click
+- ✅ Form submission functions as expected
+- ✅ No regression in main content modal functionality
+
+#### **Impact:**
+- Users can now successfully initiate company generation from empty state
+- Improved user experience for new users
+- Consistent modal behavior across all application states
+
+---
+
 ## Resolution Tracking
 
 ### **Completed Fixes**
@@ -265,6 +328,7 @@ console.log('[FIELD-PRESERVATION] Debug trace:', {
 - ✅ Implemented `DraftManager.updateDraftPreserveFields()`
 - ✅ Added comprehensive logging to field preservation functions
 - ✅ Centralized modal logic in parent components (Company.tsx pattern)
+- ✅ **CRITICAL: Fixed generation modal not displaying in empty state**
 
 ### **In Progress**
 - 🔄 Standardizing data format across all transformation points

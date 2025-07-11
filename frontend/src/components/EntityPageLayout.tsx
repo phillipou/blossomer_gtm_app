@@ -103,32 +103,69 @@ export default function EntityPageLayout<T = any>({
   if (showEmptyState) {
     const IconComponent = config.emptyStateConfig.icon;
     return (
-      <div className="flex flex-col h-full">
-        <PageHeader
-          title={config.emptyStateConfig.pageTitle}
-          subtitle={config.emptyStateConfig.pageSubtitle}
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto">
-            <div className="mb-6">
-              <IconComponent className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <h2 className="text-2xl font-semibold mb-3">
-                {config.emptyStateConfig.overviewTitle}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {config.emptyStateConfig.overviewSubtitle}
-              </p>
+      <>
+        <div className="flex flex-col h-full">
+          <PageHeader
+            title={config.emptyStateConfig.pageTitle}
+            subtitle={config.emptyStateConfig.pageSubtitle}
+          />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto">
+              <div className="mb-6">
+                <IconComponent className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-semibold mb-3">
+                  {config.emptyStateConfig.overviewTitle}
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  {config.emptyStateConfig.overviewSubtitle}
+                </p>
+              </div>
+              <Button
+                onClick={() => setIsGenerationModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-base font-medium"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                {config.emptyStateConfig.buttonText}
+              </Button>
             </div>
-            <Button
-              onClick={() => setIsGenerationModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-base font-medium"
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              {config.emptyStateConfig.buttonText}
-            </Button>
           </div>
         </div>
-      </div>
+        
+        {/* Generation Modal for Empty State */}
+        {generateModalProps && (
+          <InputModal
+            isOpen={isGenerationModalOpen}
+            onClose={() => setIsGenerationModalOpen(false)}
+            onSubmit={onGenerate}
+            title={generateModalProps.title}
+            subtitle={generateModalProps.subtitle}
+            nameLabel={generateModalProps.nameLabel}
+            namePlaceholder={generateModalProps.namePlaceholder}
+            nameType={generateModalProps.nameType}
+            nameRequired={generateModalProps.nameRequired}
+            descriptionLabel={generateModalProps.descriptionLabel}
+            descriptionPlaceholder={generateModalProps.descriptionPlaceholder}
+            showDescription={generateModalProps.showDescription}
+            descriptionRequired={generateModalProps.descriptionRequired}
+            submitLabel={generateModalProps.submitLabel || (
+              isGenerating || autoSave.isSaving ? (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Generate
+                </>
+              )
+            )}
+            cancelLabel={generateModalProps.cancelLabel || 'Cancel'}
+            isLoading={isGenerating || autoSave.isSaving}
+            error={typeof error === 'object' && error && 'message' in error ? (error as any).message : undefined}
+          />
+        )}
+      </>
     );
   }
 
@@ -141,6 +178,7 @@ export default function EntityPageLayout<T = any>({
                    (displayEntity as any)?.url || '';
   
   const entityDescription = (displayEntity as any)?.description || 'No description available';
+
 
   return (
     <>

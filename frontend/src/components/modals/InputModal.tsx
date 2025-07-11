@@ -136,6 +136,8 @@ export default function InputModal({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
       <EditDialogContent className="sm:max-w-[500px]">
