@@ -518,8 +518,8 @@ export default function AccountDetail() {
       }}
     >
       {/* Firmographics Section */}
-      <Card className="mt-8">
-        <CardHeader className="flex flex-row items-center justify-between group">
+      <Card className="mt-8 group">
+        <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Firmographics</CardTitle>
             <div className="text-sm text-gray-500">Searchable attributes for prospecting tools and databases</div>
