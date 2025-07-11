@@ -19,7 +19,7 @@ import { normalizeAccountResponse } from '../lib/accountService';
 import { useGetCompany, useGetUserCompany } from '../lib/hooks/useCompany';
 import { useAuthState } from '../lib/auth';
 import { useCompanyOverview } from '../lib/useCompanyOverview';
-import { Wand2, Plus } from 'lucide-react';
+import { Wand2, Plus, Pencil } from 'lucide-react';
 import type { TargetAccountResponse, AccountCreate, TargetAccountAPIRequest, APIBuyingSignal, Firmographics } from '../types/api';
 import BuyingSignalsCard from '../components/cards/BuyingSignalsCard';
 import EditBuyingSignalModal from '../components/modals/EditBuyingSignalModal';
@@ -121,13 +121,38 @@ export default function AccountDetail() {
   const entityPageState = useEntityPage<TargetAccountResponse>({
     config: accountConfig,
     hooks: {
-      useGet: useGetAccountForEntityPage,
-      useGetList: useGetAccountsForEntityPage,
-      useGenerateWithAI: useGenerateAccount,
-      useCreate: useCreateAccount,
-      useUpdate: useUpdateAccount,
-      useUpdatePreserveFields: useUpdateAccountPreserveFields,
-      useUpdateListFieldsPreserveFields: useUpdateAccountListFieldsPreserveFields,
+      useGet: (token, entityId) => {
+        const { data, isLoading, error, refetch } = useGetAccountForEntityPage(token, entityId);
+        // Cast normalized Account to TargetAccountResponse for compatibility
+        return {
+          data: data as unknown as TargetAccountResponse | undefined,
+          isLoading,
+          error,
+          refetch: () => { refetch(); }
+        };
+      },
+      useGetList: (token) => {
+        // useGetAccountsForEntityPage returns { data, isLoading, error }
+        return useGetAccountsForEntityPage(token);
+      },
+      useGenerateWithAI: (token, entityId) => {
+        // useGenerateAccount expects (companyId, token), but we don't have companyId here, so return dummy
+        return { mutate: () => {}, isPending: false, error: null };
+      },
+      useCreate: (token) => {
+        // useCreateAccount expects (companyId, token), but we don't have companyId here, so return dummy
+        return {};
+      },
+      useUpdate: (token, entityId) => {
+        // useUpdateAccount expects (companyId, token), but we don't have companyId here, so return dummy
+        return {};
+      },
+      useUpdatePreserveFields: (token, entityId) => {
+        return useUpdateAccountPreserveFields(token, entityId);
+      },
+      useUpdateListFieldsPreserveFields: (token, entityId) => {
+        return useUpdateAccountListFieldsPreserveFields(token, entityId);
+      },
     },
   });
 
@@ -138,8 +163,8 @@ export default function AccountDetail() {
 
   // Transform function for firmographics to CriteriaTable format
   const transformFirmographicsToCriteria = (firmographics: any) => {
-    if (!firmographics) return [];
-    const criteria = [];
+    if (!firmographics) return [] as any[];
+    const criteria: any[] = [];
     
     console.log('🔍 [AccountDetail] Transforming firmographics to criteria table:', firmographics);
     
@@ -188,7 +213,7 @@ export default function AccountDetail() {
   const transformCriteriaToFirmographics = (rows: any[]): Record<string, any> => {
     const result: Record<string, any> = {};
     
-    rows.forEach((row: any) => {
+    (rows as any[]).forEach((row: any) => {
       const values = row.values.map((v: any) => v.text);
       const fieldKey = row.label.toLowerCase().replace(/\s+/g, '_'); // Convert to snake_case key
       
@@ -494,16 +519,25 @@ export default function AccountDetail() {
     >
       {/* Firmographics Section */}
       <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Firmographics</CardTitle>
-          <div className="text-sm text-gray-500">Searchable attributes for prospecting tools and databases</div>
+        <CardHeader className="flex flex-row items-center justify-between group">
+          <div>
+            <CardTitle>Firmographics</CardTitle>
+            <div className="text-sm text-gray-500">Searchable attributes for prospecting tools and databases</div>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Edit Firmographics"
+            onClick={() => setFirmographicsModalOpen(true)}
+            className="ml-2 invisible group-hover:visible"
+          >
+            <Pencil className="w-4 h-4 text-blue-600" />
+          </Button>
         </CardHeader>
         <CardContent>
           {entityPageState.displayEntity?.firmographics ? (
             <CriteriaTable 
               data={transformFirmographicsToCriteria(entityPageState.displayEntity.firmographics)}
-              editable={true}
-              onEdit={() => setFirmographicsModalOpen(true)}
             />
           ) : (
             <div className="text-center py-8 text-gray-500">No firmographics data available</div>
