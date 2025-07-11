@@ -286,24 +286,42 @@ export function useEntityPage<T = any>({
   // Overview editing handler
   const handleOverviewEdit = useCallback((values: { name: string; description: string }) => {
     if (token && entityId && entity) {
+      // Map generic field names to entity-specific field names
+      const mappedUpdates = config.entityType === 'account' ? {
+        name: values.name, // Use standard name field, not targetAccountName
+        targetAccountDescription: values.description, // Only description needs special mapping
+      } : values;
+      
+      console.log('[ENTITY-PAGE] Overview edit field mapping:', {
+        entityType: config.entityType,
+        originalValues: values,
+        mappedUpdates,
+      });
+      
       // Authenticated user - use field-preserving update
       updateWithFieldPreservation({
-        currentEntity: entity,
-        updates: values,
+        currentAccount: entity, // Fixed: parameter name must match hook signature
+        updates: mappedUpdates,
       });
     } else {
+      // Map field names for draft updates too
+      const mappedUpdates = config.entityType === 'account' ? {
+        name: values.name, // Use standard name field, not targetAccountName
+        targetAccountDescription: values.description, // Only description needs special mapping
+      } : values;
+      
       // Unauthenticated user - update draft
       const currentDraft = draftEntities.find(draft => draft.tempId);
       if (currentDraft) {
         const updateSuccess = DraftManager.updateDraftPreserveFields(
           config.entityType,
           currentDraft.tempId,
-          values
+          mappedUpdates
         );
         if (updateSuccess) {
           queryClient.setQueryData([config.entityType, entityId], (prevData: any) => ({
             ...prevData,
-            ...values,
+            ...mappedUpdates,
           }));
         }
       }
