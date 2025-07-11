@@ -35,8 +35,10 @@ export interface EntityPageLayoutProps<T = any> {
   };
   children?: React.ReactNode;
   overviewProps?: {
-    title?: string;
-    subtitle?: string;
+    pageTitle?: string;
+    pageSubtitle?: string;
+    overviewTitle?: string;
+    overviewSubtitle?: string;
     bodyTitle?: string;
     bodyText?: string;
     entityType?: string;
@@ -111,10 +113,10 @@ export default function EntityPageLayout<T = any>({
             <div className="mb-6">
               <IconComponent className="w-16 h-16 mx-auto text-gray-400 mb-4" />
               <h2 className="text-2xl font-semibold mb-3">
-                {config.emptyStateConfig.title}
+                {config.emptyStateConfig.overviewTitle}
               </h2>
               <p className="text-gray-600 mb-6">
-                {config.emptyStateConfig.subtitle}
+                {config.emptyStateConfig.overviewSubtitle}
               </p>
             </div>
             <Button
@@ -150,15 +152,15 @@ export default function EntityPageLayout<T = any>({
       
       <div className="flex flex-col h-full">
         <PageHeader
-          title={overviewProps?.title || `Your ${config.entityType.charAt(0).toUpperCase() + config.entityType.slice(1)}`}
-          subtitle={overviewProps?.subtitle || `${config.entityType.charAt(0).toUpperCase() + config.entityType.slice(1)} analysis and insights`}
+          title={overviewProps?.pageTitle || `Your ${config.entityType.charAt(0).toUpperCase() + config.entityType.slice(1)}`}
+          subtitle={overviewProps?.pageSubtitle || `${config.entityType.charAt(0).toUpperCase() + config.entityType.slice(1)} analysis and insights`}
         />
         
         <div className="flex-1 p-8 space-y-8">
           {/* Overview Card */}
           <OverviewCard
-            title={overviewProps?.title || entityName}
-            subtitle={overviewProps?.subtitle || entityUrl}
+            title={overviewProps?.overviewTitle || entityName}
+            subtitle={overviewProps?.overviewSubtitle || entityUrl}
             bodyTitle={overviewProps?.bodyTitle || `${config.entityType.charAt(0).toUpperCase() + config.entityType.slice(1)} Overview`}
             bodyText={overviewProps?.bodyText || entityDescription}
             showButton={false}

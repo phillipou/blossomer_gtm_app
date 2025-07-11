@@ -190,8 +190,9 @@ export default function AccountDetail() {
       onGenerate={handleGenerate}
       generateModalProps={generationModalConfigs.account}
       overviewProps={{
-        title: "Target Account",
-        subtitle: entityPageState.displayEntity?.targetAccountDescription || '',
+        pageTitle: "Target Account",
+        pageSubtitle: "Account analysis and insights",
+        overviewTitle: entityPageState.displayEntity?.targetAccountName || "Target Account",
         bodyTitle: 'Account Profile',
         bodyText: entityPageState.displayEntity?.targetAccountDescription || 'No description available',
         entityType: 'account',
