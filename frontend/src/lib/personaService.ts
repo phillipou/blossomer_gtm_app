@@ -29,10 +29,10 @@ export function normalizePersonaResponse(persona: Persona): Persona {
   };
   
   // Assert that backend is not returning recursive data structures
-  if (persona.data?.data) {
+  if (persona.data && typeof persona.data === 'object' && 'data' in persona.data) {
     console.error('[CRITICAL] Backend returned recursive data structure - this indicates the PUT request fix did not work', {
       personaData: persona.data,
-      nestedData: persona.data.data,
+      nestedData: (persona.data as any).data,
       fullPersona: persona
     });
     // For now, just log the error but don't throw to prevent breaking the app
@@ -40,7 +40,7 @@ export function normalizePersonaResponse(persona: Persona): Persona {
     // throw new Error('[CRITICAL] Backend returned recursive data structure');
   }
   
-  if (transformedData?.data) {
+  if (transformedData && typeof transformedData === 'object' && 'data' in transformedData) {
     console.warn('[NORMALIZE] NESTED data field detected in transformedData after camelCase transform', {
       transformedData,
       originalPersonaData: persona.data
@@ -49,12 +49,12 @@ export function normalizePersonaResponse(persona: Persona): Persona {
   
   console.log('[NORMALIZE] Normalized persona (single format):', {
     id: normalized.id,
-    hasTargetPersonaName: !!normalized.targetPersonaName,
-    hasName: !!normalized.name,
+    hasTargetPersonaName: 'targetPersonaName' in normalized && !!(normalized as any).targetPersonaName,
+    hasName: 'name' in normalized && !!(normalized as any).name,
     dataFieldKeys: Object.keys(normalized.data || {}),
     rootLevelKeys: Object.keys(normalized).filter(k => k !== 'data'),
     formatConsistent: !Object.keys(normalized).some(k => k.includes('_')),
-    hasComplexFields: !!(normalized.demographics || normalized.useCases || normalized.buyingSignals)
+    hasComplexFields: ('demographics' in normalized && !!(normalized as any).demographics) || ('useCases' in normalized && !!(normalized as any).useCases) || ('buyingSignals' in normalized && !!(normalized as any).buyingSignals)
   });
   
   return normalized;
@@ -120,8 +120,9 @@ export async function deletePersona(personaId: string, token?: string | null): P
   await apiFetch<void>(`/personas/${personaId}`, { method: 'DELETE' }, token);
 }
 
-export async function generatePersona(accountId: string, personaData: TargetPersonaRequest, token?: string | null): Promise<TargetPersonaResponse> {
-    return apiFetch<TargetPersonaResponse>(`/accounts/${accountId}/personas/generate`, {
+export async function generatePersona(_accountId: string, personaData: TargetPersonaRequest, token?: string | null): Promise<TargetPersonaResponse> {
+    // _accountId is ignored; all context must be in personaData
+    return apiFetch<TargetPersonaResponse>(`/personas/generate-ai`, {
         method: 'POST',
         body: JSON.stringify(personaData),
     }, token);
@@ -135,13 +136,10 @@ function transformPersonaToCreateFormat(aiResponse: TargetPersonaResponse): Pers
   };
 }
 
-export async function createPersona(accountId: string, personaData: TargetPersonaResponse, token?: string | null): Promise<Persona> {
-  // Transform AI format to backend CRUD format
-  const createData = transformPersonaToCreateFormat(personaData);
-  
-  return apiFetch<Persona>(`/accounts/${accountId}/personas`, {
+export async function createPersona(accountId: string, personaData: PersonaCreate, token?: string | null): Promise<Persona> {
+  return apiFetch<Persona>(`/personas?account_id=${accountId}`, {
     method: 'POST',
-    body: JSON.stringify(createData),
+    body: JSON.stringify(personaData),
   }, token);
 }
 
@@ -175,8 +173,7 @@ function mergePersonaUpdates(
 
   console.log('[FIXED-MERGE] [mergePersonaUpdates] currentData extracted', {
     currentDataKeys: Object.keys(currentData),
-    currentDataSize: JSON.stringify(currentData).length,
-    hasNestedData: !!currentData.data
+    currentDataSize: JSON.stringify(currentData).length
   });
 
   // Simple merge with updates taking precedence
@@ -213,7 +210,7 @@ function mergePersonaUpdates(
   });
 
   // Assert no recursion - Critical for preventing Issue #4
-  if (dataPayload.data) {
+  if ("data" in (dataPayload as Record<string, any>) && (dataPayload as Record<string, any>).data !== undefined) {
     throw new Error('[CRITICAL] Recursive data field detected in persona merge - this would cause nested data.data structure');
   }
 
