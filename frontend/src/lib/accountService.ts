@@ -59,23 +59,36 @@ export async function deleteAccount(accountId: string, token?: string | null): P
  * Merge updates with existing account data, preserving all other fields
  */
 function mergeAccountUpdates(
-  currentAccount: TargetAccountResponse,
+  currentAccount: any, // More flexible type to handle both database and AI response formats
   updates: { name?: string; description?: string; [key: string]: any }
 ): AccountUpdate {
+  // Handle null/undefined currentAccount
+  if (!currentAccount) {
+    console.warn('[MERGE-ACCOUNT-UPDATES] currentAccount is null/undefined, using defaults');
+    currentAccount = {};
+  }
+  
+  // Handle both database format (Account) and AI response format (TargetAccountResponse)
+  const currentName = currentAccount.targetAccountName || currentAccount.name || 'Untitled Account';
+  const currentDescription = currentAccount.targetAccountDescription || currentAccount.description || 'No description';
+  
   const frontendData = {
-    targetAccountName: updates.name || currentAccount.targetAccountName,
-    targetAccountDescription: updates.description || currentAccount.targetAccountDescription,
-    // Preserve all existing analysis data
-    targetAccountRationale: currentAccount.targetAccountRationale,
-    buyingSignalsRationale: currentAccount.buyingSignalsRationale,
-    // Preserve complex types
-    firmographics: currentAccount.firmographics,
-    buyingSignals: currentAccount.buyingSignals,
+    // Start with ALL existing fields from currentAccount
+    ...currentAccount,
+    // Override with specific updates
+    targetAccountName: updates.name || currentName,
+    targetAccountDescription: updates.description || currentDescription,
+    // Apply any complex type updates
+    ...(updates.firmographics && { firmographics: updates.firmographics }),
+    ...(updates.buyingSignals && { buyingSignals: updates.buyingSignals }),
+    // Ensure we don't lose these essential fields if they weren't in updates
+    firmographics: updates.firmographics || currentAccount.firmographics,
+    buyingSignals: updates.buyingSignals || currentAccount.buyingSignals,
     metadata: currentAccount.metadata,
   };
   
   return {
-    name: updates.name || currentAccount.targetAccountName,
+    name: updates.name || currentName,
     data: frontendData,
   };
 }
@@ -84,23 +97,36 @@ function mergeAccountUpdates(
  * Merge list field updates with existing account data, preserving all other fields
  */
 function mergeAccountListFieldUpdates(
-  currentAccount: TargetAccountResponse,
+  currentAccount: any, // More flexible type to handle both database and AI response formats
   listFieldUpdates: Record<string, string[]>
 ): AccountUpdate {
+  // Handle null/undefined currentAccount
+  if (!currentAccount) {
+    console.warn('[MERGE-ACCOUNT-LIST-FIELDS] currentAccount is null/undefined, using defaults');
+    currentAccount = {};
+  }
+  
+  // Handle both database format (Account) and AI response format (TargetAccountResponse)
+  const currentName = currentAccount.targetAccountName || currentAccount.name || 'Untitled Account';
+  const currentDescription = currentAccount.targetAccountDescription || currentAccount.description || 'No description';
+  
   const frontendData = {
-    targetAccountName: currentAccount.targetAccountName,
-    targetAccountDescription: currentAccount.targetAccountDescription,
-    // Preserve all existing fields, but allow list field updates
-    targetAccountRationale: listFieldUpdates.targetAccountRationale || currentAccount.targetAccountRationale,
-    buyingSignalsRationale: listFieldUpdates.buyingSignalsRationale || currentAccount.buyingSignalsRationale,
-    // Preserve complex types
+    // Start with ALL existing fields from currentAccount
+    ...currentAccount,
+    // Override with standard fields
+    targetAccountName: currentName,
+    targetAccountDescription: currentDescription,
+    // Apply list field updates only for specified fields
+    ...(listFieldUpdates.targetAccountRationale && { targetAccountRationale: listFieldUpdates.targetAccountRationale }),
+    ...(listFieldUpdates.buyingSignalsRationale && { buyingSignalsRationale: listFieldUpdates.buyingSignalsRationale }),
+    // Ensure we don't lose these essential fields
     firmographics: currentAccount.firmographics,
     buyingSignals: currentAccount.buyingSignals,
     metadata: currentAccount.metadata,
   };
   
   return {
-    name: currentAccount.targetAccountName,
+    name: currentName,
     data: frontendData,
   };
 }
@@ -110,7 +136,7 @@ function mergeAccountListFieldUpdates(
  */
 export async function updateAccountPreserveFields(
   accountId: string,
-  currentAccount: TargetAccountResponse,
+  currentAccount: any, // More flexible type
   updates: { name?: string; description?: string; [key: string]: any },
   token?: string | null
 ): Promise<Account> {
@@ -124,10 +150,18 @@ export async function updateAccountPreserveFields(
  */
 export async function updateAccountListFieldsPreserveFields(
   accountId: string,
-  currentAccount: TargetAccountResponse,
+  currentAccount: any, // More flexible type
   listFieldUpdates: Record<string, string[]>,
   token?: string | null
 ): Promise<Account> {
+  console.log('[PRESERVE-LIST-FIELDS] Input parameters:', {
+    accountId,
+    currentAccount,
+    currentAccountType: typeof currentAccount,
+    currentAccountKeys: currentAccount ? Object.keys(currentAccount) : 'null/undefined',
+    listFieldUpdates
+  });
+  
   const mergedData = mergeAccountListFieldUpdates(currentAccount, listFieldUpdates);
   console.log('[PRESERVE-LIST-FIELDS] Account list fields update with field preservation:', mergedData);
   return updateAccount(accountId, mergedData, token);

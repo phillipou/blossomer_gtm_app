@@ -104,7 +104,7 @@ export function useUpdateAccountPreserveFields(token?: string | null, accountId?
   return useMutation<
     Account,
     Error,
-    { currentAccount: TargetAccountResponse; updates: { name?: string; description?: string; [key: string]: any } }
+    { currentAccount: any; updates: { name?: string; description?: string; [key: string]: any } }
   >({
     mutationFn: ({ currentAccount, updates }) => 
       updateAccountPreserveFields(accountId!, currentAccount, updates, token),
@@ -120,7 +120,7 @@ export function useUpdateAccountListFieldsPreserveFields(token?: string | null, 
   return useMutation<
     Account, 
     Error, 
-    { currentAccount: TargetAccountResponse; listFieldUpdates: Record<string, string[]> }
+    { currentAccount: any; listFieldUpdates: Record<string, string[]> }
   >({
     mutationFn: ({ currentAccount, listFieldUpdates }) => 
       updateAccountListFieldsPreserveFields(accountId!, currentAccount, listFieldUpdates, token),

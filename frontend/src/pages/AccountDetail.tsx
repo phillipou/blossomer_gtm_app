@@ -26,11 +26,14 @@ import EditCriteriaModal from '../components/modals/EditCriteriaModal';
 import { CriteriaTable } from '../components/tables/CriteriaTable';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { DraftManager } from '../lib/draftManager';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AccountDetail() {
   const { token } = useAuthState();
   const { id: accountId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
   
   // Modal state for firmographics and buying signals
@@ -38,9 +41,6 @@ export default function AccountDetail() {
   const [buyingSignalsModalOpen, setBuyingSignalsModalOpen] = useState(false);
   const [modalEditingSignal, setModalEditingSignal] = useState<any>(null);
   const [buyingSignals, setBuyingSignals] = useState<APIBuyingSignal[]>([]);
-  
-  console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
-  console.log('🔍 [AccountDetail] Token:', token ? 'exists' : 'missing');
   
   // Handle "new" route - show creation modal
   const isNewAccount = accountId === 'new';
@@ -62,6 +62,9 @@ export default function AccountDetail() {
   const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
   const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
   
+  // Field-preserving update hook (for authenticated users)
+  const { mutate: updateWithFieldPreservation } = useUpdateAccountPreserveFields(token, accountId);
+  
   // Initialize entity page hook
   const entityPageState = useEntityPage<TargetAccountResponse>({
     config: accountConfig,
@@ -76,20 +79,76 @@ export default function AccountDetail() {
     },
   });
 
+  console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
+  console.log('🔍 [AccountDetail] Token:', token ? 'exists' : 'missing');
+  console.log('🔍 [AccountDetail] Entity display data:', entityPageState.displayEntity);
+  console.log('🔍 [AccountDetail] Entity display data keys:', entityPageState.displayEntity ? Object.keys(entityPageState.displayEntity) : 'no entity');
+
   // Transform function for firmographics to CriteriaTable format
-  const transformFirmographicsToCriteria = (firmographics: Firmographics | undefined) => {
+  const transformFirmographicsToCriteria = (firmographics: any) => {
     if (!firmographics) return [];
     const criteria = [];
-    if (firmographics.industry?.length) criteria.push({ label: "Industry", values: firmographics.industry.map(item => ({ text: item, color: "blue" })) });
-    if (firmographics.employees) criteria.push({ label: "Company Size", values: [{ text: firmographics.employees, color: "green" }] });
-    if (firmographics.departmentSize) criteria.push({ label: "Department Size", values: [{ text: firmographics.departmentSize, color: "green" }] });
-    if (firmographics.revenue) criteria.push({ label: "Revenue", values: [{ text: firmographics.revenue, color: "green" }] });
-    if (firmographics.geography?.length) criteria.push({ label: "Geography", values: firmographics.geography.map(item => ({ text: item, color: "purple" })) });
-    if (firmographics.businessModel?.length) criteria.push({ label: "Business Model", values: firmographics.businessModel.map(item => ({ text: item, color: "orange" })) });
-    if (firmographics.fundingStage?.length) criteria.push({ label: "Funding Stage", values: firmographics.fundingStage.map(item => ({ text: item, color: "red" })) });
-    if (firmographics.companyType?.length) criteria.push({ label: "Company Type", values: firmographics.companyType.map(item => ({ text: item, color: "gray" })) });
-    if (firmographics.keywords?.length) criteria.push({ label: "Keywords", values: firmographics.keywords.map(item => ({ text: item, color: "yellow" })) });
+    
+    console.log('🔍 [AccountDetail] Transforming firmographics to criteria table:', firmographics);
+    
+    // Helper function to safely handle arrays and single values
+    const safeMapArray = (value: any, color: string) => {
+      if (Array.isArray(value)) {
+        return value.map(item => ({ text: item, color }));
+      } else if (value && typeof value === 'string') {
+        return [{ text: value, color }];
+      }
+      return [];
+    };
+    
+    // Handle all fields dynamically
+    Object.entries(firmographics).forEach(([key, value]) => {
+      if (value && (Array.isArray(value) || typeof value === 'string')) {
+        // Convert snake_case to Title Case
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Map different field types to colors
+        const colorMap: Record<string, string> = {
+          'industry': 'blue',
+          'geography': 'purple',
+          'business_model': 'orange',
+          'funding_stage': 'red',
+          'company_type': 'gray',
+          'keywords': 'yellow',
+          'employees': 'green',
+          'department_size': 'green',
+          'revenue': 'green'
+        };
+        
+        const color = colorMap[key] || 'blue'; // Default to blue
+        const values = safeMapArray(value, color);
+        
+        if (values.length > 0) {
+          criteria.push({ label, values });
+        }
+      }
+    });
+    
     return criteria.map((item, index) => ({ ...item, id: String(index) }));
+  };
+
+  // Transform function from CriteriaTable format back to dynamic firmographics structure
+  const transformCriteriaToFirmographics = (rows: any[]): Record<string, any> => {
+    const result: Record<string, any> = {};
+    
+    rows.forEach((row: any) => {
+      const values = row.values.map((v: any) => v.text);
+      const fieldKey = row.label.toLowerCase().replace(/\s+/g, '_'); // Convert to snake_case key
+      
+      // If multiple values, store as array; if single value, store as string
+      if (values.length === 1) {
+        result[fieldKey] = values[0];
+      } else if (values.length > 1) {
+        result[fieldKey] = values;
+      }
+    });
+    
+    return result;
   };
   
   // Show creation modal for new accounts
@@ -206,6 +265,127 @@ export default function AccountDetail() {
     });
   };
 
+  // Handle firmographics update with field preservation (following Company.tsx pattern)
+  const handleFirmographicsUpdate = (newFirmographics: any) => {
+    console.log('🔍 [AccountDetail] Firmographics update requested', {
+      newFirmographics,
+      currentAccount: entityPageState.displayEntity,
+      currentAccountKeys: entityPageState.displayEntity ? Object.keys(entityPageState.displayEntity) : [],
+      isAuthenticated: !!token,
+      accountId
+    });
+
+    if (token && accountId && entityPageState.displayEntity) {
+      // Authenticated user - use field-preserving backend update
+      console.log('📡 [AccountDetail] Updating firmographics via backend with field preservation');
+      
+      updateWithFieldPreservation({
+        currentAccount: entityPageState.displayEntity,
+        updates: { firmographics: newFirmographics },
+      }, {
+        onSuccess: (updatedAccount) => {
+          console.log('✅ [AccountDetail] Firmographics updated successfully via backend', updatedAccount);
+          setFirmographicsModalOpen(false);
+        },
+        onError: (error) => {
+          console.error('❌ [AccountDetail] Failed to update firmographics via backend', error);
+          // Keep modal open on error so user can retry
+        }
+      });
+    } else {
+      // Unauthenticated user - use localStorage draft update with field preservation
+      console.log('💾 [AccountDetail] Updating firmographics via localStorage draft');
+      
+      const draftAccounts = DraftManager.getDrafts('account');
+      const currentDraft = draftAccounts.find(draft => draft.tempId);
+      
+      if (currentDraft) {
+        const updateSuccess = DraftManager.updateDraftPreserveFields(
+          'account',
+          currentDraft.tempId,
+          { firmographics: newFirmographics }
+        );
+        
+        if (updateSuccess) {
+          console.log('✅ [AccountDetail] Draft updated successfully');
+          
+          // Update React Query cache to reflect the change
+          queryClient.setQueryData(['account', accountId], (prevData: any) => ({
+            ...prevData,
+            firmographics: newFirmographics,
+          }));
+          
+          // Close the modal
+          setFirmographicsModalOpen(false);
+        } else {
+          console.error('❌ [AccountDetail] Failed to update draft');
+        }
+      } else {
+        console.error('❌ [AccountDetail] No current draft found for unauthenticated user');
+      }
+    }
+  };
+
+  // Handle buying signals update with field preservation (following same pattern)
+  const handleBuyingSignalsUpdate = (updatedSignals: APIBuyingSignal[]) => {
+    console.log('🔍 [AccountDetail] Buying signals update requested', {
+      updatedSignals,
+      currentAccount: entityPageState.displayEntity,
+      isAuthenticated: !!token,
+      accountId
+    });
+
+    if (token && accountId && entityPageState.displayEntity) {
+      // Authenticated user - use field-preserving backend update
+      console.log('📡 [AccountDetail] Updating buying signals via backend with field preservation');
+      
+      updateWithFieldPreservation({
+        currentAccount: entityPageState.displayEntity,
+        updates: { buyingSignals: updatedSignals },
+      }, {
+        onSuccess: (updatedAccount) => {
+          console.log('✅ [AccountDetail] Buying signals updated successfully via backend', updatedAccount);
+          setBuyingSignalsModalOpen(false);
+        },
+        onError: (error) => {
+          console.error('❌ [AccountDetail] Failed to update buying signals via backend', error);
+          // Keep modal open on error so user can retry
+        }
+      });
+    } else {
+      // Unauthenticated user - use localStorage draft update with field preservation
+      console.log('💾 [AccountDetail] Updating buying signals via localStorage draft');
+      
+      const draftAccounts = DraftManager.getDrafts('account');
+      const currentDraft = draftAccounts.find(draft => draft.tempId);
+      
+      if (currentDraft) {
+        const updateSuccess = DraftManager.updateDraftPreserveFields(
+          'account',
+          currentDraft.tempId,
+          { buyingSignals: updatedSignals }
+        );
+        
+        if (updateSuccess) {
+          console.log('✅ [AccountDetail] Draft updated successfully with buying signals');
+          
+          // Update React Query cache to reflect the change
+          queryClient.setQueryData(['account', accountId], (prevData: any) => ({
+            ...prevData,
+            buyingSignals: updatedSignals,
+          }));
+          
+          // Close the modal
+          setBuyingSignalsModalOpen(false);
+        } else {
+          console.error('❌ [AccountDetail] Failed to update draft with buying signals');
+        }
+      } else {
+        console.error('❌ [AccountDetail] No current draft found for unauthenticated user');
+      }
+    }
+  };
+
   // Get account name for display
   const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
 
@@ -281,32 +461,15 @@ export default function AccountDetail() {
       onClose={() => setFirmographicsModalOpen(false)}
       initialRows={transformFirmographicsToCriteria(entityPageState.displayEntity?.firmographics)}
       onSave={(rows: any[]) => {
-        const newFirmographics: Firmographics = {
-          industry: [],
-          keywords: []
-        };
-        rows.forEach((row: any) => {
-          const values = row.values.map((v: any) => v.text);
-          switch (row.label.toLowerCase()) {
-            case 'industry': newFirmographics.industry = values; break;
-            case 'company size': newFirmographics.employees = values[0]; break;
-            case 'department size': newFirmographics.departmentSize = values[0]; break;
-            case 'revenue': newFirmographics.revenue = values[0]; break;
-            case 'geography': newFirmographics.geography = values; break;
-            case 'business model': newFirmographics.businessModel = values; break;
-            case 'funding stage': newFirmographics.fundingStage = values; break;
-            case 'company type': newFirmographics.companyType = values; break;
-            case 'keywords': newFirmographics.keywords = values; break;
-          }
-        });
-        // Update the account with new firmographics
-        if (entityPageState.handleOverviewEdit) {
-          entityPageState.handleOverviewEdit({
-            name: entityPageState.displayEntity?.targetAccountName || '',
-            description: entityPageState.displayEntity?.targetAccountDescription || '',
-            firmographics: newFirmographics
-          });
-        }
+        console.log('🔍 [AccountDetail] Converting CriteriaTable rows to Firmographics', { rows });
+        
+        // Use the flexible transformation function
+        const newFirmographics = transformCriteriaToFirmographics(rows);
+        
+        console.log('🔍 [AccountDetail] Final firmographics object:', newFirmographics);
+        
+        // Handle firmographics update using the same pattern as Company.tsx
+        handleFirmographicsUpdate(newFirmographics);
       }}
       title="Edit Firmographics"
     />
@@ -322,17 +485,22 @@ export default function AccountDetail() {
         const type = String(values.type || 'Other').trim();
         const detection_method = String(values.detection_method || '').trim();
         
+        const newSignal = { title, description, priority, type, detection_method };
+        
+        let updatedSignals: APIBuyingSignal[];
         if (modalEditingSignal) {
-          setBuyingSignals(signals => signals.map(s => 
-            s.title === modalEditingSignal.title ? 
-            { ...s, title, description, priority, type, detection_method } : s
-          ));
+          updatedSignals = buyingSignals.map(s => 
+            s.title === modalEditingSignal.title ? newSignal : s
+          );
         } else {
-          setBuyingSignals(signals => [
-            ...signals,
-            { title, description, priority, type, detection_method },
-          ]);
+          updatedSignals = [...buyingSignals, newSignal];
         }
+        
+        // Update local state immediately
+        setBuyingSignals(updatedSignals);
+        
+        // Handle buying signals update with field preservation
+        handleBuyingSignalsUpdate(updatedSignals);
       }}
     />
     </>
