@@ -17,14 +17,7 @@ interface BuyingSignalsCardProps {
 const priorityColors = {
   High: "text-red-700 bg-red-50 border-red-200",
   Medium: "text-yellow-700 bg-yellow-50 border-yellow-200",
-  Low: "text-green-700 bg-green-50 border-green-200"
-};
-
-// Priority icons
-const priorityIcons = {
-  High: AlertCircle,
-  Medium: TrendingUp,
-  Low: CheckCircle
+  Low: "text-gray-700 bg-gray-50 border-gray-200"
 };
 
 // Signal type color mapping
@@ -45,7 +38,7 @@ export default function BuyingSignalsCard({
   className = ""
 }: BuyingSignalsCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-
+  console.log("🔍 [BuyingSignalsCard] buyingSignals", buyingSignals);
   if (!buyingSignals || buyingSignals.length === 0) {
     return (
       <div className="text-center text-gray-500 py-8">
@@ -58,7 +51,6 @@ export default function BuyingSignalsCard({
   return (
     <div className={`space-y-4 ${className}`}>
       {buyingSignals.map((signal, index) => {
-        const PriorityIcon = priorityIcons[signal.priority as keyof typeof priorityIcons];
         const typeColor = typeColors[signal.type as keyof typeof typeColors] || "gray";
         return (
           <div
@@ -74,7 +66,6 @@ export default function BuyingSignalsCard({
                   variant="secondary" 
                   className={`${priorityColors[signal.priority as keyof typeof priorityColors]} text-xs`}
                 >
-                  {PriorityIcon && <PriorityIcon className="w-3 h-3 mr-1" />}
                   {signal.priority}
                 </Badge>
               </div>
@@ -108,19 +99,17 @@ export default function BuyingSignalsCard({
             <p className="text-sm text-gray-600 mb-3">
               {signal.description}
             </p>
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant="secondary" 
-                  className={`bg-${typeColor}-50 text-${typeColor}-700 border-${typeColor}-200`}
-                >
-                  {signal.type}
-                </Badge>
-              </div>
-              <div className="text-right">
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <Badge 
+                variant="secondary" 
+                className={`bg-${typeColor}-50 text-${typeColor}-700 border-${typeColor}-200`}
+              >
+                {signal.type}
+              </Badge>
+              <span>
                 <span className="font-medium">Detection:</span>
-                <span className="ml-1">{signal.detection_method}</span>
-              </div>
+                <span className="ml-1">{signal.detectionMethod}</span>
+              </span>
             </div>
           </div>
         );
