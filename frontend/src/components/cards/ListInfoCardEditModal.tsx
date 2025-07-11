@@ -18,7 +18,7 @@ export interface ListInfoCardItem {
 interface ListInfoCardEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (items: ListInfoCardItem[]) => void;
+  onSave: (items: ListInfoCardItem[]) => Promise<void>;
   title: string;
   initialItems: ListInfoCardItem[];
   subtitle?: string;
@@ -41,6 +41,32 @@ export default function ListInfoCardEditModal({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const newItemRef = useRef<HTMLTextAreaElement>(null);
   const addAreaRef = useRef<HTMLDivElement>(null);
+
+  // Deep debug logging for mount/unmount and prop changes
+  useEffect(() => {
+    console.log('[MODAL][LIFECYCLE] MOUNTED', {
+      isOpen,
+      title,
+      initialItems,
+      subtitle,
+      onSave,
+      onSaveString: onSave?.toString(),
+    });
+    return () => {
+      console.log('[MODAL][LIFECYCLE] UNMOUNTED', { title });
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('[MODAL][LIFECYCLE] PROPS CHANGED', {
+      isOpen,
+      title,
+      initialItems,
+      subtitle,
+      onSave,
+      onSaveString: onSave?.toString(),
+    });
+  }, [isOpen, title, initialItems, subtitle, onSave]);
 
   useEffect(() => {
     if (isOpen) {
@@ -147,14 +173,50 @@ export default function ListInfoCardEditModal({
   };
 
   const handleSave = async () => {
+    console.log('[MODAL][DEBUG] === MODAL HANDLE SAVE STARTED ===');
+    console.log('[MODAL][DEBUG] isLoading:', isLoading);
+    console.log('[MODAL][DEBUG] handleSave closure values:', {
+      isOpen,
+      title,
+      initialItems,
+      subtitle,
+      onSave,
+      onSaveString: onSave?.toString(),
+      localItems,
+    });
+    
+    if (isLoading) {
+      console.log('[MODAL][DEBUG] Returning early due to isLoading');
+      return; // Prevent double-clicks
+    }
+    
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    // Clean up empty items before saving
-    const cleaned = localItems.filter((item) => item.text.trim() !== "");
-    onSave(cleaned);
-    setIsLoading(false);
-    onClose();
+    console.log('[MODAL][DEBUG] Save button clicked, isLoading set to true');
+    console.log('[MODAL][DEBUG] onSave function type:', typeof onSave);
+    console.log('[MODAL][DEBUG] onSave function:', onSave);
+    
+    try {
+      // Clean up empty items before saving
+      const cleaned = localItems.filter((item) => item.text.trim() !== "");
+      console.log('[MODAL][DEBUG] Cleaned items:', cleaned);
+      console.log('[MODAL][DEBUG] About to call onSave...');
+      
+      // Call the parent's save function and wait for it to complete
+      const result = await onSave(cleaned);
+      
+      console.log('[MODAL][DEBUG] onSave completed successfully, result:', result);
+      
+      // Close the modal after successful save
+      console.log('[MODAL][DEBUG] Calling onClose...');
+      onClose();
+      console.log('[MODAL][DEBUG] === MODAL HANDLE SAVE COMPLETED ===');
+    } catch (error) {
+      console.error('[MODAL][DEBUG] Save failed:', error);
+      // Don't close the modal if save failed
+    } finally {
+      console.log('[MODAL][DEBUG] Setting isLoading to false');
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -288,7 +350,20 @@ export default function ListInfoCardEditModal({
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600">
+          <Button
+            onClick={() => {
+              if (editingId) {
+                handleFinishEdit();
+                setTimeout(() => {
+                  handleSave();
+                }, 0);
+              } else {
+                handleSave();
+              }
+            }}
+            disabled={isLoading}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </EditDialogFooter>

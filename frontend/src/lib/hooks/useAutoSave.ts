@@ -38,6 +38,8 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
 }: UseAutoSaveOptions<T, CreateInput, UpdateInput>): UseAutoSaveReturn {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialSaveAttempted = useRef(false);
+  const failedAttempts = useRef(0);
+  const maxRetries = 3; // Stop after 3 failed attempts
   const [tempId, setTempId] = useState<string | undefined>();
   const [saveError, setSaveError] = useState<Error | null>(null);
 
@@ -57,7 +59,12 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
       return;
     }
 
-    console.log(`💾 useAutoSave (${entity}): saveImmediately called`, { data, isExistingEntity, tempId });
+    if (failedAttempts.current >= maxRetries) {
+      console.log(`❌ useAutoSave (${entity}): Maximum retry attempts (${maxRetries}) reached. Stopping auto-save.`);
+      return;
+    }
+
+    console.log(`💾 useAutoSave (${entity}): saveImmediately called (attempt ${failedAttempts.current + 1}/${maxRetries})`, { data, isExistingEntity, tempId });
 
     if (isExistingEntity) {
       // Update existing entity
@@ -65,11 +72,13 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
       updateMutation.mutate(data as UpdateInput, {
         onSuccess: (savedEntity) => {
           console.log(`✅ useAutoSave (${entity}): Update successful`, savedEntity);
+          failedAttempts.current = 0; // Reset on success
           setSaveError(null);
           onSaveSuccess?.(savedEntity);
         },
         onError: (error) => {
           console.log(`❌ useAutoSave (${entity}): Update failed`, error);
+          failedAttempts.current += 1;
           setSaveError(error);
           onSaveError?.(error);
         },
@@ -80,6 +89,7 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
       createMutation.mutate(data as CreateInput, {
         onSuccess: (savedEntity) => {
           console.log(`✅ useAutoSave (${entity}): Create successful`, savedEntity);
+          failedAttempts.current = 0; // Reset on success
           setSaveError(null);
           // Clean up draft on successful save
           if (tempId) {
@@ -90,8 +100,10 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
           onSaveSuccess?.(savedEntity);
         },
         onError: (error) => {
-          console.log(`❌ useAutoSave (${entity}): Create failed`, error);
+          console.log(`❌ useAutoSave (${entity}): Create failed (attempt ${failedAttempts.current + 1})`, error);
+          failedAttempts.current += 1;
           setSaveError(error);
+          
           // Save to draft on failure
           if (!tempId && data) {
             console.log(`📝 useAutoSave (${entity}): Saving to draft due to create failure`);
@@ -128,15 +140,23 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
 
   // Effect for immediate save after AI generation
   useEffect(() => {
-    if (!data || initialSaveAttempted.current) return;
+    // Prevent infinite loops - if we've already attempted and failed max times, don't retry
+    if (!data || initialSaveAttempted.current || failedAttempts.current >= maxRetries) {
+      if (failedAttempts.current >= maxRetries) {
+        console.log(`❌ useAutoSave (${entity}): Max retries reached, skipping effect`);
+      }
+      return;
+    }
     
     console.log(`🚀 useAutoSave (${entity}): Initial save attempt triggered`, {
       data,
       isAuthenticated,
       isExistingEntity,
-      parentId
+      parentId,
+      failedAttempts: failedAttempts.current
     });
     
+    // Mark as attempted immediately to prevent re-triggering
     initialSaveAttempted.current = true;
 
     if (isAuthenticated && !isExistingEntity) {
@@ -155,7 +175,7 @@ export function useAutoSave<T, CreateInput, UpdateInput>({
 
   // Effect for debounced saves on data changes (after initial save)
   useEffect(() => {
-    if (!data || !initialSaveAttempted.current) return;
+    if (!data || !initialSaveAttempted.current || failedAttempts.current >= maxRetries) return;
 
     // Only auto-save edits to existing entities or drafts that failed to save
     if (isExistingEntity || (tempId && !isAuthenticated)) {

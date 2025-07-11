@@ -68,35 +68,35 @@ Before finalizing any section, verify:
   "company_name": "string - Official company name",
   "company_url": "{{ input_website_url }}",
   "description": "string - 2-3 sentences on their core identity and what they do",
-  "business_profile": {
-    "category": "string - 5-6 words on what category this product falls under (e.g. AI-powered Sales Tool)",
-    "business_model": "string - 1-2 sentences summarizing how they make money, pricing approach, target market size, sales model, and revenue stream",
-    "existing_customers": "string - 1-3 sentences summarizing what customers have used their products, testimonials, and the general profile of companies and end-users who have used the product based on evidence from the website"
-  },
+  "business_profile_insights": [
+    "Category: <5-6 words on product category>",
+    "Business Model: <1-2 sentences summarizing how they make money, pricing approach, target market size, sales model, and revenue stream>",
+    "Existing Customers: <1-3 sentences summarizing what customers have used their products, testimonials, and the general profile of companies and end-users who have used the product based on evidence from the website>"
+  ],
   "capabilities": [
     "<Feature Name>: <1 concise sentence description>",
     "<Feature Name>: <1 concise sentence description>",
     "<Feature Name>: <1 concise sentence description>"
   ],
-  "use_case_analysis": {
-    "process_impact": "string - 1-3 sentence description of the primary process or workflow this product impacts",
-    "problems_addressed": "string - 1-3 sentences highlighting the problems and inefficiencies this product solves alluding to the processes impacted",
-    "how_they_do_it_today": "string - 1-3 sentence description of how people experiencing this use case or problem do it today"
-  },
-  "positioning": {
-    "key_market_belief": "string - 1-2 sentences about the unique point of view of why existing methods and solutions don't solve the underlying problem they're addressing",
-    "unique_approach": "string - 1-2 sentences that answer 'Why would I choose this over everything else in the market today' for their potential buyer",
-    "language_used": "string - 1-2 sentences highlighting how they talk about their product, metaphors they use, common tropes, and mental models they conjure"
-  },
+  "use_case_analysis_insights": [
+    "Process Impact: <1-3 sentence description of the primary process or workflow this product impacts>",
+    "Problems Addressed: <1-3 sentences highlighting the problems and inefficiencies this product solves alluding to the processes impacted>",
+    "Current State: <1-3 sentence description of how people experiencing this use case or problem do it today>"
+  ],
+  "positioning_insights": [
+    "Key Market Belief: <1-2 sentences about the unique point of view of why existing methods and solutions don't solve the underlying problem they're addressing>",
+    "Unique Approach: <1-2 sentences that answer 'Why would I choose this over everything else in the market today' for their potential buyer>",
+    "Language Used: <1-2 sentences highlighting how they talk about their product, metaphors they use, common tropes, and mental models they conjure>"
+  ],
   "objections": [
     "<Objection Title>: <Objection Description>",
     "<Objection Title>: <Objection Description>",
     "<Objection Title>: <Objection Description>"
   ],
-  "icp_hypothesis": {
-    "target_account_hypothesis": "string - 1-2 sentences describing their TARGET CUSTOMER PROFILE - Focus on specific industries, company size, and key pain points that make them an ideal fit",
-    "target_persona_hypothesis": "string - 1-2 sentences describing their IDEAL STAKEHOLDER/DECISION-MAKER - Include their typical title, key priorities, and what would make them excited about this solution"
-  },
+  "target_customer_insights": [
+    "Target Accounts: <1-2 sentences describing their TARGET CUSTOMER PROFILE - Focus on specific industries, company size, and key pain points that make them an ideal fit>",
+    "Key Personas: <1-2 sentences describing their IDEAL STAKEHOLDER/DECISION-MAKER - Include their typical title, key priorities, and what would make them excited about this solution>"
+  ],
   "metadata": {
     "sources_used": ["website"],
     "context_quality": "{{ context_quality|default('medium') }}",
@@ -112,9 +112,10 @@ Before finalizing any section, verify:
 ## Core Description
 - Focus on core identity, mission, and primary business function - what makes them unique
 - Keep it concise but informative (2-3 sentences)
-- Don't include business model details here - those go in business_profile
+- Don't include business model details here - those go in business_profile_insights
 
-## Business Profile
+## Business Profile Insights (Flattened)
+- Output as a list of strings, each string in the format "Key: Value"
 - Category: Be specific but concise (e.g., "AI-powered Customer Support Platform" not just "SaaS Tool")
 - Business Model: Include revenue streams, pricing approach, and sales model if evident
 - Existing Customers: Extract evidence from testimonials, case studies, logos, or customer stories
@@ -126,12 +127,14 @@ Before finalizing any section, verify:
 - Note unique methodologies or approaches
 - Prioritize features that indicate scaling opportunities or GTM complexity
 
-## Use Case Analysis
+## Use Case Analysis Insights (Flattened)
+- Output as a list of strings, each string in the format "Key: Value"
 - Process Impact: What specific business process or workflow does this product change/improve?
 - Problems Addressed: What pain points, inefficiencies, or challenges does it solve?
-- How They Do It Today: What's the current state/alternative approach for people with this problem?
+- Current State: What's the current state/alternative approach for people with this problem?
 
-## Positioning
+## Positioning Insights (Flattened)
+- Output as a list of strings, each string in the format "Key: Value"
 - Key Market Belief: Their unique POV on why current solutions fail or are insufficient
 - Unique Approach: Their differentiated value proposition and competitive advantage
 - Language Used: Specific terminology, metaphors, and mental models they use to frame their solution
@@ -143,15 +146,17 @@ Before finalizing any section, verify:
 - Consider cost, complexity, change management, competitive alternatives
 - Think from the buyer's perspective about implementation challenges
 
-## ICP Hypothesis
-- Target Account: Industries, company sizes, specific pain points that make ideal customers
-- Target Persona: Job titles, priorities, motivations that drive purchase decisions
+## Target Customer Insights (Flattened)
+- Output as a list of strings, each string in the format "Key: Value"
+- Target Accounts: Industries, company sizes, specific pain points that make ideal customers
+- Key Personas: Job titles, priorities, motivations that drive purchase decisions
 
 ## Metadata Enhancement
 - discovery_gaps: Areas where additional discovery questions would be valuable
 
 # Quality Control Checklist
 Before finalizing response:
+✅ All *_insights fields are lists of strings, each string in "Key: Value" format
 ✅ All capabilities follow the exact format: <Feature Name>: <Description>
 ✅ All objections follow the exact format: <Title>: <Description>
 ✅ Claims can be traced back to source material

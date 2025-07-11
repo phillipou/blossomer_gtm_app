@@ -79,12 +79,13 @@ export interface CompanyOverviewResponse {
   companyName: string;
   companyUrl: string;
   description: string;
-  businessProfile?: BusinessProfile;
+  // Flattened analysis fields (new schema)
+  businessProfileInsights?: string[];
   capabilities?: string[];
-  useCaseAnalysis?: UseCaseAnalysis;
-  positioning?: Positioning;
+  useCaseAnalysisInsights?: string[];
+  positioningInsights?: string[];
   objections?: string[];
-  icpHypothesis?: ICPHypothesis;
+  targetCustomerInsights?: string[];
   metadata?: Record<string, unknown>;
 }
 

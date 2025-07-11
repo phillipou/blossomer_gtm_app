@@ -69,19 +69,35 @@ class ProductOverviewResponse(BaseModel):
     description: str = Field(
         ..., description="2-3 sentences on core identity and what they do"
     )
-    business_profile: BusinessProfile = Field(
-        ..., description="Business category, model, and customer evidence"
+    business_profile_insights: Optional[List[str]] = Field(
+        None,
+        description=(
+            "Business profile insights as a list of strings in 'Key: Value' format. (Flattened)"
+        ),
     )
-    capabilities: List[str] = Field(..., description="Key features and capabilities")
-    use_case_analysis: UseCaseAnalysis = Field(
-        ..., description="Process impact and problems solved"
+    capabilities: List[str] = Field(
+        ..., description="Key features and capabilities"
     )
-    positioning: Positioning = Field(
-        ..., description="Market positioning and differentiation"
+    use_case_analysis_insights: Optional[List[str]] = Field(
+        None,
+        description=(
+            "Use case analysis insights as a list of strings in 'Key: Value' format. (Flattened)"
+        ),
     )
-    objections: List[str] = Field(..., description="Common objections and concerns")
-    icp_hypothesis: ICPHypothesis = Field(
-        ..., description="Target customer and persona hypothesis"
+    positioning_insights: Optional[List[str]] = Field(
+        None,
+        description=(
+            "Positioning insights as a list of strings in 'Key: Value' format. (Flattened)"
+        ),
+    )
+    objections: List[str] = Field(
+        ..., description="Common objections and concerns"
+    )
+    target_customer_insights: Optional[List[str]] = Field(
+        None,
+        description=(
+            "Target customer insights as a list of strings in 'Key: Value' format. (Flattened)"
+        ),
     )
     metadata: Dict[str, Any] = Field(
         ..., description="Analysis metadata and quality scores"

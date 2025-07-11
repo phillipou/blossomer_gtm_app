@@ -26,6 +26,8 @@ from backend.app.services.product_overview_service import (
 )
 from backend.app.services.context_orchestrator_agent import ContextOrchestrator
 from backend.app.api.helpers import run_service
+from pydantic import ValidationError
+import uuid
 
 # OpenAPI Examples
 company_create_example = {
@@ -66,49 +68,95 @@ router = APIRouter(tags=["companies"])
     "",
     response_model=CompanyResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new company",
-    description="Create a new company record for the authenticated user with analysis data.",
+    summary="Create a new company from AI-generated overview",
+    description="Create a new company record for the authenticated user using a "
+    "pre-generated ProductOverviewResponse. This endpoint is used by the "
+    "frontend's auto-save mechanism after AI generation.",
     responses={
         201: {"description": "Company created successfully"},
-        400: {"description": "Company with this name already exists"},
+        400: {"description": "Invalid data provided"},
         401: {"description": "Not authenticated"},
         422: {"description": "Validation error"},
     },
 )
 async def create_company(
-    company_data: CompanyCreate,
+    company_overview: ProductOverviewResponse,
     db: Session = Depends(get_db),
     user: dict = Depends(validate_stack_auth_jwt),
 ):
     """
-    Create a new company for the authenticated user.
-
-    - **name**: Company name (required, max 255 chars)
-    - **url**: Company website URL (required, max 500 chars)
-    - **data**: Optional JSON data with company analysis including:
-      - description: Brief company description
-      - business_profile: Business model and customer info
-      - capabilities: List of key features
-      - positioning: Market positioning and differentiation
-
-    Returns the created company with auto-generated ID and timestamps.
+    Create a new company for the authenticated user from a ProductOverviewResponse.
     """
-    user_id = user.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User ID not found in JWT token.",
+    try:
+        print(f"[DEBUG] Received company_overview data: {company_overview.model_dump()}")
+        print(f"[DEBUG] Required fields check:")
+        print(f"  - company_name: {company_overview.company_name}")
+        print(f"  - company_url: {company_overview.company_url}")
+        print(f"  - description: {company_overview.description}")
+        print(f"  - capabilities: {company_overview.capabilities}")
+        print(f"  - objections: {company_overview.objections}")
+        print(f"  - metadata: {company_overview.metadata}")
+        
+        user_id_str = user.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=401, detail="User ID not found in token"
+            )
+
+        # Convert string user_id to UUID for database operations
+        try:
+            user_uuid = uuid.UUID(user_id_str)
+        except ValueError as e:
+            print(f"Invalid UUID format for user_id: {user_id_str}. Error: {e}")
+            raise HTTPException(
+                status_code=400, detail="Invalid user ID format"
+            )
+
+        # Ensure user exists in database (auto-create if needed)
+        from backend.app.models import User
+        existing_user = db.query(User).filter(User.id == user_uuid).first()
+        if not existing_user:
+            print(f"User not found for user_id: {user_id_str}. Creating new user.")
+            new_user = User(
+                id=user_uuid,
+                role="user",  # Explicitly set the default role
+            )
+            try:
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+                print(f"Successfully created new user with ID: {new_user.id}")
+            except Exception as e:
+                print(f"Failed to create user for user_id: {user_id_str}. Error: {e}")
+                db.rollback()
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create user profile in database."
+                )
+
+        # Transform the ProductOverviewResponse to the database format
+        company_data = CompanyCreate(
+            name=company_overview.company_name,
+            url=company_overview.company_url,
+            data=company_overview.model_dump(),  # Store the entire response as JSONB
         )
 
-    print(f"🏢 [AUTO-SAVE] Creating company for user {user_id}")
-    print(f"📊 [AUTO-SAVE] Company data: name='{company_data.name}', url='{company_data.url}'")
-    print(f"📄 [AUTO-SAVE] Company data keys: {list(company_data.data.keys()) if company_data.data else 'No data'}")
-    
-    db_service = DatabaseService(db)
-    result = db_service.create_company(company_data, user_id)
-    
-    print(f"✅ [AUTO-SAVE] Company created successfully: id={result.id}")
-    return result
+        db_service = DatabaseService(db)
+        result = db_service.create_company(company_data, str(user_uuid))
+        return result
+    except ValidationError as e:
+        print(f"[DEBUG] Validation error details: {e}")
+        print(f"[DEBUG] Validation error JSON: {e.json()}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Validation failed: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[DEBUG] Unexpected error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 
 @router.get("", response_model=List[CompanyResponse])
@@ -127,15 +175,17 @@ async def get_companies(
     - **limit**: Maximum number of companies to return (1-1000)
     """
     user_id = user.get("sub")
-    print(f"📋 [GET-COMPANIES] Fetching companies for user {user_id} (skip={skip}, limit={limit})")
-    
+    print(
+        f"📋 [GET-COMPANIES] Fetching companies for user {user_id} (skip={skip}, limit={limit})"
+    )
+
     db_service = DatabaseService(db)
     result = db_service.get_companies(user_id, skip=skip, limit=limit)
-    
+
     print(f"✅ [GET-COMPANIES] Found {len(result)} companies for user {user_id}")
     if result:
         print(f"📊 [GET-COMPANIES] Company names: {[c.name for c in result]}")
-    
+
     return result
 
 
@@ -152,13 +202,17 @@ async def get_company(
     """
     user_id = user.get("sub")
     print(f"📋 [GET-COMPANY] Fetching company {company_id} for user {user_id}")
-    
+
     db_service = DatabaseService(db)
     result = db_service.get_company(company_id, user_id)
-    
-    print(f"✅ [GET-COMPANY] Company fetched successfully: name='{result.name}', url='{result.url}'")
-    print(f"📊 [GET-COMPANY] Company data keys: {list(result.data.keys()) if result.data else 'No data'}")
-    
+
+    print(
+        f"✅ [GET-COMPANY] Company fetched successfully: name='{result.name}', url='{result.url}'"
+    )
+    print(
+        f"📊 [GET-COMPANY] Company data keys: {list(result.data.keys()) if result.data else 'No data'}"
+    )
+
     return result
 
 
@@ -195,17 +249,21 @@ async def update_company(
     print(f"✏️ [UPDATE-COMPANY] Incoming PUT /companies/{company_id} for user {user_id}")
     raw_payload = company_data.model_dump(exclude_unset=False)
     print(f"📝 [UPDATE-COMPANY] Raw payload: {raw_payload}")
-    print(f"📝 [UPDATE-COMPANY] Update data: name='{company_data.name}', "
-          f"has_data={bool(company_data.data)}")
+    print(
+        f"📝 [UPDATE-COMPANY] Update data: name='{company_data.name}', "
+        f"has_data={bool(company_data.data)}"
+    )
     if company_data.data:
         print(f"📊 [UPDATE-COMPANY] Data keys: {list(company_data.data.keys())}")
         data_preview = str(company_data.data)
         print(f"📄 [UPDATE-COMPANY] Data preview: {data_preview[:200]}")
     db_service = DatabaseService(db)
     result = db_service.update_company(company_id, company_data, user_id)
-    print(f"✅ [UPDATE-COMPANY] Company updated successfully: name='{result.name}', "
-          f"id={result.id}")
-    updated_keys = list(result.data.keys()) if result.data else 'No data'
+    print(
+        f"✅ [UPDATE-COMPANY] Company updated successfully: name='{result.name}', "
+        f"id={result.id}"
+    )
+    updated_keys = list(result.data.keys()) if result.data else "No data"
     print(f"📊 [UPDATE-COMPANY] Updated data keys: {updated_keys}")
     return result
 
@@ -244,13 +302,17 @@ async def prod_generate_product_overview(
     """
     print(f"🤖 [AI-GEN] Generating company overview for user {user.get('sub')}")
     print(f"🌐 [AI-GEN] Website URL: {data.website_url}")
-    print(f"💡 [AI-GEN] User context: {data.user_inputted_context[:100] if data.user_inputted_context else 'None'}...")
-    
+    print(
+        f"💡 [AI-GEN] User context: {data.user_inputted_context[:100] if data.user_inputted_context else 'None'}..."
+    )
+
     orchestrator = ContextOrchestrator()
     result = await run_service(
         generate_product_overview_service, data, orchestrator=orchestrator
     )
-    
+
     print(f"✅ [AI-GEN] Company overview generated successfully")
-    print(f"📊 [AI-GEN] Generated company name: {getattr(result, 'company_name', 'Unknown')}")
+    print(
+        f"📊 [AI-GEN] Generated company name: {getattr(result, 'company_name', 'Unknown')}"
+    )
     return result
