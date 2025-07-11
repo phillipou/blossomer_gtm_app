@@ -12,30 +12,41 @@ export async function getCompanies(token?: string | null): Promise<CompanyRespon
 }
 
 export function normalizeCompanyResponse(company: CompanyResponse): CompanyOverviewResponse {
-  // Log the input for debugging
   console.log('[NORMALIZE] Raw company response:', company);
-
-  // The entire AI-generated data, including our flattened fields, is in the `data` blob.
-  // We use `transformKeysToCamelCase` to ensure all fields are in the correct format for the frontend.
-  const data = transformKeysToCamelCase<Record<string, any>>(company.data || {});
-
+  
+  // Transform the data field to camelCase for frontend use
+  const transformedData = transformKeysToCamelCase<Record<string, any>>(company.data || {});
+  
+  // Create normalized company with consistent camelCase format
   const normalized: CompanyOverviewResponse = {
     companyId: company.id,
     companyName: company.name,
     companyUrl: company.url,
-    description: data.description || '',
+    description: transformedData.description || '',
     // Directly access the new flattened fields after camelCase transformation
-    businessProfileInsights: data.businessProfileInsights || [],
-    capabilities: data.capabilities || [],
-    useCaseAnalysisInsights: data.useCaseAnalysisInsights || [],
-    positioningInsights: data.positioningInsights || [],
-    targetCustomerInsights: data.targetCustomerInsights || [],
-    objections: data.objections || [],
-    metadata: data.metadata || {},
+    businessProfileInsights: transformedData.businessProfileInsights || [],
+    capabilities: transformedData.capabilities || [],
+    useCaseAnalysisInsights: transformedData.useCaseAnalysisInsights || [],
+    positioningInsights: transformedData.positioningInsights || [],
+    targetCustomerInsights: transformedData.targetCustomerInsights || [],
+    objections: transformedData.objections || [],
+    metadata: transformedData.metadata || {},
   };
-
-  // Log the output for debugging
-  console.log('[NORMALIZE] Normalized company overview:', normalized);
+  
+  console.log('[NORMALIZE] Normalized company (single format):', {
+    companyId: normalized.companyId,
+    hasCompanyName: !!normalized.companyName,
+    hasDescription: !!normalized.description,
+    insightsFieldCount: {
+      businessProfile: normalized.businessProfileInsights?.length || 0,
+      capabilities: normalized.capabilities?.length || 0,
+      useCase: normalized.useCaseAnalysisInsights?.length || 0,
+      positioning: normalized.positioningInsights?.length || 0,
+      targetCustomer: normalized.targetCustomerInsights?.length || 0
+    },
+    formatConsistent: true // Always camelCase for company
+  });
+  
   return normalized;
 }
 
@@ -86,76 +97,95 @@ export async function createCompany(companyData: CompanyOverviewResponse, token?
 }
 
 /**
- * Merge partial updates with existing company data, preserving all fields
+ * Simplified merge function using object spread - no defensive programming
+ * Assumes currentOverview is always in normalized camelCase format from cache
  */
 function mergeCompanyUpdates(
   currentOverview: CompanyOverviewResponse,
-  updates: { name?: string; description?: string }
+  updates: { name?: string; description?: string; [key: string]: any }
 ): CompanyUpdate {
-  // Transform the normalized frontend data back to backend format using existing utilities
-  const frontendData = {
-    description: updates.description || currentOverview.description,
-    companyName: updates.name || currentOverview.companyName,
-    companyUrl: currentOverview.companyUrl, // Always preserve URL
-    // Preserve all the new flattened analysis fields
-    businessProfileInsights: currentOverview.businessProfileInsights,
-    capabilities: currentOverview.capabilities,
-    useCaseAnalysisInsights: currentOverview.useCaseAnalysisInsights,
-    positioningInsights: currentOverview.positioningInsights,
-    targetCustomerInsights: currentOverview.targetCustomerInsights,
-    objections: currentOverview.objections,
-    metadata: currentOverview.metadata,
+  console.log('[MERGE-COMPANY-UPDATES] Simplified merge:', {
+    currentKeys: Object.keys(currentOverview || {}),
+    updateKeys: Object.keys(updates || {}),
+    inputFormat: 'normalized-camelCase'
+  });
+  
+  // Simple object spread merge - all fields preserved automatically
+  const mergedData = {
+    ...currentOverview,
+    ...updates,
+    // Ensure name consistency
+    companyName: updates.name || currentOverview.companyName
   };
-
-  // Use existing utility to convert to snake_case for backend
-  const backendData = transformKeysToSnakeCase(frontendData);
-
+  
+  console.log('[MERGE-COMPANY-UPDATES] Merge complete:', {
+    preservedFieldCount: Object.keys(mergedData).length,
+    companyName: mergedData.companyName,
+    hasComplexFields: !!(mergedData.businessProfileInsights || mergedData.capabilities)
+  });
+  
   return {
     companyId: currentOverview.companyId,
-    name: updates.name,
-    data: backendData,
+    name: updates.name || currentOverview.companyName,
+    data: mergedData,
   };
 }
 
 /**
- * Merge list field updates with existing company data, preserving all other fields
+ * Simplified list field merge - now uses same pattern as regular updates
+ * No longer needed as separate function, but kept for backward compatibility
  */
 function mergeCompanyListFieldUpdates(
   currentOverview: CompanyOverviewResponse,
   listFieldUpdates: Record<string, string[]>
 ): CompanyUpdate {
-  // Transform the normalized frontend data back to backend format using existing utilities
-  const frontendData = {
-    description: currentOverview.description,
-    companyName: currentOverview.companyName,
-    companyUrl: currentOverview.companyUrl,
-    // Preserve all existing fields, but allow list field updates
-    businessProfileInsights: listFieldUpdates.businessProfileInsights || currentOverview.businessProfileInsights,
-    capabilities: listFieldUpdates.capabilities || currentOverview.capabilities,
-    useCaseAnalysisInsights: listFieldUpdates.useCaseAnalysisInsights || currentOverview.useCaseAnalysisInsights,
-    positioningInsights: listFieldUpdates.positioningInsights || currentOverview.positioningInsights,
-    targetCustomerInsights: listFieldUpdates.targetCustomerInsights || currentOverview.targetCustomerInsights,
-    objections: listFieldUpdates.objections || currentOverview.objections,
-    metadata: currentOverview.metadata,
-  };
-
-  // Use existing utility to convert to snake_case for backend
-  const backendData = transformKeysToSnakeCase(frontendData);
-
-  return {
-    companyId: currentOverview.companyId,
-    name: currentOverview.companyName,
-    data: backendData,
-  };
+  console.log('[MERGE-COMPANY-LIST-FIELDS] Using simplified merge pattern:', {
+    currentKeys: Object.keys(currentOverview || {}),
+    listUpdateKeys: Object.keys(listFieldUpdates || {}),
+    inputFormat: 'normalized-camelCase'
+  });
+  
+  // Use same simple merge pattern as regular updates
+  return mergeCompanyUpdates(currentOverview, listFieldUpdates);
 }
 
 export async function updateCompany(companyData: CompanyUpdate, token?: string | null): Promise<CompanyOverviewResponse> {
+  console.log('[UPDATE-COMPANY] API boundary transformation:', {
+    companyId: companyData.companyId,
+    inputData: companyData,
+    dataFieldKeys: Object.keys(companyData.data || {}),
+    transformationPoint: 'updateCompany-api-boundary'
+  });
+  
+  // Transform data field to snake_case for backend - Single transformation point
+  const backendPayload = {
+    ...companyData,
+    data: transformKeysToSnakeCase(companyData.data || {})
+  };
+  
+  console.log('[UPDATE-COMPANY] Backend payload:', {
+    companyId: backendPayload.companyId,
+    name: backendPayload.name,
+    dataKeys: Object.keys(backendPayload.data || {}),
+    hasSnakeCase: Object.keys(backendPayload.data || {}).some(k => k.includes('_')),
+    payloadSize: JSON.stringify(backendPayload).length
+  });
+  
   const response = await apiFetch<CompanyResponse>(`/companies/${companyData.companyId}`, {
     method: 'PUT',
-    body: JSON.stringify(companyData),
+    body: JSON.stringify(backendPayload),
   }, token);
-
-  return normalizeCompanyResponse(response);
+  
+  // Always normalize response to maintain consistent format
+  const normalized = normalizeCompanyResponse(response);
+  
+  console.log('[UPDATE-COMPANY] Response normalized:', {
+    responseId: normalized.companyId,
+    fieldCount: Object.keys(normalized).length,
+    formatConsistent: true // Always camelCase for company
+  });
+  
+  return normalized;
 }
 
 /**

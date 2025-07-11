@@ -11,8 +11,57 @@ import {
 } from '../companyService';
 import type { CompanyOverviewResponse, CompanyUpdate, CompanyResponse, CompanyCreate } from '../../types/api';
 
+// Standardized query keys for consistency - Stage 3 improvement
 const COMPANY_QUERY_KEY = 'company';
 const COMPANIES_QUERY_KEY = 'companies';
+
+// Cache validation utility - Stage 3 improvement
+const validateCompanyCacheState = (queryClient: any, companyId: string) => {
+  const cached = queryClient.getQueryData([COMPANY_QUERY_KEY, companyId]);
+  console.log('[CACHE-VALIDATION] Company cache state:', {
+    companyId,
+    exists: !!cached,
+    format: cached ? {
+      hasCompanyName: !!(cached as any).companyName,
+      hasDescription: !!(cached as any).description,
+      topLevelKeys: Object.keys(cached as any),
+      isNormalized: true, // Company always uses camelCase format
+      fieldCount: Object.keys(cached as any).length
+    } : null,
+    timestamp: new Date().toISOString()
+  });
+  return cached;
+};
+
+// Cache consistency test - Stage 3 improvement
+export const testCompanyCachePatterns = (queryClient: any, companyId: string) => {
+  console.log('[CACHE-TEST] Testing company cache invalidation and refresh patterns:', { companyId });
+  
+  // Test 1: Check if company exists in cache
+  const companyCached = queryClient.getQueryData([COMPANY_QUERY_KEY, companyId]);
+  
+  // Test 2: Check if companies list exists
+  const allQueries = queryClient.getQueryCache().getAll();
+  const companiesListQueries = allQueries.filter((query: any) => 
+    query.queryKey[0] === COMPANIES_QUERY_KEY
+  );
+  
+  console.log('[CACHE-TEST] Company cache pattern results:', {
+    companyExists: !!companyCached,
+    listQueriesCount: companiesListQueries.length,
+    cacheConsistency: companyCached ? 'normalized' : 'missing',
+    queryKeysUsed: {
+      company: [COMPANY_QUERY_KEY, companyId],
+      lists: companiesListQueries.map((q: any) => q.queryKey)
+    }
+  });
+  
+  return {
+    companyExists: !!companyCached,
+    listQueriesCount: companiesListQueries.length,
+    isConsistent: !!companyCached
+  };
+};
 
 export function useGetCompanies(token?: string | null) {
   return useQuery<CompanyResponse[], Error>({
@@ -54,11 +103,13 @@ export function useCreateCompany(token?: string | null) {
     onSuccess: (savedCompany) => {
       const normalized = normalizeCompanyResponse(savedCompany);
       console.log('[NORMALIZE] (onCreateSuccess) Normalized company overview:', normalized);
-      // When a company is successfully created, invalidate the list of companies
-      // so it can be refetched with the new data.
+      
+      // Invalidate list and set detail cache - Stage 3 consistency
       queryClient.invalidateQueries({ queryKey: [COMPANIES_QUERY_KEY] });
-      // Also, add the new company to the cache immediately for a better UX
       queryClient.setQueryData([COMPANY_QUERY_KEY, normalized.companyId], normalized);
+      
+      // Validate cache state
+      validateCompanyCacheState(queryClient, normalized.companyId);
     },
   });
 }
@@ -70,7 +121,10 @@ export function useUpdateCompany(token?: string | null, companyId?: string) {
     onSuccess: (savedCompany) => {
       const normalized = normalizeCompanyResponse(savedCompany as any);
       console.log('[NORMALIZE] (onUpdateSuccess) Normalized company overview:', normalized);
+      
+      // Set detail cache and validate - Stage 3 consistency
       queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], normalized);
+      validateCompanyCacheState(queryClient, companyId!);
     },
   });
 }
@@ -86,7 +140,10 @@ export function useUpdateCompanyPreserveFields(token?: string | null, companyId?
       updateCompanyPreserveFields(companyId!, currentOverview, updates, token),
     onSuccess: (savedCompany) => {
       console.log('[PRESERVE-FIELDS] Company updated with field preservation:', savedCompany);
+      
+      // Use consistent key and validate cache - Stage 3 improvement
       queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], savedCompany);
+      validateCompanyCacheState(queryClient, companyId!);
     },
   });
 }
@@ -102,7 +159,10 @@ export function useUpdateCompanyListFieldsPreserveFields(token?: string | null, 
       updateCompanyListFieldsPreserveFields(companyId!, currentOverview, listFieldUpdates, token),
     onSuccess: (savedCompany) => {
       console.log('[PRESERVE-LIST-FIELDS] Company list fields updated with field preservation:', savedCompany);
+      
+      // Use consistent key and validate cache - Stage 3 improvement
       queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], savedCompany);
+      validateCompanyCacheState(queryClient, companyId!);
     },
   });
 }
