@@ -1,93 +1,152 @@
-# Claude Code Configuration - Blossomer GTM API
+---
+alwaysApply: true
+---
 
-## Project Overview
-- AI-powered go-to-market campaign generator for B2B founders
-- Modular monolith with service-oriented design
-- FastAPI backend + React TypeScript frontend
-- Multi-provider LLM integration (OpenAI, Anthropic, Google)
+# Development Agent Workflow - Cursor Rules
 
-## Core Documentation (Always Reference When Relevant)
-- **[ARCHITECTURE.md](@/notes/ARCHITECTURE.md)**: Technical system design, tech stack, deployment architecture
-- **[PRD.md](@/notes/PRD.md)**: User flows, interactions, product decisions, UX rationale
-- **[API_REFERENCE.md](@/notes/API_REFERENCE.md)**: All endpoints, request/response examples, frontend integration
-- **[TASKS.md](@/notes/TASKS.md)**: Current priorities, implementation roadmap, blockers
-- **[DECISIONS.md](@/notes/DECISIONS.md)**: Architectural decisions, trade-offs, evolution rationale
+## Primary Directive
+You are a development agent implementing a project. Follow established documentation and maintain consistency.
 
-## Development Workflow
-1. **Read → Analyze → Implement**: Read relevant files, analyze the issue/requirement, then implement the solution
-2. **Check core docs first**: Reference ARCHITECTURE.md and PRD.md before implementing
-3. **Update TASKS.md**: Mark todos complete and add new ones as discovered
-4. **Document decisions**: Add significant choices to DECISIONS.md
-5. **Suggest doc updates**: Always offer to update relevant documentation
+## Core Workflow Process
 
-## Code Change Authority
-- **Make direct changes**: When asked to fix code, implement features, or make improvements, directly edit the files
-- **No permission asking**: Don't ask for permission to make code changes - just implement them
-- **Proactive fixes**: If you spot bugs, syntax errors, or issues while reading code, fix them immediately
-- **Batch changes**: When making related changes across multiple files, implement all of them together
-- **Error resolution**: When build errors or linting issues are reported, fix them directly in the code
+### Before Starting Any Task
+- Consult `/data-pipeline-notes/Implementation.md` for current stage and available tasks
+- Check task dependencies and prerequisites
+- Verify scope understanding
 
-## Coding Standards
-- **Follow existing patterns**: Check codebase for established conventions before adding new patterns
-- **Minimal changes**: Limit modifications to what's necessary for the current task
-- **Code organization**: Keep files under 300 lines, use clear module boundaries
-- **Line length**: 100 characters documented, 120 characters enforced
-- **Environment awareness**: Support dev/test/prod environments, never hardcode
-- **Rate limiting**: All endpoints must implement appropriate rate limiting
-- **No stubbing in prod**: Mocking only allowed in tests
-- **API Casing Convention**: Backend uses snake_case, frontend uses camelCase, with transformation at API boundaries
+### Task Execution Protocol
 
-## AI/LLM Integration Requirements
-- **Use Jinja2 templates**: All prompts must use the prompt registry system
-- **Structured outputs**: Use Pydantic models for LLM responses
-- **Multi-provider support**: Utilize circuit breaker pattern for reliability
-- **Context processing**: Implement proper content preprocessing for better AI results
+#### 1. Task Assessment
+- Read subtask from `/data-pipeline-notes/Implementation.md`
+- Assess subtask complexity:
+  - **Simple subtask:** Implement directly
+  - **Complex subtask:** Create a todo list 
 
-## Testing Standards
-- **TDD preferred**: Write tests before or alongside implementation
-- **Comprehensive coverage**: Unit, integration, and end-to-end tests
-- **Mock LLM responses**: Use proper mocking for AI services in tests
-- **No test data in prod**: Isolate all test/mock data to test environment
 
-## Test Commands
-- Backend: `poetry run pytest` (from root)
-- Frontend: `npm test` (from frontend/)
-- Full test suite: Check README.md for complete test commands
+#### 3. Documentation Research
+- Check `/data-pipeline-notes/Implementation.md` for relevant documentation links in the subtask
+- Read and understand documentation before implementing
 
-## Build Commands
-- Backend: `poetry install` then `poetry run python -m uvicorn backend.app.api.main:app --reload`
-- Frontend: `npm install` then `npm run dev` (from frontend/)
-- Full build: Check README.md for complete build commands
+#### 4. UI/UX Implementation
+- Consult `/data-pipeline-notes/UI_UX_doc.md` before implementing any UI/UX elements
+- Follow design system specifications and responsive requirements
 
-## Documentation Workflow
-- **Always suggest updates**: When making changes, offer to update relevant core documentation
-- **Reference before implementing**: Check core docs to understand existing patterns and decisions
-- **Keep docs current**: Update TASKS.md when completing work, add new decisions to DECISIONS.md
-- **Cross-reference**: Link between docs when discussing related concepts
+#### 5. Project Structure Compliance
+- Check `/data-pipeline-notes/project_structure.md` before:
+  - Running commands
+  - Creating files/folders
+  - Making structural changes
+  - Adding dependencies
 
-## Directory Structure
-```
-blossomer_gtm_app/
-├── backend/app/           # FastAPI application
-│   ├── api/              # API routes
-│   ├── core/             # Core services (auth, database, LLM)
-│   ├── models/           # Database models
-│   ├── prompts/          # Jinja2 prompt templates
-│   ├── schemas/          # Pydantic schemas
-│   └── services/         # Business logic services
-├── frontend/src/         # React TypeScript application
-│   ├── components/       # Reusable UI components
-│   ├── pages/           # Route components
-│   ├── lib/             # Utilities and services
-│   └── types/           # TypeScript definitions
-├── tests/               # Backend tests
-├── .cursor/rules/       # Cursor IDE rules
-└── @/notes/             # Core documentation
-```
+#### 6. Error Handling
+- Check `/data-pipeline-notes/Bug_tracking.md` for similar issues before fixing
+- Document all errors and solutions in Bug_tracking.md
+- Include error details, root cause, and resolution steps
 
-## Key Files to Reference
-- `pyproject.toml`: Python dependencies and project config
-- `package.json`: Frontend dependencies
-- `docker-compose.yml`: Local development setup
-- `alembic/`: Database migrations
-- `.cursor/rules/`: Development guidelines and best practices
+#### 7. Task Completion
+Mark tasks complete only when:
+- All functionality implemented correctly
+- Code follows project structure guidelines
+- UI/UX matches specifications (if applicable)
+- No errors or warnings remain
+- All task list items completed (if applicable)
+
+### File Reference Priority
+1. `/data-pipeline-notes/Bug_tracking.md` - Check for known issues first
+2. `/data-pipeline-notes/Implementation.md` - Main task reference
+3. `/data-pipeline-notes/project_structure.md` - Structure guidance
+4. `/data-pipeline-notes/UI_UX_doc.md` - Design requirements
+
+## Critical Rules
+- **NEVER** skip documentation consultation
+- **NEVER** mark tasks complete without proper testing
+- **NEVER** ignore project structure guidelines
+- **NEVER** implement UI without checking UI_UX_doc.md
+- **NEVER** fix errors without checking Bug_tracking.md first
+- **ALWAYS** document errors and solutions
+- **ALWAYS** follow the established workflow process
+
+Remember: Build a cohesive, well-documented, and maintainable project. Every decision should support overall project goals and maintain consistency with established patterns.# Development Agent Workflow - Cursor Rules
+
+## Primary Directive
+You are a development agent implementing a project. Follow established documentation and maintain consistency.
+
+## Core Workflow Process
+
+### Before Starting Any Task
+- Consult `/data-pipeline-notes/Implementation.md` for current stage and available tasks
+- Check task dependencies and prerequisites
+- Verify scope understanding
+
+### Task Execution Protocol
+
+#### 1. Task Assessment
+- Read subtask from `/data-pipeline-notes/Implementation.md`
+- Assess subtask complexity:
+  - **Simple subtask:** Implement directly
+  - **Complex subtask:** Create a todo list 
+
+
+#### 3. Documentation Research
+- Check `/data-pipeline-notes/Implementation.md` for relevant documentation links in the subtask
+- Read and understand documentation before implementing
+
+#### 4. UI/UX Implementation
+- Consult `/data-pipeline-notes/UI_UX_doc.md` before implementing any UI/UX elements
+- Follow design system specifications and responsive requirements
+
+#### 5. Project Structure Compliance
+- Check `/data-pipeline-notes/project_structure.md` before:
+  - Running commands
+  - Creating files/folders
+  - Making structural changes
+  - Adding dependencies
+
+#### 6. Error Handling
+- Check `/data-pipeline-notes/Bug_tracking.md` for similar issues before fixing
+- Document all errors and solutions in Bug_tracking.md
+- Include error details, root cause, and resolution steps
+
+#### 7. Task Completion
+Mark tasks complete only when:
+- All functionality implemented correctly
+- Code follows project structure guidelines
+- UI/UX matches specifications (if applicable)
+- No errors or warnings remain
+- All task list items completed (if applicable)
+
+### File Reference Priority
+1. `/data-pipeline-notes/Bug_tracking.md` - Check for known issues first
+2. `/data-pipeline-notes/Implementation.md` - Main task reference
+3. `/data-pipeline-notes/project_structure.md` - Structure guidance
+4. `/data-pipeline-notes/UI_UX_doc.md` - Design requirements
+
+## Critical Rules
+- **NEVER** skip documentation consultation
+- **NEVER** mark tasks complete without proper testing
+- **NEVER** ignore project structure guidelines
+- **NEVER** implement UI without checking UI_UX_doc.md
+- **NEVER** fix errors without checking Bug_tracking.md first
+- **ALWAYS** document errors and solutions
+- **ALWAYS** follow the established workflow process
+
+Remember: Build a cohesive, well-documented, and maintainable project. Every decision should support overall project goals and maintain consistency with established patterns.
+
+## 🚨 PROJECT COMPLETION CHECKPOINT 🚨
+
+**WHEN ALL STAGES IN `/data-pipeline-notes/Implementation.md` ARE COMPLETE:**
+
+This CLAUDE.md file and cursor rules are **SCOPED ONLY** to the "Simplify PUT Pipeline" project. 
+
+**⚠️ MANDATORY ACTION REQUIRED ⚠️**
+When the PUT pipeline simplification is complete, I MUST:
+
+1. **ALERT THE USER** that this project-specific scope is complete
+2. **RECOMMEND** updating CLAUDE.md to broader Blossomer GTM development scope  
+3. **SUGGEST** removing `/data-pipeline-notes/` references and returning to general project work
+4. **NEVER** continue working on other features until the user updates these rules
+
+**Current Project Status:** 🔄 IN PROGRESS - PUT Pipeline Simplification
+**Completion Criteria:** All 6 stages in Implementation.md marked complete + PUT requests working reliably
+
+---
