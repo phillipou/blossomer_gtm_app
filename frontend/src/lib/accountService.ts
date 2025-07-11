@@ -6,7 +6,7 @@ import type {
   TargetAccountAPIRequest,
   TargetAccountResponse,
 } from '../types/api';
-import { transformKeysToCamelCase } from "../lib/utils";
+import { transformKeysToCamelCase, transformKeysToSnakeCase } from "../lib/utils";
 
 // =================================================================
 // Account CRUD API Functions
@@ -18,13 +18,27 @@ export async function getAccounts(companyId: string, token?: string | null): Pro
 
 export function normalizeAccountResponse(account: Account): Account {
   console.log('[NORMALIZE] Raw account response:', account);
-  const data = transformKeysToCamelCase<Record<string, any>>(account.data || {});
+  
+  // Transform the data field to camelCase for frontend use
+  const transformedData = transformKeysToCamelCase<Record<string, any>>(account.data || {});
+  
+  // Create normalized account with consistent camelCase format
+  // Keep data field for backend compatibility, but use camelCase throughout
   const normalized = {
     ...account,
-    ...data,
-    data,
+    ...transformedData, // Spread transformed data to root level for component access
+    data: transformedData, // Keep data field for API consistency
   };
-  console.log('[NORMALIZE] Normalized account:', normalized);
+  
+  console.log('[NORMALIZE] Normalized account (single format):', {
+    id: normalized.id,
+    hasTargetAccountName: !!normalized.targetAccountName,
+    hasName: !!normalized.name,
+    dataFieldKeys: Object.keys(normalized.data || {}),
+    rootLevelKeys: Object.keys(normalized).filter(k => k !== 'data'),
+    formatConsistent: !Object.keys(normalized).some(k => k.includes('_'))
+  });
+  
   return normalized;
 }
 
@@ -41,10 +55,41 @@ export async function createAccount(companyId: string, accountData: AccountCreat
 }
 
 export async function updateAccount(accountId: string, accountData: AccountUpdate, token?: string | null): Promise<Account> {
-  return apiFetch<Account>(`/accounts/${accountId}`, {
+  console.log('[UPDATE-ACCOUNT] API boundary transformation:', {
+    accountId,
+    inputData: accountData,
+    dataFieldKeys: Object.keys(accountData.data || {}),
+    transformationPoint: 'updateAccount-api-boundary'
+  });
+  
+  // Transform data field to snake_case for backend - Single transformation point
+  const backendPayload = {
+    ...accountData,
+    data: transformKeysToSnakeCase(accountData.data || {})
+  };
+  
+  console.log('[UPDATE-ACCOUNT] Backend payload:', {
+    name: backendPayload.name,
+    dataKeys: Object.keys(backendPayload.data || {}),
+    hasSnakeCase: Object.keys(backendPayload.data || {}).some(k => k.includes('_')),
+    payloadSize: JSON.stringify(backendPayload).length
+  });
+  
+  const response = await apiFetch<Account>(`/accounts/${accountId}`, {
     method: 'PUT',
-    body: JSON.stringify(accountData),
+    body: JSON.stringify(backendPayload),
   }, token);
+  
+  // Always normalize response to maintain consistent format
+  const normalized = normalizeAccountResponse(response);
+  
+  console.log('[UPDATE-ACCOUNT] Response normalized:', {
+    responseId: normalized.id,
+    fieldCount: Object.keys(normalized).length,
+    formatConsistent: !Object.keys(normalized).some(k => k.includes('_'))
+  });
+  
+  return normalized;
 }
 
 export async function deleteAccount(accountId: string, token?: string | null): Promise<void> {
@@ -56,79 +101,56 @@ export async function deleteAccount(accountId: string, token?: string | null): P
 // =================================================================
 
 /**
- * Merge updates with existing account data, preserving all other fields
+ * Simplified merge function using object spread - no defensive programming
+ * Assumes currentAccount is always in normalized camelCase format from cache
  */
 function mergeAccountUpdates(
-  currentAccount: any, // More flexible type to handle both database and AI response formats
-  updates: { name?: string; description?: string; [key: string]: any }
+  currentAccount: Record<string, any>, 
+  updates: Record<string, any>
 ): AccountUpdate {
-  // Handle null/undefined currentAccount
-  if (!currentAccount) {
-    console.warn('[MERGE-ACCOUNT-UPDATES] currentAccount is null/undefined, using defaults');
-    currentAccount = {};
-  }
+  console.log('[MERGE-ACCOUNT-UPDATES] Simplified merge:', {
+    currentKeys: Object.keys(currentAccount || {}),
+    updateKeys: Object.keys(updates || {}),
+    inputFormat: 'normalized-camelCase'
+  });
   
-  // Handle both database format (Account) and AI response format (TargetAccountResponse)
-  const currentName = currentAccount.targetAccountName || currentAccount.name || 'Untitled Account';
-  const currentDescription = currentAccount.targetAccountDescription || currentAccount.description || 'No description';
-  
-  const frontendData = {
-    // Start with ALL existing fields from currentAccount
+  // Simple object spread merge - all fields preserved automatically
+  const mergedData = {
     ...currentAccount,
-    // Override with specific updates
-    targetAccountName: updates.name || currentName,
-    targetAccountDescription: updates.description || currentDescription,
-    // Apply any complex type updates
-    ...(updates.firmographics && { firmographics: updates.firmographics }),
-    ...(updates.buyingSignals && { buyingSignals: updates.buyingSignals }),
-    // Ensure we don't lose these essential fields if they weren't in updates
-    firmographics: updates.firmographics || currentAccount.firmographics,
-    buyingSignals: updates.buyingSignals || currentAccount.buyingSignals,
-    metadata: currentAccount.metadata,
+    ...updates
   };
   
+  // Extract name for backend compatibility
+  const accountName = updates.targetAccountName || currentAccount.targetAccountName || 'Untitled Account';
+  
+  console.log('[MERGE-ACCOUNT-UPDATES] Merge complete:', {
+    preservedFieldCount: Object.keys(mergedData).length,
+    accountName,
+    hasComplexFields: !!(mergedData.firmographics || mergedData.buyingSignals)
+  });
+  
   return {
-    name: updates.name || currentName,
-    data: frontendData,
+    name: accountName,
+    data: mergedData,
   };
 }
 
 /**
- * Merge list field updates with existing account data, preserving all other fields
+ * Simplified list field merge - now uses same pattern as regular updates
+ * No longer needed as separate function, but kept for backward compatibility
  */
 function mergeAccountListFieldUpdates(
-  currentAccount: any, // More flexible type to handle both database and AI response formats
+  currentAccount: Record<string, any>,
   listFieldUpdates: Record<string, string[]>
 ): AccountUpdate {
-  // Handle null/undefined currentAccount
-  if (!currentAccount) {
-    console.warn('[MERGE-ACCOUNT-LIST-FIELDS] currentAccount is null/undefined, using defaults');
-    currentAccount = {};
-  }
+  console.log('[MERGE-ACCOUNT-LIST-FIELDS] Using simplified merge pattern:', {
+    currentKeys: Object.keys(currentAccount || {}),
+    listUpdateKeys: Object.keys(listFieldUpdates || {}),
+    inputFormat: 'normalized-camelCase'
+  });
   
-  // Handle both database format (Account) and AI response format (TargetAccountResponse)
-  const currentName = currentAccount.targetAccountName || currentAccount.name || 'Untitled Account';
-  const currentDescription = currentAccount.targetAccountDescription || currentAccount.description || 'No description';
-  
-  const frontendData = {
-    // Start with ALL existing fields from currentAccount
-    ...currentAccount,
-    // Override with standard fields
-    targetAccountName: currentName,
-    targetAccountDescription: currentDescription,
-    // Apply list field updates only for specified fields
-    ...(listFieldUpdates.targetAccountRationale && { targetAccountRationale: listFieldUpdates.targetAccountRationale }),
-    ...(listFieldUpdates.buyingSignalsRationale && { buyingSignalsRationale: listFieldUpdates.buyingSignalsRationale }),
-    // Ensure we don't lose these essential fields
-    firmographics: currentAccount.firmographics,
-    buyingSignals: currentAccount.buyingSignals,
-    metadata: currentAccount.metadata,
-  };
-  
-  return {
-    name: currentName,
-    data: frontendData,
-  };
+  // Use same simple merge pattern as regular updates
+  return mergeAccountUpdates(currentAccount, listFieldUpdates);
 }
 
 /**

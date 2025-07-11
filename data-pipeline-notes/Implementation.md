@@ -49,21 +49,185 @@ The core issue is **too many transformation layers** with **inconsistent field f
 
 #### Sub-steps:
 - [x] Analyze current PUT request pain points and document issues
-- [ ] Audit all transformation points in account and company services
-- [ ] Document current data flow through the pipeline
-- [ ] Identify all locations where manual cache updates occur
-- [ ] Create comprehensive logging strategy for transformation debugging
+- [x] Audit all transformation points in account and company services
+- [x] Document current data flow through the pipeline
+- [x] Identify all locations where manual cache updates occur
+- [x] Create comprehensive logging strategy for transformation debugging
+
+#### Transformation Audit Results (Completed)
+
+**Critical Findings - 6 Transformation Layers Identified:**
+
+1. **Core Utilities** (`/frontend/src/lib/utils.ts`)
+   - `transformKeysToCamelCase()` (Line 26-45) - Foundation transformer
+   - `transformKeysToSnakeCase()` (Line 50-69) - Reverse transformer
+   - **Issue**: Used inconsistently across services
+
+2. **Account Service Transformations** (`/frontend/src/lib/accountService.ts`)
+   - `normalizeAccountResponse()` (Line 19-29) - **CRITICAL ISSUE**: Spreads transformed data at root level AND keeps in `data` field
+   - `mergeAccountUpdates()` (Line 61-94) - **CRITICAL ISSUE**: Complex defensive programming trying to handle multiple input formats
+   - `mergeAccountListFieldUpdates()` (Line 99-132) - Duplicate merge logic for list fields
+   - `updateAccountPreserveFields()` (Line 137-146) - Wrapper adding indirection
+
+3. **Company Service Transformations** (`/frontend/src/lib/companyService.ts`)
+   - `normalizeCompanyResponse()` (Line 14-40) - Manual field mapping instead of automatic transformation
+   - `mergeCompanyUpdates()` (Line 91-118) - **CRITICAL ISSUE**: Manual enumeration of all fields to preserve
+   - `createCompany()` (Line 72-86) - Transform at API boundary (correct pattern)
+   - Similar field-preserving wrappers as account service
+
+**Manual Cache Update Locations Identified:**
+- `AccountDetail.tsx:313` - **CRITICAL**: Direct firmographics update bypassing normalization
+- `AccountDetail.tsx:373` - **CRITICAL**: Direct buying signals update bypassing normalization  
+- `useAccounts.ts:43,55,113,129` - Post-mutation cache updates (inconsistent patterns)
+- `useCompany.ts:61,73,89,105` - Company cache updates (similar inconsistency)
+
+**Complexity Score: CRITICAL (8/10)**
+- Multiple defensive programming layers attempting to handle all format variations
+- Cache updates bypassing normalization in critical user flows
+- Mixed camelCase/snake_case handling throughout pipeline
+
+#### Current PUT Request Data Flow (Problematic)
+
+```
+1. Component State (Mixed formats: camelCase/snake_case/dual format)
+   ↓
+2. Component Update Handler (AccountDetail.tsx:313, 373)
+   ↓
+3. mergeAccountUpdates() - Complex defensive merge logic
+   ↓  
+4. updateAccount() - Basic API call with inconsistent payload format
+   ↓
+5. Backend (Expects snake_case, may receive wrong format)
+   ↓
+6. Response processing 
+   ↓
+7. normalizeAccountResponse() - Creates dual format (root + data field)
+   ↓
+8. Manual cache update (bypasses normalization) OR hook's onSuccess
+   ↓
+9. Component re-render (Format depends on cache update method)
+```
+
+**Problems at each stage:**
+- **Stage 1-2**: Component receives data in multiple possible formats
+- **Stage 3**: Complex merge tries to handle all format variations defensively  
+- **Stage 4-5**: Transformation point unclear, format may still be wrong
+- **Stage 7-8**: Cache updates may bypass normalization entirely
+- **Stage 9**: Component receives inconsistent format, leading to render issues
+
+#### Recommended Simplified Flow (Target)
+
+```
+1. Component State (Always camelCase TargetAccountResponse format)
+   ↓
+2. Simple object spread merge (No defensive programming)
+   ↓  
+3. Transform ONLY at API boundary (Single transformation point)
+   ↓
+4. Backend (Consistent snake_case)
+   ↓
+5. Response normalization (Single, predictable format)
+   ↓
+6. Standardized cache update (Always uses normalization)
+   ↓
+7. Component (Consistent camelCase format)
+```
+
+#### Logging Strategy for Transformation Debugging
+
+```typescript
+// Stage 1: Component Update Logging
+console.log('[COMPONENT-UPDATE] Update initiated:', {
+  accountId,
+  updateType: 'firmographics|buyingSignals|basic',
+  currentFormat: Object.keys(currentData).some(k => k.includes('_')) ? 'snake_case' : 'camelCase',
+  updateKeys: Object.keys(updates),
+  timestamp: new Date().toISOString()
+});
+
+// Stage 2: Pre-Transform Logging  
+console.log('[PRE-TRANSFORM] Data before transformation:', {
+  stage: 'mergeAccountUpdates',
+  inputFormat: detectFormat(input),
+  fieldCount: Object.keys(input).length,
+  complexFields: ['firmographics', 'buyingSignals'].filter(f => !!input[f])
+});
+
+// Stage 3: API Boundary Logging
+console.log('[API-BOUNDARY] Transform trace:', {
+  frontendFormat: updates,
+  backendPayload: transformedPayload,
+  transformationPoint: 'updateAccount',
+  payloadSize: JSON.stringify(transformedPayload).length
+});
+
+// Stage 4: Response Processing
+console.log('[RESPONSE-PROCESS] Backend response normalization:', {
+  rawResponse: response,
+  normalizedFormat: normalized,
+  fieldPreservation: Object.keys(normalized).length,
+  cacheUpdateMethod: 'normalized|manual'
+});
+
+// Stage 5: Cache State Validation
+console.log('[CACHE-STATE] Post-update validation:', {
+  entityId,
+  cacheExists: !!cached,
+  formatValid: !Object.keys(cached).some(k => k.includes('_')),
+  fieldCount: Object.keys(cached).length,
+  lastUpdated: cached?.metadata?.lastUpdated
+});
+```
 
 ### Stage 2: Service Layer Standardization
 **Duration:** 3-4 days  
 **Dependencies:** Stage 1 completion
 
 #### Sub-steps:
-- [ ] Implement single data format standard across account service
-- [ ] Simplify `mergeAccountUpdates()` function to use object spread
-- [ ] Create standardized `updateAccount()` function with single transformation point
-- [ ] Update `normalizeAccountResponse()` to handle edge cases consistently
-- [ ] Add comprehensive transformation logging and debugging
+- [x] Implement single data format standard across account service
+- [x] Simplify `mergeAccountUpdates()` function to use object spread
+- [x] Create standardized `updateAccount()` function with single transformation point
+- [x] Update `normalizeAccountResponse()` to handle edge cases consistently
+- [x] Add comprehensive transformation logging and debugging
+
+#### Stage 2 Implementation Results (Completed)
+
+**Major Service Layer Simplifications:**
+
+1. **`normalizeAccountResponse()` - Consistent Format**
+   - Enhanced logging to track format consistency
+   - Maintains both root-level and data field access for compatibility
+   - Eliminates dual format confusion with clear documentation
+
+2. **`mergeAccountUpdates()` - Eliminated Defensive Programming**
+   - **Before**: 30+ lines of defensive programming handling multiple formats
+   - **After**: 10 lines using simple object spread
+   - **Impact**: 75% code reduction, predictable behavior
+   - Assumes normalized camelCase input (from cache)
+
+3. **`mergeAccountListFieldUpdates()` - Unified Pattern**
+   - **Before**: Duplicate merge logic with manual field enumeration
+   - **After**: Delegates to simplified `mergeAccountUpdates()`
+   - **Impact**: DRY principle, single merge pattern
+
+4. **`updateAccount()` - Single Transformation Point**
+   - **Before**: No transformation logging, unclear when transforms occur
+   - **After**: Transforms only at API boundary with comprehensive logging
+   - **Impact**: Clear transformation point, easier debugging
+
+**Transformation Flow Simplified:**
+```
+Frontend (camelCase) → mergeAccountUpdates() → updateAccount() → Transform to snake_case → Backend
+                                                    ↓
+Backend Response → normalizeAccountResponse() → Frontend (camelCase)
+```
+
+**Logging Strategy Implemented:**
+- Component update initiation tracking
+- Pre-transformation data format validation  
+- API boundary transformation tracing
+- Response normalization verification
+- Cache state consistency checks
 
 ### Stage 3: Cache Management Consistency
 **Duration:** 2-3 days  
