@@ -1,6 +1,6 @@
 # Blossomer GTM API - API Reference
 
-*Last updated: July 5, 2025*
+*Last updated: July 11, 2025*
 
 ## Overview
 
@@ -79,15 +79,30 @@ const response = await fetch('/api/accounts', {
 }
 ```
 
-**Response**: (see ProductOverviewResponse schema)
+**Response**: (see ProductOverviewResponse schema with flattened fields)
+
+**Data Model Changes (July 2025)**:
+- **Flattened Fields**: AI-generated complex objects now returned as `List[str]` for UI compatibility
+- **Examples**: 
+  - `business_profile_insights: ["Category: B2B SaaS", "Business Model: Subscription"]`
+  - `positioning_insights: ["Value Prop: AI-powered automation", "Differentiator: Real-time analytics"]`
+  - `use_case_analysis_insights: ["Primary Use: Lead generation", "Process Impact: 40% time savings"]`
+  - `target_customer_insights: ["ICP: Mid-market companies", "Size: 100-500 employees"]`
+- **Preserved Complex Types**: `firmographics`, `demographics`, `buying_signals` (have dedicated UIs)
 
 ### Company CRUD
 
 - **Create**: `POST /api/companies`
 - **List**: `GET /api/companies`
 - **Retrieve**: `GET /api/companies/{company_id}`
-- **Update**: `PUT /api/companies/{company_id}`
+- **Update**: `PUT /api/companies/{company_id}` (supports field preservation)
 - **Delete**: `DELETE /api/companies/{company_id}`
+
+**Field Preservation (July 2025)**:
+- **Partial Updates**: All PUT requests preserve existing fields not included in request body
+- **Backend Implementation**: Merges updates with existing JSONB data to prevent data loss
+- **Frontend Pattern**: Use `updateEntityPreserveFields` service function for safe partial updates
+- **Example**: Updating only `name` and `description` preserves all analysis data (`business_profile_insights`, `capabilities`, etc.)
 
 ## Account Endpoints
 
@@ -388,7 +403,7 @@ Get API usage statistics for authenticated user.
 ### Basic Analysis Flow
 ```javascript
 // Start company analysis
-const response = await fetch('/demo/company', {
+const response = await fetch('/demo/companies/generate-ai', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -400,7 +415,7 @@ const response = await fetch('/demo/company', {
 const companyData = await response.json();
 
 // Generate target account
-const accountResponse = await fetch('/demo/accounts', {
+const accountResponse = await fetch('/demo/accounts/generate-ai', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -411,6 +426,45 @@ const accountResponse = await fetch('/demo/accounts', {
 
 // Store in localStorage for session persistence
 localStorage.setItem('company_analysis', JSON.stringify(companyData));
+```
+
+### Field-Preserving Updates (July 2025)
+```javascript
+// Safe partial update - preserves all existing analysis data
+const updateCompany = async (companyId, updates) => {
+  const response = await fetch(`/api/companies/${companyId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      name: updates.name,
+      data: {
+        description: updates.description,
+        company_name: updates.name,
+        // Backend automatically preserves all other fields:
+        // business_profile_insights, capabilities, positioning_insights, etc.
+      }
+    })
+  });
+  
+  return response.json();
+};
+
+// Frontend service layer usage
+import { updateCompanyPreserveFields } from '../lib/companyService';
+
+const handleEdit = async (updates) => {
+  const savedCompany = await updateCompanyPreserveFields(
+    companyId,
+    currentCompany, // Complete current entity data
+    updates // Only the fields being updated
+  );
+  
+  // All existing analysis data is preserved
+  console.log('Preserved fields:', Object.keys(savedCompany.data));
+};
 ```
 
 ### Authenticated Requests
@@ -460,4 +514,22 @@ try {
 }
 ```
 
-This API reference provides everything a frontend developer needs to integrate with both current and planned Blossomer GTM API endpoints.
+## July 2025 Updates Summary
+
+### Key Changes
+1. **Data Model Flattening**: AI-generated complex objects now returned as `List[str]` for UI compatibility
+2. **Field Preservation**: All PUT endpoints preserve existing fields not included in request body
+3. **Modal Logic**: Centralized modal management prevents duplicate state bugs
+4. **Endpoint URLs**: Corrected demo endpoint paths to use `/generate-ai` subroute
+
+### Migration Notes
+- **Frontend**: Update components to handle flattened data structures
+- **Backend**: Use field-preserving update patterns for all entity modifications
+- **Testing**: Verify partial updates preserve all existing analysis data
+
+### Reference Implementation
+- **Company Entity**: Serves as reference for field preservation and data flattening patterns
+- **Service Layer**: `updateEntityPreserveFields` functions for safe partial updates
+- **Hook Layer**: `useUpdateEntityPreserveFields` hooks for React integration
+
+This API reference provides everything a frontend developer needs to integrate with both current and planned Blossomer GTM API endpoints, including the July 2025 architectural improvements.

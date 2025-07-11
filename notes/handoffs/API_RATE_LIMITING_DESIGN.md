@@ -149,8 +149,8 @@ RATE_LIMITING_FALLBACK_MODE=conservative  # or disabled
 1. **Replace TODO comments** with actual rate limiting
 2. **Apply to all production endpoints**:
    - `/api/company/` (company generation)
-   - `/api/target-accounts/` (account generation) 
-   - `/api/target-personas/` (persona generation)
+   - `/api/accounts/` (account generation) 
+   - `/api/personas/` (persona generation)
    - `/api/campaigns/` (campaign generation)
 
 ### Phase 3: Monitoring & Optimization (Week 3)

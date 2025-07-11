@@ -7,6 +7,8 @@ import {
   getAccount,
   generateAccount,
   normalizeAccountResponse,
+  updateAccountPreserveFields,
+  updateAccountListFieldsPreserveFields,
 } from '../accountService';
 import type { Account, AccountCreate, AccountUpdate, TargetCompanyRequest, TargetAccountResponse } from '../../types/api';
 
@@ -70,5 +72,41 @@ export function useGetAccount(accountId: string, token?: string | null) {
     queryKey: ['account', accountId],
     queryFn: () => getAccount(accountId, token),
     enabled: !!accountId && !!token,
+  });
+}
+
+// =================================================================
+// Field-Preserving Update Hooks (for Entity Abstraction)
+// =================================================================
+
+export function useUpdateAccountPreserveFields(token?: string | null, accountId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Account,
+    Error,
+    { currentAccount: TargetAccountResponse; updates: { name?: string; description?: string; [key: string]: any } }
+  >({
+    mutationFn: ({ currentAccount, updates }) => 
+      updateAccountPreserveFields(accountId!, currentAccount, updates, token),
+    onSuccess: (savedAccount) => {
+      console.log('[PRESERVE-FIELDS] Account updated with field preservation:', savedAccount);
+      queryClient.setQueryData(['account', accountId], savedAccount);
+    },
+  });
+}
+
+export function useUpdateAccountListFieldsPreserveFields(token?: string | null, accountId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Account, 
+    Error, 
+    { currentAccount: TargetAccountResponse; listFieldUpdates: Record<string, string[]> }
+  >({
+    mutationFn: ({ currentAccount, listFieldUpdates }) => 
+      updateAccountListFieldsPreserveFields(accountId!, currentAccount, listFieldUpdates, token),
+    onSuccess: (savedAccount) => {
+      console.log('[PRESERVE-LIST-FIELDS] Account list fields updated with field preservation:', savedAccount);
+      queryClient.setQueryData(['account', accountId], savedAccount);
+    },
   });
 }

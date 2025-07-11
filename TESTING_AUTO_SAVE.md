@@ -111,7 +111,7 @@ Backend Terminal:
 ```
 
 **Expected Behavior**:
-- Should automatically navigate to `/target-accounts/{id}`
+- Should automatically navigate to `/accounts/{id}`
 - Account should appear in accounts list immediately
 - No "Draft" badge should appear
 
@@ -141,7 +141,7 @@ Frontend Console:
 ```
 
 **Expected Behavior**:
-- Should navigate to `/target-accounts/{accountId}/personas/{personaId}`
+- Should navigate to `/accounts/{accountId}/personas/{personaId}`
 - Persona should appear in personas list
 - No "Draft" badge should appear
 

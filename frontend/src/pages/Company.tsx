@@ -9,6 +9,7 @@ import SummaryCard from '../components/cards/SummaryCard';
 import AddCard from '../components/ui/AddCard';
 import { getEntityColorForParent } from '../lib/entityColors';
 import { getStoredTargetAccounts } from '../lib/accountService';
+import { useAuthState } from '../lib/auth';
 import { 
   useGetCompany, 
   useAnalyzeCompany, 
@@ -22,6 +23,7 @@ import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/ap
 
 export default function Company() {
   const navigate = useNavigate();
+  const { token } = useAuthState();
   const [targetAccounts, setTargetAccounts] = useState<
     (TargetAccountResponse & { id: string; createdAt: string })[]
   >([]);
@@ -62,13 +64,15 @@ export default function Company() {
     );
   };
 
-  // Target account handlers
+  // Target account handlers with auth-aware routing
   const handleAccountClick = (accountId: string) => {
-    navigate(`/target-accounts/${accountId}`);
+    const prefix = token ? '/app' : '/playground';
+    navigate(`${prefix}/accounts/${accountId}`);
   };
 
   const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
-    navigate(`/target-accounts/${account.id}`);
+    const prefix = token ? '/app' : '/playground';
+    navigate(`${prefix}/accounts/${account.id}`);
   };
 
   const handleDeleteAccount = (accountId: string) => {
@@ -78,7 +82,8 @@ export default function Company() {
   };
 
   const handleAddAccount = () => {
-    navigate('/target-accounts');
+    const prefix = token ? '/app' : '/playground';
+    navigate(`${prefix}/accounts`);
   };
 
   // Get company name for target accounts display

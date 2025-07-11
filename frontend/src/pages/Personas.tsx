@@ -78,7 +78,7 @@ export default function TargetPersonas() {
     onSaveSuccess: (savedPersona) => {
       console.log("PersonasPage: Persona auto-saved successfully", savedPersona);
       setGeneratedPersonaData(null);
-      navigate(`/target-accounts/${selectedAccountId}/personas/${savedPersona.id}`);
+      navigate(`/accounts/${selectedAccountId}/personas/${savedPersona.id}`);
     },
     onSaveError: (error) => {
       console.error("PersonasPage: Auto-save failed", error);
@@ -86,7 +86,7 @@ export default function TargetPersonas() {
   });
 
   const handlePersonaClick = (customerId: string, personaId: string) => {
-    navigate(`/target-accounts/${customerId}/personas/${personaId}`);
+    navigate(`/accounts/${customerId}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: Persona) => {

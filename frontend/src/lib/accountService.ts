@@ -52,6 +52,88 @@ export async function deleteAccount(accountId: string, token?: string | null): P
 }
 
 // =================================================================
+// Field-Preserving Update Functions (for Entity Abstraction)
+// =================================================================
+
+/**
+ * Merge updates with existing account data, preserving all other fields
+ */
+function mergeAccountUpdates(
+  currentAccount: TargetAccountResponse,
+  updates: { name?: string; description?: string; [key: string]: any }
+): AccountUpdate {
+  const frontendData = {
+    targetAccountName: updates.name || currentAccount.targetAccountName,
+    targetAccountDescription: updates.description || currentAccount.targetAccountDescription,
+    // Preserve all existing analysis data
+    targetAccountRationale: currentAccount.targetAccountRationale,
+    buyingSignalsRationale: currentAccount.buyingSignalsRationale,
+    // Preserve complex types
+    firmographics: currentAccount.firmographics,
+    buyingSignals: currentAccount.buyingSignals,
+    metadata: currentAccount.metadata,
+  };
+  
+  return {
+    name: updates.name || currentAccount.targetAccountName,
+    data: frontendData,
+  };
+}
+
+/**
+ * Merge list field updates with existing account data, preserving all other fields
+ */
+function mergeAccountListFieldUpdates(
+  currentAccount: TargetAccountResponse,
+  listFieldUpdates: Record<string, string[]>
+): AccountUpdate {
+  const frontendData = {
+    targetAccountName: currentAccount.targetAccountName,
+    targetAccountDescription: currentAccount.targetAccountDescription,
+    // Preserve all existing fields, but allow list field updates
+    targetAccountRationale: listFieldUpdates.targetAccountRationale || currentAccount.targetAccountRationale,
+    buyingSignalsRationale: listFieldUpdates.buyingSignalsRationale || currentAccount.buyingSignalsRationale,
+    // Preserve complex types
+    firmographics: currentAccount.firmographics,
+    buyingSignals: currentAccount.buyingSignals,
+    metadata: currentAccount.metadata,
+  };
+  
+  return {
+    name: currentAccount.targetAccountName,
+    data: frontendData,
+  };
+}
+
+/**
+ * Update account with field preservation - preserves all analysis data
+ */
+export async function updateAccountPreserveFields(
+  accountId: string,
+  currentAccount: TargetAccountResponse,
+  updates: { name?: string; description?: string; [key: string]: any },
+  token?: string | null
+): Promise<Account> {
+  const mergedData = mergeAccountUpdates(currentAccount, updates);
+  console.log('[PRESERVE-FIELDS] Account update with field preservation:', mergedData);
+  return updateAccount(accountId, mergedData, token);
+}
+
+/**
+ * Update account list fields with field preservation
+ */
+export async function updateAccountListFieldsPreserveFields(
+  accountId: string,
+  currentAccount: TargetAccountResponse,
+  listFieldUpdates: Record<string, string[]>,
+  token?: string | null
+): Promise<Account> {
+  const mergedData = mergeAccountListFieldUpdates(currentAccount, listFieldUpdates);
+  console.log('[PRESERVE-LIST-FIELDS] Account list fields update with field preservation:', mergedData);
+  return updateAccount(accountId, mergedData, token);
+}
+
+// =================================================================
 // AI Generation Service Functions
 // =================================================================
 

@@ -813,3 +813,29 @@ if (currentDraft) {
 5. ✅ **Error Handling**: Proper success/failure feedback
 
 This ensures **complete data integrity** across both authenticated (backend) and unauthenticated (localStorage) modes.
+
+---
+
+## July 2025: Critical Refactors, Modal Logic, and Field Preservation Learnings
+
+### 1. Major Data Model Flattening & Field Preservation
+- **Flattened AI-generated fields** (e.g., business_profile → business_profile_insights: List[str]) to align with UI editing capabilities and prevent data corruption (see @FLATTENING_COMPLEX_DATA_STRUCTURES.md).
+- **Field-preserving update pattern** implemented for both backend and localStorage (DraftManager), ensuring partial updates never nullify other fields.
+- **Consistent camelCase (frontend) ↔ snake_case (backend)** enforced at API boundaries.
+
+### 2. ListInfoCardEditModal Double-Click Bug: Root Cause & Solution
+- **Symptom:** Editing a ListInfoCard required two clicks before backend update/UI refresh.
+- **Root Cause:** Duplicate modal logic—ListInfoCard.tsx rendered its own modal with local state, while Company.tsx also rendered a modal with the correct async handler. The first click opened the local modal (no backend update); only the second triggered the parent modal and backend update.
+- **Solution:** Centralized all modal state/logic in Company.tsx. ListInfoCard now only calls an onEditRequest prop. Result: Modal opens and saves on first click, backend update is immediate, and the double-click bug is fixed.
+
+### 3. DraftManager & Unauthenticated User Support
+- **DraftManager.updateDraftPreserveFields** is used for unauthenticated users, merging changes into the local draft cache with field preservation. This logic is unified in Company.tsx for both flows.
+
+### 4. Debugging & React State Learnings
+- **Deep logging** was essential to trace modal mount/unmount, prop changes, and which onSave handler was called.
+- **Lesson:** Avoid duplicated state/modal logic; always centralize in the parent. Be mindful of stale closures and useCallback when passing handlers. Use abstractions (like DraftManager) for unauthenticated flows.
+
+### 5. Outcome
+- Double-click bug fixed; modal and backend update logic is robust for all users.
+- Code is easier to maintain and reason about.
+- All learnings and patterns are now documented for future work.

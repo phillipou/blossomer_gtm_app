@@ -1,6 +1,6 @@
 # Blossomer GTM API - Architectural Decisions
 
-*Last updated: July 5, 2025*
+*Last updated: July 11, 2025*
 
 ## Overview
 
@@ -632,6 +632,33 @@ useEffect(() => {
 3. **Manual cache management** - Error-prone and requires developer discipline
 
 **Status**: ✅ **IMPLEMENTED** - Cache clearing logic added to `useAuthState` hook in auth.ts
+
+---
+
+### **Decision 23: Modal Logic Refactor, Field Preservation, and UI Robustness (July 2025)**
+
+**What**: Centralized all modal and state management for ListInfoCard editing in the parent component (Company.tsx), implemented field-preserving update patterns for both backend and localStorage, and enforced strict data model flattening for AI-generated fields.
+
+**Why**:
+- **Bug Fix:** Resolved a double-click bug caused by duplicate modal logic (see DATA_STATE_CACHE_MANAGEMENT_GUIDE.md and FLATTENING_COMPLEX_DATA_STRUCTURES.md).
+- **Data Integrity:** Prevented data loss/corruption by always merging updates with existing data (field preservation).
+- **Maintainability:** Simplified code, reduced risk of stale closures, and made UI logic easier to reason about.
+- **Consistency:** Unified handling for authenticated (backend) and unauthenticated (DraftManager/localStorage) flows.
+
+**How**:
+- Removed all modal state/logic from ListInfoCard.tsx; ListInfoCard now only calls an onEditRequest prop.
+- All modal state, rendering, and backend update logic is now handled in Company.tsx.
+- All updates (backend and localStorage) use a field-preserving merge pattern.
+- Deep logging and debugging were used to trace and resolve the issue.
+
+**Outcome**:
+- Double-click bug fixed; modal and backend update logic is robust for all users.
+- Code is easier to maintain and reason about.
+- All learnings and patterns are now documented for future work.
+
+**References**:
+- DATA_STATE_CACHE_MANAGEMENT_GUIDE.md
+- FLATTENING_COMPLEX_DATA_STRUCTURES.md
 
 ---
 
