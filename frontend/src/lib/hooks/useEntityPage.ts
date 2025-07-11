@@ -28,8 +28,10 @@ export interface EntityPageConfig<T = any> {
     unauthenticated: string;
   };
   emptyStateConfig: {
-    title: string;
-    subtitle: string;
+    pageTitle: string;
+    pageSubtitle: string;
+    overviewTitle: string;
+    overviewSubtitle: string;
     buttonText: string;
     icon: React.ComponentType<{ className?: string }>;
   };
@@ -133,21 +135,23 @@ export function useEntityPage<T = any>({
   // Get entity list for authenticated mode redirects
   const { data: entityList, isLoading: isLoadingEntityList } = hooks.useGetList(token);
   
-  // Route handling for authenticated users
-  useEffect(() => {
-    if (token && !entityId && entityList && entityList.length > 0) {
-      // Authenticated user without entityId - redirect to most recent entity
-      const mostRecentEntity = entityList[entityList.length - 1] as any;
-      console.log(`${config.entityType}: Authenticated user redirecting to most recent entity`);
-      navigate(`${config.routePrefix.authenticated}/${mostRecentEntity.id}`, { replace: true });
-      return;
-    } else if (!token && entityId) {
-      // Unauthenticated user with entityId - redirect to unauthenticated route
-      console.log(`${config.entityType}: Unauthenticated user redirecting to playground`);
-      navigate(config.routePrefix.unauthenticated, { replace: true });
-      return;
-    }
-  }, [token, entityId, entityList, navigate, config]);
+  // Route handling for authenticated users - DISABLED
+  // This redirect logic was causing too many unintended consequences
+  // Components should handle their own navigation logic
+  // useEffect(() => {
+  //   if (token && !entityId && entityList && entityList.length > 0) {
+  //     // Authenticated user without entityId - redirect to most recent entity
+  //     const mostRecentEntity = entityList[entityList.length - 1] as any;
+  //     console.log(`${config.entityType}: Authenticated user redirecting to most recent entity`);
+  //     navigate(`${config.routePrefix.authenticated}/${mostRecentEntity.id}`, { replace: true });
+  //     return;
+  //   } else if (!token && entityId) {
+  //     // Unauthenticated user with entityId - redirect to unauthenticated route
+  //     console.log(`${config.entityType}: Unauthenticated user redirecting to playground`);
+  //     navigate(config.routePrefix.unauthenticated, { replace: true });
+  //     return;
+  //   }
+  // }, [token, entityId, entityList, navigate, config]);
   
   // Clear cache for authenticated users
   useEffect(() => {

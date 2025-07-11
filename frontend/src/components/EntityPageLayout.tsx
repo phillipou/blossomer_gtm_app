@@ -103,8 +103,8 @@ export default function EntityPageLayout<T = any>({
     return (
       <div className="flex flex-col h-full">
         <PageHeader
-          title={config.emptyStateConfig.title}
-          subtitle={config.emptyStateConfig.subtitle}
+          title={config.emptyStateConfig.pageTitle}
+          subtitle={config.emptyStateConfig.pageSubtitle}
         />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto">

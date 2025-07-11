@@ -13,12 +13,20 @@ export default function MainLayout() {
     if (authState.loading) return; // Wait for auth state to resolve
     const isAppRoute = location.pathname.startsWith('/app');
     const isPlaygroundRoute = location.pathname.startsWith('/playground');
+    
+    console.log('🔍 [MainLayout] Current path:', location.pathname);
+    console.log('🔍 [MainLayout] Has token:', !!authState.token);
+    console.log('🔍 [MainLayout] Is app route:', isAppRoute);
+    console.log('🔍 [MainLayout] Is playground route:', isPlaygroundRoute);
+    
     if (isAppRoute && !authState.token) {
       // Unauthenticated user trying to access /app
+      console.log('🔍 [MainLayout] Redirecting to auth (no token for app route)');
       navigate('/auth?mode=signin', { replace: true });
     } else if (isPlaygroundRoute && authState.token) {
       // Authenticated user trying to access /playground
       // Redirect to /app/company (could enhance to /app/company/:id if available)
+      console.log('🔍 [MainLayout] Redirecting to /app/company (authenticated user on playground)');
       navigate('/app/company', { replace: true });
     }
   }, [authState.token, authState.loading, location.pathname, navigate]);

@@ -177,14 +177,24 @@ class DatabaseService:
         """
         Gets a single account by ID, ensuring it belongs to the user via company ownership.
         """
+        print(f"🔍 [DEBUG] Getting account {account_id} for user {user_id}")
         account = (
             self.db.query(Account)
-            .join(Company)
+            .join(Company, Account.company_id == Company.id)
             .filter(Account.id == account_id, Company.user_id == user_id)
             .first()
         )
         if not account:
+            print(f"❌ [DEBUG] Account {account_id} not found for user {user_id}")
+            # Let's also check if the account exists without the user filter
+            account_exists = self.db.query(Account).filter(Account.id == account_id).first()
+            if account_exists:
+                print(f"⚠️  [DEBUG] Account {account_id} exists but doesn't belong to user {user_id}")
+                print(f"⚠️  [DEBUG] Account company_id: {account_exists.company_id}")
+            else:
+                print(f"⚠️  [DEBUG] Account {account_id} doesn't exist at all")
             raise HTTPException(status_code=404, detail="Account not found")
+        print(f"✅ [DEBUG] Account {account_id} found for user {user_id}")
         return account
 
     def get_account_with_relations(

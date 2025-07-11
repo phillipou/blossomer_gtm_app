@@ -42,10 +42,10 @@ createRoot(document.getElementById('root')!).render(
             {/* Unauthenticated/demo routes */}
             <Route path="playground" element={<MainLayout />}>
               <Route path="company" element={<Company />} />
-              <Route path="personas" element={<Accounts />} />
-              <Route path="personas/:id" element={<AccountDetail />} />
-              <Route path="personas/:id/personas/:personaId" element={<PersonaDetail />} />
-              <Route path="personas-list" element={<Personas />} />
+              <Route path="accounts" element={<Accounts />} />
+              <Route path="accounts/:id" element={<AccountDetail />} />
+              <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
+              <Route path="personas" element={<Personas />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>

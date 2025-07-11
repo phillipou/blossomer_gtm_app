@@ -3,7 +3,7 @@ import type {
   Account,
   AccountCreate,
   AccountUpdate,
-  TargetCompanyRequest,
+  TargetAccountAPIRequest,
   TargetAccountResponse,
 } from '../types/api';
 import { transformKeysToCamelCase } from "../lib/utils";
@@ -138,7 +138,7 @@ export async function updateAccountListFieldsPreserveFields(
 // =================================================================
 
 export async function generateAccount(
-  request: TargetCompanyRequest,
+  request: TargetAccountAPIRequest,
   token?: string | null
 ): Promise<TargetAccountResponse> {
   return apiFetch<TargetAccountResponse>('/accounts/generate-ai', {

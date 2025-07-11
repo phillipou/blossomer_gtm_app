@@ -10,13 +10,13 @@ import {
   updateAccountPreserveFields,
   updateAccountListFieldsPreserveFields,
 } from '../accountService';
-import type { Account, AccountCreate, AccountUpdate, TargetCompanyRequest, TargetAccountResponse } from '../../types/api';
+import type { Account, AccountCreate, AccountUpdate, TargetAccountAPIRequest, TargetAccountResponse } from '../../types/api';
 
 const ACCOUNT_QUERY_KEY = 'accounts';
 
 export function useGenerateAccount(companyId: string, token?: string | null) {
   const queryClient = useQueryClient();
-  return useMutation<TargetAccountResponse, Error, TargetCompanyRequest>({
+  return useMutation<TargetAccountResponse, Error, TargetAccountAPIRequest>({
     mutationFn: (request) => generateAccount(request, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ACCOUNT_QUERY_KEY, companyId] });
@@ -67,12 +67,32 @@ export function useDeleteAccount(companyId: string, token?: string | null) {
   });
 }
 
-export function useGetAccount(accountId: string, token?: string | null) {
+export function useGetAccount(accountId: string | undefined, token?: string | null) {
   return useQuery<Account, Error>({
     queryKey: ['account', accountId],
-    queryFn: () => getAccount(accountId, token),
-    enabled: !!accountId && !!token,
+    queryFn: () => getAccount(accountId!, token),
+    enabled: !!accountId && accountId !== 'new' && !!token,
   });
+}
+
+// Version for useEntityPage compatibility (token first, then entityId)
+export function useGetAccountForEntityPage(token?: string | null, entityId?: string) {
+  return useQuery<Account, Error>({
+    queryKey: ['account', entityId],
+    queryFn: () => getAccount(entityId!, token),
+    enabled: !!entityId && entityId !== 'new' && !!token,
+  });
+}
+
+// Version for useEntityPage compatibility (useGetList with just token)
+export function useGetAccountsForEntityPage(token?: string | null) {
+  // Return a dummy result to prevent redirect logic from triggering
+  // We don't actually need the list for account detail pages
+  return {
+    data: undefined,
+    isLoading: false,
+    error: null,
+  };
 }
 
 // =================================================================

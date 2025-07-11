@@ -50,6 +50,15 @@ export interface TargetCompanyRequest {
   companyContext?: Record<string, string | string[]>;
 }
 
+// Backend API request format (snake_case)
+export interface TargetAccountAPIRequest {
+  website_url: string;
+  account_profile_name?: string;
+  hypothesis?: string;
+  additional_context?: string;
+  company_context?: Record<string, any>;
+}
+
 // New API response structure for company overview (camelCase from API transformation)
 export interface BusinessProfile {
   category: string;
