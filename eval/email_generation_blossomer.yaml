@@ -1,0 +1,12 @@
+prompts:
+  - file://backend/app/prompts/templates/email_generation_blossomer.jinja2
+
+providers:
+  - openai:gpt-4o                # adjust model if needed
+
+tests: file://eval/tests/email_generation_blossomer_cases.csv
+
+defaultTest:
+  assert:
+    - type: valid-json           # fail if response is not valid JSON
+

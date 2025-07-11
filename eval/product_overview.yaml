@@ -1,0 +1,11 @@
+prompts:
+  - file://backend/app/prompts/templates/product_overview.jinja2
+
+providers:
+  - openai:gpt-4o
+
+tests: file://eval/tests/product_overview_cases.csv
+
+defaultTest:
+  assert:
+    - type: valid-json

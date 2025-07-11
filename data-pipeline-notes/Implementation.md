@@ -41,336 +41,37 @@ The core issue is **too many transformation layers** with **inconsistent field f
 - **Data Transformation**: Existing utility functions (`transformKeysToCamelCase`, `transformKeysToSnakeCase`)
 - **Field Preservation**: Simplified patterns replacing complex merge logic
 
-## Implementation Stages
+## 🎉 PUT Pipeline Project Status: COMPLETED
 
-## 🎉 IMPLEMENTATION STATUS: MAJOR MILESTONE COMPLETED
+### ✅ All Critical Issues Resolved
+**All PUT request issues have been successfully resolved!** Clean, maintainable patterns established for future entity development.
 
-**All critical PUT request issues have been resolved!** Three major bugs eliminated with comprehensive fixes that establish clean, maintainable patterns for future entity development.
+### Completed Stages:
+- ✅ **Stage 1:** Pipeline Analysis & Documentation
+- ✅ **Stage 2:** Service Layer Standardization  
+- ✅ **Stage 3:** Cache Management Consistency
+- ✅ **Stage 4:** Component Integration Cleanup
+- ✅ **Stage 5:** Validation & Testing
+- ✅ **Stage 6:** Company Service Migration
 
-### ✅ COMPLETED STAGES
+### Key Problems Solved:
+- **Multiple data transformation layers** with inconsistent field formats
+- **Complex field preservation logic** that was brittle and hard to debug
+- **Cache updates bypassing normalization** functions
+- **Component callbacks with defensive programming** handling multiple formats
+- **Manual cache manipulation** instead of standardized patterns
+- **Parameter name mismatches** causing silent undefined errors
 
-#### Stage 1: Pipeline Analysis & Documentation
-**Duration:** COMPLETED ✅  
-**Dependencies:** None
-
-#### Sub-steps:
-- [x] Analyze current PUT request pain points and document issues
-- [x] Audit all transformation points in account and company services
-- [x] Document current data flow through the pipeline
-- [x] Identify all locations where manual cache updates occur
-- [x] Create comprehensive logging strategy for transformation debugging
-
-#### Transformation Audit Results (Completed)
-
-**Critical Findings - 6 Transformation Layers Identified:**
-
-1. **Core Utilities** (`/frontend/src/lib/utils.ts`)
-   - `transformKeysToCamelCase()` (Line 26-45) - Foundation transformer
-   - `transformKeysToSnakeCase()` (Line 50-69) - Reverse transformer
-   - **Issue**: Used inconsistently across services
-
-2. **Account Service Transformations** (`/frontend/src/lib/accountService.ts`)
-   - `normalizeAccountResponse()` (Line 19-29) - **CRITICAL ISSUE**: Spreads transformed data at root level AND keeps in `data` field
-   - `mergeAccountUpdates()` (Line 61-94) - **CRITICAL ISSUE**: Complex defensive programming trying to handle multiple input formats
-   - `mergeAccountListFieldUpdates()` (Line 99-132) - Duplicate merge logic for list fields
-   - `updateAccountPreserveFields()` (Line 137-146) - Wrapper adding indirection
-
-3. **Company Service Transformations** (`/frontend/src/lib/companyService.ts`)
-   - `normalizeCompanyResponse()` (Line 14-40) - Manual field mapping instead of automatic transformation
-   - `mergeCompanyUpdates()` (Line 91-118) - **CRITICAL ISSUE**: Manual enumeration of all fields to preserve
-   - `createCompany()` (Line 72-86) - Transform at API boundary (correct pattern)
-   - Similar field-preserving wrappers as account service
-
-**Manual Cache Update Locations Identified:**
-- `AccountDetail.tsx:313` - **CRITICAL**: Direct firmographics update bypassing normalization
-- `AccountDetail.tsx:373` - **CRITICAL**: Direct buying signals update bypassing normalization  
-- `useAccounts.ts:43,55,113,129` - Post-mutation cache updates (inconsistent patterns)
-- `useCompany.ts:61,73,89,105` - Company cache updates (similar inconsistency)
-
-**Complexity Score: CRITICAL (8/10)**
-- Multiple defensive programming layers attempting to handle all format variations
-- Cache updates bypassing normalization in critical user flows
-- Mixed camelCase/snake_case handling throughout pipeline
-
-#### Current PUT Request Data Flow (Problematic)
-
-```
-1. Component State (Mixed formats: camelCase/snake_case/dual format)
-   ↓
-2. Component Update Handler (AccountDetail.tsx:313, 373)
-   ↓
-3. mergeAccountUpdates() - Complex defensive merge logic
-   ↓  
-4. updateAccount() - Basic API call with inconsistent payload format
-   ↓
-5. Backend (Expects snake_case, may receive wrong format)
-   ↓
-6. Response processing 
-   ↓
-7. normalizeAccountResponse() - Creates dual format (root + data field)
-   ↓
-8. Manual cache update (bypasses normalization) OR hook's onSuccess
-   ↓
-9. Component re-render (Format depends on cache update method)
-```
-
-**Problems at each stage:**
-- **Stage 1-2**: Component receives data in multiple possible formats
-- **Stage 3**: Complex merge tries to handle all format variations defensively  
-- **Stage 4-5**: Transformation point unclear, format may still be wrong
-- **Stage 7-8**: Cache updates may bypass normalization entirely
-- **Stage 9**: Component receives inconsistent format, leading to render issues
-
-#### Recommended Simplified Flow (Target)
-
-```
-1. Component State (Always camelCase TargetAccountResponse format)
-   ↓
-2. Simple object spread merge (No defensive programming)
-   ↓  
-3. Transform ONLY at API boundary (Single transformation point)
-   ↓
-4. Backend (Consistent snake_case)
-   ↓
-5. Response normalization (Single, predictable format)
-   ↓
-6. Standardized cache update (Always uses normalization)
-   ↓
-7. Component (Consistent camelCase format)
-```
-
-#### Logging Strategy for Transformation Debugging
-
-```typescript
-// Stage 1: Component Update Logging
-console.log('[COMPONENT-UPDATE] Update initiated:', {
-  accountId,
-  updateType: 'firmographics|buyingSignals|basic',
-  currentFormat: Object.keys(currentData).some(k => k.includes('_')) ? 'snake_case' : 'camelCase',
-  updateKeys: Object.keys(updates),
-  timestamp: new Date().toISOString()
-});
-
-// Stage 2: Pre-Transform Logging  
-console.log('[PRE-TRANSFORM] Data before transformation:', {
-  stage: 'mergeAccountUpdates',
-  inputFormat: detectFormat(input),
-  fieldCount: Object.keys(input).length,
-  complexFields: ['firmographics', 'buyingSignals'].filter(f => !!input[f])
-});
-
-// Stage 3: API Boundary Logging
-console.log('[API-BOUNDARY] Transform trace:', {
-  frontendFormat: updates,
-  backendPayload: transformedPayload,
-  transformationPoint: 'updateAccount',
-  payloadSize: JSON.stringify(transformedPayload).length
-});
-
-// Stage 4: Response Processing
-console.log('[RESPONSE-PROCESS] Backend response normalization:', {
-  rawResponse: response,
-  normalizedFormat: normalized,
-  fieldPreservation: Object.keys(normalized).length,
-  cacheUpdateMethod: 'normalized|manual'
-});
-
-// Stage 5: Cache State Validation
-console.log('[CACHE-STATE] Post-update validation:', {
-  entityId,
-  cacheExists: !!cached,
-  formatValid: !Object.keys(cached).some(k => k.includes('_')),
-  fieldCount: Object.keys(cached).length,
-  lastUpdated: cached?.metadata?.lastUpdated
-});
-```
-
-### Stage 2: Service Layer Standardization
-**Duration:** 3-4 days  
-**Dependencies:** Stage 1 completion
-
-#### Sub-steps:
-- [x] Implement single data format standard across account service
-- [x] Simplify `mergeAccountUpdates()` function to use object spread
-- [x] Create standardized `updateAccount()` function with single transformation point
-- [x] Update `normalizeAccountResponse()` to handle edge cases consistently
-- [x] Add comprehensive transformation logging and debugging
-
-#### Stage 2 Implementation Results (Completed)
-
-**Major Service Layer Simplifications:**
-
-1. **`normalizeAccountResponse()` - Consistent Format**
-   - Enhanced logging to track format consistency
-   - Maintains both root-level and data field access for compatibility
-   - Eliminates dual format confusion with clear documentation
-
-2. **`mergeAccountUpdates()` - Eliminated Defensive Programming**
-   - **Before**: 30+ lines of defensive programming handling multiple formats
-   - **After**: 10 lines using simple object spread
-   - **Impact**: 75% code reduction, predictable behavior
-   - Assumes normalized camelCase input (from cache)
-
-3. **`mergeAccountListFieldUpdates()` - Unified Pattern**
-   - **Before**: Duplicate merge logic with manual field enumeration
-   - **After**: Delegates to simplified `mergeAccountUpdates()`
-   - **Impact**: DRY principle, single merge pattern
-
-4. **`updateAccount()` - Single Transformation Point**
-   - **Before**: No transformation logging, unclear when transforms occur
-   - **After**: Transforms only at API boundary with comprehensive logging
-   - **Impact**: Clear transformation point, easier debugging
-
-**Transformation Flow Simplified:**
-```
-Frontend (camelCase) → mergeAccountUpdates() → updateAccount() → Transform to snake_case → Backend
-                                                    ↓
-Backend Response → normalizeAccountResponse() → Frontend (camelCase)
-```
-
-**Logging Strategy Implemented:**
-- Component update initiation tracking
-- Pre-transformation data format validation  
-- API boundary transformation tracing
-- Response normalization verification
-- Cache state consistency checks
-
-### Stage 3: Cache Management Consistency
-**Duration:** 2-3 days  
-**Dependencies:** Stage 2 completion
-
-#### Sub-steps:
-- [x] Audit all manual `queryClient.setQueryData()` calls
-- [x] Replace manual cache updates with normalization function calls
-- [x] Implement consistent query key patterns across all hooks
-- [x] Add cache state validation and debugging tools
-- [x] Test cache invalidation and refresh patterns
-
-#### Stage 3 Implementation Results (Completed)
-
-**Cache Management Standardization:**
-
-1. **Manual Cache Updates Eliminated**
-   - **AccountDetail.tsx**: Replaced direct cache manipulation with normalization
-   - **Before**: `queryClient.setQueryData(['account', id], (prev) => ({ ...prev, field: value }))`
-   - **After**: Uses `normalizeAccountResponse()` to ensure consistent format
-   - **Impact**: All cache updates now maintain data consistency
-
-2. **Query Key Consistency Implemented**
-   - **Standardized Keys**: `ACCOUNTS_LIST_KEY = 'accounts'`, `ACCOUNT_DETAIL_KEY = 'account'`
-   - **Before**: Mixed usage of `'account'` and `'accounts'` keys inconsistently
-   - **After**: Clear separation - lists use `'accounts'`, details use `'account'`
-   - **Impact**: Predictable cache invalidation patterns
-
-3. **Cache State Validation Added**
-   - **validateCacheState()**: Comprehensive cache format checking
-   - **testCachePatterns()**: Exported utility for cache consistency testing
-   - **Validation Points**: After every cache update operation
-   - **Logging**: Detailed cache state tracking with timestamps
-
-4. **Consistent Hook Patterns**
-   - **All mutation hooks**: Now use consistent cache update patterns
-   - **Cache validation**: Automatic validation after each update
-   - **Error tracking**: Enhanced logging for cache operations
-   - **Rollback safety**: Maintains cache integrity even on errors
-
-**Cache Flow Standardized:**
-```
-Component Update → Service Layer → API Response → normalizeAccountResponse() → Cache Update → validateCacheState()
-```
-
-**Key Improvements:**
-- Zero manual cache manipulation bypassing normalization
-- Consistent query key patterns across all hooks
-- Automatic cache validation after every update
-- Comprehensive debugging utilities for cache state tracking
-- Predictable cache invalidation and refresh patterns
-
-### Stage 4: Component Integration Cleanup
-**Duration:** 2-3 days  
-**Dependencies:** Stage 3 completion
-
-#### Sub-steps:
-- [x] Update `AccountDetail.tsx` to use simplified update patterns
-- [x] Remove defensive programming from component callbacks
-- [x] Standardize error handling and loading states
-- [x] Test component state synchronization with server state
-- [x] Verify modal logic and re-render behavior
-
-#### Stage 4 Implementation Results (Completed)
-
-**Component Integration Simplification:**
-
-1. **Simplified Update Patterns**
-   - **handleFirmographicsUpdate()**: Removed complex branching and defensive programming
-   - **handleBuyingSignalsUpdate()**: Streamlined with consistent logging patterns
-   - **Before**: Multiple defensive checks, verbose logging, complex error handling
-   - **After**: Clean, predictable update flow with standardized logging
-
-2. **Eliminated Defensive Programming**
-   - **Before**: Component callbacks checked multiple format variations
-   - **After**: Assumes normalized camelCase format from service layer
-   - **Impact**: Simpler component logic, relies on service layer guarantees
-   - **Logging**: Consistent format with operation type and timestamp tracking
-
-3. **Standardized Error Handling**
-   - **handleComponentError()**: Centralized error handling utility
-   - **Consistent Logging**: All errors logged with operation context, timestamp, and stack trace
-   - **User Experience**: TODO placeholder for user-facing error notifications
-   - **Debugging**: Enhanced error tracking for faster issue resolution
-
-4. **Component State Synchronization Testing**
-   - **testComponentStateSync()**: Utility for validating component and cache state alignment
-   - **Automatic Testing**: Runs on component mount and entity updates
-   - **Validation Points**: Checks format consistency, field preservation, and cache sync
-   - **Debugging**: Detailed state comparison logging
-
-5. **Modal Logic Verification**
-   - **Simplified Modal Flow**: Consistent open/close patterns
-   - **Error States**: Modals remain open on errors for user retry
-   - **State Management**: Clean separation between UI state and data state
-   - **Re-render Behavior**: Predictable based on normalized data changes
-
-**Component Architecture Simplified:**
-```
-User Action → Component Handler → Service Layer → Cache Update → Component Re-render
-     ↓              ↓                  ↓              ↓               ↓
-Standardized    Simplified         Single         Normalized    State Sync
-Error Handling  Update Logic    Transform Point   Cache Update    Testing
-```
-
-**Key Improvements:**
-- Component handlers reduced by 60% in complexity
-- Consistent error handling across all operations
-- Automatic state synchronization validation
-- Predictable modal and re-render behavior
-- No defensive programming - relies on service layer guarantees
-
-### Stage 5: Validation & Testing
-**Duration:** 2-3 days  
-**Dependencies:** Stage 4 completion
-
-#### Sub-steps:
-- [x] Create comprehensive PUT request test suite ✅ COMPLETED
-- [x] Test field preservation across all update scenarios ✅ COMPLETED
-- [x] Validate cache consistency after PUT operations ✅ COMPLETED
-- [x] Test authentication state transitions with PUT requests ✅ COMPLETED
-- [x] Verify no data loss in edge cases ✅ COMPLETED
-
-### Stage 6: Company Service Migration
-**Duration:** 2-3 days  
-**Dependencies:** Stage 5 completion (Account validation)
-
-#### Sub-steps:
-- [x] Apply same simplification patterns to `companyService.ts`
-- [x] Update `Company.tsx` component integration
-- [x] Test company PUT requests with new patterns
-- [x] Verify field preservation for company-specific fields
-- [x] Update documentation with lessons learned ✅ COMPLETED
+### Solution Implemented:
+- **Single Data Format Pipeline**: Always use camelCase in frontend, transform only at API boundaries
+- **Explicit Field Separation**: Clear distinction between DB columns and JSON data
+- **Simplified Merge Logic**: Object spread instead of complex defensive programming
+- **Consistent Cache Updates**: All updates use normalization functions
+- **Assertion-Based Error Handling**: Early detection prevents corruption
 
 ---
 
-## 🎉 PROJECT COMPLETION SUMMARY
+## 🎉 PUT PIPELINE PROJECT COMPLETION SUMMARY
 
 ### **🏆 MAJOR MILESTONE ACHIEVED**
 **All critical PUT request issues resolved!** This implementation successfully eliminated three major bugs and established clean, maintainable patterns for future entity development.
@@ -464,6 +165,252 @@ Error Handling  Update Logic    Transform Point   Cache Update    Testing
 - ✅ Patterns established for future entity development
 
 **This implementation provides a solid foundation for scaling to Personas, Campaigns, and any future entities with confidence that data integrity will be maintained.**
+
+---
+
+# 🚀 NEW PROJECT: Apply PUT Pipeline Learnings to Personas
+
+*Started: July 2025*  
+*Context: Extending the proven PUT request patterns to Personas entity management*
+
+## Project Overview
+
+Based on the successful resolution of all PUT request issues for Accounts and Companies, we now have a proven set of patterns and learnings to apply to the Personas entity. This project will implement the same clean, maintainable patterns for Personas while leveraging all the critical lessons learned.
+
+## Success Criteria
+- Personas PUT requests behave predictably and consistently
+- All field preservation patterns work reliably for persona-specific fields
+- Clean database structure maintained (top-level columns vs JSON data)
+- Component state synchronizes properly with server state
+- Zero recursive data nesting issues
+- Reusable patterns established for future Campaign entity development
+
+## Implementation Stages
+
+### Stage 1: Personas Analysis & Service Layer Preparation ✅ **COMPLETED**
+**Duration:** 2-3 days  
+**Dependencies:** PUT Pipeline project completion
+
+#### Sub-steps:
+- [x] Audit existing Personas service layer (`personaService.ts`)
+- [x] Identify current data transformation patterns and pain points
+- [x] Document current persona field structure (top-level vs JSON data fields)
+- [x] Create persona-specific field mapping strategy
+- [x] Apply explicit field separation patterns from Account/Company learnings
+
+#### Completed Analysis Results:
+- **Field Structure:** Personas use simplified architecture - only `name` at top-level, all AI content in JSON data
+- **Patterns Applied:** Added `mergePersonaUpdates()`, API boundary transformation, recursive data detection
+- **Pain Points Fixed:** Missing field preservation, no parameter consistency, no assertion-based error handling
+- **Strategy:** Explicit field separation with Set-based approach, `currentPersona` naming standardization
+
+#### Critical Questions - ANSWERED:
+- ✅ **Top-level vs JSON data:** Only `id`, `accountId`, `name`, timestamps at top-level; all AI content in JSON data
+- ✅ **Field mapping:** `targetPersonaDescription` stays in JSON data (no DB duplication), `targetPersonaName` → `name`
+- ✅ **Defensive programming:** Dual format handling simplified, utility functions streamlined
+- ✅ **Cache patterns:** Good normalization exists, added field preservation during updates
+
+#### Key Implementation Patterns - APPLIED:
+- ✅ **Explicit Field Separation**: Set-based approach implemented in `mergePersonaUpdates()`
+- ✅ **Parameter Name Consistency**: Standardized `currentPersona` naming across functions
+- ✅ **Assertion-Based Error Handling**: Added recursive data structure detection with critical errors
+- ✅ **Entity-Specific Field Mapping**: Persona-specific name extraction and field separation logic
+
+### Stage 2: Personas Service Layer Implementation ✅ **COMPLETED**
+**Duration:** 2-3 days  
+**Dependencies:** Stage 1 completion
+
+#### Sub-steps:
+- [x] Implement `mergePersonaUpdates()` function using proven patterns
+- [x] Create standardized `updatePersona()` function with single transformation point
+- [x] Update `normalizePersonaResponse()` for consistent format handling
+- [x] Add comprehensive transformation logging and debugging
+- [x] Implement persona-specific field mapping logic
+- [x] Add field-preserving `updatePersonaWithMerge()` wrapper function
+
+#### Completed Implementation:
+- **Merge Function:** `mergePersonaUpdates()` with explicit field separation and recursive detection
+- **API Transformation:** Single transformation point at API boundary with snake_case conversion  
+- **Enhanced Normalization:** Added assertions, logging, and complex field validation
+- **Field Preservation:** `updatePersonaWithMerge()` wrapper function for hook integration
+- **Debugging:** Comprehensive logging throughout transformation pipeline
+
+#### Application of Proven Patterns:
+```typescript
+// Template based on successful Account implementation
+function mergePersonaUpdates(currentPersona: Record<string, any> | null | undefined, updates: Record<string, any>): PersonaUpdate {
+  // 1. Validate inputs with assertions
+  if (!currentPersona) {
+    console.warn('[MERGE-WARNING] currentPersona undefined - investigate parameter passing');
+  }
+  
+  // 2. Extract data safely
+  const safeCurrentPersona = currentPersona || {};
+  const currentData = safeCurrentPersona.data || safeCurrentPersona;
+  
+  // 3. Simple merge
+  const mergedData = { ...currentData, ...updates };
+  
+  // 4. Explicit field separation (persona-specific)
+  const topLevelFields = new Set(['id', 'name', 'companyId', 'createdAt', 'updatedAt']);
+  const dataPayload: Record<string, any> = {};
+  
+  Object.entries(mergedData).forEach(([key, value]) => {
+    if (!topLevelFields.has(key) && key !== 'data') {
+      dataPayload[key] = value;
+    }
+  });
+  
+  // 5. Assert no recursion
+  if (dataPayload.data) {
+    throw new Error('[CRITICAL] Recursive data field detected in persona merge');
+  }
+  
+  return { name: extractPersonaName(mergedData), data: dataPayload };
+}
+```
+
+### Stage 3: Personas Component Integration ✅ **COMPLETED**
+**Duration:** 2-3 days  
+**Dependencies:** Stage 2 completion
+
+#### Sub-steps:
+- [x] Update Personas page components to use simplified update patterns
+- [x] Remove any defensive programming from persona component callbacks
+- [x] Standardize error handling and loading states for personas
+- [x] Test persona component state synchronization with server state
+- [x] Verify modal logic and re-render behavior for persona updates
+- [x] Implement Demographics CriteriaTable rendering (similar to Firmographics)
+- [x] Add BuyingSignalsCard component integration matching AccountDetail patterns
+- [x] Integrate UseCasesCard component with field preservation
+
+#### Completed Integration:
+- **Field-Preserving Hook:** Added `useUpdatePersonaPreserveFields` matching account patterns
+- **Component Updates:** All PersonaDetail update handlers use field preservation
+- **UI Consistency:** Demographics, buying signals, and use cases use same patterns as AccountDetail
+- **Error Handling:** Standardized error handling with `handleComponentError` function
+- **State Sync:** Added component state synchronization testing
+- **Modal Integration:** Demographics and buying signals modals updated with proven patterns
+
+#### Focus Areas:
+- Apply clean component update patterns from AccountDetail.tsx
+- Ensure consistent error handling across persona operations
+- Implement automatic state synchronization validation
+- Remove any manual cache manipulation in persona components
+
+### Stage 4: Personas Hook Integration & Cache Management ✅ **COMPLETED**
+**Duration:** 2-3 days  
+**Dependencies:** Stage 3 completion
+
+#### Sub-steps:
+- [x] Update `usePersonas` hooks to use consistent patterns
+- [x] Replace any manual cache updates with normalization function calls
+- [x] Implement consistent query key patterns for personas
+- [x] Add cache state validation and debugging tools for personas
+- [x] Test persona cache invalidation and refresh patterns
+
+#### Completed Implementation:
+- **Standardized Query Keys:** `PERSONAS_LIST_KEY = 'personas'`, `PERSONA_DETAIL_KEY = 'persona'` matching Account patterns
+- **Cache Validation:** Added `validateCacheState()` function for persona cache debugging
+- **Consistent Cache Updates:** All cache operations use `normalizePersonaResponse()` and consistent keys
+- **Cache Testing:** Added `testPersonaCachePatterns()` for cache invalidation and refresh validation
+- **Hook Consistency:** All persona hooks now follow Account service patterns with proper cache management
+
+#### Applied Account Pattern Consistency:
+- Cache validation utilities match Account implementation patterns
+- Query key standardization follows established conventions
+- All mutation success handlers include validation and normalization
+- Added debugging tools for cache state inspection
+
+### Stage 5: Validation & Testing
+**Duration:** 2-3 days  
+**Dependencies:** Stage 4 completion
+
+#### Sub-steps:
+- [ ] Create comprehensive persona PUT request test suite
+- [ ] Test field preservation across all persona update scenarios  
+- [ ] Validate cache consistency after persona PUT operations
+- [ ] Test authentication state transitions with persona PUT requests
+- [ ] Verify no data loss in persona edge cases
+
+#### Testing Protocol (Based on Bug_tracking.md):
+1. **Data Format Consistency**
+   - [ ] Generate persona with full AI analysis data
+   - [ ] Verify all persona fields present in expected format
+   - [ ] Test partial update (name/description only)
+   - [ ] Confirm all other persona fields preserved
+   - [ ] Check database to verify correct persona storage
+
+2. **Cache Consistency**
+   - [ ] Verify cache reflects persona PUT response immediately
+   - [ ] Test page refresh shows updated persona data
+   - [ ] Confirm no stale persona data in localStorage
+   - [ ] Test navigation away and back to personas
+
+3. **Component State Sync**
+   - [ ] Verify persona UI updates immediately after PUT
+   - [ ] Test persona modal closes correctly after save
+   - [ ] Confirm loading states work properly for personas
+   - [ ] Test error states and retry logic for personas
+
+### Stage 6: Documentation & Pattern Establishment
+**Duration:** 1-2 days  
+**Dependencies:** Stage 5 completion
+
+#### Sub-steps:
+- [ ] Document persona-specific field mapping patterns
+- [ ] Update Bug_tracking.md with any persona-specific issues discovered
+- [ ] Create reusable templates for Campaign entity development
+- [ ] Update project structure documentation for persona patterns
+- [ ] Validate patterns are ready for Campaign entity extension
+
+## Critical Learnings to Apply
+
+### From Bug_tracking.md - Red Flags to Avoid:
+- **Recursive nesting:** Ensure no `data.data.data...` structures in persona updates
+- **Field duplication:** Avoid same persona data in multiple formats/locations  
+- **Parameter name mismatches:** Use consistent `currentPersona` naming
+- **Mixed case conventions:** Maintain camelCase throughout frontend
+- **Delete operations:** Use explicit inclusion patterns for field separation
+- **Manual cache updates:** Always use normalization functions
+
+### Proven Patterns to Implement:
+- **Explicit Field Separation**: Clear distinction between persona DB columns and JSON data
+- **Assertion-Based Error Handling**: Early detection prevents corruption
+- **Consistent Parameter Naming**: Eliminate silent undefined errors
+- **Proper Field Mapping**: Persona-specific field transformations
+- **Single Transformation Points**: Clean API boundary handling
+
+### Pre-Implementation Checklist (From Bug_tracking.md):
+#### Before Starting Persona Updates:
+- [ ] **Define field separation**: Which persona fields go to top-level DB columns vs JSON data?
+- [ ] **Standardize parameter names**: Use consistent `currentPersona` naming across all functions
+- [ ] **Create explicit field mapping**: Map generic UI fields to persona-specific fields
+- [ ] **Add assertions early**: Catch recursive/malformed persona data immediately
+- [ ] **Define test scenarios**: How will you verify persona field preservation?
+
+#### During Implementation:
+- [ ] **Use explicit inclusion patterns**: Build persona payloads by including, not deleting
+- [ ] **Test parameter consistency**: Verify all persona hook signatures match call sites
+- [ ] **Validate field mapping**: Ensure persona UI updates reach correct database fields
+- [ ] **Check for recursion**: Monitor for nested data structures in persona updates
+- [ ] **Test edge cases**: What happens with undefined/empty persona data?
+
+## Resource Links
+
+### Internal Documentation References
+- **PUT Pipeline Learnings**: `/data-pipeline-notes/Bug_tracking.md` - Critical patterns and red flags
+- **Account Service Patterns**: `/frontend/src/lib/accountService.ts` - Reference implementation
+- **Company Service Patterns**: `/frontend/src/lib/companyService.ts` - Validated patterns
+- **Entity Abstraction Layer**: `/notes/ARCHITECTURE.md#entity-management-abstraction-layer`
+
+### Success Metrics
+- **Zero recursive nesting**: No `data.data` structures in any persona logs
+- **Complete field preservation**: All persona analysis fields maintained across updates
+- **Correct database structure**: Persona top-level columns populated correctly
+- **Proper field mapping**: Persona UI updates reach intended database fields
+- **Consistent parameters**: No undefined errors from name mismatches in persona functions
+- **Early error detection**: Assertions catch persona issues before database corruption
 
 ---
 
@@ -700,3 +647,50 @@ const validateCacheState = (entityId: string) => {
 - **Browser DevTools**: Network tab for PUT request analysis
 - **Console Logging**: Comprehensive transformation tracing
 - **Error Tracking**: Structured error logging and analysis
+
+---
+
+## 📋 PERSONA DATA STRUCTURE REFERENCE
+
+### Complex Field Mapping - Persona Entity
+
+**CRITICAL: These fields must NOT be flattened - they require complex structure for unique UX rendering**
+
+#### Template → Backend → Frontend Variable Names
+
+| **Template (snake_case)** | **Backend Schema** | **Frontend (camelCase)** | **Structure** |
+|---------------------------|-------------------|-------------------------|---------------|
+| `demographics` | `demographics` | `demographics` | Object with arrays |
+| `job_titles` | `job_titles` | `jobTitles` | Array of strings |
+| `departments` | `departments` | `departments` | Array of strings |
+| `seniority` | `seniority` | `seniority` | Array of strings |
+| `buying_roles` | `buying_roles` | `buyingRoles` | Array of strings |
+| `job_description_keywords` | `job_description_keywords` | `jobDescriptionKeywords` | Array of strings |
+| `use_cases` | `use_cases` | `useCases` | Array of objects |
+| `use_case` | `use_case` | `useCase` | String |
+| `pain_points` | `pain_points` | `painPoints` | String |
+| `capability` | `capability` | `capability` | String |
+| `desired_outcome` | `desired_outcome` | `desiredOutcome` | String |
+| `buying_signals` | `buying_signals` | `buyingSignals` | Array of objects |
+| `title` | `title` | `title` | String |
+| `description` | `description` | `description` | String |
+| `type` | `type` | `type` | String |
+| `priority` | `priority` | `priority` | "Low\|Medium\|High" |
+| `detection_method` | `detection_method` | `detectionMethod` | String |
+
+#### Data Flow Path
+```
+Jinja2 Template → AI Response (snake_case) → Backend JSONB Storage (as-is) → Frontend Normalization (camelCase) → React Components (structured rendering)
+```
+
+#### Storage Strategy
+- **Backend**: Entire AI response stored in JSONB `data` column without transformation
+- **Frontend**: `normalizePersonaResponse()` converts to camelCase but preserves nested structure
+- **Components**: Access via both `persona.demographics` and `persona.data.demographics`
+
+#### Unique Rendering Requirements
+- **Demographics**: Field-specific color coding in `CriteriaTable`
+- **Buying Signals**: Priority-based visual differentiation (`BuyingSignalsCard`)
+- **Use Cases**: Structured 4-field display (`UseCasesCard`)
+
+**⚠️ DO NOT FLATTEN: These structures are essential for component rendering logic**
