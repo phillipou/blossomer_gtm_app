@@ -20,7 +20,7 @@ import {
 } from '../lib/hooks/useCompany';
 import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
 
-export default function Company() {
+export default function CompanyV2() {
   const navigate = useNavigate();
   const [targetAccounts, setTargetAccounts] = useState<
     (TargetAccountResponse & { id: string; createdAt: string })[]
