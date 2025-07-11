@@ -15,6 +15,7 @@ import {
   useGetAccounts, 
   useCreateAccount 
 } from '../lib/hooks/useAccounts';
+import { normalizeAccountResponse } from '../lib/accountService';
 import { useGetCompany, useGetUserCompany } from '../lib/hooks/useCompany';
 import { useAuthState } from '../lib/auth';
 import { useCompanyOverview } from '../lib/useCompanyOverview';
@@ -309,11 +310,27 @@ export default function AccountDetail() {
         if (updateSuccess) {
           console.log('✅ [AccountDetail] Draft updated successfully');
           
-          // Update React Query cache to reflect the change
-          queryClient.setQueryData(['account', accountId], (prevData: any) => ({
-            ...prevData,
-            firmographics: newFirmographics,
-          }));
+          // Update React Query cache using normalization - Stage 3 improvement
+          const currentAccount = queryClient.getQueryData(['account', accountId]) as any;
+          if (currentAccount) {
+            const updatedAccount = normalizeAccountResponse({
+              ...currentAccount,
+              firmographics: newFirmographics,
+              data: {
+                ...currentAccount.data,
+                firmographics: newFirmographics
+              }
+            });
+            
+            console.log('[CACHE-UPDATE] Firmographics cache update via normalization:', {
+              accountId,
+              fieldUpdated: 'firmographics',
+              cacheUpdateMethod: 'normalized',
+              preservedFieldCount: Object.keys(updatedAccount).length
+            });
+            
+            queryClient.setQueryData(['account', accountId], updatedAccount);
+          }
           
           // Close the modal
           setFirmographicsModalOpen(false);
@@ -369,11 +386,27 @@ export default function AccountDetail() {
         if (updateSuccess) {
           console.log('✅ [AccountDetail] Draft updated successfully with buying signals');
           
-          // Update React Query cache to reflect the change
-          queryClient.setQueryData(['account', accountId], (prevData: any) => ({
-            ...prevData,
-            buyingSignals: updatedSignals,
-          }));
+          // Update React Query cache using normalization - Stage 3 improvement
+          const currentAccount = queryClient.getQueryData(['account', accountId]) as any;
+          if (currentAccount) {
+            const updatedAccount = normalizeAccountResponse({
+              ...currentAccount,
+              buyingSignals: updatedSignals,
+              data: {
+                ...currentAccount.data,
+                buyingSignals: updatedSignals
+              }
+            });
+            
+            console.log('[CACHE-UPDATE] Buying signals cache update via normalization:', {
+              accountId,
+              fieldUpdated: 'buyingSignals',
+              cacheUpdateMethod: 'normalized',
+              preservedFieldCount: Object.keys(updatedAccount).length
+            });
+            
+            queryClient.setQueryData(['account', accountId], updatedAccount);
+          }
           
           // Close the modal
           setBuyingSignalsModalOpen(false);
