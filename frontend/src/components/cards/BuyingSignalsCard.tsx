@@ -46,112 +46,85 @@ export default function BuyingSignalsCard({
 }: BuyingSignalsCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleEdit = () => {
-    if (onEdit) {
-      onEdit(buyingSignals);
-    }
-  };
-
   if (!buyingSignals || buyingSignals.length === 0) {
     return (
-      <Card className={`transition-all duration-200 ${className}`}>
-        <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            <Target className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No buying signals data available</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-center text-gray-500 py-8">
+        <Target className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+        <p className="text-sm">No buying signals data available</p>
+      </div>
     );
   }
 
   return (
-    <Card 
-      className={`transition-all duration-200 ${className} ${isHovered ? 'shadow-md' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-600" />
-            Buying Signals
-            <Badge variant="secondary" className="ml-2">
-              {buyingSignals.length}
-            </Badge>
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          {buyingSignals.map((signal, index) => {
-            const PriorityIcon = priorityIcons[signal.priority as keyof typeof priorityIcons];
-            const typeColor = typeColors[signal.type as keyof typeof typeColors] || "gray";
-            return (
-              <div
-                key={index}
-                className="p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200 group relative"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900">{signal.title}</h4>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${priorityColors[signal.priority as keyof typeof priorityColors]} text-xs`}
+    <div className={`space-y-4 ${className}`}>
+      {buyingSignals.map((signal, index) => {
+        const PriorityIcon = priorityIcons[signal.priority as keyof typeof priorityIcons];
+        const typeColor = typeColors[signal.type as keyof typeof typeColors] || "gray";
+        return (
+          <div
+            key={index}
+            className="p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200 group relative"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-gray-900">{signal.title}</h4>
+                <Badge 
+                  variant="secondary" 
+                  className={`${priorityColors[signal.priority as keyof typeof priorityColors]} text-xs`}
+                >
+                  {PriorityIcon && <PriorityIcon className="w-3 h-3 mr-1" />}
+                  {signal.priority}
+                </Badge>
+              </div>
+              {editable && (
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onEdit && onEdit(signal)}
+                    className="text-blue-600"
+                    tabIndex={-1}
+                    style={{ pointerEvents: isHovered ? "auto" : "none" }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  {onDelete && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onDelete(signal)}
+                      className="text-red-500"
+                      tabIndex={-1}
+                      style={{ pointerEvents: isHovered ? "auto" : "none" }}
                     >
-                      {PriorityIcon && <PriorityIcon className="w-3 h-3 mr-1" />}
-                      {signal.priority}
-                    </Badge>
-                  </div>
-                  {editable && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onEdit && onEdit(signal)}
-                        className="text-blue-600"
-                        tabIndex={-1}
-                        style={{ pointerEvents: isHovered ? "auto" : "none" }}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      {onDelete && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onDelete(signal)}
-                          className="text-red-500"
-                          tabIndex={-1}
-                          style={{ pointerEvents: isHovered ? "auto" : "none" }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  {signal.description}
-                </p>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant="secondary" 
-                      className={`bg-${typeColor}-50 text-${typeColor}-700 border-${typeColor}-200`}
-                    >
-                      {signal.type}
-                    </Badge>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-medium">Detection:</span>
-                    <span className="ml-1">{signal.detection_method}</span>
-                  </div>
-                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              {signal.description}
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant="secondary" 
+                  className={`bg-${typeColor}-50 text-${typeColor}-700 border-${typeColor}-200`}
+                >
+                  {signal.type}
+                </Badge>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              <div className="text-right">
+                <span className="font-medium">Detection:</span>
+                <span className="ml-1">{signal.detection_method}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
