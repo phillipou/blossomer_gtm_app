@@ -81,7 +81,7 @@ export default function SidebarNav({ companyName }: SidebarNavProps) {
       entityType: "account" as EntityType,
     },
     {
-      key: "personas-list",
+      key: "personas",
       label: "Personas",
       icon: <UserCheck className="w-5 h-5" />,
       onClick: () => navigate(`${prefix}/personas`),
