@@ -545,29 +545,27 @@ export default function AccountDetail() {
         </CardContent>
       </Card>
 
-      {/* Buying Signals Section */}
+      {/* Buying Signals Block */}
       <Card className="mt-8">
         <CardHeader>
           <div className="flex items-center justify-between mb-2">
-            <div>
-              <CardTitle className="mb-1">Buying Signals</CardTitle>
-              <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
-            </div>
+            <CardTitle>Buying Signals</CardTitle>
             <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setBuyingSignalsModalOpen(true); }}>
               <Plus className="w-4 h-4 mr-2" /> Add
             </Button>
           </div>
+          <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
         </CardHeader>
         <CardContent>
           {buyingSignals.length > 0 ? (
             <BuyingSignalsCard
               buyingSignals={buyingSignals}
               editable={true}
-              onEdit={(signals) => {
-                // For now, just open the modal to add new signals
-                setModalEditingSignal(null);
+              onEdit={(signal) => {
+                setModalEditingSignal(signal);
                 setBuyingSignalsModalOpen(true);
               }}
+              onDelete={(signal) => setBuyingSignals(signals => signals.filter(s => s.title !== signal.title))}
             />
           ) : (
             <div className="text-center py-8 text-gray-500">No buying signals identified</div>

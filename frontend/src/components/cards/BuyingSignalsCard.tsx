@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Edit2, Target, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Edit2, Target, TrendingUp, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import type { APIBuyingSignal } from '../../types/api';
 
 interface BuyingSignalsCardProps {
   buyingSignals: APIBuyingSignal[];
-  onEdit?: (buyingSignals: APIBuyingSignal[]) => void;
+  onEdit?: (signal: APIBuyingSignal) => void;
+  onDelete?: (signal: APIBuyingSignal) => void;
   editable?: boolean;
   className?: string;
 }
@@ -39,6 +40,7 @@ const typeColors = {
 export default function BuyingSignalsCard({ 
   buyingSignals, 
   onEdit, 
+  onDelete,
   editable = false,
   className = ""
 }: BuyingSignalsCardProps) {
@@ -78,17 +80,6 @@ export default function BuyingSignalsCard({
               {buyingSignals.length}
             </Badge>
           </CardTitle>
-          {editable && isHovered && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleEdit}
-              className="opacity-75 hover:opacity-100"
-            >
-              <Edit2 className="w-4 h-4 mr-1" />
-              Edit
-            </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -96,11 +87,10 @@ export default function BuyingSignalsCard({
           {buyingSignals.map((signal, index) => {
             const PriorityIcon = priorityIcons[signal.priority as keyof typeof priorityIcons];
             const typeColor = typeColors[signal.type as keyof typeof typeColors] || "gray";
-            
             return (
               <div
                 key={index}
-                className="p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                className="p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200 group relative"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -113,12 +103,36 @@ export default function BuyingSignalsCard({
                       {signal.priority}
                     </Badge>
                   </div>
+                  {editable && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onEdit && onEdit(signal)}
+                        className="text-blue-600"
+                        tabIndex={-1}
+                        style={{ pointerEvents: isHovered ? "auto" : "none" }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      {onDelete && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onDelete(signal)}
+                          className="text-red-500"
+                          tabIndex={-1}
+                          style={{ pointerEvents: isHovered ? "auto" : "none" }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                
                 <p className="text-sm text-gray-600 mb-3">
                   {signal.description}
                 </p>
-                
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-2">
                     <Badge 
