@@ -6,12 +6,13 @@ import BuyingSignalsCard from "../components/cards/BuyingSignalsCard";
 import EditBuyingSignalModal from "../components/modals/EditBuyingSignalModal";
 import EditCriteriaModal from "../components/modals/EditCriteriaModal";
 import ListInfoCard from "../components/cards/ListInfoCard";
+import ListInfoCardEditModal, { type ListInfoCardItem } from "../components/cards/ListInfoCardEditModal";
 import { CriteriaTable } from "../components/tables/CriteriaTable";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { useGetPersona, useUpdatePersona, useUpdatePersonaPreserveFields, testPersonaCachePatterns } from "../lib/hooks/usePersonas";
-import type { Persona, APIBuyingSignal, Demographics, UseCase } from "../types/api";
+import type { TargetPersonaResponse, APIBuyingSignal, Demographics, UseCase } from "../types/api";
 import UseCasesCard from "../components/cards/UseCasesCard";
 import { useAuthState } from "../lib/auth";
 import { normalizePersonaResponse } from "../lib/personaService";
@@ -71,23 +72,70 @@ const testComponentStateSync = (
 };
 
 export default function PersonaDetail() {
-  const { id: accountId, personaId } = useParams<{ accountId: string; personaId: string }>();
+  const { id: routeAccountId, personaId } = useParams<{ id?: string; personaId: string }>();
   const { token } = useAuthState();
   const queryClient = useQueryClient();
 
-  const { data: persona, isLoading, error, refetch } = useGetPersona(personaId!, token);
-  const { mutate: updatePersona } = useUpdatePersona(accountId!, token);
+  const { data: persona, isLoading, error, refetch } = useGetPersona(personaId!, token) as { data: TargetPersonaResponse | undefined, isLoading: boolean, error: any, refetch: () => void };
+  const { mutate: updatePersona } = useUpdatePersona(routeAccountId!, token);
   
   // Field-preserving update hook (for authenticated users)
   const { mutate: updateWithFieldPreservation } = useUpdatePersonaPreserveFields(token, personaId);
 
-  const [accountName, setAccountName] = useState<string>("");
+  // Determine the correct accountId (from persona or route)
+  const accountId = (persona as any)?.accountId || routeAccountId;
+  // Get the account from cache for breadcrumb
+  const account = accountId ? queryClient.getQueryData(['account', accountId]) as any : null;
+  console.log('[PersonaDetail] Breadcrumb account object:', account);
+  const accountDisplayName = account?.targetAccountName || account?.name || 'Account';
 
   // Modal state for demographics and buying signals
   const [demographicsModalOpen, setDemographicsModalOpen] = useState(false);
   const [buyingSignalsModalOpen, setBuyingSignalsModalOpen] = useState(false);
   const [modalEditingSignal, setModalEditingSignal] = useState<any>(null);
   const [buyingSignals, setBuyingSignals] = useState<APIBuyingSignal[]>([]);
+
+  // Modal state for list fields
+  const [editListField, setEditListField] = useState<null | keyof TargetPersonaResponse>(null);
+  const [editListInitialItems, setEditListInitialItems] = useState<ListInfoCardItem[]>([]);
+  const [editListModalTitle, setEditListModalTitle] = useState<string>("");
+  const [editListModalSubtitle, setEditListModalSubtitle] = useState<string>("");
+
+  // Helper to open the edit modal for a list field
+  const openListEditModal = (field: keyof TargetPersonaResponse, items: string[], title: string, subtitle: string) => {
+    setEditListField(field);
+    setEditListInitialItems((items || []).map((text, idx) => ({ id: String(idx), text })));
+    setEditListModalTitle(title);
+    setEditListModalSubtitle(subtitle);
+  };
+
+  // Handler to save changes from the edit modal
+  const handleListModalSave = async (items: ListInfoCardItem[]) => {
+    if (token && personaId && persona) {
+      const newItems = items.map(item => item.text);
+      return new Promise<void>((resolve, reject) => {
+        updateWithFieldPreservation({
+          currentPersona: persona,
+          updates: { [editListField as keyof TargetPersonaResponse]: newItems },
+        }, {
+          onSuccess: () => {
+            setEditListField(null);
+            resolve();
+          },
+          onError: (error) => {
+            handleComponentError(`${editListField} update`, error);
+            reject(error);
+          }
+        });
+      });
+    }
+    return Promise.resolve();
+  };
+
+  // Handler to close the edit modal
+  const handleListModalClose = () => {
+    setEditListField(null);
+  };
 
   const personaCardConfigs = [
     { key: "targetPersonaRationale", title: "Target Persona Rationale", editModalSubtitle: "Why this persona is ideal for your solution." },
@@ -191,7 +239,7 @@ export default function PersonaDetail() {
   };
 
   // Simplified list field update handler
-  const handleListEdit = (field: keyof Persona) => (newItems: string[]) => {
+  const handleListEdit = (field: keyof TargetPersonaResponse) => (newItems: string[]) => {
     if (token && personaId && persona) {
       updateWithFieldPreservation({
         currentPersona: persona,
@@ -210,8 +258,8 @@ export default function PersonaDetail() {
         breadcrumbs={[
           { label: "Company", href: "/company" },
           { label: "Target Accounts", href: "/accounts" },
-          { label: accountName, href: `/accounts/${accountId}` },
-          { label: persona.targetPersonaName },
+          { label: accountDisplayName, href: `/accounts/${accountId}` },
+          { label: persona?.targetPersonaName || "Persona" },
         ]}
         activeSubTab=""
         setActiveSubTab={() => {}}
@@ -220,13 +268,13 @@ export default function PersonaDetail() {
       />
       <div className="flex-1 p-8 space-y-8">
         <OverviewCard
-          title={persona.targetPersonaName}
-          subtitle={"Account: " + accountName}
+          title={persona?.targetPersonaName || ''}
+          subtitle={"Account: " + accountDisplayName}
           bodyTitle="Persona Overview"
-          bodyText={persona.targetPersonaDescription}
+          bodyText={persona?.targetPersonaDescription || ''}
           showButton={false}
           onEdit={({ name, description }) => {
-            if (token && personaId && persona) {
+            if (token && accountId && persona) {
               updateWithFieldPreservation({
                 currentPersona: persona,
                 updates: { targetPersonaName: name, targetPersonaDescription: description },
@@ -257,7 +305,7 @@ export default function PersonaDetail() {
             </Button>
           </CardHeader>
           <CardContent>
-            {persona.demographics ? (
+            {persona?.demographics ? (
               <CriteriaTable 
                 data={transformDemographicsToCriteria(persona.demographics)}
               />
@@ -266,17 +314,20 @@ export default function PersonaDetail() {
             )}
           </CardContent>
         </Card>
-
         <ListInfoCard
           title="Target Persona Rationale"
-          items={Array.isArray(persona.targetPersonaRationale) ? persona.targetPersonaRationale : []}
-          onEdit={handleListEdit("targetPersonaRationale")}
+          items={Array.isArray(persona?.targetPersonaRationale) ? persona.targetPersonaRationale : []}
+          onEditRequest={(items) => openListEditModal(
+            "targetPersonaRationale" as keyof TargetPersonaResponse,
+            items,
+            "Target Persona Rationale",
+            "Why this persona is ideal for your solution."
+          )}
           renderItem={(item: string, idx: number) => (
             <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Why this persona is ideal for your solution."
         />
-
         {/* Buying Signals Block */}
         <Card className="mt-8">
           <CardHeader>
@@ -304,22 +355,30 @@ export default function PersonaDetail() {
             )}
           </CardContent>
         </Card>
-
         <ListInfoCard
           title="Buying Signals Rationale"
-          items={Array.isArray(persona.buyingSignalsRationale) ? persona.buyingSignalsRationale : []}
-          onEdit={handleListEdit("buyingSignalsRationale")}
+          items={Array.isArray(persona?.buyingSignalsRationale) ? persona.buyingSignalsRationale : []}
+          onEditRequest={(items) => openListEditModal(
+            "buyingSignalsRationale" as keyof TargetPersonaResponse,
+            items,
+            "Buying Signals Rationale",
+            "Logic behind buying signal choices."
+          )}
           renderItem={(item: string, idx: number) => (
             <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Logic behind buying signal choices."
         />
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ListInfoCard
             title="Persona Goals"
-            items={Array.isArray(persona.goals) ? persona.goals : []}
-            onEdit={handleListEdit("goals")}
+            items={Array.isArray(persona?.goals) ? persona.goals : []}
+            onEditRequest={(items) => openListEditModal(
+              "goals" as keyof TargetPersonaResponse,
+              items,
+              "Persona Goals",
+              "Objectives this product can help this persona achieve."
+            )}
             renderItem={(item: string, idx: number) => (
               <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
             )}
@@ -327,30 +386,38 @@ export default function PersonaDetail() {
           />
           <ListInfoCard
             title="Purchase Journey"
-            items={Array.isArray(persona.purchaseJourney) ? persona.purchaseJourney : []}
-            onEdit={handleListEdit("purchaseJourney")}
+            items={Array.isArray(persona?.purchaseJourney) ? persona.purchaseJourney : []}
+            onEditRequest={(items) => openListEditModal(
+              "purchaseJourney" as keyof TargetPersonaResponse,
+              items,
+              "Purchase Journey",
+              "Path from awareness to purchase."
+            )}
             renderItem={(item: string, idx: number) => (
               <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
             )}
             editModalSubtitle="Path from awareness to purchase."
           />
         </div>
-
         <ListInfoCard
           title="Likely Objections"
-          items={Array.isArray(persona.objections) ? persona.objections : []}
-          onEdit={handleListEdit("objections")}
+          items={Array.isArray(persona?.objections) ? persona.objections : []}
+          onEditRequest={(items) => openListEditModal(
+            "objections" as keyof TargetPersonaResponse,
+            items,
+            "Likely Objections",
+            "Common concerns about adopting this solution."
+          )}
           renderItem={(item: string, idx: number) => (
             <span key={idx} className="text-sm text-gray-700 blue-bullet">{item}</span>
           )}
           editModalSubtitle="Common concerns about adopting this solution."
         />
-
         <UseCasesCard
-          useCases={persona.useCases || []}
+          useCases={persona?.useCases || []}
           onAdd={(newUseCase: UseCase) => {
-            const updatedUseCases = persona.useCases ? [...persona.useCases, newUseCase] : [newUseCase];
-            if (token && personaId && persona) {
+            const updatedUseCases = persona?.useCases ? [...persona.useCases, newUseCase] : [newUseCase];
+            if (token && accountId && persona) {
               updateWithFieldPreservation({
                 currentPersona: persona,
                 updates: { useCases: updatedUseCases },
@@ -362,8 +429,8 @@ export default function PersonaDetail() {
             }
           }}
           onEdit={(idx: number, updatedUseCase: UseCase) => {
-            const updatedUseCases = persona.useCases ? persona.useCases.map((uc, i) => i === idx ? updatedUseCase : uc) : [];
-            if (token && personaId && persona) {
+            const updatedUseCases = persona?.useCases ? persona.useCases.map((uc, i) => i === idx ? updatedUseCase : uc) : [];
+            if (token && accountId && persona) {
               updateWithFieldPreservation({
                 currentPersona: persona,
                 updates: { useCases: updatedUseCases },
@@ -375,8 +442,8 @@ export default function PersonaDetail() {
             }
           }}
           onDelete={(idx: number) => {
-            const updatedUseCases = persona.useCases ? persona.useCases.filter((_, i) => i !== idx) : [];
-            if (token && personaId && persona) {
+            const updatedUseCases = persona?.useCases ? persona.useCases.filter((_, i) => i !== idx) : [];
+            if (token && accountId && persona) {
               updateWithFieldPreservation({
                 currentPersona: persona,
                 updates: { useCases: updatedUseCases },
@@ -388,7 +455,6 @@ export default function PersonaDetail() {
             }
           }}
         />
-        
         {/* Edit Modals */}
         <EditCriteriaModal
           isOpen={demographicsModalOpen}
@@ -416,6 +482,14 @@ export default function PersonaDetail() {
           }}
           title="Edit Demographics"
         />
+        <ListInfoCardEditModal
+          isOpen={!!editListField}
+          onClose={handleListModalClose}
+          onSave={handleListModalSave}
+          initialItems={editListInitialItems}
+          title={editListModalTitle}
+          subtitle={editListModalSubtitle}
+        />
       </div>
       <EditBuyingSignalModal
         isOpen={buyingSignalsModalOpen}
@@ -427,9 +501,7 @@ export default function PersonaDetail() {
           const priority = String(values.priority || 'Low').trim() as "Low" | "Medium" | "High";
           const type = String(values.type || 'Other').trim();
           const detection_method = String(values.detection_method || '').trim();
-          
           const newSignal = { title, description, priority, type, detection_method };
-          
           let updatedSignals: APIBuyingSignal[];
           if (modalEditingSignal) {
             updatedSignals = buyingSignals.map(s => 
@@ -438,11 +510,7 @@ export default function PersonaDetail() {
           } else {
             updatedSignals = [...buyingSignals, newSignal];
           }
-          
-          // Update local state immediately
           setBuyingSignals(updatedSignals);
-          
-          // Handle buying signals update with field preservation
           handleBuyingSignalsUpdate(updatedSignals);
         }}
       />

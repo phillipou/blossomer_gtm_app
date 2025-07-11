@@ -368,3 +368,47 @@ const mappedUpdates = config.entityType === 'persona' ? {
 - **Entity Abstraction**: `/notes/ARCHITECTURE.md#entity-management-abstraction-layer`
 - **Data Flattening Strategy**: `/notes/handoffs/FLATTENING_COMPLEX_DATA_STRUCTURES.md`
 - **Service Layer Patterns**: `/frontend/src/lib/accountService.ts`, `/frontend/src/lib/companyService.ts`
+
+---
+
+## 🎯 **PERSONAS EXTENSION: COMPLETED**
+
+### **Additional Issues Resolved During Persona Implementation:**
+
+#### **Issue #7: Form Field Mapping Bug**
+**Problem:** `handleSavePersona` using `editingPersona.name` instead of form input value
+**Solution:** Changed to use `name` parameter from form submission
+**Location:** `Personas.tsx:152`
+
+#### **Issue #8: Authentication-Aware Routing**
+**Problem:** Hard-coded `/accounts/{id}/personas/{id}` route causing 404s
+**Solution:** Added token-based prefix: `token ? '/app' : '/playground'`
+**Location:** `Personas.tsx:142,348`
+
+#### **Issue #9: AI Generation API Schema Mismatch**
+**Problem:** 422 error from `/personas/generate-ai` due to incorrect payload format
+**Solution:** Fixed payload to match `TargetPersonaRequest` schema:
+- `targetPersonaName` → `personaProfileName`
+- `targetPersonaDescription` → `hypothesis`
+- Added required `websiteUrl` field
+**Location:** `Personas.tsx:325-334`
+
+#### **Issue #10: Missing Account Context for AI**
+**Problem:** Only sending company context, missing specific account data
+**Solution:** Added both `companyContext` and `targetAccountContext`
+**Location:** `Personas.tsx:332-333`
+
+### **Personas Success Metrics - ALL ACHIEVED:**
+- ✅ **End-to-end persona creation flow** working with AI generation
+- ✅ **Field preservation** across all persona update scenarios
+- ✅ **Auth-aware routing** for both authenticated and demo users
+- ✅ **Complete context passing** - company + account data to AI
+- ✅ **Pattern consistency** with account service implementation
+- ✅ **Zero data nesting** - comprehensive anti-recursion protections
+
+### **Reusable Patterns Established for Campaigns:**
+- **Auth-aware navigation:** `const prefix = token ? '/app' : '/playground'`
+- **API schema compliance:** Match request interfaces exactly
+- **Context passing:** Both company and entity-specific context for AI
+- **Field preservation:** Use `updateEntityPreserveFields` pattern
+- **Form handling:** Always use form input values, not existing entity data
