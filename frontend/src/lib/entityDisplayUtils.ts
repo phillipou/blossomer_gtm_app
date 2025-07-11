@@ -133,5 +133,10 @@ export function getAccountDescription(account: (Account & { isDraft?: boolean })
     return account.targetAccountDescription || '';
   }
   // Database entity format (Account)
-  return (account.data?.description as string) || '';
+  // Try targetAccountDescription first, then fallback to description
+  return (
+    (account.data?.targetAccountDescription as string) ||
+    (account.data?.description as string) ||
+    ''
+  );
 }
