@@ -128,13 +128,7 @@ export async function generatePersona(_accountId: string, personaData: TargetPer
     }, token);
 }
 
-// Helper to transform AI response format to backend CRUD format
-function transformPersonaToCreateFormat(aiResponse: TargetPersonaResponse): PersonaCreate {
-  return {
-    name: aiResponse.targetPersonaName,
-    data: aiResponse,
-  };
-}
+// Note: No transformation needed - AI response goes directly to data field (matches account pattern)
 
 export async function createPersona(accountId: string, personaData: PersonaCreate, token?: string | null): Promise<Persona> {
   return apiFetch<Persona>(`/personas?account_id=${accountId}`, {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Loader2, Edit3, Trash2, Wand2 } from "lucide-react";
-import { useGetAllPersonas, useUpdatePersona, useDeletePersona, useCreatePersona } from "../lib/hooks/usePersonas";
+import { useGetAllPersonas, useUpdatePersona, useDeletePersona, useCreatePersona, useGeneratePersona } from "../lib/hooks/usePersonas";
 import { useGetAccounts } from "../lib/hooks/useAccounts";
 import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
@@ -40,6 +40,7 @@ export default function TargetPersonas() {
   const updatePersonaMutation = useUpdatePersona("", token);
   const { mutate: deletePersona } = useDeletePersona("", token);
   const createPersonaMutation = useCreatePersona(token);
+  const generatePersonaMutation = useGeneratePersona(token);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
@@ -138,7 +139,8 @@ export default function TargetPersonas() {
   }
   
   const handlePersonaClick = (customerId: string, personaId: string) => {
-    navigate(`/accounts/${customerId}/personas/${personaId}`);
+    const prefix = token ? '/app' : '/playground';
+    navigate(`${prefix}/accounts/${customerId}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: Persona) => {
@@ -149,10 +151,10 @@ export default function TargetPersonas() {
   const handleSavePersona = async ({ name, description }: { name: string; description: string }) => {
     if (!editingPersona) return;
     const data: PersonaUpdate = {
-      name: editingPersona.name,
+      name: name,
       data: {
         ...editingPersona.data,
-        targetPersonaName: editingPersona.name,
+        targetPersonaName: name,
         targetPersonaDescription: description,
       }
     };
@@ -312,27 +314,55 @@ export default function TargetPersonas() {
         onClose={() => { setAddModalOpen(false); setSelectedAccountId(""); }}
         onSubmit={async ({ name, description, accountId }) => {
           if (!accountId || !overview) return;
-          const personaData = {
-            name,
-            data: {
-              targetPersonaName: name,
-              targetPersonaDescription: description,
-              // Add any other fields you want to initialize here
-            }
-          };
+          
+          // Get the selected account data for context
+          const selectedAccount = accounts?.find(acc => acc.id === accountId);
+          
+          // Step 1: Generate AI data (matching account pattern)
           setIsSavingPersona(true);
           setSaveError(null);
-          createPersonaMutation.mutate(
-            { accountId, personaData },
+          
+          generatePersonaMutation.mutate(
+            { 
+              accountId, 
+              personaData: {
+                websiteUrl: overview?.companyUrl || '',
+                personaProfileName: name,
+                hypothesis: description,
+                companyContext: overview, // Company data
+                targetAccountContext: selectedAccount // Selected account data
+              }
+            },
             {
-              onSuccess: (savedPersona) => {
-                setAddModalOpen(false);
-                setIsSavingPersona(false);
-                navigate(`/accounts/${accountId}/personas/${savedPersona.id}`);
+              onSuccess: (generatedData) => {
+                console.log("Persona generated successfully", generatedData);
+                
+                // Step 2: Create persona directly (matching account pattern)
+                const personaToSave = {
+                  name: generatedData.targetPersonaName || name,
+                  data: generatedData, // Direct assignment like accounts
+                };
+                
+                createPersonaMutation.mutate(
+                  { accountId, personaData: personaToSave },
+                  {
+                    onSuccess: (savedPersona) => {
+                      console.log("Persona created successfully", savedPersona);
+                      setAddModalOpen(false);
+                      setIsSavingPersona(false);
+                      const prefix = token ? '/app' : '/playground';
+                      navigate(`${prefix}/accounts/${accountId}/personas/${savedPersona.id}`);
+                    },
+                    onError: (error) => {
+                      setIsSavingPersona(false);
+                      setSaveError(error?.message || "Failed to save persona");
+                    }
+                  }
+                );
               },
               onError: (error) => {
                 setIsSavingPersona(false);
-                setSaveError(error?.message || "Failed to save persona");
+                setSaveError(error?.message || "Failed to generate persona");
               }
             }
           );
