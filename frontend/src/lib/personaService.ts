@@ -10,6 +10,11 @@ export async function getPersonas(accountId: string, token?: string | null): Pro
   return apiFetch<Persona[]>(`/accounts/${accountId}/personas`, { method: 'GET' }, token);
 }
 
+// Fetch all personas for a company using the new backend endpoint
+export async function getAllPersonas(companyId: string, token?: string | null): Promise<Persona[]> {
+  return apiFetch<Persona[]>(`/personas?company_id=${companyId}`, { method: 'GET' }, token);
+}
+
 export function normalizePersonaResponse(persona: Persona): Persona {
   console.log('[NORMALIZE] Raw persona response:', persona);
   
