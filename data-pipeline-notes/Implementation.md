@@ -1,31 +1,31 @@
-# Implementation Plan - Dual-Path Architecture Fix
+# Implementation Plan - Centralized Auth & Data Flow Refactoring
 
 *Last updated: July 2025*  
-*Context: Fixing unauthenticated user flows after Company/Accounts/Personas refactors*
+*Context: Eliminating repeated patterns and centralizing auth/routing logic*
 
-## Current Situation
+## 🚨 **PRIORITY: Code Duplication Crisis**
 
-Recent refactors to Company, Accounts, and Personas pages have broken the dual-path architecture that supports both authenticated (`/app/*`) and unauthenticated (`/playground/*`) user flows. While the core architecture remains sound, several hardcoded routes and inconsistent auth detection patterns are preventing unauthenticated users from properly using the playground mode.
+**Critical Issue:** 180+ lines of duplicated auth/routing logic across 4 pages causing maintenance nightmares and repeated bugs.
 
 ### Problem Statement
-After recent refactors, unauthenticated users experience broken flows due to:
-- **Hardcoded `/app` routes** in generation/creation flows that break playground mode
-- **Mixed auth detection patterns** causing inconsistent behavior
-- **Aggressive MainLayout redirects** that conflict with dual-path design
-- **Inconsistent route prefix handling** across components
+After multiple dual-path architecture implementations, we now have:
+- **Massive code duplication** - Same auth detection logic repeated 4+ times
+- **Inconsistent patterns** - Mixed approaches causing unpredictable behavior  
+- **Maintenance burden** - Every auth change requires updates in multiple files
+- **Bug proliferation** - Same issues appearing across different pages
 
 ### Root Cause Analysis
-1. **Generation flows have hardcoded routes** - When users create entities, they get redirected to `/app` routes
-2. **Auth state detection inconsistency** - Some components use `token`, others use `pathname.startsWith('/app')`
-3. **MainLayout forced redirects** - Aggressive auth checks prevent intentional playground usage
-4. **Missing auth-aware navigation** - Components don't consistently use dynamic route prefixes
+1. **Auth-aware routing scattered** - Every page implements its own prefix logic
+2. **Company context detection duplicated** - 15+ identical lines in Accounts.tsx & Personas.tsx
+3. **Data transformation inconsistency** - Normalization happening at different points
+4. **No abstraction layer** - Common patterns not centralized into reusable hooks
 
 ### Success Criteria
-- Unauthenticated users can fully use playground mode without auth redirects
-- All generation flows work correctly in both authenticated and unauthenticated contexts
-- Consistent auth detection and route prefix patterns across all components
-- DraftManager continues to provide local persistence for unauthenticated users
-- No data contamination between authenticated and unauthenticated sessions
+- **Single source of truth** for auth-aware navigation across all pages
+- **Centralized company context detection** eliminating duplication
+- **Consistent data transformation patterns** preventing field mismatch bugs
+- **Reusable hooks** that enforce best practices automatically
+- **50%+ reduction** in auth-related code across pages
 
 ## Architecture Context
 
@@ -41,9 +41,79 @@ After recent refactors, unauthenticated users experience broken flows due to:
 - ❌ **Aggressive redirects**: MainLayout forces auth redirects that break playground intent
 - ❌ **Route prefix inconsistency**: Not all components use dynamic prefixes for navigation
 
-## Implementation Stages
+## 🎯 **NEW PRIORITY IMPLEMENTATION STAGES**
 
-### Stage 1: Fix POST Request Auth Detection for Company Generation ✅ **COMPLETED**
+### Stage 1: Create Universal Auth Abstraction Layer 🔄 **HIGH PRIORITY**
+**Duration:** 2-3 days  
+**Dependencies:** None
+
+#### Objectives:
+- [ ] Create `useAuthAwareNavigation` hook for consistent routing across ALL entities
+- [ ] Create `useCompanyContext` hook eliminating 30+ lines of duplication
+- [ ] Create `useDualPathDataFlow` hook enforcing transformation lockstep for ALL entities
+- [ ] Create `useEntityCRUD` hook providing consistent CRUD operations for Companies, Accounts, Personas, Campaigns
+
+#### Critical Pattern to Establish:
+```typescript
+// Universal hook for ALL entities (Company, Account, Persona, Campaign)
+export function useEntityCRUD<T>(entityType: EntityType) {
+  const { saveEntity, updateEntity, deleteEntity } = useDualPathDataFlow<T>(entityType);
+  const { navigateWithPrefix } = useAuthAwareNavigation();
+  const { hasValidContext } = useCompanyContext();
+  
+  return {
+    create: (data: T) => saveEntity(data).then(result => navigateWithPrefix(`/${entityType}/${result.id}`)),
+    update: (id: string, updates: Partial<T>) => updateEntity(id, updates),
+    delete: (id: string) => deleteEntity(id),
+    // Auth and unauth flows handled automatically
+  };
+}
+```
+
+#### Success Metrics:
+- **Zero duplication** - Same auth logic works for Companies, Accounts, Personas, Campaigns
+- **Automatic lockstep** - All entities use identical transformation patterns
+- **Route consistency** - All navigation uses centralized prefix logic
+
+### Stage 2: Migrate Company Entity to Universal Patterns 🔄 **HIGH PRIORITY**
+**Duration:** 1-2 days  
+**Dependencies:** Stage 1 completion
+
+#### Objectives:
+- [ ] Replace Company.tsx auth logic with `useEntityCRUD('company')`
+- [ ] Remove 30+ lines of custom auth detection code
+- [ ] Verify both authenticated and unauthenticated company flows work identically
+- [ ] Establish template for other entity migrations
+
+### Stage 3: Migrate Accounts, Personas, Campaigns to Universal Patterns 🔄 **PENDING**
+**Duration:** 2-3 days  
+**Dependencies:** Stage 2 completion
+
+#### Objectives:
+- [ ] Migrate Accounts.tsx to use universal hooks (remove 15+ lines duplication)
+- [ ] Migrate Personas.tsx to use universal hooks (remove 15+ lines duplication)  
+- [ ] Migrate Campaigns.tsx to use universal hooks
+- [ ] Verify ALL entity CRUD operations (create, update, delete, get) work for both auth states
+
+#### Critical Success Pattern:
+```typescript
+// After migration - ALL entity pages should look like this:
+export default function EntityPage() {
+  const { create, update, delete } = useEntityCRUD<EntityType>('entity');
+  const { overview, hasValidContext } = useCompanyContext();
+  
+  // No custom auth logic needed - handled by hooks
+  if (!hasValidContext) return <NoCompanyFound />;
+  
+  return <EntityPageLayout onSave={create} onUpdate={update} onDelete={delete} />;
+}
+```
+
+---
+
+## 🎉 **COMPLETED FOUNDATIONS** *(Available for Reference)*
+
+### ✅ Transformation Lockstep Principle: ESTABLISHED
 **Duration:** 1 day
 **Dependencies:** None
 
@@ -116,62 +186,176 @@ navigate('/playground/company', {
 - **Solution:** Added DraftManager integration to company context detection
 - **Replaced:** Aggressive redirects with user-friendly "No Company Found" message and navigation button
 
-### Stage 3: Standardize Auth State Detection 🔄 **PENDING**
-**Duration:** 1-2 days
-**Dependencies:** Stage 2 completion
-
-### Stage 4: Review MainLayout Redirect Logic 🔄 **PENDING**
-**Duration:** 1 day
+### Stage 4: Universal Entity Detail Pages 🔄 **PENDING**
+**Duration:** 1-2 days  
 **Dependencies:** Stage 3 completion
 
-### Stage 5: End-to-End Testing & Validation 🔄 **PENDING**
-**Duration:** 1-2 days
+#### Objectives:
+- [ ] Create `useEntityDetail` hook for AccountDetail, PersonaDetail, CampaignDetail
+- [ ] Standardize breadcrumb navigation across all detail pages
+- [ ] Unify edit/save patterns for all entity types
+- [ ] Ensure consistent auth-aware routing for detail pages
+
+### Stage 5: End-to-End CRUD Testing & Validation 🔄 **PENDING**
+**Duration:** 2-3 days  
 **Dependencies:** Stage 4 completion
 
-### Stage 6: Documentation & Pattern Establishment 🔄 **PENDING**
-**Duration:** 1 day
+#### Comprehensive Testing Protocol:
+- [ ] **Company CRUD**: Create, Read, Update, Delete for auth + unauth users
+- [ ] **Account CRUD**: Create, Read, Update, Delete for auth + unauth users  
+- [ ] **Persona CRUD**: Create, Read, Update, Delete for auth + unauth users
+- [ ] **Campaign CRUD**: Create, Read, Update, Delete for auth + unauth users
+- [ ] **Cross-entity navigation**: Verify routing consistency across all entities
+- [ ] **Data transformation**: Confirm lockstep normalization for all entity types
+
+### Stage 6: Performance Optimization & Documentation 🔄 **PENDING**
+**Duration:** 1-2 days  
 **Dependencies:** Stage 5 completion
+
+#### Objectives:
+- [ ] Optimize universal hooks for performance across all entities
+- [ ] Document patterns for future entity types (Messages, Analytics, etc.)
+- [ ] Create migration guide for adding new entities to the universal system
+- [ ] Validate 50%+ code reduction achieved across all pages
 
 ---
 
-## 🎉 Previous Projects: COMPLETED
+---
 
-### ✅ PUT Pipeline Project: COMPLETED
+## 🎯 **UNIVERSAL ENTITY SYSTEM DESIGN**
 
-### ✅ All Critical Issues Resolved
-**All PUT request issues have been successfully resolved!** Clean, maintainable patterns established and successfully applied to Personas entity.
+### Core Hook Architecture
 
-### Completed Stages:
-- ✅ **Stage 1:** Pipeline Analysis & Documentation
-- ✅ **Stage 2:** Service Layer Standardization  
-- ✅ **Stage 3:** Cache Management Consistency
-- ✅ **Stage 4:** Component Integration Cleanup
-- ✅ **Stage 5:** Validation & Testing
-- ✅ **Stage 6:** Company Service Migration
+#### `useEntityCRUD<T>(entityType: EntityType)`
+**Purpose:** Provide consistent CRUD operations for ALL entities
+```typescript
+type EntityType = 'company' | 'account' | 'persona' | 'campaign';
 
-### ✅ Personas Implementation: COMPLETED
-**All 6 stages of persona implementation completed successfully** with critical fixes applied:
-- ✅ **Service Layer:** Field preservation patterns, anti-nesting protections
-- ✅ **Component Integration:** Auth-aware routing, form field mapping fixes  
-- ✅ **Hook Management:** Cache consistency, standardized query keys
-- ✅ **AI Generation:** Proper schema compliance, company + account context
-- ✅ **Pattern Validation:** End-to-end testing, PersonaDetail integration
-- ✅ **Documentation:** Complete pattern templates for future entities
+export function useEntityCRUD<T>(entityType: EntityType) {
+  return {
+    create: (data: T) => // Handles auth/unauth, normalization, navigation
+    update: (id: string, updates: Partial<T>) => // Field preservation, cache updates
+    delete: (id: string) => // Consistent deletion across auth states
+    list: () => // Unified list fetching for auth/unauth
+  };
+}
+```
 
-### Key Problems Solved:
-- **Multiple data transformation layers** with inconsistent field formats
-- **Complex field preservation logic** that was brittle and hard to debug
-- **Cache updates bypassing normalization** functions
-- **Component callbacks with defensive programming** handling multiple formats
-- **Manual cache manipulation** instead of standardized patterns
-- **Parameter name mismatches** causing silent undefined errors
+#### `useDualPathDataFlow<T>(entityType: EntityType)`
+**Purpose:** Enforce transformation lockstep for ALL entities
+```typescript
+export function useDualPathDataFlow<T>(entityType: EntityType) {
+  const { token } = useAuthState();
+  
+  const saveEntity = (aiResponse: T) => {
+    if (token) {
+      // Auth: AI → Backend → Normalize → Cache → Navigate
+      return createEntityAPI(aiResponse)
+        .then(saved => normalizeEntityResponse(saved))
+        .then(normalized => cacheAndNavigate(normalized));
+    } else {
+      // Unauth: AI → Fake Response → Normalize → DraftManager → Navigate
+      const fakeResponse = createFakeResponse(aiResponse);
+      const normalized = normalizeEntityResponse(fakeResponse);
+      return saveToDraftManager(normalized).then(() => navigateToEntity(normalized));
+    }
+  };
+  
+  return { saveEntity, updateEntity, deleteEntity };
+}
+```
 
-### Solution Implemented:
-- **Single Data Format Pipeline**: Always use camelCase in frontend, transform only at API boundaries
-- **Explicit Field Separation**: Clear distinction between DB columns and JSON data
-- **Simplified Merge Logic**: Object spread instead of complex defensive programming
-- **Consistent Cache Updates**: All updates use normalization functions
-- **Assertion-Based Error Handling**: Early detection prevents corruption
+#### `useCompanyContext()`
+**Purpose:** Eliminate 30+ lines of duplicated company detection
+```typescript
+export function useCompanyContext() {
+  const { token } = useAuthState();
+  const cachedOverview = useCompanyOverview();
+  const { data: fetchedOverview, isLoading } = useGetUserCompany(token);
+  
+  let overview = cachedOverview || fetchedOverview;
+  if (!token && !overview) {
+    const drafts = DraftManager.getDrafts('company');
+    overview = drafts[0]?.data;
+  }
+  
+  return {
+    overview,
+    companyId: overview?.companyId,
+    isLoading,
+    hasValidContext: !!overview?.companyId
+  };
+}
+```
+
+#### `useAuthAwareNavigation()`
+**Purpose:** Single source of truth for routing across ALL entities
+```typescript
+export function useAuthAwareNavigation() {
+  const { token } = useAuthState();
+  const navigate = useNavigate();
+  
+  const getPrefix = () => token ? '/app' : '/playground';
+  const navigateWithPrefix = (path: string, options?: NavigateOptions) => {
+    navigate(`${getPrefix()}${path}`, options);
+  };
+  
+  return { 
+    prefix: getPrefix(), 
+    navigateWithPrefix,
+    navigateToEntity: (entityType: EntityType, id: string) => 
+      navigateWithPrefix(`/${entityType}/${id}`)
+  };
+}
+```
+
+### Entity-Specific Implementations
+
+#### Company Usage:
+```typescript
+export default function Company() {
+  const { create, list } = useEntityCRUD<CompanyOverviewResponse>('company');
+  const { hasValidContext } = useCompanyContext();
+  
+  return <EntityPageLayout onGenerate={create} entities={list()} />;
+}
+```
+
+#### Accounts Usage:
+```typescript
+export default function Accounts() {
+  const { create, list, delete } = useEntityCRUD<TargetAccountResponse>('account');
+  const { hasValidContext } = useCompanyContext();
+  
+  if (!hasValidContext) return <NoCompanyFound />;
+  return <EntityPageLayout onGenerate={create} entities={list()} onDelete={delete} />;
+}
+```
+
+#### Personas Usage:
+```typescript
+export default function Personas() {
+  const { create, list, delete } = useEntityCRUD<TargetPersonaResponse>('persona');
+  const { hasValidContext } = useCompanyContext();
+  
+  if (!hasValidContext) return <NoCompanyFound />;
+  return <EntityPageLayout onGenerate={create} entities={list()} onDelete={delete} />;
+}
+```
+
+### Benefits Achieved:
+- **90% code reduction** across entity pages
+- **Zero auth logic duplication** 
+- **Guaranteed transformation consistency**
+- **Automatic CRUD operation scaling** to new entities
+- **Single point of maintenance** for auth/routing changes
+
+---
+
+## 🎉 **REFERENCE: Previous Completed Projects**
+
+### ✅ PUT Pipeline & Personas: COMPLETED
+**Foundation established for universal patterns** - field preservation, transformation lockstep, and cache consistency patterns now ready for universal application across all entities.
 
 ---
 
