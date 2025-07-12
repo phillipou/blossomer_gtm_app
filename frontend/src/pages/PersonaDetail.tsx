@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { useGetPersona, useUpdatePersona, useUpdatePersonaPreserveFields, testPersonaCachePatterns } from "../lib/hooks/usePersonas";
+import { useGetAccount } from "../lib/hooks/useAccounts";
 import type { TargetPersonaResponse, APIBuyingSignal, Demographics, UseCase } from "../types/api";
 import UseCasesCard from "../components/cards/UseCasesCard";
 import { useAuthState } from "../lib/auth";
@@ -84,10 +85,25 @@ export default function PersonaDetail() {
 
   // Determine the correct accountId (from persona or route)
   const accountId = (persona as any)?.accountId || routeAccountId;
-  // Get the account from cache for breadcrumb
-  const account = accountId ? queryClient.getQueryData(['account', accountId]) as any : null;
-  console.log('[PersonaDetail] Breadcrumb account object:', account);
-  const accountDisplayName = account?.targetAccountName || account?.name || 'Account';
+  
+  // Get the account data reliably using the hook
+  const { data: accountData } = useGetAccount(accountId, token);
+  const accountDisplayName = accountData?.targetAccountName || accountData?.name || 'Account';
+  
+  // Dynamic path prefix based on authentication
+  const pathPrefix = token ? '/app' : '/playground';
+  
+  console.log('[PersonaDetail] Account data for breadcrumb:', {
+    accountId,
+    pathPrefix,
+    isAuthenticated: !!token,
+    accountData: accountData ? {
+      id: accountData.id,
+      name: accountData.name,
+      targetAccountName: accountData.targetAccountName
+    } : null,
+    displayName: accountDisplayName
+  });
 
   // Modal state for demographics and buying signals
   const [demographicsModalOpen, setDemographicsModalOpen] = useState(false);
@@ -256,9 +272,9 @@ export default function PersonaDetail() {
     <div className="flex flex-col min-h-screen">
       <SubNav
         breadcrumbs={[
-          { label: "Company", href: "/company" },
-          { label: "Target Accounts", href: "/accounts" },
-          { label: accountDisplayName, href: `/accounts/${accountId}` },
+          { label: "Company", href: `${pathPrefix}/company` },
+          { label: "Target Accounts", href: `${pathPrefix}/accounts` },
+          { label: accountDisplayName, href: `${pathPrefix}/accounts/${accountId}` },
           { label: persona?.targetPersonaName || "Persona" },
         ]}
         activeSubTab=""

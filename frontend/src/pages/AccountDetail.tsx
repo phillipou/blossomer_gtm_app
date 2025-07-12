@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEntityPage } from '../lib/hooks/useEntityPage';
 import { accountConfig, generationModalConfigs } from '../lib/entityConfigs';
 import EntityPageLayout from '../components/EntityPageLayout';
+import SubNav from '../components/navigation/SubNav';
 import InputModal from '../components/modals/InputModal';
 import { 
   useGetAccount, 
@@ -500,9 +501,36 @@ export default function AccountDetail() {
 
   // Get account name for display
   const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
+  
+  // Get company name for breadcrumb
+  const companyDisplayName = company?.companyName || overview?.companyName || 'Company';
+  
+  // Dynamic path prefix based on authentication
+  const pathPrefix = token ? '/app' : '/playground';
+  
+  console.log('[AccountDetail] Breadcrumb data:', {
+    accountId,
+    accountName,
+    companyDisplayName,
+    pathPrefix,
+    isAuthenticated: !!token,
+    companyData: company ? { id: company.id, companyName: company.companyName } : null,
+    overviewData: overview ? { companyName: overview.companyName } : null
+  });
 
   return (
     <>
+      <SubNav
+        breadcrumbs={[
+          { label: "Company", href: `${pathPrefix}/company` },
+          { label: "Target Accounts", href: `${pathPrefix}/accounts` },
+          { label: accountName },
+        ]}
+        activeSubTab=""
+        setActiveSubTab={() => {}}
+        subTabs={[]}
+        entityType="account"
+      />
       <EntityPageLayout
       config={accountConfig}
       entityPageState={entityPageState}
