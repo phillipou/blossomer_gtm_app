@@ -5,9 +5,12 @@ from backend.app.prompts.models import ProductOverviewPromptVars
 from backend.app.schemas import ProductOverviewRequest, ProductOverviewResponse
 from backend.app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
-    SectionChunker,
+    HTMLSectionChunker,
     LangChainSummarizer,
     BoilerplateFilter,
+    LengthFilter,
+    DuplicateFilter, # Import the DuplicateFilter
+    CompositeFilter,
 )
 
 try:
@@ -18,10 +21,22 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Instantiate the pipeline once
-chunker = SectionChunker()
+chunker = HTMLSectionChunker()
 summarizer = LangChainSummarizer()
-filter_ = BoilerplateFilter()
-preprocessing_pipeline = ContentPreprocessingPipeline(chunker, summarizer, filter_)
+# Combine multiple filters into a single pipeline
+filter_ = CompositeFilter(
+    filters=[
+        DuplicateFilter(), # Add the DuplicateFilter to the pipeline
+        BoilerplateFilter(),
+        LengthFilter(min_len=50, max_len=2500), # Adjust min/max length as needed
+    ]
+)
+
+preprocessing_pipeline = ContentPreprocessingPipeline(
+    chunker=chunker,
+    summarizer=summarizer,
+    filter_=filter_,
+)
 
 
 async def generate_product_overview_service(
