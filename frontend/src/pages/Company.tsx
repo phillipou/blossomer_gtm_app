@@ -19,6 +19,7 @@ import {
   useGetCompanies, 
   useCreateCompany 
 } from '../lib/hooks/useCompany';
+import { DraftManager } from '../lib/draftManager';
 import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
 
 export default function Company() {
@@ -55,10 +56,8 @@ export default function Company() {
 
   // Generation handler with proper create flow
   const handleGenerate = ({ name, description }: { name: string; description: string }) => {
-    if (!token) {
-      console.error('Cannot generate company without authentication');
-      return;
-    }
+    // Both auth and unauth users can generate AI analysis
+    // Only auth users can save companies to database (checked in createCompany step)
     
     console.log('[COMPANY-GENERATION] Starting company analysis and creation flow:', {
       websiteUrl: name,
@@ -73,20 +72,33 @@ export default function Company() {
         onSuccess: (generatedData: CompanyOverviewResponse) => {
           console.log('[COMPANY-GENERATION] Analysis successful, creating company:', generatedData);
           
-          // Step 2: Create/Save the generated company
-          createCompany(generatedData, {
-            onSuccess: (savedCompany) => {
-              console.log('[COMPANY-CREATION] Company saved successfully:', savedCompany);
-              
-              // Step 3: Close modal and navigate
-              entityPageState.setIsGenerationModalOpen(false);
-              navigate(`/app/company/${savedCompany.id}`, { replace: true });
-            },
-            onError: (createError) => {
-              console.error('[COMPANY-CREATION] Failed to save company:', createError);
-              // Keep modal open for retry
-            }
-          });
+          if (token) {
+            // Step 2a: Authenticated users - Save to database
+            createCompany(generatedData, {
+              onSuccess: (savedCompany) => {
+                console.log('[COMPANY-CREATION] Company saved to database:', savedCompany);
+                
+                // Step 3: Close modal and navigate
+                entityPageState.setIsGenerationModalOpen(false);
+                navigate(`/app/company/${savedCompany.id}`, { replace: true });
+              },
+              onError: (createError) => {
+                console.error('[COMPANY-CREATION] Failed to save company:', createError);
+                // Keep modal open for retry
+              }
+            });
+          } else {
+            // Step 2b: Unauthenticated users - Save using DraftManager
+            const tempId = DraftManager.saveDraft('company', generatedData);
+            
+            console.log('[COMPANY-CREATION] Company saved locally with DraftManager:', tempId);
+            
+            entityPageState.setIsGenerationModalOpen(false);
+            navigate(`/playground/company`, { 
+              replace: true, 
+              state: { draftId: tempId, apiResponse: generatedData }
+            });
+          }
         },
         onError: (analyzeError) => {
           console.error('[COMPANY-GENERATION] Company analysis failed:', analyzeError);

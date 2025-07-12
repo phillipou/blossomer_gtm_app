@@ -32,9 +32,119 @@ This document tracks bugs, issues, and solutions related to PUT request implemen
 
 ---
 
+## 🔧 Current Project: Dual-Path Architecture Fixes
+
+### **Issue #11: Hardcoded `/app` Routes in Generation Flows**
+
+**Problem:** Generation/creation flows contain hardcoded `/app` routes that break playground mode
+
+**Affected Files:**
+- `Company.tsx:83` - `navigate('/app/company/${savedCompany.id}')`
+- `Personas.tsx:354` - Hardcoded `/app` navigation after creation
+- Other generation flows potentially affected
+
+**Impact:** Unauthenticated users generating entities get redirected to `/app` routes, triggering auth redirects and breaking playground flow
+
+**Solution Pattern:**
+```typescript
+// Replace hardcoded routes with auth-aware navigation
+// ❌ BAD:
+navigate('/app/company/${savedCompany.id}');
+
+// ✅ GOOD:
+const prefix = token ? '/app' : '/playground';
+navigate(`${prefix}/company/${savedCompany.id}`);
+```
+
+**Status:** 🔄 IN PROGRESS
+
+### **Issue #12: Mixed Auth Detection Patterns**
+
+**Problem:** Components use inconsistent methods to detect auth state and determine route prefixes
+
+**Current Patterns:**
+- Some components: `const { token } = useAuthState()`
+- Others: `location.pathname.startsWith('/app')`
+- Inconsistent route prefix generation
+
+**Impact:** Creates unpredictable behavior between authenticated/unauthenticated flows
+
+**Solution Pattern:**
+```typescript
+// Standardized auth detection hook
+const useRoutePrefix = () => {
+  const { token } = useAuthState();
+  return token ? '/app' : '/playground';
+};
+```
+
+**Status:** ✅ PARTIALLY COMPLETE - `AccountDetail.tsx` and `PersonaDetail.tsx` updated
+
+### **Issue #13: Aggressive MainLayout Redirects**
+
+**Problem:** MainLayout forces auth redirects that conflict with dual-path design intent
+
+**Current Behavior:**
+```typescript
+if (isAppRoute && !authState.token) {
+  navigate('/auth?mode=signin', { replace: true });
+} else if (isPlaygroundRoute && authState.token) {
+  navigate('/app/company', { replace: true });
+}
+```
+
+**Impact:** Prevents intentional playground usage and breaks user flow expectations
+
+**Status:** 🔄 PENDING REVIEW
+
+### **Issue #14: Inconsistent Route Prefix Handling**
+
+**Problem:** Not all components consistently use dynamic route prefixes for navigation
+
+**Examples:**
+- ✅ `SidebarNav` - Uses dynamic prefix correctly
+- ✅ `AccountDetail` - Recently fixed with auth-aware breadcrumbs  
+- ✅ `PersonaDetail` - Recently fixed with auth-aware breadcrumbs
+- ❌ Various generation flows - Still use hardcoded routes
+
+**Status:** 🔄 IN PROGRESS
+
+---
+
 ## Common Error Patterns
 
-### **Pattern #1: Data Format Confusion**
+### **Pattern #1: Hardcoded Route Navigation**
+```typescript
+// ❌ ERROR: Breaks dual-path architecture
+navigate('/app/accounts/${accountId}');
+```
+
+**Solution:**
+```typescript
+// ✅ CORRECT: Auth-aware navigation
+const prefix = token ? '/app' : '/playground';
+navigate(`${prefix}/accounts/${accountId}`);
+```
+
+### **Pattern #2: Inconsistent Auth Detection**
+```typescript
+// ❌ ERROR: Mixed detection patterns
+const isAuth1 = !!token;
+const isAuth2 = location.pathname.startsWith('/app');
+```
+
+**Solution:**
+```typescript
+// ✅ CORRECT: Standardized detection
+const { token } = useAuthState();
+const prefix = token ? '/app' : '/playground';
+```
+
+### **Pattern #3: Previous Data Format Issues (RESOLVED)**
+
+*Note: These patterns were resolved in the PUT Pipeline project and are kept for reference*
+
+### **Pattern #4: Data Format Confusion (LEGACY - RESOLVED)**
 ```typescript
 // Error: Mixing data formats
 const updates = {

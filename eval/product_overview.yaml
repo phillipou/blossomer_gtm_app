@@ -1,5 +1,4 @@
-prompts:
-  - file://backend/app/prompts/templates/product_overview.jinja2
+prompts: ../backend/app/prompts/templates/product_overview.jinja2
 
 providers:
   - openai:gpt-4o

@@ -1,0 +1,115 @@
+{
+  "properties": {
+    "company_name": {
+      "description": "Official company name",
+      "title": "Company Name",
+      "type": "string"
+    },
+    "company_url": {
+      "description": "Canonical website URL",
+      "title": "Company Url",
+      "type": "string"
+    },
+    "description": {
+      "description": "2-3 sentences on core identity and what they do",
+      "title": "Description",
+      "type": "string"
+    },
+    "business_profile_insights": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Business profile insights as a list of strings in 'Key: Value' format. (Flattened)",
+      "title": "Business Profile Insights"
+    },
+    "capabilities": {
+      "description": "Key features and capabilities",
+      "items": {
+        "type": "string"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "use_case_analysis_insights": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Use case analysis insights as a list of strings in 'Key: Value' format. (Flattened)",
+      "title": "Use Case Analysis Insights"
+    },
+    "positioning_insights": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Positioning insights as a list of strings in 'Key: Value' format. (Flattened)",
+      "title": "Positioning Insights"
+    },
+    "objections": {
+      "description": "Common objections and concerns",
+      "items": {
+        "type": "string"
+      },
+      "title": "Objections",
+      "type": "array"
+    },
+    "target_customer_insights": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Target customer insights as a list of strings in 'Key: Value' format. (Flattened)",
+      "title": "Target Customer Insights"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "description": "Analysis metadata and quality scores",
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "company_name",
+    "company_url",
+    "description",
+    "capabilities",
+    "objections",
+    "metadata"
+  ],
+  "title": "ProductOverviewResponse",
+  "type": "object"
+}

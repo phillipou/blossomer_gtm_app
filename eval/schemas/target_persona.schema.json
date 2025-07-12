@@ -1,0 +1,231 @@
+{
+  "$defs": {
+    "BuyingSignal": {
+      "properties": {
+        "title": {
+          "description": "Concise signal name (3-5 words)",
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "description": "1-2 sentences explaining why this signal indicates buying readiness",
+          "title": "Description",
+          "type": "string"
+        },
+        "type": {
+          "description": "Company Data|Website|Tech Stack|News|Social Media|Other",
+          "title": "Type",
+          "type": "string"
+        },
+        "priority": {
+          "$ref": "#/$defs/PriorityEnum",
+          "description": "Low|Medium|High"
+        },
+        "detection_method": {
+          "description": "Specific Clay enrichment or data source",
+          "title": "Detection Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "type",
+        "priority",
+        "detection_method"
+      ],
+      "title": "BuyingSignal",
+      "type": "object"
+    },
+    "Demographics": {
+      "description": "Demographics model for target persona.",
+      "properties": {
+        "job_titles": {
+          "description": "2-4 likely job titles this person would hold",
+          "items": {
+            "type": "string"
+          },
+          "title": "Job Titles",
+          "type": "array"
+        },
+        "departments": {
+          "description": "The department(s) they likely belong to",
+          "items": {
+            "type": "string"
+          },
+          "title": "Departments",
+          "type": "array"
+        },
+        "seniority": {
+          "description": "Seniority levels: Entry|C-Suite|Senior Manager|Manager|VP|Founder/CEO",
+          "items": {
+            "type": "string"
+          },
+          "title": "Seniority",
+          "type": "array"
+        },
+        "buying_roles": {
+          "description": "Buying roles: Technical Buyers|Economic Buyers|Decision Maker|Champion|End-User|Blocker|Executive Sponsor|Legal and Compliance|Budget Holder",
+          "items": {
+            "type": "string"
+          },
+          "title": "Buying Roles",
+          "type": "array"
+        },
+        "job_description_keywords": {
+          "description": "3-5 key words expected in job description describing day-to-day activities",
+          "items": {
+            "type": "string"
+          },
+          "title": "Job Description Keywords",
+          "type": "array"
+        }
+      },
+      "required": [
+        "job_titles",
+        "departments",
+        "seniority",
+        "buying_roles",
+        "job_description_keywords"
+      ],
+      "title": "Demographics",
+      "type": "object"
+    },
+    "PriorityEnum": {
+      "enum": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "title": "PriorityEnum",
+      "type": "string"
+    },
+    "UseCase": {
+      "description": "Individual use case model for target persona.",
+      "properties": {
+        "use_case": {
+          "description": "3-5 word description of the use case or workflow this product impacts",
+          "title": "Use Case",
+          "type": "string"
+        },
+        "pain_points": {
+          "description": "1 sentence description of the pain or inefficiency associated with this pain point",
+          "title": "Pain Points",
+          "type": "string"
+        },
+        "capability": {
+          "description": "1 sentence description of the capability the product has that can fix this pain point",
+          "title": "Capability",
+          "type": "string"
+        },
+        "desired_outcome": {
+          "description": "The desired outcome the persona hopes to achieve using this product",
+          "title": "Desired Outcome",
+          "type": "string"
+        }
+      },
+      "required": [
+        "use_case",
+        "pain_points",
+        "capability",
+        "desired_outcome"
+      ],
+      "title": "UseCase",
+      "type": "object"
+    }
+  },
+  "description": "Response model for the /customers/target_personas endpoint (matches new prompt output).",
+  "properties": {
+    "target_persona_name": {
+      "description": "Short descriptive name for this persona segment",
+      "title": "Target Persona Name",
+      "type": "string"
+    },
+    "target_persona_description": {
+      "description": "1-2 sentences: who they are and why they need this solution",
+      "title": "Target Persona Description",
+      "type": "string"
+    },
+    "target_persona_rationale": {
+      "description": "3-5 bullets explaining the overall logic behind targeting this persona",
+      "items": {
+        "type": "string"
+      },
+      "title": "Target Persona Rationale",
+      "type": "array"
+    },
+    "demographics": {
+      "$ref": "#/$defs/Demographics",
+      "description": "Demographics and targeting attributes"
+    },
+    "use_cases": {
+      "description": "3-4 use cases following logical progression",
+      "items": {
+        "$ref": "#/$defs/UseCase"
+      },
+      "title": "Use Cases",
+      "type": "array"
+    },
+    "buying_signals": {
+      "description": "Observable buying signals with detection methods",
+      "items": {
+        "$ref": "#/$defs/BuyingSignal"
+      },
+      "title": "Buying Signals",
+      "type": "array"
+    },
+    "buying_signals_rationale": {
+      "description": "3-5 bullets explaining buying signal logic",
+      "items": {
+        "type": "string"
+      },
+      "title": "Buying Signals Rationale",
+      "type": "array"
+    },
+    "objections": {
+      "description": "3 bullets summarizing common concerns about adopting this solution",
+      "items": {
+        "type": "string"
+      },
+      "title": "Objections",
+      "type": "array"
+    },
+    "goals": {
+      "description": "3-5 bullets explaining business objectives this product can help with",
+      "items": {
+        "type": "string"
+      },
+      "title": "Goals",
+      "type": "array"
+    },
+    "purchase_journey": {
+      "description": "3-6 bullet points highlighting path from awareness to purchase",
+      "items": {
+        "type": "string"
+      },
+      "title": "Purchase Journey",
+      "type": "array"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "description": "Analysis metadata and quality scores",
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "target_persona_name",
+    "target_persona_description",
+    "target_persona_rationale",
+    "demographics",
+    "use_cases",
+    "buying_signals",
+    "buying_signals_rationale",
+    "objections",
+    "goals",
+    "purchase_journey",
+    "metadata"
+  ],
+  "title": "TargetPersonaResponse",
+  "type": "object"
+}

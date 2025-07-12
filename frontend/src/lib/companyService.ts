@@ -228,3 +228,10 @@ export async function updateCompanyListFieldsPreserveFields(
   
   return updateCompany(mergedUpdate, token);
 }
+
+/**
+ * Delete a company
+ */
+export async function deleteCompany(companyId: string, token?: string | null): Promise<void> {
+  await apiFetch<void>(`/companies/${companyId}`, { method: 'DELETE' }, token);
+}

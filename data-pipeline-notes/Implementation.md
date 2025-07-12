@@ -1,47 +1,93 @@
-# Implementation Plan - Simplify PUT Pipeline
+# Implementation Plan - Dual-Path Architecture Fix
 
 *Last updated: July 2025*  
-*Context: Streamlining data transformation and PUT request handling in Blossomer GTM*
+*Context: Fixing unauthenticated user flows after Company/Accounts/Personas refactors*
 
-## Feature Analysis
+## Current Situation
+
+Recent refactors to Company, Accounts, and Personas pages have broken the dual-path architecture that supports both authenticated (`/app/*`) and unauthenticated (`/playground/*`) user flows. While the core architecture remains sound, several hardcoded routes and inconsistent auth detection patterns are preventing unauthenticated users from properly using the playground mode.
 
 ### Problem Statement
-PUT requests in the Blossomer GTM application are consistently problematic due to:
-- Multiple data transformation layers with inconsistent field formats
-- Complex field preservation logic that's brittle and hard to debug
-- Cache updates that bypass normalization functions
-- Component render/callback logic that doesn't properly handle state updates
+After recent refactors, unauthenticated users experience broken flows due to:
+- **Hardcoded `/app` routes** in generation/creation flows that break playground mode
+- **Mixed auth detection patterns** causing inconsistent behavior
+- **Aggressive MainLayout redirects** that conflict with dual-path design
+- **Inconsistent route prefix handling** across components
 
 ### Root Cause Analysis
-The core issue is **too many transformation layers** with **inconsistent field formats**:
-1. Component receives data in multiple possible formats
-2. Service attempts to normalize everything with defensive programming
-3. Complex merge logic tries to handle all edge cases
-4. Backend may still receive wrong format
-5. Cache updates bypass transformations entirely
+1. **Generation flows have hardcoded routes** - When users create entities, they get redirected to `/app` routes
+2. **Auth state detection inconsistency** - Some components use `token`, others use `pathname.startsWith('/app')`
+3. **MainLayout forced redirects** - Aggressive auth checks prevent intentional playground usage
+4. **Missing auth-aware navigation** - Components don't consistently use dynamic route prefixes
 
 ### Success Criteria
-- PUT requests behave predictably and consistently
-- Data transformations occur at single, well-defined points
-- Field preservation is simple and reliable
-- Cache updates maintain data consistency
-- Component state synchronizes properly with server state
+- Unauthenticated users can fully use playground mode without auth redirects
+- All generation flows work correctly in both authenticated and unauthenticated contexts
+- Consistent auth detection and route prefix patterns across all components
+- DraftManager continues to provide local persistence for unauthenticated users
+- No data contamination between authenticated and unauthenticated sessions
 
-## Recommended Approach
+## Architecture Context
 
-### Strategy: Single Data Format Pipeline
-- **Frontend Format**: Always use camelCase `TargetAccountResponse` format in components and cache
-- **Transformation Points**: Only transform at API client boundaries
-- **Field Preservation**: Simple object spread instead of complex merge logic
-- **Cache Consistency**: All cache operations use normalized frontend format
+### Current Working Components
+- ✅ **Service layer routing**: Correctly routes to `/demo` vs `/api` endpoints based on auth state
+- ✅ **Main routing setup**: Supports both `/playground/*` and `/app/*` routes using same components
+- ✅ **DraftManager**: Provides local storage persistence for unauthenticated users
+- ✅ **Most navigation**: Uses auth-aware prefixes via `SidebarNav` and location-based detection
 
-### Technology Stack (Existing)
-- **Frontend Framework**: React 18 with TypeScript - Already established
-- **State Management**: TanStack Query - Already configured
-- **Data Transformation**: Existing utility functions (`transformKeysToCamelCase`, `transformKeysToSnakeCase`)
-- **Field Preservation**: Simplified patterns replacing complex merge logic
+### Critical Issues to Fix
+- ❌ **Hardcoded `/app` routes** in `Company.tsx:83`, `AccountDetail.tsx`, `Personas.tsx:354`
+- ❌ **Mixed auth detection**: Inconsistent use of `token` vs `pathname.startsWith('/app')`
+- ❌ **Aggressive redirects**: MainLayout forces auth redirects that break playground intent
+- ❌ **Route prefix inconsistency**: Not all components use dynamic prefixes for navigation
 
-## 🎉 PUT Pipeline Project Status: COMPLETED
+## Implementation Stages
+
+### Stage 1: Audit Current Auth Detection Patterns ⏳ **IN PROGRESS**
+**Duration:** 1 day
+**Dependencies:** None
+
+#### Objectives:
+- [ ] Document all current auth detection patterns in components
+- [ ] Identify hardcoded `/app` routes in generation flows
+- [ ] Map inconsistent auth state usage across the codebase
+- [ ] Create standardized auth detection and route prefix patterns
+
+### Stage 2: Fix Hardcoded Routes in Generation Flows 🔄 **PENDING**
+**Duration:** 1-2 days
+**Dependencies:** Stage 1 completion
+
+#### Critical Fixes:
+```typescript
+// Replace patterns like:
+navigate('/app/company/${savedCompany.id}')
+
+// With:
+const prefix = token ? '/app' : '/playground';
+navigate(`${prefix}/company/${savedCompany.id}`);
+```
+
+### Stage 3: Standardize Auth State Detection 🔄 **PENDING**
+**Duration:** 1-2 days
+**Dependencies:** Stage 2 completion
+
+### Stage 4: Review MainLayout Redirect Logic 🔄 **PENDING**
+**Duration:** 1 day
+**Dependencies:** Stage 3 completion
+
+### Stage 5: End-to-End Testing & Validation 🔄 **PENDING**
+**Duration:** 1-2 days
+**Dependencies:** Stage 4 completion
+
+### Stage 6: Documentation & Pattern Establishment 🔄 **PENDING**
+**Duration:** 1 day
+**Dependencies:** Stage 5 completion
+
+---
+
+## 🎉 Previous Projects: COMPLETED
+
+### ✅ PUT Pipeline Project: COMPLETED
 
 ### ✅ All Critical Issues Resolved
 **All PUT request issues have been successfully resolved!** Clean, maintainable patterns established and successfully applied to Personas entity.
@@ -175,24 +221,8 @@ The core issue is **too many transformation layers** with **inconsistent field f
 
 **This implementation provides a solid foundation for scaling to Personas, Campaigns, and any future entities with confidence that data integrity will be maintained.**
 
----
-
-# 🚀 NEW PROJECT: Apply PUT Pipeline Learnings to Personas
-
-*Started: July 2025*  
-*Context: Extending the proven PUT request patterns to Personas entity management*
-
-## Project Overview
-
-Based on the successful resolution of all PUT request issues for Accounts and Companies, we now have a proven set of patterns and learnings to apply to the Personas entity. This project will implement the same clean, maintainable patterns for Personas while leveraging all the critical lessons learned.
-
-## Success Criteria
-- Personas PUT requests behave predictably and consistently
-- All field preservation patterns work reliably for persona-specific fields
-- Clean database structure maintained (top-level columns vs JSON data)
-- Component state synchronizes properly with server state
-- Zero recursive data nesting issues
-- Reusable patterns established for future Campaign entity development
+### ✅ Personas Extension Project: COMPLETED
+**All 6 stages of persona implementation completed successfully** with critical fixes applied
 
 ## Implementation Stages
 

@@ -25,9 +25,10 @@ export default function MainLayout() {
       navigate('/auth?mode=signin', { replace: true });
     } else if (isPlaygroundRoute && authState.token) {
       // Authenticated user trying to access /playground
-      // Redirect to /app/company (could enhance to /app/company/:id if available)
-      console.log('🔍 [MainLayout] Redirecting to /app/company (authenticated user on playground)');
-      navigate('/app/company', { replace: true });
+      // FIXME: Decide policy - should authenticated users be allowed in playground mode?
+      // For now, allow it to support dual-path architecture testing
+      console.log('🔍 [MainLayout] Allowing authenticated user on playground (dual-path architecture)');
+      // navigate('/app/company', { replace: true }); // Commented out - too aggressive
     }
   }, [authState.token, authState.loading, location.pathname, navigate]);
 

@@ -69,7 +69,8 @@ export function useGetPersonas(accountId: string, token?: string | null) {
   return useQuery<Persona[], Error>({
     queryKey: [PERSONAS_LIST_KEY, accountId],
     queryFn: () => getPersonas(accountId, token),
-    enabled: !!accountId && !!token,
+    // Enable when accountId is provided (works for both authenticated and unauthenticated)
+    enabled: !!accountId,
   });
 }
 
@@ -77,7 +78,8 @@ export function useGetPersona(personaId: string, token?: string | null) {
     return useQuery<Persona, Error>({
         queryKey: [PERSONA_DETAIL_KEY, personaId],
         queryFn: () => getPersona(personaId, token),
-        enabled: !!personaId && !!token,
+        // Enable when personaId is provided (works for both authenticated and unauthenticated)
+        enabled: !!personaId,
     });
 }
 
@@ -142,7 +144,8 @@ export function useGetAllPersonas(companyId: string, token?: string | null) {
   return useQuery({
     queryKey: ['personas', companyId],
     queryFn: () => getAllPersonas(companyId, token),
-    enabled: !!companyId && !!token,
+    // Enable when companyId is provided (works for both authenticated and unauthenticated)
+    enabled: !!companyId,
   });
 }
 

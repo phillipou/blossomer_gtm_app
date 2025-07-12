@@ -1,0 +1,129 @@
+{
+  "$defs": {
+    "EmailGenerationMetadata": {
+      "description": "Metadata about the email generation process.",
+      "properties": {
+        "generation_id": {
+          "description": "Unique identifier for this generation",
+          "title": "Generation Id",
+          "type": "string"
+        },
+        "confidence": {
+          "description": "Confidence level for email quality: high|medium|low",
+          "title": "Confidence",
+          "type": "string"
+        },
+        "personalization_level": {
+          "description": "Level of personalization achieved: high|medium|low",
+          "title": "Personalization Level",
+          "type": "string"
+        },
+        "processing_time_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time taken to generate email in milliseconds",
+          "title": "Processing Time Ms"
+        }
+      },
+      "required": [
+        "generation_id",
+        "confidence",
+        "personalization_level"
+      ],
+      "title": "EmailGenerationMetadata",
+      "type": "object"
+    },
+    "EmailSegment": {
+      "description": "Individual email segment with type classification.",
+      "properties": {
+        "text": {
+          "description": "The text content of this email segment",
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "description": "Segment type: greeting|opening|pain-point|solution|evidence|cta|signature",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "type"
+      ],
+      "title": "EmailSegment",
+      "type": "object"
+    },
+    "EmailSubjects": {
+      "description": "Generated email subjects with primary and alternatives.",
+      "properties": {
+        "primary": {
+          "description": "Most effective subject line",
+          "title": "Primary",
+          "type": "string"
+        },
+        "alternatives": {
+          "description": "2 alternative subject lines",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Alternatives",
+          "type": "array"
+        }
+      },
+      "required": [
+        "primary",
+        "alternatives"
+      ],
+      "title": "EmailSubjects",
+      "type": "object"
+    }
+  },
+  "description": "Response model for email generation API.",
+  "properties": {
+    "subjects": {
+      "$ref": "#/$defs/EmailSubjects",
+      "description": "Generated subject lines"
+    },
+    "email_body": {
+      "description": "Email content broken into structured segments",
+      "items": {
+        "$ref": "#/$defs/EmailSegment"
+      },
+      "title": "Email Body",
+      "type": "array"
+    },
+    "breakdown": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "description": "Flexible segment breakdown for UI rendering - maps segment types to {label, description, color}",
+      "title": "Breakdown",
+      "type": "object"
+    },
+    "metadata": {
+      "$ref": "#/$defs/EmailGenerationMetadata",
+      "description": "Generation metadata and quality metrics"
+    }
+  },
+  "required": [
+    "subjects",
+    "email_body",
+    "breakdown",
+    "metadata"
+  ],
+  "title": "EmailGenerationResponse",
+  "type": "object"
+}

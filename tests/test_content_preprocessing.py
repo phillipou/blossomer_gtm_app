@@ -1,14 +1,15 @@
 from backend.app.services.content_preprocessing import (
-    SectionChunker,
+    ParagraphChunker,
     LangChainSummarizer,
-    BoilerplateFilter,
+    DuplicateFilter,
     ContentPreprocessingPipeline,
+    IFilter,
 )
 
 
-def test_section_chunker_chunk_markdown():
+def test_paragraph_chunker_chunk_markdown():
     """
-    Test SectionChunker.chunk splits markdown content by headings.
+    Test ParagraphChunker.chunk splits markdown content by headings.
     """
     text = """
 # Title
@@ -17,7 +18,7 @@ Content 1
 ## Section 2
 Content 2
 """
-    chunker = SectionChunker()
+    chunker = ParagraphChunker(min_paragraph_length=100)
     chunks = chunker.chunk(text)
     assert len(chunks) == 3
     assert "# Title" in chunks[0]
@@ -25,11 +26,11 @@ Content 2
     assert "Section 2" in chunks[2]
 
 
-def test_section_chunker_chunk_empty():
+def test_paragraph_chunker_chunk_empty():
     """
-    Test SectionChunker.chunk returns empty list for empty input.
+    Test ParagraphChunker.chunk returns empty list for empty input.
     """
-    chunker = SectionChunker()
+    chunker = ParagraphChunker(min_paragraph_length=100)
     assert chunker.chunk("") == []
 
 
@@ -42,19 +43,10 @@ def test_langchain_summarizer_summarize():
     assert summarizer.summarize(chunk) == chunk
 
 
-def test_boilerplate_filter_filter():
-    """
-    Test BoilerplateFilter.filter returns the input list unchanged (stub).
-    """
-    filter_ = BoilerplateFilter()
-    chunks = ["A", "B", "C"]
-    assert filter_.filter(chunks) == chunks
-
-
 def test_content_preprocessing_pipeline_end_to_end():
     """
     Test ContentPreprocessingPipeline end-to-end with all default stubs.
-    Should return processed chunks matching SectionChunker output.
+    Should return processed chunks matching ParagraphChunker output.
     """
     text = """
 # Welcome
@@ -64,10 +56,10 @@ About us.
 - Feature 1
 - Feature 2
 """
-    chunker = SectionChunker()
+    chunker = ParagraphChunker(min_paragraph_length=100)
     summarizer = LangChainSummarizer()
-    filter_ = BoilerplateFilter()
+    filter_: list[IFilter] = [DuplicateFilter()]
     pipeline = ContentPreprocessingPipeline(chunker, summarizer, filter_)
     processed = pipeline.process(text)
-    # Should match SectionChunker output since summarizer/filter are stubs
+    # Should match ParagraphChunker output since summarizer/filter are stubs
     assert processed == chunker.chunk(text)

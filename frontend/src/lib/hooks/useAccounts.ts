@@ -78,6 +78,7 @@ export function useGetAccounts(companyId: string, token?: string | null) {
   return useQuery<Account[], Error>({
     queryKey: [ACCOUNTS_LIST_KEY, companyId],
     queryFn: () => getAccounts(companyId, token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!companyId && !!token,
   });
 }
@@ -129,6 +130,7 @@ export function useGetAccount(accountId: string | undefined, token?: string | nu
   return useQuery<Account, Error>({
     queryKey: [ACCOUNT_DETAIL_KEY, accountId],
     queryFn: () => getAccount(accountId!, token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!accountId && accountId !== 'new' && !!token,
   });
 }
@@ -138,6 +140,7 @@ export function useGetAccountForEntityPage(token?: string | null, entityId?: str
   return useQuery<Account, Error>({
     queryKey: [ACCOUNT_DETAIL_KEY, entityId],
     queryFn: () => getAccount(entityId!, token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!entityId && entityId !== 'new' && !!token,
   });
 }

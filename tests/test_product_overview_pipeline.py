@@ -9,9 +9,11 @@ from backend.app.services.product_overview_service import (
 )
 from backend.app.services.content_preprocessing import (
     ContentPreprocessingPipeline,
-    SectionChunker,
+    ParagraphChunker,
     LangChainSummarizer,
-    BoilerplateFilter,
+    DuplicateFilter,
+    JunkFilter,
+    LengthFilter,
 )
 from backend.app.schemas import ProductOverviewRequest
 from backend.app.schemas import (
@@ -340,7 +342,9 @@ def test_preprocessing_pipeline_not_empty():
     The preprocessing pipeline should not remove all content when given rich input.
     """
     pipeline = ContentPreprocessingPipeline(
-        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
+        ParagraphChunker(min_paragraph_length=100),
+        LangChainSummarizer(),
+        [DuplicateFilter(), JunkFilter(), LengthFilter()]
     )
     text = "This is a product.\n\nKey features: Fast, Reliable, Secure.\n\nContact us!"
     result = pipeline.process(text)
@@ -352,7 +356,9 @@ def test_preprocessing_pipeline_removes_noise():
     The preprocessing pipeline should strip boilerplate but retain key information.
     """
     pipeline = ContentPreprocessingPipeline(
-        SectionChunker(), LangChainSummarizer(), BoilerplateFilter()
+        ParagraphChunker(min_paragraph_length=100),
+        LangChainSummarizer(),
+        [DuplicateFilter(), JunkFilter(), LengthFilter()]
     )
     text = "![Logo](logo.png)\n\nWelcome!\n\nProduct: Blossom\n\n![](img.png)\n\nContact us."
     result = pipeline.process(text)

@@ -1,12 +1,8 @@
-prompts:
-  - file://backend/app/prompts/templates/target_account.jinja2
-
+prompt: ../backend/app/prompts/templates/target_account.jinja2
 providers:
   - openai:gpt-4o
 
-tests: file://eval/tests/target_account_cases.csv
-
 defaultTest:
   assert:
-    - type: valid-json
-
+    - type: is-json
+      schema: file://eval/schemas/target_account.schema.json

@@ -7,6 +7,7 @@ import {
   updateCompanyPreserveFields,
   updateCompanyListFieldsPreserveFields,
   createCompany,
+  deleteCompany,
   normalizeCompanyResponse,
 } from '../companyService';
 import type { CompanyOverviewResponse, CompanyUpdate, CompanyResponse, CompanyCreate } from '../../types/api';
@@ -67,6 +68,7 @@ export function useGetCompanies(token?: string | null) {
   return useQuery<CompanyResponse[], Error>({
     queryKey: [COMPANIES_QUERY_KEY],
     queryFn: () => getCompanies(token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!token,
   });
 }
@@ -75,7 +77,7 @@ export function useGetCompany(token?: string | null, companyId?: string) {
   return useQuery<CompanyOverviewResponse, Error>({
     queryKey: [COMPANY_QUERY_KEY, companyId],
     queryFn: () => getCompany(token, companyId),
-    // Only enabled when authenticated with company ID - demo mode doesn't GET existing data
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!token && !!companyId,
   });
 }
@@ -84,7 +86,8 @@ export function useGetUserCompany(token?: string | null) {
   return useQuery<CompanyOverviewResponse, Error>({
     queryKey: [COMPANY_QUERY_KEY],
     queryFn: () => getCompany(token),
-    // Enabled when authenticated (will fetch user's company)
+    // This hook is for authenticated users only (fetches user's specific company)
+    // Unauthenticated users should use useGetCompany(token, companyId) instead
     enabled: !!token,
   });
 }
@@ -163,6 +166,20 @@ export function useUpdateCompanyListFieldsPreserveFields(token?: string | null, 
       // Use consistent key and validate cache - Stage 3 improvement
       queryClient.setQueryData([COMPANY_QUERY_KEY, companyId], savedCompany);
       validateCompanyCacheState(queryClient, companyId!);
+    },
+  });
+}
+
+export function useDeleteCompany(token?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (companyId) => deleteCompany(companyId, token),
+    onSuccess: (_, companyId) => {
+      console.log('[DELETE] Company deleted successfully:', companyId);
+      
+      // Invalidate companies list and remove from detail cache
+      queryClient.invalidateQueries({ queryKey: [COMPANIES_QUERY_KEY] });
+      queryClient.removeQueries({ queryKey: [COMPANY_QUERY_KEY, companyId] });
     },
   });
 }

@@ -298,7 +298,8 @@ export default function AccountDetail() {
           onSuccess: (savedAccount) => {
             console.log("Account created successfully", savedAccount);
             setIsCreationModalOpen(false);
-            navigate(`/app/accounts/${savedAccount.id}`, { replace: true });
+            const prefix = token ? '/app' : '/playground';
+            navigate(`${prefix}/accounts/${savedAccount.id}`, { replace: true });
           },
           onError: (error) => {
             handleComponentError("Account creation", error);
