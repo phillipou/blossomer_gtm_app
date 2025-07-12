@@ -19,8 +19,8 @@ import {
   useGetCompanies, 
   useCreateCompany 
 } from '../lib/hooks/useCompany';
-import { DraftManager } from '../lib/draftManager';
-import { normalizeCompanyResponse } from '../lib/companyService';
+import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
+import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
 
 export default function Company() {
@@ -29,6 +29,10 @@ export default function Company() {
   const [targetAccounts, setTargetAccounts] = useState<
     (TargetAccountResponse & { id: string; createdAt: string })[]
   >([]);
+
+  // Universal hooks replace multiple auth-specific patterns
+  const { create: createCompanyUniversal, isAuthenticated } = useEntityCRUD<CompanyOverviewResponse>('company');
+  const { navigateWithPrefix, navigateToEntity } = useAuthAwareNavigation();
 
   // Direct hooks for generation and creation flow
   const { mutate: analyzeCompany, isPending: isAnalyzing } = useAnalyzeCompany(token);
@@ -55,14 +59,12 @@ export default function Company() {
     setTargetAccounts(accounts);
   }, []);
 
-  // Generation handler with proper create flow
+  // Simplified generation handler using universal hooks
   const handleGenerate = ({ name, description }: { name: string; description: string }) => {
-    // Both auth and unauth users can generate AI analysis
-    // Only auth users can save companies to database (checked in createCompany step)
-    
-    console.log('[COMPANY-GENERATION] Starting company analysis and creation flow:', {
+    console.log('[COMPANY-GENERATION] Starting universal company creation flow:', {
       websiteUrl: name,
       userContext: description,
+      isAuthenticated,
       timestamp: new Date().toISOString()
     });
     
@@ -70,48 +72,28 @@ export default function Company() {
     analyzeCompany(
       { websiteUrl: name, userInputtedContext: description },
       {
-        onSuccess: (generatedData: CompanyOverviewResponse) => {
-          console.log('[COMPANY-GENERATION] Analysis successful, creating company:', generatedData);
+        onSuccess: async (generatedData: CompanyOverviewResponse) => {
+          console.log('[COMPANY-GENERATION] Analysis successful, using universal create:', generatedData);
           
-          if (token) {
-            // Step 2a: Authenticated users - Save to database
-            createCompany(generatedData, {
-              onSuccess: (savedCompany) => {
-                console.log('[COMPANY-CREATION] Company saved to database:', savedCompany);
-                
-                // Step 3: Close modal and navigate
-                entityPageState.setIsGenerationModalOpen(false);
-                navigate(`/app/company/${savedCompany.id}`, { replace: true });
-              },
-              onError: (createError) => {
-                console.error('[COMPANY-CREATION] Failed to save company:', createError);
-                // Keep modal open for retry
-              }
+          try {
+            // Step 2: Universal create handles both auth and unauth flows automatically
+            const result = await createCompanyUniversal(generatedData, {
+              navigateOnSuccess: false // Handle navigation manually for modal closing
             });
-          } else {
-            // Step 2b: Unauthenticated users - Normalize same way as authenticated users
             
-            // Create a fake CompanyResponse to normalize  
-            const fakeCompanyResponse = {
-              id: `temp_${Date.now()}`,
-              name: generatedData.company_name || generatedData.companyName,
-              url: generatedData.company_url || generatedData.companyUrl, 
-              data: generatedData,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
+            console.log('[COMPANY-CREATION] Universal create successful:', {
+              entityId: result.id,
+              isTemporary: result.isTemporary,
+              isAuthenticated
+            });
             
-            // Use the same normalization as authenticated users
-            const normalizedCompany = normalizeCompanyResponse(fakeCompanyResponse);
-            const tempId = DraftManager.saveDraft('company', normalizedCompany);
-            
-            console.log('[COMPANY-CREATION] Company normalized and saved locally:', { tempId, normalizedCompany });
-            
+            // Step 3: Close modal and navigate with auth-aware routing
             entityPageState.setIsGenerationModalOpen(false);
-            navigate(`/playground/company`, { 
-              replace: true, 
-              state: { draftId: tempId, apiResponse: normalizedCompany }
-            });
+            navigateToEntity('company', result.id);
+            
+          } catch (createError) {
+            console.error('[COMPANY-CREATION] Universal create failed:', createError);
+            // Keep modal open for retry
           }
         },
         onError: (analyzeError) => {
@@ -122,15 +104,13 @@ export default function Company() {
     );
   };
 
-  // Target account handlers with auth-aware routing
+  // Target account handlers using universal navigation
   const handleAccountClick = (accountId: string) => {
-    const prefix = token ? '/app' : '/playground';
-    navigate(`${prefix}/accounts/${accountId}`);
+    navigateToEntity('account', accountId);
   };
 
   const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
-    const prefix = token ? '/app' : '/playground';
-    navigate(`${prefix}/accounts/${account.id}`);
+    navigateToEntity('account', account.id);
   };
 
   const handleDeleteAccount = (accountId: string) => {
@@ -140,8 +120,7 @@ export default function Company() {
   };
 
   const handleAddAccount = () => {
-    const prefix = token ? '/app' : '/playground';
-    navigate(`${prefix}/accounts`);
+    navigateWithPrefix('/accounts');
   };
 
   // Get company name for target accounts display

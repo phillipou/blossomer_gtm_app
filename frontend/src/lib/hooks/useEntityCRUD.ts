@@ -1,6 +1,7 @@
 import { useDualPathDataFlow } from './useDualPathDataFlow';
 import { useCompanyContext } from './useCompanyContext';
-import { useAuthAwareNavigation, EntityType } from './useAuthAwareNavigation';
+import { useAuthAwareNavigation } from './useAuthAwareNavigation';
+import type { EntityType } from '../draftManager';
 
 /**
  * Universal Entity CRUD hook

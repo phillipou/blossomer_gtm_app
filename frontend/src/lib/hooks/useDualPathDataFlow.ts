@@ -1,6 +1,6 @@
 import { useAuthState } from '../auth';
 import { useAuthAwareNavigation } from './useAuthAwareNavigation';
-import { DraftManager, EntityType } from '../draftManager';
+import { DraftManager, type EntityType } from '../draftManager';
 import { useQueryClient } from '@tanstack/react-query';
 
 // Service imports for each entity type

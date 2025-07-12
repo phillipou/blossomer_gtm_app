@@ -1,7 +1,6 @@
-import { useNavigate, NavigateOptions } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../auth';
-
-export type EntityType = 'company' | 'account' | 'persona' | 'campaign';
+import type { EntityType } from '../draftManager';
 
 /**
  * Universal authentication-aware navigation hook
@@ -27,7 +26,7 @@ export function useAuthAwareNavigation() {
    * @param path - Path without prefix (e.g., '/company/123')
    * @param options - React Router navigate options
    */
-  const navigateWithPrefix = (path: string, options?: NavigateOptions) => {
+  const navigateWithPrefix = (path: string, options?: { replace?: boolean; state?: any }) => {
     const fullPath = `${getPrefix()}${path}`;
     console.log('[AUTH-NAV] Navigating with prefix:', { 
       isAuthenticated: !!token, 
@@ -43,7 +42,7 @@ export function useAuthAwareNavigation() {
    * @param entityId - ID of the entity
    * @param options - React Router navigate options
    */
-  const navigateToEntity = (entityType: EntityType, entityId: string, options?: NavigateOptions) => {
+  const navigateToEntity = (entityType: EntityType, entityId: string, options?: { replace?: boolean; state?: any }) => {
     const entityPath = getEntityPath(entityType, entityId);
     navigateWithPrefix(entityPath, options);
   };
@@ -53,7 +52,7 @@ export function useAuthAwareNavigation() {
    * @param entityType - Type of entity
    * @param options - React Router navigate options
    */
-  const navigateToEntityList = (entityType: EntityType, options?: NavigateOptions) => {
+  const navigateToEntityList = (entityType: EntityType, options?: { replace?: boolean; state?: any }) => {
     const listPath = getEntityListPath(entityType);
     navigateWithPrefix(listPath, options);
   };
@@ -111,7 +110,7 @@ export function useAuthAwareNavigation() {
     parentId: string, 
     childType: EntityType, 
     childId: string, 
-    options?: NavigateOptions
+    options?: { replace?: boolean; state?: any }
   ) => {
     const nestedPath = `/${getEntityListPath(parentType).slice(1)}/${parentId}/${getEntityListPath(childType).slice(1)}/${childId}`;
     navigateWithPrefix(nestedPath, options);
