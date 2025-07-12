@@ -34,33 +34,18 @@ class IFilter(ABC):
 
 
 class HTMLSectionChunker(IChunker):
-    """Chunks HTML content by semantic sections, falling back to divs or paragraphs."""
+    """Cleans HTML content by removing unwanted tags and returns the text."""
 
     def chunk(self, text: str, html: Optional[str] = None) -> List[str]:
         if not html or BeautifulSoup is None:
-            return text.split("\n\n")
+            return [text]
 
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "aside"]):
             tag.decompose()
 
-        chunks = []
-        seen = set()
-        # Prioritize semantic tags, but fall back to divs
-        for section in soup.find_all(["main", "article", "section", "div"]):
-            text_chunk = section.get_text(separator=" ", strip=True)
-            if len(text_chunk.split()) > 10 and text_chunk not in seen:
-                chunks.append(text_chunk)
-                seen.add(text_chunk)
-
-        if not chunks:
-            for p in soup.find_all("p"):
-                text_chunk = p.get_text(separator=" ", strip=True)
-                if len(text_chunk.split()) > 5 and text_chunk not in seen:
-                    chunks.append(text_chunk)
-                    seen.add(text_chunk)
-
-        return chunks if chunks else [text]
+        cleaned_text = soup.get_text(separator=" ", strip=True)
+        return [cleaned_text]
 
 
 class LangChainSummarizer(ISummarizer):
@@ -68,43 +53,6 @@ class LangChainSummarizer(ISummarizer):
 
     def summarize(self, chunk: str) -> str:
         return chunk
-
-
-class DuplicateFilter(IFilter):
-    """Filters out duplicate chunks."""
-
-    def filter(self, chunks: List[str]) -> List[str]:
-        seen = set()
-        result = []
-        for chunk in chunks:
-            if chunk not in seen:
-                seen.add(chunk)
-                result.append(chunk)
-        return result
-
-
-class SubstringFilter(IFilter):
-    """Filters out chunks that are substrings of other chunks."""
-
-    def filter(self, chunks: List[str]) -> List[str]:
-        # Sort by length descending to ensure we check for substrings against longer strings first
-        chunks.sort(key=len, reverse=True)
-
-        # Create a new list to store the chunks that are not substrings
-        filtered_chunks = []
-
-        for i, chunk in enumerate(chunks):
-            is_substring = False
-            # Check against all other chunks that are not the same as the current one
-            for other_chunk in filtered_chunks:
-                if chunk in other_chunk:
-                    is_substring = True
-                    break
-
-            if not is_substring:
-                filtered_chunks.append(chunk)
-
-        return filtered_chunks
 
 
 class BoilerplateFilter(IFilter):
@@ -155,7 +103,8 @@ class ContentPreprocessingPipeline:
         self.filter = filter_
 
     def process(self, text: str, html: Optional[str] = None) -> List[str]:
-        chunks = self.chunker.chunk(text, html)
-        summarized = [self.summarizer.summarize(chunk) for chunk in chunks]
+        cleaned_text = self.chunker.chunk(text, html)
+        summarized = [self.summarizer.summarize(chunk) for chunk in cleaned_text]
         filtered = self.filter.filter(summarized)
         return filtered
+

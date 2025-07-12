@@ -40,7 +40,6 @@ class DataPresence(str, Enum):
 class ProductOverviewPromptVars(BaseModel):
     """Variables for the product_overview.jinja2 prompt template."""
 
-    website_content: str
     user_inputted_context: Optional[str] = None
     company_context: Optional[str] = None
     context_quality: Optional[str] = None

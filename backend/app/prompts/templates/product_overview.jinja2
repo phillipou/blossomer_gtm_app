@@ -66,7 +66,7 @@ Before finalizing any section, verify:
 ```json
 {
   "company_name": "string - Official company name",
-  "company_url": "{{ input_website_url }}",
+  "company_url": "{ input_website_url }",
   "description": "string - 2-3 sentences on their core identity and what they do",
   "business_profile_insights": [
     "Category: <5-6 words on product category>",
@@ -99,8 +99,8 @@ Before finalizing any section, verify:
   ],
   "metadata": {
     "sources_used": ["website"],
-    "context_quality": "{{ context_quality|default('medium') }}",
-    "assessment_summary": "{{ assessment_summary|default('Analysis based on available website content') }}",
+    "context_quality": "{ context_quality|default('medium') }",
+    "assessment_summary": "{ assessment_summary|default('Analysis based on available website content') }",
     "assumptions_made": [],
     "discovery_gaps": []
   }
@@ -162,7 +162,7 @@ Before finalizing response:
 ✅ Claims can be traced back to source material
 ✅ Missing information uses empty strings, not placeholder text
 ✅ Response is valid JSON with no markdown or extra text
-✅ company_url exactly matches {{ input_website_url }}
+✅ company_url exactly matches { input_website_url }
 ✅ Arrays contain 3-5 high-quality items, not forced counts
 
 # Success Criteria
@@ -177,6 +177,8 @@ Before finalizing response:
 
 {# User Prompt #}
 REMEMBER: Always return valid JSON. Focus on discovery call preparation value.
+
+**Company URL:** {{input_website_url}}
 
 {% if user_inputted_context %}
 **User-provided context:** {{user_inputted_context}}
