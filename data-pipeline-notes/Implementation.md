@@ -19,6 +19,7 @@ After multiple dual-path architecture implementations, we now have:
 2. **Company context detection duplicated** - 15+ identical lines in Accounts.tsx & Personas.tsx
 3. **Data transformation inconsistency** - Normalization happening at different points
 4. **No abstraction layer** - Common patterns not centralized into reusable hooks
+5. **Inconsistency between cache and db shape** - Cache consistency with database shape is critical so we can take identifical transformations and rendering flows.
 
 ### Success Criteria
 - **Single source of truth** for auth-aware navigation across all pages
