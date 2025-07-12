@@ -20,6 +20,7 @@ import {
   useCreateCompany 
 } from '../lib/hooks/useCompany';
 import { DraftManager } from '../lib/draftManager';
+import { normalizeCompanyResponse } from '../lib/companyService';
 import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
 
 export default function Company() {
@@ -88,15 +89,28 @@ export default function Company() {
               }
             });
           } else {
-            // Step 2b: Unauthenticated users - Save using DraftManager
-            const tempId = DraftManager.saveDraft('company', generatedData);
+            // Step 2b: Unauthenticated users - Normalize same way as authenticated users
             
-            console.log('[COMPANY-CREATION] Company saved locally with DraftManager:', tempId);
+            // Create a fake CompanyResponse to normalize  
+            const fakeCompanyResponse = {
+              id: `temp_${Date.now()}`,
+              name: generatedData.company_name || generatedData.companyName,
+              url: generatedData.company_url || generatedData.companyUrl, 
+              data: generatedData,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            
+            // Use the same normalization as authenticated users
+            const normalizedCompany = normalizeCompanyResponse(fakeCompanyResponse);
+            const tempId = DraftManager.saveDraft('company', normalizedCompany);
+            
+            console.log('[COMPANY-CREATION] Company normalized and saved locally:', { tempId, normalizedCompany });
             
             entityPageState.setIsGenerationModalOpen(false);
             navigate(`/playground/company`, { 
               replace: true, 
-              state: { draftId: tempId, apiResponse: generatedData }
+              state: { draftId: tempId, apiResponse: normalizedCompany }
             });
           }
         },

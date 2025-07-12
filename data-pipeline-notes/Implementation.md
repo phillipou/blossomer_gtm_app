@@ -43,29 +43,78 @@ After recent refactors, unauthenticated users experience broken flows due to:
 
 ## Implementation Stages
 
-### Stage 1: Audit Current Auth Detection Patterns ⏳ **IN PROGRESS**
+### Stage 1: Fix POST Request Auth Detection for Company Generation ✅ **COMPLETED**
 **Duration:** 1 day
 **Dependencies:** None
 
 #### Objectives:
-- [ ] Document all current auth detection patterns in components
-- [ ] Identify hardcoded `/app` routes in generation flows
-- [ ] Map inconsistent auth state usage across the codebase
-- [ ] Create standardized auth detection and route prefix patterns
+- [x] Document all current auth detection patterns in components
+- [x] Identify hardcoded `/app` routes in generation flows
+- [x] Remove inappropriate auth checks blocking unauthenticated company generation
+- [x] Implement consistent data normalization for both auth and unauth flows
+- [x] Fix accounts page loading issues for unauthenticated users
 
-### Stage 2: Fix Hardcoded Routes in Generation Flows 🔄 **PENDING**
-**Duration:** 1-2 days
+#### Critical Fix Applied:
+**Data Normalization Consistency** - Both authenticated and unauthenticated flows now use identical data formats:
+
+**Authenticated Flow:**
+1. Call `/demo/companies/generate-ai` → get `ProductOverviewResponse` (snake_case: `company_name`, `company_url`)
+2. Call `/api/companies` POST → backend transforms and saves → returns `CompanyResponse` (DB format: `id`, `name`, `url`, `data`)
+3. `normalizeCompanyResponse()` transforms to `CompanyOverviewResponse` (frontend format: `companyId`, `companyName`, `companyUrl`, camelCase)
+4. Cache normalized data in React Query (in-memory cache)
+
+**Unauthenticated Flow:**
+1. Call `/demo/companies/generate-ai` → get `ProductOverviewResponse` (snake_case: `company_name`, `company_url`)
+2. Create fake `CompanyResponse` structure → apply `normalizeCompanyResponse()` → get `CompanyOverviewResponse` (frontend format: `companyId`, `companyName`, `companyUrl`, camelCase)
+3. Save normalized data to DraftManager (localStorage)
+
+**Key Success:** Both flows end up with identical `CompanyOverviewResponse` format, eliminating field mismatch issues between authenticated and unauthenticated users.
+
+#### 🎯 **CRITICAL ARCHITECTURAL PRINCIPLE ESTABLISHED:**
+
+**"Transformations and Saves Must Be In Lockstep"**
+
+Data transformations should happen at the same logical point in both authentication flows, not scattered throughout the UI. This ensures data consistency and prevents field mismatch bugs.
+
+**✅ CORRECT PATTERN:**
+```
+Auth Flow:    AI Response → Backend Transform → Save → Normalize → Cache
+Unauth Flow:  AI Response → Frontend Transform → Save → Same Format → Cache
+```
+
+**❌ AVOID PATTERN:**
+```
+Auth Flow:    AI Response → Backend Transform → Save → Normalize → Cache  
+Unauth Flow:  AI Response → Save → UI Transform (scattered) → Inconsistent Format
+```
+
+**Rule:** Whatever normalization `normalizeCompanyResponse()` does for authenticated users, unauthenticated users must do the same transformation before saving. Both paths should converge on identical data formats.
+
+### Stage 2: Fix Hardcoded Routes and Loading States ✅ **COMPLETED**
+**Duration:** 1 day  
 **Dependencies:** Stage 1 completion
 
-#### Critical Fixes:
-```typescript
-// Replace patterns like:
-navigate('/app/company/${savedCompany.id}')
+#### Critical Fixes Applied:
+- **Company Generation Routes:** Fixed hardcoded `/app` routes to use auth-aware navigation
+- **Accounts Page Loading:** Resolved infinite "Loading company data..." for unauthenticated users
+- **DraftManager Integration:** Accounts page now properly detects company context from localStorage
 
-// With:
+#### Route Pattern Fixes:
+```typescript
+// ✅ FIXED: Auth-aware route generation
 const prefix = token ? '/app' : '/playground';
 navigate(`${prefix}/company/${savedCompany.id}`);
+
+// ✅ FIXED: Unauthenticated navigation to existing route structure
+navigate('/playground/company', { 
+  state: { draftId: tempId, apiResponse: normalizedCompany }
+});
 ```
+
+#### Loading State Resolution:
+- **Root Cause:** Accounts page checked for `overview` existence but couldn't find DraftManager data
+- **Solution:** Added DraftManager integration to company context detection
+- **Replaced:** Aggressive redirects with user-friendly "No Company Found" message and navigation button
 
 ### Stage 3: Standardize Auth State Detection 🔄 **PENDING**
 **Duration:** 1-2 days

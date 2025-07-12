@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Search, Filter } from "lucide-react";
 import { useAuthState } from '../lib/auth';
 import { getAccountName, getAccountDescription } from "../lib/entityDisplayUtils";
+import { DraftManager } from '../lib/draftManager';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -64,21 +65,57 @@ export default function TargetAccountsList() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
+  const [search, setSearch] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
+  
   // Determine route prefix for navigation
   const isAuthenticated = location.pathname.startsWith('/app');
   const prefix = isAuthenticated ? '/app' : '/playground';
   
-  // Try to get company from cache first, then fetch if needed
+  // Step 1: Determine if we have a valid company context
   const cachedOverview = useCompanyOverview();
   const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
-  const overview = cachedOverview || fetchedOverview;
-  const companyId = overview?.companyId || "";
   
-  const { data: accounts, isLoading, error } = useGetAccounts(companyId, token);
+  // For unauthenticated users, check DraftManager
+  let overview = cachedOverview || fetchedOverview;
+  if (!token && !overview) {
+    const drafts = DraftManager.getDrafts('company');
+    if (drafts.length > 0) {
+      // DraftManager should already contain normalized CompanyResponse format
+      overview = drafts[0].data;
+    }
+  }
+  
+  const companyId = overview?.companyId;
+  
+  // Step 2: Always call hooks first (Rules of Hooks)
+  const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId, token);
-
-  const [search, setSearch] = useState("");
-  const [filterBy, setFilterBy] = useState("all");
+  
+  // Debug logging
+  console.log('[ACCOUNTS] Company context debug:', {
+    token: !!token,
+    cachedOverview: !!cachedOverview,
+    fetchedOverview: !!fetchedOverview,
+    overview: !!overview,
+    companyId,
+    isCompanyLoading,
+    draftCount: !token ? DraftManager.getDraftCount('company') : 'N/A (authenticated)'
+  });
+  
+  // Step 3: THEN check for early returns
+  if (!isCompanyLoading && !companyId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <h2 className="text-xl font-semibold mb-2">No Company Found</h2>
+        <p className="text-gray-600 mb-4">You need to create or select a company before managing accounts.</p>
+        <Button onClick={() => navigate(`${prefix}/company`)}>
+          Go to Company Page
+        </Button>
+      </div>
+    );
+  }
 
   const handleDeleteAccount = (id: string) => {
     if (confirm('Are you sure you want to delete this target account?')) {
@@ -106,16 +143,8 @@ export default function TargetAccountsList() {
     return <div>Error: {error.message}</div>;
   }
 
-  if (isCompanyLoading) {
+  if (isCompanyLoading || isLoading) {
     return <div>Loading...</div>;
-  }
-
-  if (!overview) {
-    return <div>Loading company data...</div>;
-  }
-
-  if (isLoading) {
-    return <div>Loading accounts...</div>;
   }
 
   return (

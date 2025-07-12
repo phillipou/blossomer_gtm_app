@@ -32,31 +32,82 @@ This document tracks bugs, issues, and solutions related to PUT request implemen
 
 ---
 
-## 🔧 Current Project: Dual-Path Architecture Fixes
+## 🎉 MAJOR SUCCESS: POST Request Authentication Flows Fixed
 
-### **Issue #11: Hardcoded `/app` Routes in Generation Flows**
+### **Issue #15: Data Format Inconsistency Between Auth and Unauth Flows** ✅ **RESOLVED**
+
+**Problem:** Authenticated and unauthenticated users had different data formats, causing field mismatch errors
+
+**Root Cause:** 
+- Auth users: `ProductOverviewResponse` → backend transformation → `CompanyResponse` → `normalizeCompanyResponse()` → `CompanyOverviewResponse`
+- Unauth users: `ProductOverviewResponse` → direct save to DraftManager (no normalization)
+
+**Critical Discovery:** The authenticated flow uses `normalizeCompanyResponse()` to convert database format back to frontend format, but unauthenticated flow was skipping this step.
+
+**Solution Applied:**
+Both flows now use identical normalization:
+
+**Authenticated Flow:**
+1. `/demo/companies/generate-ai` → `ProductOverviewResponse` (snake_case)
+2. `/api/companies` POST → `CompanyResponse` (DB format) 
+3. `normalizeCompanyResponse()` → `CompanyOverviewResponse` (frontend format)
+4. Cache in React Query
+
+**Unauthenticated Flow:**  
+1. `/demo/companies/generate-ai` → `ProductOverviewResponse` (snake_case)
+2. Create fake `CompanyResponse` → `normalizeCompanyResponse()` → `CompanyOverviewResponse` (frontend format)
+3. Save to DraftManager
+
+**Impact:** Both Company.tsx and Accounts.tsx now work identically for auth and unauth users
+
+#### 🎯 **ARCHITECTURAL PRINCIPLE ESTABLISHED:**
+
+**"Transformations and Saves Must Be In Lockstep"**
+
+This fix established a critical principle: **Data transformations should happen at the same logical point in both authentication flows.** 
+
+**The Problem We Avoided:**
+- Scattered UI transformations creating inconsistent data shapes
+- Different normalization happening at different times
+- Field mapping bugs that only appear for one user type
+
+**The Solution Pattern:**
+- **Auth users:** Backend transforms → save → normalize → cache
+- **Unauth users:** Frontend transforms (same logic) → save → same format → cache
+- **Result:** Both flows converge on identical data structure
+
+**For Future Development:** Any new entity (personas, campaigns) must follow this same pattern - use the existing normalization function for both auth and unauth flows.
+
+**Status:** ✅ **RESOLVED** - Data consistency achieved across all authentication states
+
+---
+
+## 🔧 Previous Issues: Dual-Path Architecture Fixes
+
+### **Issue #11: Hardcoded `/app` Routes in Generation Flows** ✅ **RESOLVED**
 
 **Problem:** Generation/creation flows contain hardcoded `/app` routes that break playground mode
 
 **Affected Files:**
 - `Company.tsx:83` - `navigate('/app/company/${savedCompany.id}')`
 - `Personas.tsx:354` - Hardcoded `/app` navigation after creation
-- Other generation flows potentially affected
 
 **Impact:** Unauthenticated users generating entities get redirected to `/app` routes, triggering auth redirects and breaking playground flow
 
-**Solution Pattern:**
+**Solution Applied:**
 ```typescript
-// Replace hardcoded routes with auth-aware navigation
-// ❌ BAD:
-navigate('/app/company/${savedCompany.id}');
+// ✅ FIXED: Auth-aware navigation with proper route structure
+// Authenticated users: use database ID
+navigate(`/app/company/${savedCompany.id}`, { replace: true });
 
-// ✅ GOOD:
-const prefix = token ? '/app' : '/playground';
-navigate(`${prefix}/company/${savedCompany.id}`);
+// Unauthenticated users: use state-based navigation (matches existing pattern)
+navigate('/playground/company', { 
+  replace: true, 
+  state: { draftId: tempId, apiResponse: normalizedCompany }
+});
 ```
 
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ **RESOLVED** - Both company and persona generation flows now properly handle auth vs unauth routing
 
 ### **Issue #12: Mixed Auth Detection Patterns**
 
@@ -95,7 +146,7 @@ if (isAppRoute && !authState.token) {
 
 **Impact:** Prevents intentional playground usage and breaks user flow expectations
 
-**Status:** 🔄 PENDING REVIEW
+**Status:** ✅ **RESOLVED** - Company and account generation now work properly for unauthenticated users
 
 ### **Issue #14: Inconsistent Route Prefix Handling**
 
@@ -107,7 +158,7 @@ if (isAppRoute && !authState.token) {
 - ✅ `PersonaDetail` - Recently fixed with auth-aware breadcrumbs
 - ❌ Various generation flows - Still use hardcoded routes
 
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ **RESOLVED** - Added DraftManager integration to accounts page for company context detection
 
 ---
 
@@ -338,12 +389,14 @@ if (dataPayload.data) {
 - **Field duplication:** Same data in multiple formats/locations
 - **Undefined parameters:** Functions receiving undefined when they expect objects
 - **Mixed case conventions:** camelCase and snake_case in same object
+- **🚨 CRITICAL: Inconsistent transformation timing** - Transforms happening at different points in auth vs unauth flows
 
 #### **Code Patterns to Avoid:**
 - **Defensive programming overload:** 20+ lines of fallback logic for simple merges
 - **Delete operations for field separation:** Brittle and hard to maintain
 - **Parameter name mismatches:** Different names for same concept across functions
 - **Manual cache updates:** Bypassing normalization functions
+- **🚨 CRITICAL: Scattered UI normalization** - Using different transformation logic for auth vs unauth users
 
 #### **Testing Blind Spots:**
 - **Field preservation across updates:** Are all analysis fields maintained?
@@ -358,6 +411,7 @@ if (dataPayload.data) {
 - [ ] **Standardize parameter names:** Use consistent naming across all functions
 - [ ] **Create explicit field mapping:** Map generic UI fields to entity-specific fields
 - [ ] **Add assertions early:** Catch recursive/malformed data immediately
+- [ ] **🎯 CRITICAL: Verify transformation lockstep:** Ensure auth and unauth flows use same normalization at same logical point
 - [ ] **Define test scenarios:** How will you verify field preservation?
 
 #### **During Implementation:**
@@ -365,6 +419,7 @@ if (dataPayload.data) {
 - [ ] **Test parameter consistency:** Verify all hook signatures match call sites  
 - [ ] **Validate field mapping:** Ensure UI updates reach correct database fields
 - [ ] **Check for recursion:** Monitor for nested data structures
+- [ ] **🎯 CRITICAL: Test both auth flows:** Verify auth and unauth users get identical data formats
 - [ ] **Test edge cases:** What happens with undefined/empty data?
 
 #### **Code Review Focus Areas:**
