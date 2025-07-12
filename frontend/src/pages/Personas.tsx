@@ -24,17 +24,36 @@ export default function TargetPersonas() {
   const navigate = useNavigate();
   const { token } = useAuthState();
 
-  // Robust company overview retrieval (cache or fetch)
+  // Step 1: Determine if we have a valid company context (copied from Accounts.tsx)
   const cachedOverview = useCompanyOverview();
   const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
-  const overview = cachedOverview || fetchedOverview;
-  const companyId = overview?.companyId || "";
+  
+  // For unauthenticated users, check DraftManager
+  let overview = cachedOverview || fetchedOverview;
+  if (!token && !overview) {
+    const drafts = DraftManager.getDrafts('company');
+    if (drafts.length > 0) {
+      // DraftManager should already contain normalized CompanyResponse format
+      overview = drafts[0].data;
+    }
+  }
+  
+  const companyId = overview?.companyId;
 
-  // Fetch accounts for companyId (uses cache if available)
-  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId, token);
+  // Step 2: Always call hooks first (Rules of Hooks) (copied from Accounts.tsx)
+  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "", token);
+  const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId || "", token);
 
-  // Fetch all personas for companyId (uses cache if available)
-  const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId, token);
+  // Debug logging
+  console.log('[PERSONAS] Company context debug:', {
+    token: !!token,
+    cachedOverview: !!cachedOverview,
+    fetchedOverview: !!fetchedOverview,
+    overview: !!overview,
+    companyId,
+    isCompanyLoading,
+    draftCount: !token ? DraftManager.getDraftCount('company') : 'N/A (authenticated)'
+  });
 
   // Update mutation hooks to use correct types for TargetPersonaResponse
   const updatePersonaMutation = useUpdatePersona("", token);
@@ -71,69 +90,30 @@ export default function TargetPersonas() {
   // Effect: When generatedPersonaData is set, immediately create the persona
   // This useEffect is removed as per the edit hint.
 
-  // Show loading states for company, accounts, personas, or persona save
-  if (isCompanyLoading || !overview) {
+  // Step 3: THEN check for early returns (copied from Accounts.tsx)
+  if (!isCompanyLoading && !companyId) {
+    const prefix = token ? '/app' : '/playground';
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-4 text-gray-600">Loading company data...</span>
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <h2 className="text-xl font-semibold mb-2">No Company Found</h2>
+        <p className="text-gray-600 mb-4">You need to create or select a company before managing personas.</p>
+        <Button onClick={() => navigate(`${prefix}/company`)}>
+          Go to Company Page
+        </Button>
       </div>
     );
   }
-  if (isAccountsLoading) {
+
+  // Check for no accounts available (personas need accounts)
+  if (!isAccountsLoading && (!accounts || accounts.length === 0)) {
+    const prefix = token ? '/app' : '/playground';
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-4 text-gray-600">Loading accounts...</span>
-      </div>
-    );
-  }
-  if (accountsError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{accountsError.message}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  if (isPersonasLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-4 text-gray-600">Loading personas...</span>
-      </div>
-    );
-  }
-  if (personasError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{personasError.message}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  if (isSavingPersona) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-4 text-gray-600">Saving persona...</span>
-      </div>
-    );
-  }
-  if (saveError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{saveError}</p>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <h2 className="text-xl font-semibold mb-2">No Accounts Found</h2>
+        <p className="text-gray-600 mb-4">You need to create target accounts before managing personas.</p>
+        <Button onClick={() => navigate(`${prefix}/accounts`)}>
+          Go to Accounts Page
+        </Button>
       </div>
     );
   }
@@ -171,6 +151,24 @@ export default function TargetPersonas() {
   const handleDeletePersona = (personaId: string) => {
     deletePersona(personaId);
   };
+
+  // Error handling for accounts and personas
+  if (accountsError) {
+    return <div>Error: {accountsError.message}</div>;
+  }
+  
+  if (personasError) {
+    return <div>Error: {personasError.message}</div>;
+  }
+
+  // Loading states (moved to end like Accounts.tsx)
+  if (isCompanyLoading || isAccountsLoading || isPersonasLoading || isSavingPersona) {
+    return <div>Loading...</div>;
+  }
+
+  if (saveError) {
+    return <div>Error: {saveError}</div>;
+  }
 
   // Use allPersonasWithDrafts for filtering and rendering
   const filteredPersonas = allPersonasWithDrafts.filter((persona) => {

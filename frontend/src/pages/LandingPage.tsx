@@ -10,6 +10,8 @@ import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import './LandingPage.css';
 import Navbar from "../components/layout/Navbar";
+import { DraftManager } from "../lib/draftManager";
+import { normalizeCompanyResponse } from "../lib/companyService";
 
 export default function LandingPage() {
   console.log("LandingPage: Component rendered");
@@ -70,8 +72,29 @@ export default function LandingPage() {
       // Import the analyzeCompany function and make the API call here
       const { analyzeCompany } = await import("../lib/companyService");
       const result = await analyzeCompany(url, icp);
-      console.log("LandingPage: API call successful, navigating to /playground/company with result");
-      navigate("/playground/company", { state: { apiResponse: result } });
+      console.log("LandingPage: API call successful, normalizing and caching result");
+      
+      // Apply same normalization and caching logic as Company.tsx for unauthenticated users
+      // Create a fake CompanyResponse to normalize  
+      const fakeCompanyResponse = {
+        id: `temp_${Date.now()}`,
+        name: result.company_name || result.companyName,
+        url: result.company_url || result.companyUrl, 
+        data: result,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Use the same normalization as authenticated users
+      const normalizedCompany = normalizeCompanyResponse(fakeCompanyResponse);
+      const tempId = DraftManager.saveDraft('company', normalizedCompany);
+      
+      console.log("LandingPage: Company normalized and saved locally, navigating to /playground/company", { tempId, normalizedCompany });
+      
+      navigate("/playground/company", { 
+        replace: true, 
+        state: { draftId: tempId, apiResponse: normalizedCompany }
+      });
     } catch (error) {
       console.error("LandingPage: API call failed:", error);
       setError("Failed to analyze company. Please try again.");
