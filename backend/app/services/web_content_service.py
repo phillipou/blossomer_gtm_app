@@ -7,12 +7,19 @@ Provides a clean API for getting website content with dual caching:
 """
 
 from typing import Dict, Any, Optional
-from backend.app.services.website_scraper import extract_website_content, process_raw_content
-from backend.app.services.dev_file_cache import load_processed_from_cache, save_processed_to_cache
+from backend.app.services.website_scraper import (
+    extract_website_content,
+    process_raw_content,
+)
+from backend.app.services.dev_file_cache import (
+    load_processed_from_cache,
+    save_processed_to_cache,
+)
 import time
 import os
 import re
 from dataclasses import dataclass
+
 
 @dataclass
 class WebContentConfig:
@@ -41,7 +48,9 @@ class WebContentService:
     def __init__(self, config: Optional[WebContentConfig] = None):
         self.config = config or WebContentConfig()
 
-    def get_content_for_llm(self, url: str, force_refresh: bool = False) -> Dict[str, Any]:
+    def get_content_for_llm(
+        self, url: str, force_refresh: bool = False
+    ) -> Dict[str, Any]:
         """
         Get processed website content optimized for LLM consumption.
 
@@ -66,7 +75,7 @@ class WebContentService:
                     "processed_content": cached_processed,
                     "cache_status": "processed_hit",
                     "metadata": {"source": "processed_cache"},
-                    "processed_content_length": len(cached_processed)
+                    "processed_content_length": len(cached_processed),
                 }
 
         # Get raw content (may hit raw cache or call Firecrawl)
@@ -74,8 +83,7 @@ class WebContentService:
 
         # Process the content
         processed_content = process_raw_content(
-            content=raw_result.get("content", ""),
-            html=raw_result.get("html", "")
+            content=raw_result.get("content", ""), html=raw_result.get("html", "")
         )
 
         # Cache processed content
@@ -89,7 +97,7 @@ class WebContentService:
             "cache_status": cache_status,
             "metadata": raw_result.get("metadata", {}),
             "raw_content_length": len(raw_result.get("content", "")),
-            "processed_content_length": len(processed_content)
+            "processed_content_length": len(processed_content),
         }
 
     @staticmethod
@@ -104,14 +112,30 @@ class WebContentService:
         char_count = len(processed_content)
 
         # Structure detection
-        headers = len(re.findall(r'^#+\s', processed_content, re.MULTILINE))
-        lists = len(re.findall(r'^\s*[-*+]\s', processed_content, re.MULTILINE))
-        paragraphs = len(re.findall(r'\n\s*\n', processed_content))
+        headers = len(re.findall(r"^#+\s", processed_content, re.MULTILINE))
+        lists = len(re.findall(r"^\s*[-*+]\s", processed_content, re.MULTILINE))
+        paragraphs = len(re.findall(r"\n\s*\n", processed_content))
 
         # Content type detection
-        has_product_info = bool(re.search(r'(features?|benefits?|pricing|solutions?)', processed_content, re.IGNORECASE))
-        has_company_info = bool(re.search(r'(about|company|team|mission|founded)', processed_content, re.IGNORECASE))
-        has_contact_info = bool(re.search(r'(contact|email|phone|address)', processed_content, re.IGNORECASE))
+        has_product_info = bool(
+            re.search(
+                r"(features?|benefits?|pricing|solutions?)",
+                processed_content,
+                re.IGNORECASE,
+            )
+        )
+        has_company_info = bool(
+            re.search(
+                r"(about|company|team|mission|founded)",
+                processed_content,
+                re.IGNORECASE,
+            )
+        )
+        has_contact_info = bool(
+            re.search(
+                r"(contact|email|phone|address)", processed_content, re.IGNORECASE
+            )
+        )
 
         # Quality assessment
         quality_score = min(100, (word_count / 10) + (headers * 5) + (lists * 2))
@@ -119,18 +143,14 @@ class WebContentService:
         return {
             "word_count": word_count,
             "char_count": char_count,
-            "structure": {
-                "headers": headers,
-                "lists": lists,
-                "paragraphs": paragraphs
-            },
+            "structure": {"headers": headers, "lists": lists, "paragraphs": paragraphs},
             "content_types": {
                 "has_product_info": has_product_info,
                 "has_company_info": has_company_info,
-                "has_contact_info": has_contact_info
+                "has_contact_info": has_contact_info,
             },
             "quality_score": quality_score,
-            "is_sufficient": quality_score > 20 and word_count > 100
+            "is_sufficient": quality_score > 20 and word_count > 100,
         }
 
     @staticmethod
@@ -139,26 +159,26 @@ class WebContentService:
         Debug the content processing pipeline for a URL.
         Shows cache status, processing steps, and content quality.
         """
-        debug_info = {
-            "url": url,
-            "timestamp": time.time(),
-            "steps": []
-        }
+        debug_info = {"url": url, "timestamp": time.time(), "steps": []}
 
         # Step 1: Check processed cache
         start_time = time.monotonic()
         cached_processed = load_processed_from_cache(url)
         cache_check_time = time.monotonic() - start_time
 
-        debug_info["steps"].append({
-            "step": "processed_cache_check",
-            "duration_ms": cache_check_time * 1000,
-            "result": "hit" if cached_processed else "miss",
-            "content_length": len(cached_processed) if cached_processed else 0
-        })
+        debug_info["steps"].append(
+            {
+                "step": "processed_cache_check",
+                "duration_ms": cache_check_time * 1000,
+                "result": "hit" if cached_processed else "miss",
+                "content_length": len(cached_processed) if cached_processed else 0,
+            }
+        )
 
         if cached_processed:
-            debug_info["content_quality"] = WebContentService.analyze_content_quality(cached_processed)
+            debug_info["content_quality"] = WebContentService.analyze_content_quality(
+                cached_processed
+            )
             return debug_info
 
         # Step 2: Get raw content
@@ -166,29 +186,35 @@ class WebContentService:
         raw_result = extract_website_content(url)
         raw_fetch_time = time.monotonic() - start_time
 
-        debug_info["steps"].append({
-            "step": "raw_content_fetch",
-            "duration_ms": raw_fetch_time * 1000,
-            "cache_status": "hit" if raw_result.get("from_cache") else "fresh",
-            "raw_content_length": len(raw_result.get("content", "")),
-            "html_length": len(raw_result.get("html", ""))
-        })
+        debug_info["steps"].append(
+            {
+                "step": "raw_content_fetch",
+                "duration_ms": raw_fetch_time * 1000,
+                "cache_status": "hit" if raw_result.get("from_cache") else "fresh",
+                "raw_content_length": len(raw_result.get("content", "")),
+                "html_length": len(raw_result.get("html", "")),
+            }
+        )
 
         # Step 3: Process content
         start_time = time.monotonic()
         processed = process_raw_content(
-            content=raw_result.get("content", ""),
-            html=raw_result.get("html", "")
+            content=raw_result.get("content", ""), html=raw_result.get("html", "")
         )
         process_time = time.monotonic() - start_time
 
-        debug_info["steps"].append({
-            "step": "content_processing",
-            "duration_ms": process_time * 1000,
-            "processed_length": len(processed),
-            "compression_ratio": len(processed) / max(len(raw_result.get("content", "")), 1)
-        })
+        debug_info["steps"].append(
+            {
+                "step": "content_processing",
+                "duration_ms": process_time * 1000,
+                "processed_length": len(processed),
+                "compression_ratio": len(processed)
+                / max(len(raw_result.get("content", "")), 1),
+            }
+        )
 
-        debug_info["content_quality"] = WebContentService.analyze_content_quality(processed)
+        debug_info["content_quality"] = WebContentService.analyze_content_quality(
+            processed
+        )
 
         return debug_info

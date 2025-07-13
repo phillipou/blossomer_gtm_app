@@ -52,7 +52,7 @@ def normalize_url(url: str) -> str:
 def clean_text_for_llm(text: str) -> str:
     """
     Final text cleaning for LLM consumption.
-    
+
     Firecrawl's .content field already provides well-structured markdown,
     so we focus on removing noise while preserving the good structure.
 
@@ -63,46 +63,46 @@ def clean_text_for_llm(text: str) -> str:
     - Preserve structured content (headers, lists, paragraphs)
     """
     # Remove URLs and markdown links
-    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    text = re.sub(url_pattern, '', text)
+    url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+    text = re.sub(url_pattern, "", text)
     # Convert [text](url) to just text
-    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
-    
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+
     # Remove common navigation and boilerplate patterns
     nav_patterns = [
-        r'Skip to (?:main )?content',
-        r'Home\s+About\s+(?:Services|Products)\s+Contact',
-        r'Menu\s+Toggle',
-        r'Search\s+for:',
-        r'Cookie Policy',
-        r'Privacy Policy',
-        r'Terms of Service',
-        r'All rights reserved',
-        r'Copyright ©.*',
-        r'Follow us on',
-        r'Subscribe to our newsletter',
-        r'Sign up for updates',
+        r"Skip to (?:main )?content",
+        r"Home\s+About\s+(?:Services|Products)\s+Contact",
+        r"Menu\s+Toggle",
+        r"Search\s+for:",
+        r"Cookie Policy",
+        r"Privacy Policy",
+        r"Terms of Service",
+        r"All rights reserved",
+        r"Copyright ©.*",
+        r"Follow us on",
+        r"Subscribe to our newsletter",
+        r"Sign up for updates",
     ]
     for pattern in nav_patterns:
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
 
     # Remove contact form patterns
-    text = re.sub(r'Email\*?\s+Name\*?\s+Message\*?', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'Your email address\*?', '', text, flags=re.IGNORECASE)
-    
+    text = re.sub(r"Email\*?\s+Name\*?\s+Message\*?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"Your email address\*?", "", text, flags=re.IGNORECASE)
+
     # Remove social media links and handles
-    text = re.sub(r'@\w+', '', text)  # Remove @handles
-    text = re.sub(r'#\w+', '', text)  # Remove #hashtags
-    
+    text = re.sub(r"@\w+", "", text)  # Remove @handles
+    text = re.sub(r"#\w+", "", text)  # Remove #hashtags
+
     # Clean up whitespace (preserve paragraph breaks)
-    text = re.sub(r'\n{3,}', '\n\n', text)  # Max 2 consecutive newlines
-    text = re.sub(r' {2,}', ' ', text)  # Multiple spaces to single space
-    text = re.sub(r'\t+', ' ', text)  # Tabs to spaces
-    
+    text = re.sub(r"\n{3,}", "\n\n", text)  # Max 2 consecutive newlines
+    text = re.sub(r" {2,}", " ", text)  # Multiple spaces to single space
+    text = re.sub(r"\t+", " ", text)  # Tabs to spaces
+
     # Remove empty lines with just spaces
-    lines = text.split('\n')
+    lines = text.split("\n")
     cleaned_lines = [line.rstrip() for line in lines if line.strip()]
-    text = '\n'.join(cleaned_lines)
+    text = "\n".join(cleaned_lines)
 
     return text.strip()
 
@@ -325,7 +325,11 @@ def extract_website_content(
     if return_processed:
         cached_processed = load_processed_from_cache(url)
         if cached_processed:
-            return {"url": url, "processed_content": cached_processed, "from_cache": True}
+            return {
+                "url": url,
+                "processed_content": cached_processed,
+                "from_cache": True,
+            }
 
     # Use file-based cache in development (not in production)
     if os.getenv("ENV") != "production":
@@ -348,7 +352,9 @@ def extract_website_content(
                 cached = None
             else:
                 cache_time = t_cache1 - t_cache0
-                print(f"[DEV CACHE] Cache hit for URL: {url} (retrieval took {cache_time:.2f}s)")
+                print(
+                    f"[DEV CACHE] Cache hit for URL: {url} (retrieval took {cache_time:.2f}s)"
+                )
                 cached["from_cache"] = True
                 return cached
         else:

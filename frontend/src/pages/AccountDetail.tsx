@@ -551,10 +551,7 @@ export default function AccountDetail() {
         <CardContent>
           {entityPageState.displayEntity?.firmographics ? (
             <CriteriaTable 
-              data={useMemo(() => 
-                transformFirmographicsToCriteria(entityPageState.displayEntity.firmographics), 
-                [entityPageState.displayEntity, transformFirmographicsToCriteria]
-              )}
+              data={firmographicsTableData}
             />
           ) : (
             <div className="text-center py-8 text-gray-500">No firmographics data available</div>

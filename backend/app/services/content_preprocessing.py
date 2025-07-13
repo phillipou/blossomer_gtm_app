@@ -46,9 +46,9 @@ class HTMLSectionChunker(IChunker):
 
         # Chunk based on semantic tags
         chunks = []
-        for element in soup.find_all(['h1', 'h2', 'h3', 'p', 'li', 'div']):
+        for element in soup.find_all(["h1", "h2", "h3", "p", "li", "div"]):
             # Get text and strip leading/trailing whitespace
-            text_chunk = element.get_text(separator=' ', strip=True)
+            text_chunk = element.get_text(separator=" ", strip=True)
             if text_chunk:
                 chunks.append(text_chunk)
 
@@ -118,4 +118,3 @@ class ContentPreprocessingPipeline:
         summarized = [self.summarizer.summarize(chunk) for chunk in cleaned_text]
         filtered = self.filter.filter(summarized)
         return filtered
-

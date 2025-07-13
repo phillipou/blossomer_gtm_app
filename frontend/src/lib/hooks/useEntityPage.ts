@@ -269,10 +269,19 @@ export function useEntityPage<T = any>({
           listFieldUpdates
         );
         if (updateSuccess) {
-          queryClient.setQueryData([config.entityType, entityId], (prevData: any) => ({
-            ...prevData,
-            ...listFieldUpdates,
-          }));
+          // Get the updated draft data and set it in cache
+          const updatedDraft = DraftManager.getDraft(config.entityType, currentDraft.tempId);
+          if (updatedDraft) {
+            console.log('[CACHE-UPDATE] Setting cache data from updated draft (list fields):', {
+              entityType: config.entityType,
+              entityId,
+              listFieldUpdates,
+              updatedDraftData: updatedDraft.data,
+              preservedFieldCount: Object.keys(updatedDraft.data).length
+            });
+            
+            queryClient.setQueryData([config.entityType, entityId], updatedDraft.data);
+          }
           closeEditDialog();
         } else {
           throw new Error('Failed to update draft');
@@ -319,10 +328,19 @@ export function useEntityPage<T = any>({
           mappedUpdates
         );
         if (updateSuccess) {
-          queryClient.setQueryData([config.entityType, entityId], (prevData: any) => ({
-            ...prevData,
-            ...mappedUpdates,
-          }));
+          // Get the updated draft data and set it in cache
+          const updatedDraft = DraftManager.getDraft(config.entityType, currentDraft.tempId);
+          if (updatedDraft) {
+            console.log('[CACHE-UPDATE] Setting cache data from updated draft:', {
+              entityType: config.entityType,
+              entityId,
+              mappedUpdates,
+              updatedDraftData: updatedDraft.data,
+              preservedFieldCount: Object.keys(updatedDraft.data).length
+            });
+            
+            queryClient.setQueryData([config.entityType, entityId], updatedDraft.data);
+          }
         }
       }
     }

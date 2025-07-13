@@ -109,13 +109,19 @@ class ContextOrchestratorService:
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
 
             # --- TRACE LOG: Verify content before rendering ---
-            if hasattr(prompt_vars, 'website_content'):
-                content_to_render = getattr(prompt_vars, 'website_content', None)
+            if hasattr(prompt_vars, "website_content"):
+                content_to_render = getattr(prompt_vars, "website_content", None)
                 if content_to_render:
-                    logger.info(f"[PROMPT_TRACE] Rendering prompt with {len(content_to_render)} chars of website_content.")
-                    logger.info(f"[PROMPT_TRACE] First 100 chars: {content_to_render[:100]}")
+                    logger.info(
+                        f"[PROMPT_TRACE] Rendering prompt with {len(content_to_render)} chars of website_content."
+                    )
+                    logger.info(
+                        f"[PROMPT_TRACE] First 100 chars: {content_to_render[:100]}"
+                    )
                 else:
-                    logger.warning("[PROMPT_TRACE] website_content is None or empty before rendering.")
+                    logger.warning(
+                        "[PROMPT_TRACE] website_content is None or empty before rendering."
+                    )
             # --- END TRACE LOG ---
 
             prompt = render_prompt(prompt_template, prompt_vars)
@@ -141,7 +147,7 @@ class ContextOrchestratorService:
         except Exception as e:
             logger.error(
                 f"Analysis failed | analysis_type: {analysis_type} | error: {e}",
-                exc_info=True
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
@@ -163,40 +169,66 @@ class ContextOrchestratorService:
                 # Log cache performance
                 cache_status = content_result["cache_status"]
                 content_length = content_result["processed_content_length"]
-                print(f"[WEB_CONTENT] Cache status: {cache_status}, Content length: {content_length} chars")
-                logger.info(f"[WEB_CONTENT] Passing {content_length} chars of website content to prompt.")
+                print(
+                    f"[WEB_CONTENT] Cache status: {cache_status}, Content length: {content_length} chars"
+                )
+                logger.info(
+                    f"[WEB_CONTENT] Passing {content_length} chars of website content to prompt."
+                )
 
             except Exception as e:
-                logger.warning(f"Failed to fetch website content for {website_url}: {e}")
+                logger.warning(
+                    f"Failed to fetch website content for {website_url}: {e}"
+                )
                 website_content = None
 
         if analysis_type == "product_overview":
-            prompt_vars_kwargs.update({
-                "user_inputted_context": getattr(request_data, "user_inputted_context", None),
-                "website_content": website_content,
-            })
+            prompt_vars_kwargs.update(
+                {
+                    "user_inputted_context": getattr(
+                        request_data, "user_inputted_context", None
+                    ),
+                    "website_content": website_content,
+                }
+            )
         elif analysis_type == "target_account":
-            prompt_vars_kwargs.update({
-                "company_context": getattr(request_data, "company_context", None),
-                "account_profile_name": getattr(request_data, "account_profile_name", None),
-                "hypothesis": getattr(request_data, "hypothesis", None),
-                "additional_context": getattr(request_data, "additional_context", None),
-            })
+            prompt_vars_kwargs.update(
+                {
+                    "company_context": getattr(request_data, "company_context", None),
+                    "account_profile_name": getattr(
+                        request_data, "account_profile_name", None
+                    ),
+                    "hypothesis": getattr(request_data, "hypothesis", None),
+                    "additional_context": getattr(
+                        request_data, "additional_context", None
+                    ),
+                }
+            )
         elif analysis_type == "target_persona":
-            prompt_vars_kwargs.update({
-                "company_context": getattr(request_data, "company_context", None),
-                "target_account_context": getattr(request_data, "target_account_context", None),
-                "persona_profile_name": getattr(request_data, "persona_profile_name", None),
-                "hypothesis": getattr(request_data, "hypothesis", None),
-                "additional_context": getattr(request_data, "additional_context", None),
-            })
+            prompt_vars_kwargs.update(
+                {
+                    "company_context": getattr(request_data, "company_context", None),
+                    "target_account_context": getattr(
+                        request_data, "target_account_context", None
+                    ),
+                    "persona_profile_name": getattr(
+                        request_data, "persona_profile_name", None
+                    ),
+                    "hypothesis": getattr(request_data, "hypothesis", None),
+                    "additional_context": getattr(
+                        request_data, "additional_context", None
+                    ),
+                }
+            )
         elif analysis_type == "email_generation":
-            prompt_vars_kwargs.update({
-                "company_context": getattr(request_data, "company_context", None),
-                "target_account": getattr(request_data, "target_account", None),
-                "target_persona": getattr(request_data, "target_persona", None),
-                "preferences": getattr(request_data, "preferences", None),
-            })
+            prompt_vars_kwargs.update(
+                {
+                    "company_context": getattr(request_data, "company_context", None),
+                    "target_account": getattr(request_data, "target_account", None),
+                    "target_persona": getattr(request_data, "target_persona", None),
+                    "preferences": getattr(request_data, "preferences", None),
+                }
+            )
 
         return prompt_vars_kwargs
 
