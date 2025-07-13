@@ -81,15 +81,15 @@ export default function TargetAccountsList() {
   const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId);
   
-  // Get draft accounts for unauthenticated users
-  const draftAccounts = DraftManager.getDrafts('account').map(draft => ({
+  // Get draft accounts ONLY for unauthenticated users
+  const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
     ...draft.data,
     id: draft.tempId,
     isDraft: true,
-  }));
+  })) : [];
   
-  // Combine authenticated accounts with drafts
-  const allAccounts = [...(accounts || []), ...draftAccounts];
+  // Combine accounts based on auth state - NO mixing of playground and database data
+  const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
   
   // Step 3: THEN check for early returns
   if (!isCompanyLoading && !companyId) {

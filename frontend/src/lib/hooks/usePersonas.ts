@@ -5,6 +5,7 @@ import {
   createPersona,
   updatePersona,
   updatePersonaWithMerge,
+  updatePersonaListFieldsPreserveFields,
   deletePersona,
   generatePersona,
   normalizePersonaResponse,
@@ -81,6 +82,16 @@ export function useGetPersona(personaId: string, token?: string | null) {
         // Enable when personaId is provided (works for both authenticated and unauthenticated)
         enabled: !!personaId,
     });
+}
+
+// EntityPage-specific hook that prevents API calls for unauthenticated users (following AccountDetail pattern)
+export function useGetPersonaForEntityPage(token?: string | null, entityId?: string) {
+  return useQuery<Persona, Error>({
+    queryKey: [PERSONA_DETAIL_KEY, entityId],
+    queryFn: () => getPersona(entityId!, token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
+    enabled: !!entityId && entityId !== 'new' && !!token && entityId !== '*',
+  });
 }
 
 export function useCreatePersona(token?: string | null) {
@@ -173,7 +184,7 @@ export function useUpdatePersonaPreserveFields(token?: string | null, personaId?
       console.log('[HOOK-PRESERVE] useUpdatePersonaPreserveFields entry', {
         personaId,
         hasCurrentPersona: !!currentPersona,
-        updateKeys: Object.keys(updates),
+        updateKeys: updates ? Object.keys(updates) : [],
         preservationStrategy: 'field-level-merge'
       });
       
@@ -205,5 +216,39 @@ export function useUpdatePersonaPreserveFields(token?: string | null, personaId?
         errorType: error.constructor.name
       });
     }
+  });
+}
+
+/**
+ * Field-preserving persona list field update hook - dedicated hook for list field updates
+ * Matches the account pattern for proper field preservation during list updates
+ */
+export function useUpdatePersonaListFieldsPreserveFields(token?: string | null, personaId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Persona, 
+    Error, 
+    { currentOverview: any; listFieldUpdates: Record<string, string[]> }
+  >({
+    mutationFn: ({ currentOverview, listFieldUpdates }) => 
+      updatePersonaListFieldsPreserveFields(personaId!, currentOverview, listFieldUpdates, token),
+    onSuccess: (savedPersona) => {
+      const normalized = normalizePersonaResponse(savedPersona);
+      
+      console.log('[PRESERVE-LIST-FIELDS] Persona list fields updated with field preservation:', {
+        personaId: normalized.id,
+        fieldCount: Object.keys(normalized).length,
+        preservedComplexFields: !!(normalized.demographics || normalized.useCases || normalized.buyingSignals)
+      });
+      
+      // Use consistent key and validate cache - Stage 4 improvement
+      queryClient.setQueryData([PERSONA_DETAIL_KEY, personaId], normalized);
+      validateCacheState(queryClient, personaId!);
+      
+      // Invalidate list cache to ensure consistency
+      if (normalized.accountId) {
+        queryClient.invalidateQueries({ queryKey: [PERSONAS_LIST_KEY, normalized.accountId] });
+      }
+    },
   });
 }

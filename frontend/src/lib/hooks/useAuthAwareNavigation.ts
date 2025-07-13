@@ -69,8 +69,8 @@ export function useAuthAwareNavigation() {
       case 'account':
         return `/accounts/${entityId}`;
       case 'persona':
-        // Personas are nested under accounts
-        return `/accounts/*/personas/${entityId}`;
+        // Simplified persona routing (updated to match main.tsx routes)
+        return `/personas/${entityId}`;
       case 'campaign':
         return `/campaigns/${entityId}`;
       default:

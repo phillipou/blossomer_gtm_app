@@ -47,8 +47,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path="company" element={<Company />} />
               <Route path="accounts" element={<Accounts />} />
               <Route path="accounts/:id" element={<AccountDetail />} />
-              <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
               <Route path="personas" element={<Personas />} />
+              <Route path="personas/:id" element={<PersonaDetail />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>
@@ -58,8 +58,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path="company/:id" element={<Company />} />
               <Route path="accounts" element={<Accounts />} />
               <Route path="accounts/:id" element={<AccountDetail />} />
-              <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
               <Route path="personas" element={<Personas />} />
+              <Route path="personas/:id" element={<PersonaDetail />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>

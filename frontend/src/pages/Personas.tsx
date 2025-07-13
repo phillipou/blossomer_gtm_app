@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Loader2, Edit3, Trash2, Wand2 } from "lucide-react";
-import { useGetAllPersonas, useUpdatePersona, useDeletePersona, useCreatePersona, useGeneratePersona } from "../lib/hooks/usePersonas";
+import { Edit3, Trash2, Wand2 } from "lucide-react";
+import { useGetAllPersonas, useDeletePersona } from "../lib/hooks/usePersonas";
 import { useGetAccounts } from "../lib/hooks/useAccounts";
+import { useAuthState } from "../lib/auth";
 import SummaryCard from "../components/cards/SummaryCard";
 import type { Persona, PersonaUpdate, TargetPersonaResponse } from "../types/api";
 import { getEntityColorForParent } from "../lib/entityColors";
@@ -22,52 +22,61 @@ import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
-  const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
+  const { token } = useAuthState();
+  const { navigateWithPrefix, navigateToEntity, navigateToNestedEntity, isAuthenticated } = useAuthAwareNavigation();
 
-  // Universal company context detection
-  const { overview, companyId, isLoading: isCompanyLoading } = useCompanyContext();
-  
-  // Universal persona creation
-  const { create: createPersonaUniversal } = useEntityCRUD<TargetPersonaResponse>('persona');
-
-  // Step 2: Always call hooks first (Rules of Hooks)
-  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "");
-  const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId || "");
-
-  // Update and delete mutation hooks (still needed for existing personas)
-  const updatePersonaMutation = useUpdatePersona("");
-  const { mutate: deletePersona } = useDeletePersona("");
-
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [, setForceUpdate] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [generatedPersonaData, setGeneratedPersonaData] = useState<TargetPersonaResponse | null>(null);
   const [isSavingPersona, setIsSavingPersona] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Get draft personas for all accounts
-  const allDraftPersonas = accounts?.flatMap(account => 
+  // Universal context and CRUD hooks
+  const { overview, companyId, isLoading: isCompanyLoading, hasValidContext } = useCompanyContext();
+  const { create: createPersonaUniversal, update: updatePersonaUniversal } = useEntityCRUD<TargetPersonaResponse>('persona');
+  
+  // Delete hook for authenticated personas (universal delete not yet implemented)
+  const { mutate: deleteAuthenticatedPersona } = useDeletePersona(companyId || "", token);
+
+  // Data fetching hooks (following Accounts.tsx pattern)
+  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "", token);
+  
+  // Get draft accounts ONLY for unauthenticated users (FIXED: following Accounts.tsx pattern)
+  const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+  
+  // Combine accounts based on auth state - NO mixing of playground and database data
+  const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
+  
+  // Get personas for all accounts (authenticated users) - following Implementation.md guidance
+  const { data: authenticatedPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
+  
+  // Remove legacy update hook - using universal system now
+
+  // Get draft personas ONLY for unauthenticated users
+  const allDraftPersonas = !isAuthenticated ? (allAccounts?.flatMap(account => 
     DraftManager.getDraftsByParent('persona', account.id).map(draft => ({
       ...draft.data,
       id: draft.tempId,
       accountId: account.id,
       isDraft: true,
     }))
-  ) || [];
+  ) || []) : [];
 
-  // Combine saved and draft personas
-  const allPersonasWithDrafts = [
-    ...(personas || []),
-    ...(allDraftPersonas || [])
-  ];
+  // NO mixing - authenticated users get only database personas, unauthenticated get only drafts
+  const allPersonas = isAuthenticated ? (authenticatedPersonas || []) : [...(authenticatedPersonas || []), ...allDraftPersonas];
 
-  // Effect: When generatedPersonaData is set, immediately create the persona
-  // This useEffect is removed as per the edit hint.
+  // Removed problematic useEffect following Issue #26 "Remove, Don't Fix" pattern
 
-  // Step 3: THEN check for early returns
+  // THEN check for early returns (after ALL hooks)
   if (!isCompanyLoading && !companyId) {
     return (
       <div className="flex flex-col h-full">
@@ -86,27 +95,11 @@ export default function TargetPersonas() {
     );
   }
 
-  // Check for no accounts available (personas need accounts)
-  if (!isAccountsLoading && (!accounts || accounts.length === 0)) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader
-          title="Target Personas"
-          subtitle="Manage buyer personas across all target accounts"
-        />
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <h2 className="text-xl font-semibold mb-2">No Accounts Found</h2>
-          <p className="text-gray-600 mb-4">You need to create target accounts before managing personas.</p>
-          <Button onClick={() => navigateWithPrefix('/accounts')}>
-            Go to Accounts Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Note: No early return for empty accounts - let the component render and show empty state UI like Accounts.tsx
   
-  const handlePersonaClick = (customerId: string, personaId: string) => {
-    navigate(`${isAuthenticated ? '/app' : '/playground'}/accounts/${customerId}/personas/${personaId}`);
+  const handlePersonaClick = (personaId: string) => {
+    // Simplified navigation - direct to persona detail page
+    navigateToEntity('persona', personaId);
   };
 
   const handleEditPersona = (persona: Persona) => {
@@ -116,17 +109,28 @@ export default function TargetPersonas() {
 
   const handleSavePersona = async ({ name, description }: { name: string; description: string }) => {
     if (!editingPersona) return;
-    const data: PersonaUpdate = {
-      name: name,
-      data: {
-        ...editingPersona.data,
+    
+    try {
+      // Use universal update system (matches Accounts.tsx pattern - Issue #23 resolution)
+      const updates = {
         targetPersonaName: name,
         targetPersonaDescription: description,
-      }
-    };
-    updatePersonaMutation.mutate({ personaId: editingPersona.id, data });
-    setEditModalOpen(false);
-    setEditingPersona(null);
+      };
+      
+      console.log('[PERSONAS-UPDATE] Using universal field-preserving update:', {
+        personaId: editingPersona.id,
+        updates,
+        usingUniversalSystem: true
+      });
+      
+      await updatePersonaUniversal(editingPersona.id, updates);
+      
+      setEditModalOpen(false);
+      setEditingPersona(null);
+    } catch (error) {
+      console.error('[PERSONAS-UPDATE] Failed:', error);
+      // Keep modal open so user can retry
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -134,8 +138,24 @@ export default function TargetPersonas() {
     setEditingPersona(null);
   };
 
-  const handleDeletePersona = (personaId: string) => {
-    deletePersona(personaId);
+  // Dual-path deletion logic (following Issue #25 pattern)
+  const handleDeletePersona = async (id: string) => {
+    if (confirm('Are you sure you want to delete this persona?')) {
+      // Check if this is a draft persona (temp ID format)
+      if (id.startsWith('temp_')) {
+        // Draft persona - remove from DraftManager
+        console.log('[PERSONAS-DELETE] Deleting draft persona:', id);
+        DraftManager.removeDraft('persona', id);
+        // Force component re-render by updating forceUpdate state
+        setForceUpdate(prev => prev + 1);
+      } else if (isAuthenticated) {
+        // Authenticated persona - use working delete hook
+        console.log('[PERSONAS-DELETE] Deleting authenticated persona:', id);
+        deleteAuthenticatedPersona(id);
+      } else {
+        console.warn('[PERSONAS-DELETE] Cannot delete non-draft persona for unauthenticated user:', id);
+      }
+    }
   };
 
   // Error handling for accounts and personas
@@ -143,9 +163,7 @@ export default function TargetPersonas() {
     return <div>Error: {accountsError.message}</div>;
   }
   
-  if (personasError) {
-    return <div>Error: {personasError.message}</div>;
-  }
+  // Error handling for accounts only (personas errors handled per account)
 
   // Loading states (moved to end like Accounts.tsx)
   if (isCompanyLoading || isAccountsLoading || isPersonasLoading || isSavingPersona) {
@@ -156,18 +174,20 @@ export default function TargetPersonas() {
     return <div>Error: {saveError}</div>;
   }
 
-  // Use allPersonasWithDrafts for filtering and rendering
-  const filteredPersonas = allPersonasWithDrafts.filter((persona) => {
+  // Use allPersonas for filtering and rendering (dual-path data)
+  const filteredPersonas = allPersonas.filter((persona) => {
+    const personaName = getPersonaName(persona) || '';
+    const personaDescription = getPersonaDescription(persona) || '';
     const matchesSearch =
-      getPersonaName(persona).toLowerCase().includes(search.toLowerCase()) ||
-      getPersonaDescription(persona).toLowerCase().includes(search.toLowerCase());
+      personaName.toLowerCase().includes(search.toLowerCase()) ||
+      personaDescription.toLowerCase().includes(search.toLowerCase());
     if (filterBy === "all") return matchesSearch;
     return matchesSearch;
   });
 
-  // Restore handleOpenAddModal to open the modal
+  // Open modal for persona creation
   const handleOpenAddModal = () => {
-    setAddModalOpen(true);
+    setIsCreateModalOpen(true);
   };
 
   // Add back the InputModal for adding a persona, with submit logic:
@@ -189,7 +209,7 @@ export default function TargetPersonas() {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">All Personas</h2>
                 <p className="text-sm text-gray-500">
-                  {allPersonasWithDrafts?.length} personas across all target accounts
+                  {allPersonas?.length} personas across all target accounts
                   {allDraftPersonas.length > 0 && (
                     <span className="text-orange-600"> ({allDraftPersonas.length} draft{allDraftPersonas.length !== 1 ? 's' : ''})</span>
                   )}
@@ -229,7 +249,7 @@ export default function TargetPersonas() {
                       { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
                       ...(persona.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
                     ]}
-                    onClick={() => handlePersonaClick(persona.accountId, persona.id)}
+                    onClick={() => handlePersonaClick(persona.id)}
                     entityType="persona"
                   >
                     <Button 
@@ -261,15 +281,34 @@ export default function TargetPersonas() {
             ) : (
               <div className="flex items-center justify-center h-full w-full">
                 <div className="text-center text-gray-500 max-w-md">
-                  <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
-                  <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Persona</h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    Create your first target persona with our AI-powered wizard. Configure your target audience and let us help you generate detailed buyer insights.
-                  </p>
-                  <Button onClick={handleOpenAddModal} size="lg" className="bg-blue-600 hover:bg-blue-700">
-                    <Wand2 className="w-5 h-5 mr-2" />
-                    Generate Your First Persona
-                  </Button>
+                  {/* Check if we have any accounts at all (following Accounts.tsx pattern) */}
+                  {allAccounts.length === 0 ? (
+                    // No accounts at all - need to create accounts first
+                    <>
+                      <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                      <h3 className="text-xl font-medium text-gray-900 mb-3">Create Target Accounts First</h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        You need to create target accounts before you can generate personas. Target accounts help us understand your potential customers.
+                      </p>
+                      <Button onClick={() => navigateWithPrefix('/accounts')} size="lg" className="bg-blue-600 hover:bg-blue-700">
+                        <Wand2 className="w-5 h-5 mr-2" />
+                        Create Your First Account
+                      </Button>
+                    </>
+                  ) : (
+                    // Has accounts but no personas yet
+                    <>
+                      <Wand2 className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                      <h3 className="text-xl font-medium text-gray-900 mb-3">Generate Your First Persona</h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        Create your first target persona with our AI-powered wizard. Configure your target audience and let us help you generate detailed buyer insights.
+                      </p>
+                      <Button onClick={handleOpenAddModal} size="lg" className="bg-blue-600 hover:bg-blue-700">
+                        <Wand2 className="w-5 h-5 mr-2" />
+                        Generate Your First Persona
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -287,20 +326,27 @@ export default function TargetPersonas() {
         namePlaceholder="e.g., Marketing Director, Sales Manager..."
         descriptionLabel="Description"
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
-        submitLabel={updatePersonaMutation.isPending ? "Saving..." : "Update"}
+        submitLabel="Update"
         cancelLabel="Cancel"
         defaultName={editingPersona?.name || ""}
         defaultDescription={editingPersona?.data?.targetPersonaDescription as string || ""}
-        isLoading={updatePersonaMutation.isPending}
+        isLoading={false}
       />
       <InputModal
-        isOpen={addModalOpen}
-        onClose={() => { setAddModalOpen(false); setSelectedAccountId(""); }}
+        isOpen={isCreateModalOpen}
+        onClose={() => { setIsCreateModalOpen(false); setSelectedAccountId(""); }}
         onSubmit={async ({ name, description, accountId }) => {
-          if (!accountId || !overview) return;
+          if (!hasValidContext || !overview || !accountId) {
+            console.error("Cannot create persona without valid context");
+            return;
+          }
           
           // Get the selected account data for context
-          const selectedAccount = accounts?.find(acc => acc.id === accountId);
+          const selectedAccount = allAccounts?.find(acc => acc.id === accountId);
+          if (!selectedAccount) {
+            console.error("Selected account not found");
+            return;
+          }
           
           console.log('[PERSONAS-PAGE] Starting universal persona creation:', { name, description, accountId });
           
@@ -309,7 +355,17 @@ export default function TargetPersonas() {
             websiteUrl: overview?.companyUrl || '',
             personaProfileName: name,
             hypothesis: description,
-            companyContext: overview, // Company data
+            companyContext: {
+              companyName: overview.companyName || '',
+              description: overview.description || '',
+              companyUrl: overview.companyUrl || '',
+              // Using any cast for missing fields in overview type
+              industryVertical: (overview as any).industryVertical || '',
+              targetMarket: (overview as any).targetMarket || '',
+              businessModel: (overview as any).businessModel || '',
+              valueProposition: (overview as any).valueProposition || '',
+              primaryOffering: (overview as any).primaryOffering || ''
+            },
             targetAccountContext: selectedAccount // Selected account data
           };
           
@@ -318,23 +374,22 @@ export default function TargetPersonas() {
             setSaveError(null);
             
             // Universal create handles both AI generation and saving automatically
-            const result = await createPersonaUniversal(personaData, {
-              parentId: accountId,
-              customCompanyId: companyId,
+            const result = await createPersonaUniversal(personaData as any, {
+              parentId: accountId, // CRITICAL: Personas need account parent
               navigateOnSuccess: false
             });
             
             console.log('[PERSONAS-PAGE] Persona created successfully:', result);
             
             // Close modal and navigate to the new persona
-            setAddModalOpen(false);
+            setIsCreateModalOpen(false);
             setIsSavingPersona(false);
             navigateToEntity('persona', result.id);
             
           } catch (error) {
             console.error('[PERSONAS-PAGE] Persona creation failed:', error);
             setIsSavingPersona(false);
-            setSaveError(error?.message || "Failed to create persona");
+            setSaveError((error as any)?.message || "Failed to create persona");
           }
         }}
         title="Generate Target Persona"
@@ -346,7 +401,7 @@ export default function TargetPersonas() {
         submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Persona</>}
         cancelLabel="Cancel"
         isLoading={isSavingPersona}
-        accounts={accounts?.map(a => ({ id: a.id, name: a.name }))}
+        accounts={allAccounts?.map(a => ({ id: a.id, name: a.name }))}
         selectedAccountId={selectedAccountId}
         onAccountChange={setSelectedAccountId}
         accountLabel="Target Account"

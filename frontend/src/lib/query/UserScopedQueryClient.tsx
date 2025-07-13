@@ -101,21 +101,41 @@ export function useQueryKey(baseKey: string[]): string[] {
 
 /**
  * Enhanced auth state change handler with selective cache clearing
+ * This hook provides additional cache management utilities beyond auth.ts
  */
 export function useAuthAwareCacheManagement() {
   const { isAuthenticated, userInfo } = useAuthState();
   const { clearUserCache, clearPlaygroundCache } = useUserScopedQuery();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // This hook handles cache clearing based on auth state transitions
-    // The actual auth state change detection happens in auth.ts
-    // This just provides the clearing utilities
-  }, [isAuthenticated, userInfo, clearUserCache, clearPlaygroundCache, queryClient]);
+  // Additional cache clearing utilities for manual use
+  const clearStaleCache = () => {
+    // Clear any cache entries that don't match the current user scope
+    if (isAuthenticated && userInfo?.user_id) {
+      const userPrefix = `db_${userInfo.user_id}`;
+      queryClient.getQueryCache().findAll().forEach(query => {
+        const queryKey = query.queryKey;
+        if (Array.isArray(queryKey) && !queryKey[0]?.toString().startsWith('db_') && !queryKey[0]?.toString().startsWith(userPrefix)) {
+          queryClient.removeQueries({ queryKey });
+        }
+      });
+      console.log('✅ Cleared stale cache entries for authenticated user');
+    } else {
+      // Clear any user-scoped cache for unauthenticated users
+      queryClient.getQueryCache().findAll().forEach(query => {
+        const queryKey = query.queryKey;
+        if (Array.isArray(queryKey) && queryKey[0]?.toString().startsWith('db_')) {
+          queryClient.removeQueries({ queryKey });
+        }
+      });
+      console.log('✅ Cleared user cache for unauthenticated session');
+    }
+  };
 
   return {
     clearUserCache,
     clearPlaygroundCache,
+    clearStaleCache,
     clearAllCache: () => queryClient.clear()
   };
 }

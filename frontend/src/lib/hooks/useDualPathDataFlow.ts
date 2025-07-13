@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 // Service imports for each entity type
 import { createCompany, normalizeCompanyResponse } from '../companyService';
 import { createAccount, generateAccount, normalizeAccountResponse } from '../accountService';
-import { createPersona, normalizePersonaResponse } from '../personaService';
+import { createPersona, generatePersona, normalizePersonaResponse } from '../personaService';
 // import { createCampaign, normalizeCampaignResponse } from '../campaignService';
 
 import type { 
@@ -99,7 +99,42 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           if (!options?.parentId) {
             throw new Error('Persona creation requires parentId (accountId)');
           }
-          savedEntity = await createPersona(options.parentId, aiResponse as any, token);
+          
+          try {
+            // Step 1: Generate AI persona data (demographics, pain points, etc.)
+            console.log('[DUAL-PATH-AUTH-PERSONA] Starting Step 1: Generating AI persona data:', aiResponse);
+            const generatedPersonaData = await generatePersona(options.parentId, aiResponse as any, token);
+            console.log('[DUAL-PATH-AUTH-PERSONA] Step 1 SUCCESS: AI generation complete:', generatedPersonaData);
+            
+            // Step 2: Create persona with generated data
+            const personaCreateData = {
+              name: generatedPersonaData.targetPersonaName || (aiResponse as any).personaProfileName,
+              data: generatedPersonaData
+            };
+            console.log('[DUAL-PATH-AUTH-PERSONA] Starting Step 2: Creating persona with data:', {
+              accountId: options.parentId,
+              personaCreateData,
+              hasToken: !!token,
+              endpoint: `/personas?account_id=${options.parentId}`
+            });
+            savedEntity = await createPersona(options.parentId, personaCreateData, token);
+            console.log('[DUAL-PATH-AUTH-PERSONA] Step 2 SUCCESS: Persona creation complete:', {
+              savedEntityId: savedEntity.id,
+              savedEntityKeys: Object.keys(savedEntity),
+              savedEntity
+            });
+            
+          } catch (creationError) {
+            console.error('[DUAL-PATH-AUTH-PERSONA] CREATION FAILED:', {
+              error: creationError,
+              errorMessage: creationError.message,
+              accountId: options.parentId,
+              token: !!token,
+              aiResponse
+            });
+            throw creationError;
+          }
+          
           normalized = normalizePersonaResponse(savedEntity as Persona) as T;
           break;
           
@@ -183,14 +218,21 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           break;
           
         case 'persona':
-          // Create database-identical Persona structure
+          console.log('[DUAL-PATH-UNAUTH-PERSONA] Generating AI persona data for unauthenticated user:', aiResponse);
+          
+          // Step 1: Generate AI persona data using demo endpoint  
+          const generatedPersonaData = await generatePersona('', aiResponse as any, null); // null token for demo endpoint
+          
+          console.log('[DUAL-PATH-UNAUTH-PERSONA] Generated persona data:', generatedPersonaData);
+          
+          // Step 2: Create database-identical Persona structure
           // Top-level fields: id, name, account_id, created_at, updated_at  
           // JSON data field: demographics, useCases, buyingSignals (preserved complex structures)
           const fakePersonaResponse = {
             id: `temp_${Date.now()}`,
-            name: (aiResponse as any).targetPersonaName || (aiResponse as any).name,
+            name: generatedPersonaData.targetPersonaName || (aiResponse as any).personaProfileName,
             account_id: options?.parentId || 'temp_account',
-            data: aiResponse, // Complex nested structures preserved in JSONB data column
+            data: generatedPersonaData, // Full AI-generated data with demographics, pain points, etc.
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

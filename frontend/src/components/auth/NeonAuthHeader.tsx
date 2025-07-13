@@ -23,11 +23,10 @@ export function NeonAuthHeader() {
   }
 
   const handleSignOut = async () => {
-    console.log('NeonAuthHeader: Signing out user - clearing drafts and cache')
+    console.log('NeonAuthHeader: Signing out user - using selective cache clearing')
     
-    // Clear localStorage drafts and React Query cache before signing out
-    DraftManager.clearAllDrafts()
-    queryClient.clear()
+    // Don't clear cache manually - let auth.ts handle selective clearing on state transition
+    // This prevents clearing playground data that the user might want to keep
     
     await app.signOut()
   }

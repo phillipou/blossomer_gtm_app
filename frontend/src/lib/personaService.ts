@@ -152,7 +152,7 @@ function mergePersonaUpdates(
   console.log('[FIXED-MERGE] [mergePersonaUpdates] ENTRY', {
     currentPersona,
     updates,
-    updateKeys: Object.keys(updates),
+    updateKeys: updates ? Object.keys(updates) : [],
     hasCurrentPersona: !!currentPersona
   });
 
@@ -160,26 +160,38 @@ function mergePersonaUpdates(
   if (!currentPersona) {
     console.warn('[MERGE-WARNING] currentPersona undefined in mergePersonaUpdates - investigate parameter passing');
   }
+  
+  if (!updates) {
+    console.warn('[MERGE-WARNING] updates undefined in mergePersonaUpdates - providing empty object');
+  }
 
   // Extract data safely from currentPersona
   const safeCurrentPersona = currentPersona || {};
   const currentData = safeCurrentPersona.data || safeCurrentPersona;
+  const safeUpdates = updates || {};
 
   console.log('[FIXED-MERGE] [mergePersonaUpdates] currentData extracted', {
     currentDataKeys: Object.keys(currentData),
-    currentDataSize: JSON.stringify(currentData).length
+    currentDataSize: JSON.stringify(currentData).length,
+    hasImportantFields: {
+      demographics: !!currentData.demographics,
+      useCases: !!currentData.useCases,
+      buyingSignals: !!currentData.buyingSignals,
+      targetPersonaName: !!currentData.targetPersonaName,
+      targetPersonaDescription: !!currentData.targetPersonaDescription
+    }
   });
 
   // Simple merge with updates taking precedence
   const mergedData = {
     ...currentData,
-    ...updates
+    ...safeUpdates
   };
 
   console.log('[FIXED-MERGE] [mergePersonaUpdates] After simple merge', {
     mergedDataKeys: Object.keys(mergedData),
     mergedDataSize: JSON.stringify(mergedData).length,
-    updatesApplied: Object.keys(updates).length
+    updatesApplied: updates ? Object.keys(updates).length : 0
   });
 
   // Explicit field separation - Persona-specific pattern
@@ -254,7 +266,7 @@ export async function updatePersonaWithMerge(
   console.log('[UPDATE-PERSONA-MERGE] Entry point', {
     personaId,
     hasCurrentPersona: !!currentPersona,
-    updateKeys: Object.keys(updates),
+    updateKeys: updates ? Object.keys(updates) : [],
     currentPersonaKeys: currentPersona ? Object.keys(currentPersona) : []
   });
 
@@ -269,4 +281,49 @@ export async function updatePersonaWithMerge(
 
   // Call standard update function with merged payload
   return updatePersona(personaId, mergedUpdate, token);
+}
+
+/**
+ * Persona list field merge function - uses same merge logic as regular updates
+ */
+function mergePersonaListFieldUpdates(
+  currentPersona: Record<string, any> | null | undefined,
+  listFieldUpdates: Record<string, string[]>
+): PersonaUpdate {
+  console.log('[MERGE-PERSONA-LIST-FIELDS] Using simplified merge pattern:', {
+    currentKeys: Object.keys(currentPersona || {}),
+    listUpdateKeys: Object.keys(listFieldUpdates || {}),
+    inputFormat: 'normalized-camelCase'
+  });
+  
+  // Use same simple merge pattern as regular updates
+  return mergePersonaUpdates(currentPersona, listFieldUpdates);
+}
+
+/**
+ * Update persona list fields with field preservation
+ */
+export async function updatePersonaListFieldsPreserveFields(
+  personaId: string,
+  currentPersona: any, // More flexible type
+  listFieldUpdates: Record<string, string[]>,
+  token?: string | null
+): Promise<Persona> {
+  console.log('[PRESERVE-LIST-FIELDS] Input parameters:', {
+    personaId,
+    currentPersona,
+    currentPersonaType: typeof currentPersona,
+    currentPersonaKeys: currentPersona ? Object.keys(currentPersona) : 'null/undefined',
+    listFieldUpdates
+  });
+  
+  const mergedData = mergePersonaListFieldUpdates(currentPersona, listFieldUpdates);
+  
+  // Assert the fix worked - catch recursive data early
+  if (mergedData?.data?.data) {
+    throw new Error('[CRITICAL] Recursive data structure detected in mergePersonaListFieldUpdates - this should be impossible after the fix');
+  }
+  
+  console.log('[PRESERVE-LIST-FIELDS] Persona list fields update with field preservation (FIXED):', mergedData);
+  return updatePersona(personaId, mergedData, token);
 }

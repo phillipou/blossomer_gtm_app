@@ -1,18 +1,43 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser, useStackApp } from '@stackframe/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthState } from '../../lib/auth'
 import { useGetCompanies } from '../../lib/hooks/useCompany'
 import { apiFetch } from '../../lib/apiClient'
+import { DraftManager } from '../../lib/draftManager'
 
 export function OAuthCallback() {
   const navigate = useNavigate()
   const user = useUser()
   const app = useStackApp()
+  const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const { token } = useAuthState()
   const { data: companies } = useGetCompanies(token)
   const processed = useRef(false)
+  const cacheCleared = useRef(false)
+
+  // Clear playground cache immediately when user and token are available (before any API calls)
+  useEffect(() => {
+    if (user && token && !cacheCleared.current) {
+      console.log("🚨 OAuthCallback: IMMEDIATE cache clearing on successful auth");
+      
+      // Clear playground data to prevent contamination
+      DraftManager.clearAllPlayground();
+      
+      // Clear any cached queries that might have playground data
+      queryClient.getQueryCache().findAll().forEach((query: any) => {
+        const queryKey = query.queryKey;
+        if (Array.isArray(queryKey) && !queryKey[0]?.toString().startsWith('db_')) {
+          queryClient.removeQueries({ queryKey });
+        }
+      });
+      
+      cacheCleared.current = true;
+      console.log("✅ OAuthCallback: Playground cache cleared successfully");
+    }
+  }, [user, token, queryClient]);
 
   // This effect handles the post-authentication logic: user sync and redirect
   useEffect(() => {

@@ -84,19 +84,8 @@ export function useEntityCRUD<T>(entityType: EntityType) {
       
       // Automatic navigation after successful creation
       if (navigateOnSuccess) {
-        switch (entityType) {
-          case 'persona':
-            // Personas are nested under accounts
-            if (parentId) {
-              navigateToNestedEntity('account', parentId, 'persona', result.id);
-            } else {
-              navigateToEntity(entityType, result.id);
-            }
-            break;
-            
-          default:
-            navigateToEntity(entityType, result.id);
-        }
+        // Simplified navigation - all entities use direct routing
+        navigateToEntity(entityType, result.id);
       }
       
       console.log('[ENTITY-CRUD-CREATE] Successfully created entity:', {

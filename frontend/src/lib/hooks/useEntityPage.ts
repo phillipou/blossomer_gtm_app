@@ -223,12 +223,24 @@ export function useEntityPage<T = any>({
     }
   }, [isGenerating, config.progressStages]);
   
-  // Auth-aware data source selection
-  const displayEntity = token ? entity : (entity || draftEntity);
+  // Auth-aware data source selection (recalculate after draft cleanup)
+  const currentDraftEntities = DraftManager.getDrafts(config.entityType);
+  const currentDraftEntity = currentDraftEntities.length > 0 ? currentDraftEntities[0].data : null;
+  const displayEntity = token ? entity : (entity || currentDraftEntity);
   
-  // Debug logging for authenticated users
-  if (token && draftEntity && entity !== draftEntity) {
+  // Debug logging for authenticated users and cleanup conflicting draft data
+  if (token && currentDraftEntity && entity !== currentDraftEntity) {
     console.warn(`${config.entityType}: CRITICAL - Authenticated user has localStorage draft that differs from backend!`);
+    console.log(`${config.entityType}: Cleaning up conflicting draft data for authenticated user`);
+    
+    // Clear all draft data for this entity type for authenticated users
+    // This follows the cache segregation pattern from Implementation.md Stage Y
+    const draftsToRemove = DraftManager.getDrafts(config.entityType);
+    draftsToRemove.forEach(draft => {
+      DraftManager.removeDraft(config.entityType, draft.tempId);
+    });
+    
+    console.log(`${config.entityType}: Draft data cleared, using backend data only`);
   }
   
   // Field editing handlers
@@ -299,7 +311,10 @@ export function useEntityPage<T = any>({
       const mappedUpdates = config.entityType === 'account' ? {
         name: values.name, // Use standard name field, not targetAccountName
         targetAccountDescription: values.description, // Only description needs special mapping
-      } : values; // Companies, personas, and other entities use standard field names
+      } : config.entityType === 'persona' ? {
+        name: values.name, // Use standard name field
+        targetPersonaDescription: values.description, // Map description to targetPersonaDescription
+      } : values; // Companies and other entities use standard field names
       
       console.log('[ENTITY-PAGE] Overview edit field mapping:', {
         entityType: config.entityType,
@@ -348,6 +363,9 @@ export function useEntityPage<T = any>({
       const mappedUpdates = config.entityType === 'account' ? {
         name: values.name, // Use standard name field, not targetAccountName
         targetAccountDescription: values.description, // Only description needs special mapping
+      } : config.entityType === 'persona' ? {
+        name: values.name, // Use standard name field
+        targetPersonaDescription: values.description, // Map description to targetPersonaDescription
       } : values;
       
       // Unauthenticated user - update draft

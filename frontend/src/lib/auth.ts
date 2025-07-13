@@ -93,9 +93,33 @@ export function useAuthState(): AuthState & { loading: boolean } {
     updateGlobalAuthState(authState);
   }, [authState]);
 
-  // REMOVED: Following Issue #20/#21 pattern - eliminate problematic useEffect causing infinite loops
-  // The auth state transition and cache clearing logic was causing infinite re-renders
-  // Cache clearing will be handled elsewhere or by React Query's built-in mechanisms
+  // Auth state transition detection with selective cache clearing
+  const prevAuthState = useRef<AuthState | null>(null);
+  
+  useEffect(() => {
+    // Only handle auth transitions, not every auth state change
+    if (prevAuthState.current !== null) {
+      const wasAuthenticated = prevAuthState.current.isAuthenticated;
+      const isNowAuthenticated = authState.isAuthenticated;
+      const wasUserId = prevAuthState.current.userInfo?.user_id;
+      const currentUserId = authState.userInfo?.user_id;
+      
+      // Handle auth state transitions with selective cache clearing
+      if (wasAuthenticated !== isNowAuthenticated || wasUserId !== currentUserId) {
+        console.log('🔄 Auth state transition detected:', {
+          from: wasAuthenticated ? 'authenticated' : 'unauthenticated',
+          to: isNowAuthenticated ? 'authenticated' : 'unauthenticated',
+          userChanged: wasUserId !== currentUserId,
+          userInfo: authState.userInfo
+        });
+        
+        // Clear drafts and cache based on transition type
+        handleAuthTransition(wasAuthenticated, isNowAuthenticated, queryClient);
+      }
+    }
+    
+    prevAuthState.current = authState;
+  }, [authState.isAuthenticated, authState.userInfo?.user_id, queryClient]);
 
   return { ...authState, loading };
 }
@@ -151,6 +175,50 @@ export interface RateLimitInfo {
   remaining: number
   reset: number
   retryAfter?: number
+}
+
+/**
+ * Handle authentication state transitions with appropriate cache clearing
+ * Implements selective cache management to prevent database sync issues
+ */
+function handleAuthTransition(
+  wasAuthenticated: boolean, 
+  isNowAuthenticated: boolean, 
+  queryClient: any
+) {
+  if (!wasAuthenticated && isNowAuthenticated) {
+    // User logged in/signed up - clear playground data to prevent contamination
+    console.log('🚨 Login/Signup: AGGRESSIVE cache clearing to prevent database sync issues');
+    
+    // Clear ALL playground localStorage data
+    DraftManager.clearAllPlayground();
+    
+    // Clear ALL cached queries that might have playground data
+    queryClient.getQueryCache().findAll().forEach((query: any) => {
+      const queryKey = query.queryKey;
+      if (Array.isArray(queryKey) && !queryKey[0]?.toString().startsWith('db_')) {
+        console.log('🗑️ Removing playground cache:', queryKey);
+        queryClient.removeQueries({ queryKey });
+      }
+    });
+    
+    console.log('✅ Login cache clearing complete - playground data removed');
+    
+  } else if (wasAuthenticated && !isNowAuthenticated) {
+    // User logged out - clear only user-specific cache, preserve playground
+    console.log('✅ Logout: Clearing user cache, preserving playground data');
+    
+    // Clear user-specific cached queries
+    queryClient.getQueryCache().findAll().forEach((query: any) => {
+      const queryKey = query.queryKey;
+      if (Array.isArray(queryKey) && queryKey[0]?.toString().startsWith('db_')) {
+        console.log('🗑️ Removing user cache:', queryKey);
+        queryClient.removeQueries({ queryKey });
+      }
+    });
+    
+    // Don't clear playground drafts - user might want to continue in playground
+  }
 }
 
 export function parseRateLimitHeaders(response: Response): RateLimitInfo | null {
