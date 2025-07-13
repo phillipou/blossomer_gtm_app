@@ -299,7 +299,7 @@ export function useEntityPage<T = any>({
       const mappedUpdates = config.entityType === 'account' ? {
         name: values.name, // Use standard name field, not targetAccountName
         targetAccountDescription: values.description, // Only description needs special mapping
-      } : values;
+      } : values; // Companies, personas, and other entities use standard field names
       
       console.log('[ENTITY-PAGE] Overview edit field mapping:', {
         entityType: config.entityType,
@@ -307,11 +307,42 @@ export function useEntityPage<T = any>({
         mappedUpdates,
       });
       
-      // Authenticated user - use field-preserving update
-      updateWithFieldPreservation({
-        currentAccount: entity, // Fixed: parameter name must match hook signature
-        updates: mappedUpdates,
+      // Map parameter names for different entity types
+      let updatePayload: any;
+      switch (config.entityType) {
+        case 'company':
+          updatePayload = {
+            currentOverview: entity,
+            updates: mappedUpdates,
+          };
+          break;
+        case 'account':
+          updatePayload = {
+            currentAccount: entity,
+            updates: mappedUpdates,
+          };
+          break;
+        case 'persona':
+          updatePayload = {
+            currentPersona: entity,
+            updates: mappedUpdates,
+          };
+          break;
+        default:
+          updatePayload = {
+            current: entity,
+            updates: mappedUpdates,
+          };
+      }
+      
+      console.log('[ENTITY-PAGE] Update payload with correct parameter name:', {
+        entityType: config.entityType,
+        payloadKeys: Object.keys(updatePayload),
+        updateFields: Object.keys(mappedUpdates)
       });
+      
+      // Authenticated user - use field-preserving update
+      updateWithFieldPreservation(updatePayload);
     } else {
       // Map field names for draft updates too
       const mappedUpdates = config.entityType === 'account' ? {

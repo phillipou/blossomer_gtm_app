@@ -273,6 +273,69 @@ parents={[
 
 **Location:** `Accounts.tsx:80-88, 159-167, 189-193, 36-38`
 
+### **Issue #25: Delete Button Not Working for Draft Accounts (Unauthenticated Users)** ✅ **RESOLVED**
+
+**Problem:** Delete button on account cards in Accounts.tsx does nothing when clicked for unauthenticated users with draft accounts.
+
+**Root Cause:** 
+1. **Single delete handler for authenticated users only** - `handleDeleteAccount` only called `deleteAccount(id)` mutation
+2. **No draft deletion logic** - No handling for draft accounts stored in DraftManager
+3. **Mixed entity types without detection** - Component couldn't distinguish between authenticated accounts and draft accounts
+
+**Evidence of Issue:**
+```typescript
+// ❌ PROBLEMATIC: Only handles authenticated deletion
+const handleDeleteAccount = (id: string) => {
+  if (confirm('Are you sure you want to delete this target account?')) {
+    deleteAccount(id); // ← Only works for authenticated users with real account IDs
+  }
+};
+```
+
+**Solution Applied:**
+
+1. **Added draft account detection** - Check for temp ID format to identify drafts
+2. **Dual-path deletion logic** - Handle both DraftManager and authenticated API deletion
+3. **Force re-render mechanism** - Trigger component update after draft deletion
+
+```typescript
+// ✅ FIXED: Handles both authenticated and draft account deletion
+const handleDeleteAccount = (id: string) => {
+  if (confirm('Are you sure you want to delete this target account?')) {
+    // Check if this is a draft account (temp ID format)
+    if (id.startsWith('temp_')) {
+      // Draft account - remove from DraftManager
+      console.log('[ACCOUNTS-DELETE] Deleting draft account:', id);
+      DraftManager.removeDraft('account', id);
+      // Force component re-render by updating forceUpdate state
+      setForceUpdate(prev => prev + 1);
+    } else if (isAuthenticated) {
+      // Authenticated account - use mutation
+      console.log('[ACCOUNTS-DELETE] Deleting authenticated account:', id);
+      deleteAccount(id);
+    } else {
+      console.warn('[ACCOUNTS-DELETE] Cannot delete non-draft account for unauthenticated user:', id);
+    }
+  }
+};
+```
+
+4. **Added forceUpdate state** - Clean way to trigger re-render after DraftManager operations
+```typescript
+const [forceUpdate, setForceUpdate] = useState(0);
+// ... after DraftManager.removeDraft
+setForceUpdate(prev => prev + 1); // Triggers re-render
+```
+
+**Location:** `Accounts.tsx:70, 104-121`
+
+**🎯 Pattern for Personas.tsx:**
+This same pattern should be applied to Personas.tsx delete functionality:
+1. **Check ID format**: `id.startsWith('temp_')` for drafts vs real IDs
+2. **Dual deletion paths**: `DraftManager.removeDraft('persona', id)` vs authenticated mutation
+3. **Force re-render**: Use state update to trigger component refresh after draft deletion
+4. **Auth state check**: Use `isAuthenticated` to determine available deletion methods
+
 ### **Success Metrics:**
 - ✅ **React hooks ordering** - No more "Rendered fewer hooks than expected" errors
 - ✅ **Field preservation** - All account fields (firmographics, buying signals) survive description updates

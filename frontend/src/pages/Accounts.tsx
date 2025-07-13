@@ -18,6 +18,7 @@ import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 import InputModal from '../components/modals/InputModal';
 import type { TargetAccountResponse } from '../types/api';
 import { DraftManager } from '../lib/draftManager';
+import { useAuthState } from '../lib/auth';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -61,12 +62,14 @@ function AddAccountCard({ onClick }: { onClick: () => void }) {
 
 export default function TargetAccountsList() {
   const navigate = useNavigate();
+  const { token } = useAuthState();
   const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
   
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   // Universal company context detection
   const { overview, companyId, isLoading: isCompanyLoading, hasValidContext } = useCompanyContext();
@@ -75,7 +78,7 @@ export default function TargetAccountsList() {
   const { create: createAccountUniversal } = useEntityCRUD<TargetAccountResponse>('account');
   
   // Step 2: Always call hooks first (Rules of Hooks)
-  const { data: accounts, isLoading, error } = useGetAccounts(companyId || "");
+  const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId);
   
   // Get draft accounts for unauthenticated users
@@ -120,9 +123,6 @@ export default function TargetAccountsList() {
     }
   };
 
-  // Show creation modal directly (no navigation needed)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
   const handleCreateAccount = () => {
     setIsCreateModalOpen(true);
   };
