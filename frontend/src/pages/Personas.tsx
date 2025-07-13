@@ -56,7 +56,7 @@ export default function TargetPersonas() {
   // Combine accounts based on auth state - NO mixing of playground and database data
   const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
   
-  // Get personas for all accounts (authenticated users) - following Implementation.md guidance
+  // Get personas for all accounts (authenticated users only) - following Implementation.md guidance
   const { data: authenticatedPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
   
   // Remove legacy update hook - using universal system now

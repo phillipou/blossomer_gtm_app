@@ -14,7 +14,7 @@ export function OAuthCallback() {
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const { token } = useAuthState()
-  const { data: companies } = useGetCompanies(token)
+  const { data: companies, isLoading: isLoadingCompanies } = useGetCompanies(token)
   const processed = useRef(false)
   const cacheCleared = useRef(false)
 
@@ -41,8 +41,8 @@ export function OAuthCallback() {
 
   // This effect handles the post-authentication logic: user sync and redirect
   useEffect(() => {
-    // Wait until we have both the user from Stack and our own JWT token
-    if (user && token) {
+    // Wait until we have user, token, AND companies data has finished loading
+    if (user && token && !isLoadingCompanies) {
       const syncUserAndRedirect = async () => {
         try {
           console.log("OAuthCallback: Syncing user with backend...");
@@ -51,8 +51,10 @@ export function OAuthCallback() {
 
           // Redirect to the last company or the main company page
           if (companies && companies.length > 0) {
+            console.log(`OAuthCallback: Redirecting to company ${companies[companies.length - 1].id}`);
             navigate(`/app/company/${companies[companies.length - 1].id}`, { replace: true });
           } else {
+            console.log("OAuthCallback: No companies found, redirecting to company creation");
             navigate('/app/company', { replace: true });
           }
         } catch (err) {
@@ -62,7 +64,7 @@ export function OAuthCallback() {
       };
       syncUserAndRedirect();
     }
-  }, [user, token, companies, navigate]);
+  }, [user, token, companies, isLoadingCompanies, navigate]);
 
 
   // This effect handles the one-time processing of the OAuth callback from the URL
@@ -116,7 +118,9 @@ export function OAuthCallback() {
     <div className="min-h-[80vh] flex items-center justify-center bg-gray-100">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Completing sign-in...</p>
+        <p className="text-gray-600">
+          {isLoadingCompanies ? "Loading your companies..." : "Completing sign-in..."}
+        </p>
       </div>
     </div>
   )

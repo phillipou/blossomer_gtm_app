@@ -82,11 +82,11 @@ export default function PersonaDetail() {
       },
       useGetList: (token) => {
         // ALWAYS call hooks first (Rules of Hooks) - but only enable for valid authenticated scenarios
-        const shouldFetchFromAPI = Boolean(token && accountId && accountId !== '*');
+        const shouldFetchFromAPI = false; // PersonaDetail doesn't need list data - disable to avoid 404s
         const { data, isLoading, error } = useQuery<Persona[], Error>({
           queryKey: [PERSONAS_LIST_KEY, accountId],
           queryFn: () => getPersonas(accountId!, token),
-          enabled: shouldFetchFromAPI,
+          enabled: shouldFetchFromAPI && !!token && !!accountId,
         });
         
         // For authenticated users with valid accountId, use API data

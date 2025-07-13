@@ -135,23 +135,30 @@ export function useEntityPage<T = any>({
   // Get entity list for authenticated mode redirects
   const { data: entityList, isLoading: isLoadingEntityList } = hooks.useGetList(token);
   
-  // Route handling for authenticated users - DISABLED
-  // This redirect logic was causing too many unintended consequences
-  // Components should handle their own navigation logic
-  // useEffect(() => {
-  //   if (token && !entityId && entityList && entityList.length > 0) {
-  //     // Authenticated user without entityId - redirect to most recent entity
-  //     const mostRecentEntity = entityList[entityList.length - 1] as any;
-  //     console.log(`${config.entityType}: Authenticated user redirecting to most recent entity`);
-  //     navigate(`${config.routePrefix.authenticated}/${mostRecentEntity.id}`, { replace: true });
-  //     return;
-  //   } else if (!token && entityId) {
-  //     // Unauthenticated user with entityId - redirect to unauthenticated route
-  //     console.log(`${config.entityType}: Unauthenticated user redirecting to playground`);
-  //     navigate(config.routePrefix.unauthenticated, { replace: true });
-  //     return;
-  //   }
-  // }, [token, entityId, entityList, navigate, config]);
+  // Route handling for authenticated users
+  useEffect(() => {
+    if (token && !entityId && entityList && entityList.length > 0 && !isLoadingEntityList) {
+      // Authenticated user without entityId but has entities - redirect to most recent entity
+      const mostRecentEntity = entityList[entityList.length - 1] as any;
+      console.log(`${config.entityType}: Authenticated user redirecting to most recent entity`, mostRecentEntity.id);
+      navigate(`${config.routePrefix.authenticated}/${mostRecentEntity.id}`, { replace: true });
+      return;
+    } else if (!token && entityId) {
+      // Check if this is a valid draft ID before redirecting
+      const drafts = DraftManager.getDrafts(config.entityType);
+      const hasDraftWithId = drafts.some(draft => draft.tempId === entityId);
+      
+      if (!hasDraftWithId) {
+        // Only redirect if there's no draft with this ID
+        console.log(`${config.entityType}: Unauthenticated user with invalid entityId redirecting to playground`);
+        navigate(config.routePrefix.unauthenticated, { replace: true });
+        return;
+      }
+      
+      // Valid draft ID - allow the navigation to proceed
+      console.log(`${config.entityType}: Unauthenticated user accessing valid draft:`, entityId);
+    }
+  }, [token, entityId, entityList, isLoadingEntityList, navigate, config]);
   
   // Clear cache for authenticated users
   useEffect(() => {

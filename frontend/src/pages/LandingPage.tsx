@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from '@tanstack/react-query';
 import './LandingPage.css';
 import Navbar from "../components/layout/Navbar";
 import { DraftManager } from "../lib/draftManager";
@@ -36,6 +37,7 @@ export default function LandingPage() {
     return false;
   });
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Log state changes
   useEffect(() => {
@@ -64,6 +66,13 @@ export default function LandingPage() {
       console.log("LandingPage: URL is empty, returning.");
       return;
     }
+    
+    // Clear all existing playground data to give user a clean slate for new company generation
+    console.log("🚨 LandingPage: Clearing all playground data for fresh company generation");
+    DraftManager.clearAllPlayground();
+    queryClient.clear();
+    console.log("✅ LandingPage: Cache and drafts cleared - starting fresh");
+    
     setError(null);
     setIsNavigating(true);
     

@@ -19,6 +19,9 @@ export default function CampaignsPage() {
   const navigate = useNavigate();
   const { token } = useAuthState();
   const overview = useCompanyOverview();
+  
+  // Determine authentication state to prevent mixing playground and database data
+  const isAuthenticated = !!token;
 
   const { data: campaigns, isLoading, error } = useGetCampaigns(token);
   const updateCampaignMutation = useUpdateCampaign("", token); // campaignId is set in handleSaveEmailEdit
@@ -39,17 +42,17 @@ export default function CampaignsPage() {
   const [editingEmail, setEditingEmail] = useState<Campaign | null>(null);
   const [generatedCampaignData, setGeneratedCampaignData] = useState<GeneratedEmail | null>(null);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>("");
+  const [forceUpdate, setForceUpdate] = useState(0);
 
-  // Get draft campaigns and combine with saved campaigns
-  const draftCampaigns = DraftManager.getDrafts('campaign');
-  const allCampaigns = [
-    ...(campaigns || []),
-    ...draftCampaigns.map(draft => ({
-      ...draft.data,
-      id: draft.tempId,
-      isDraft: true,
-    }))
-  ];
+  // Get draft campaigns ONLY for unauthenticated users (FIXED: following Accounts.tsx pattern)
+  const draftCampaigns = !isAuthenticated ? DraftManager.getDrafts('campaign').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+
+  // NO mixing - authenticated users get only database campaigns, unauthenticated get only drafts
+  const allCampaigns = isAuthenticated ? (campaigns || []) : [...(campaigns || []), ...draftCampaigns];
 
   // Auto-save hook for generated campaigns
   const autoSave = useAutoSave({
@@ -128,7 +131,22 @@ export default function CampaignsPage() {
   };
 
   const handleDeleteEmail = (email: Campaign) => {
-    deleteCampaign(email.id);
+    if (confirm('Are you sure you want to delete this email campaign?')) {
+      // Check if this is a draft campaign (temp ID format)
+      if (email.id.startsWith('temp_')) {
+        // Draft campaign - remove from DraftManager
+        console.log('[CAMPAIGNS-DELETE] Deleting draft campaign:', email.id);
+        DraftManager.removeDraft('campaign', email.id);
+        // Force component re-render by updating forceUpdate state
+        setForceUpdate(prev => prev + 1);
+      } else if (isAuthenticated) {
+        // Authenticated campaign - use API
+        console.log('[CAMPAIGNS-DELETE] Deleting authenticated campaign:', email.id);
+        deleteCampaign(email.id);
+      } else {
+        console.warn('[CAMPAIGNS-DELETE] Cannot delete non-draft campaign for unauthenticated user:', email.id);
+      }
+    }
   };
 
   if (isLoading) {

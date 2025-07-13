@@ -150,13 +150,13 @@ export function useGeneratePersona(token?: string | null) {
     });
 }
 
-// Fetch all personas for a company
+// Fetch all personas for a company (authenticated users only)
 export function useGetAllPersonas(companyId: string, token?: string | null) {
   return useQuery({
     queryKey: ['personas', companyId],
     queryFn: () => getAllPersonas(companyId, token),
-    // Enable when companyId is provided (works for both authenticated and unauthenticated)
-    enabled: !!companyId,
+    // Enable only for authenticated users with valid companyId
+    enabled: !!companyId && !!token,
   });
 }
 
