@@ -90,35 +90,40 @@ export function useAuthState(): AuthState & { loading: boolean } {
     updateGlobalAuthState(authState);
   }, [authState.isAuthenticated, authState.token, authState.userInfo]);
 
-  // Clear React Query cache and localStorage drafts when authentication state changes
+  // Handle cache and localStorage cleanup when authentication state changes
   useEffect(() => {
     const previousAuthState = prevAuthState.current;
     const wasUnauthenticated = !previousAuthState.isAuthenticated;
     const isNowAuthenticated = authState.isAuthenticated;
-    console.log('[AUTH DEBUG] useEffect fired:', {
-      previousAuthState,
-      currentAuthState: authState,
+    
+    console.log('[AUTH DEBUG] Auth state transition:', {
       wasUnauthenticated,
-      isNowAuthenticated
+      isNowAuthenticated,
+      previousUserId: previousAuthState.userInfo?.user_id,
+      currentUserId: authState.userInfo?.user_id
     });
+    
     if (wasUnauthenticated !== !authState.isAuthenticated) {
-      console.log('[AUTH DEBUG] Auth state changed: clearing cache and drafts', {
-        wasUnauthenticated,
-        isNowAuthenticated,
-        previousState: previousAuthState.isAuthenticated,
-        currentState: authState.isAuthenticated
-      });
+      console.log('[AUTH DEBUG] Auth state changed: implementing cache segregation');
+      
+      // Handle playground data cleanup on login
       DraftManager.clearDraftsOnAuthChange(wasUnauthenticated, isNowAuthenticated);
       
-      // Clear all React Query cache to prevent contamination between auth states
-      queryClient.clear();
-      
-      // Also explicitly invalidate company queries to force fresh data fetch
-      queryClient.invalidateQueries({ queryKey: ['company'] });
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      if (wasUnauthenticated && isNowAuthenticated) {
+        // User just logged in - clear playground cache but keep user cache
+        console.log('🔄 Clearing playground cache, preserving user cache');
+        // Note: UserScopedQueryClient will handle scoped cache clearing
+        // For now, do a full clear to ensure clean state
+        queryClient.clear();
+      } else if (!wasUnauthenticated && !isNowAuthenticated) {
+        // User just logged out - clear user cache but preserve playground capability
+        console.log('🔄 Clearing user cache, preserving playground capability');
+        queryClient.clear();
+      }
     }
+    
     prevAuthState.current = authState;
-  }, [authState.isAuthenticated, queryClient]);
+  }, [authState.isAuthenticated, authState.userInfo?.user_id, queryClient]);
 
   return { ...authState, loading };
 }

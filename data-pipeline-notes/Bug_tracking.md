@@ -577,3 +577,112 @@ const mappedUpdates = config.entityType === 'persona' ? {
 - **Context passing:** Both company and entity-specific context for AI
 - **Field preservation:** Use `updateEntityPreserveFields` pattern
 - **Form handling:** Always use form input values, not existing entity data
+
+---
+
+## 🚨 **EXPERT MEMO ASSESSMENT & NEXT PRIORITIES**
+
+*Based on expert engineering memo analysis - critical issues we need to address*
+
+### **Issue #16: Hand-Rolled Type Definitions vs Auto-Generated** ❌ **NEEDS ATTENTION**
+
+**Problem:** Using manual TypeScript interfaces in `/types/api.ts` instead of auto-generated from OpenAPI
+**Root Cause:** Shape drift between backend and frontend - any field rename breaks PUT without compiler warning
+**Expert Recommendation:** Auto-generate types + Zod validators from `/openapi.json`
+
+**Current State Analysis:**
+```typescript
+// ❌ CURRENT: Hand-rolled interfaces in /types/api.ts
+export interface CompanyOverviewResponse {
+  companyId: string;
+  companyName: string; // If backend changes to company_name, no compiler error
+  // ... manual field definitions
+}
+```
+
+**Expert-Recommended Solution:**
+```typescript
+// ✅ TARGET: Auto-generated from OpenAPI
+import { components } from '@/types/api-generated';
+type Raw = components['schemas']['CompanyResponse'];
+
+// Mapper - src/mappers/company.ts
+export const mapCompany = (raw: Raw): CompanyModel => ({
+  id: raw.id,
+  name: raw.data?.name ?? raw.name,
+});
+```
+
+### **Issue #17: Multi-Step PUT Transformations** ❌ **CAUSING DEBUGGER-HELL**
+
+**Problem:** 4-6 transformation steps in current PUT pipeline making debugging extremely difficult
+**Root Cause:** Transformations scattered across multiple layers instead of single boundary point
+**Expert Recommendation:** Single transformation at API boundary only
+
+**Current State Analysis:**
+```typescript
+// ❌ CURRENT: Multiple transformation points
+// 1. Component level: partial transforms
+// 2. Hook level: merge logic
+// 3. Service level: API boundary transform  
+// 4. Normalization: response transform
+// 5. Cache update: manual field updates
+// 6. Component re-render: format reconciliation
+```
+
+**Expert-Recommended Solution:**
+```typescript
+// ✅ TARGET: Single transform at boundary
+export async function updateCompany(request: EntityUpdateRequest<CompanyModel>): Promise<Company> {
+  const backendPayload = transformKeysToSnakeCase(request.updates); // ONLY transform here
+  const response = await apiFetch(`/companies/${request.entityId}`, {
+    method: 'PUT',
+    body: JSON.stringify(backendPayload),
+  });
+  return mapCompany(response); // ONLY normalize here
+}
+```
+
+### **Issue #18: Missing Optimistic Concurrency Control** ❌ **SILENT DATA CONFLICTS**
+
+**Problem:** No revision-based conflict detection allowing silent data clobbering
+**Root Cause:** Multiple users can overwrite each other's changes without warning
+**Expert Recommendation:** Add `revision` column + 409 conflict handling
+
+**Current State:** No conflict detection
+**Expert-Recommended Solution:**
+```python
+# Backend: Add revision to models
+@app.put('/companies/{id}')
+def update_company(id: UUID, payload: CompanyUpdate, revision: int):
+    stmt = (
+        update(Company)
+        .where(Company.id == id, Company.revision == revision)
+        .values(data=payload.data, revision=Company.revision + 1)
+    )
+    if session.execute(stmt).rowcount == 0:
+        raise HTTPException(409, 'Conflict')
+```
+
+### **Issue #19: JWT/Cache Separation Needs Verification** ⚠️ **POTENTIAL TOKEN LOSS**
+
+**Problem:** Need to ensure JWT remains intact during playground cache clears
+**Root Cause:** JWT might be stored in same bucket that gets cleared at login
+**Expert Recommendation:** JWT in HTTP-only cookie or dedicated store
+
+**Action Required:** Verify current implementation of `DraftManager.clearAllPlayground()`
+
+---
+
+## Expert Memo Integration Checklist
+
+### **Immediate Priorities (Week 1):**
+- [ ] **X: Auto-Generated Types** - Setup OpenAPI type generation pipeline
+- [ ] **Y: Cache Segregation** - Verify JWT separation + user-scoped cache keys  
+- [ ] **Z: Single-Transform PUT** - Eliminate multi-step transformation complexity
+
+### **Success Metrics (Expert Memo):**
+- [ ] **100% of components** receive camelCase models only
+- [ ] **Playground never calls fetch()** - members never read `pg_*` keys
+- [ ] **"Token disappeared" tickets** drop to 0
+- [ ] **PUT debugging time** falls from hours → minutes (compiler + 409 make drift obvious)

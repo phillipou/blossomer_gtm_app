@@ -42,11 +42,64 @@ After multiple dual-path architecture implementations, we now have:
 - ❌ **Aggressive redirects**: MainLayout forces auth redirects that break playground intent
 - ❌ **Route prefix inconsistency**: Not all components use dynamic prefixes for navigation
 
-## 🎯 **NEW PRIORITY IMPLEMENTATION STAGES**
+## 🚨 **EXPERT MEMO INTEGRATION - CRITICAL PRIORITIES**
 
-### Stage 1: Create Universal Auth Abstraction Layer 🔄 **HIGH PRIORITY**
-**Duration:** 2-3 days  
+*Based on engineering expert memo identifying root causes of recurring issues*
+
+### **ASSESSMENT: Current State vs Expert Recommendations**
+
+#### ❌ **Critical Gaps to Address:**
+1. **Hand-Rolled Types**: Using manual `/types/api.ts` instead of auto-generated from OpenAPI → Shape drift between backend/frontend
+2. **Multi-Step Transformations**: 4-6 transformation steps in PUT pipeline → Debugger-hell on every PUT
+3. **No Optimistic Concurrency**: Missing revision fields → Silent data clobbering potential
+4. **JWT/Cache Separation**: Need to verify JWT separation during cache clears
+
+#### ✅ **Good Foundation:**
+- DraftManager provides playground vs member data separation (`pg_*` vs `db_*` patterns)
+- useAuthAwareNavigation centralizes auth-aware routing
+- API boundary transformations exist (single points)
+
+### **Stage X: Auto-Generated Types Pipeline** 🔄 **CRITICAL PRIORITY**
+**Duration:** 1-2 days  
 **Dependencies:** None
+
+#### Objectives (Expert Memo Priority):
+- [ ] **Setup type generation CI**: Auto-generate TypeScript types from `/openapi.json`
+- [ ] **Create mapper files**: One mapper per entity as bridge from raw API → camelCase UI model  
+- [ ] **ESLint enforcement**: Components cannot import raw OpenAPI types
+- [ ] **Replace hand-rolled interfaces**: Eliminate manual type definitions in `/types/api.ts`
+
+### **Stage Y: Cache Segregation & JWT Separation** 🔄 **HIGH PRIORITY**
+**Duration:** 1 day  
+**Dependencies:** None
+
+#### Objectives (Expert Memo Priority):
+- [ ] **Hard wall between worlds**: Playground (`pg_*` keys) vs Member (`db_${userId}` keys)
+- [ ] **JWT separation**: Move JWT to HTTP-only cookie or dedicated store (never in cleared cache)
+- [ ] **Clear playground on login**: `DraftManager.clearAllPlayground()` + selective cache clear
+- [ ] **Persistent member cache**: Setup `PersistQueryClientProvider` with user-scoped keys
+
+### **Stage Z: Single-Transform PUT Pipeline** 🔄 **HIGH PRIORITY**  
+**Duration:** 2-3 days  
+**Dependencies:** Stage X completion
+
+#### Objectives (Expert Memo Priority):
+- [ ] **Single transformation point**: UI camelCase → API snake_case only at boundary
+- [ ] **Eliminate merge complexity**: Replace multi-step field preservation with simple pattern
+- [ ] **Add optimistic concurrency**: `revision` column + 409 conflict handling
+- [ ] **Clean Company PUT**: Establish pattern for all other entities
+
+## 🎯 **IMPLEMENTATION STAGES**
+
+### Stage 1: Expert-Driven Stabilization (X, Y, Z) 🔄 **CRITICAL PRIORITY**
+**Duration:** 4-6 days  
+**Dependencies:** None
+
+*Address expert memo recommendations to eliminate recurring architectural issues*
+
+### Stage 2: Universal Auth Abstraction Layer 🔄 **HIGH PRIORITY**
+**Duration:** 2-3 days  
+**Dependencies:** Stage 1 completion
 
 #### Objectives:
 - [ ] Create `useAuthAwareNavigation` hook for consistent routing across ALL entities
@@ -86,15 +139,53 @@ export function useEntityCRUD<T>(entityType: EntityType) {
 - [ ] Verify both authenticated and unauthenticated company flows work identically
 - [ ] Establish template for other entity migrations
 
-### Stage 3: Migrate Accounts, Personas, Campaigns to Universal Patterns 🔄 **PENDING**
+### Stage 3: Migration Template & Entity Migrations 🔄 **PENDING**
 **Duration:** 2-3 days  
 **Dependencies:** Stage 2 completion
 
 #### Objectives:
-- [ ] Migrate Accounts.tsx to use universal hooks (remove 15+ lines duplication)
-- [ ] Migrate Personas.tsx to use universal hooks (remove 15+ lines duplication)  
-- [ ] Migrate Campaigns.tsx to use universal hooks
+- [ ] Apply universal hook migration template to Accounts.tsx (remove 15+ lines duplication)
+- [ ] Apply universal hook migration template to Personas.tsx (remove 15+ lines duplication)  
+- [ ] Apply universal hook migration template to Campaigns.tsx
 - [ ] Verify ALL entity CRUD operations (create, update, delete, get) work for both auth states
+
+#### Migration Template Pattern (from Company.tsx success):
+**Before Migration (65+ lines):**
+```typescript
+// ❌ OLD: Duplicated auth logic + manual dual-flow
+const { token } = useAuthState();
+if (token) {
+  // Authenticated flow: manual API calls + navigation  
+  createCompany(data, { onSuccess: (saved) => navigate(`/app/company/${saved.id}`) });
+} else {
+  // Unauthenticated flow: manual normalization + DraftManager
+  const fakeResponse = { id: `temp_${Date.now()}`, ...data };
+  const normalized = normalizeCompanyResponse(fakeResponse);
+  const tempId = DraftManager.saveDraft('company', normalized);
+  navigate(`/playground/company`, { state: { draftId: tempId } });
+}
+```
+
+**After Migration (20 lines):**
+```typescript
+// ✅ NEW: Universal hooks eliminate duplication
+const { create: createEntityUniversal } = useEntityCRUD<EntityType>('entity');
+const { navigateToEntity } = useAuthAwareNavigation();
+
+const handleGenerate = async ({ name, description }) => {
+  analyzeEntity({ websiteUrl: name, userInputtedContext: description }, {
+    onSuccess: async (generatedData) => {
+      const result = await createEntityUniversal(generatedData, { navigateOnSuccess: false });
+      navigateToEntity('entity', result.id); // Auth-aware navigation
+    }
+  });
+};
+```
+
+#### Quantified Improvements Per Migration:
+- **Code Reduction:** 65 lines → 23 lines (65% reduction)
+- **Navigation:** 4 hardcoded prefixes → 0 (100% elimination)
+- **Auth Logic:** 5 instances → 0 (100% elimination)
 
 #### Critical Success Pattern:
 ```typescript

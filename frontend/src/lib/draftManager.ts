@@ -17,8 +17,10 @@ export interface DraftEntity {
 }
 
 export class DraftManager {
+  // Playground prefixes for clear segregation
+  private static readonly PLAYGROUND_PREFIX = 'pg_';
   private static readonly DRAFT_PREFIX = 'draft_';
-  private static readonly DRAFT_LIST_KEY = 'draft_entities_list';
+  private static readonly DRAFT_LIST_KEY = 'pg_draft_entities_list';
 
   /**
    * Save a draft entity to localStorage
@@ -36,7 +38,7 @@ export class DraftManager {
       parentId,
     };
 
-    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    const key = `${this.PLAYGROUND_PREFIX}${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     localStorage.setItem(key, JSON.stringify(draft));
     
     // Update the draft list for easier tracking
@@ -50,7 +52,7 @@ export class DraftManager {
    * Get a specific draft by tempId
    */
   static getDraft(entityType: EntityType, tempId: string): DraftEntity | null {
-    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    const key = `${this.PLAYGROUND_PREFIX}${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     const stored = localStorage.getItem(key);
     
     if (!stored) {
@@ -97,7 +99,7 @@ export class DraftManager {
    */
   static removeDraft(entityType: EntityType, tempId: string): void {
     console.log(`🗑️ DraftManager.removeDraft: Removing ${entityType} draft with tempId: ${tempId}`);
-    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    const key = `${this.PLAYGROUND_PREFIX}${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     localStorage.removeItem(key);
     this.removeFromDraftList(tempId);
     console.log(`✅ DraftManager: Removed draft ${entityType} with tempId: ${tempId}`);
@@ -107,7 +109,7 @@ export class DraftManager {
    * Check if a draft exists
    */
   static hasDraft(entityType: EntityType, tempId: string): boolean {
-    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    const key = `${this.PLAYGROUND_PREFIX}${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     return localStorage.getItem(key) !== null;
   }
 
@@ -156,6 +158,32 @@ export class DraftManager {
   }
 
   /**
+   * Clear all playground data - implements hard wall between playground and member data
+   * This method removes ALL localStorage items with the pg_ prefix
+   */
+  static clearAllPlayground(): void {
+    console.log('🚨 DraftManager.clearAllPlayground: Clearing ALL playground data');
+    
+    const keysToRemove: string[] = [];
+    
+    // Find all localStorage keys that start with playground prefix
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(this.PLAYGROUND_PREFIX)) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    // Remove all playground keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`🗑️ Removed playground key: ${key}`);
+    });
+    
+    console.log(`✅ DraftManager: Cleared ${keysToRemove.length} playground items from localStorage`);
+  }
+
+  /**
    * Update draft entity with field preservation - prevents data loss during partial updates
    */
   static updateDraftPreserveFields(
@@ -187,7 +215,7 @@ export class DraftManager {
       data: preservedData,
     };
     
-    const key = `${this.DRAFT_PREFIX}${entityType}_${tempId}`;
+    const key = `${this.PLAYGROUND_PREFIX}${this.DRAFT_PREFIX}${entityType}_${tempId}`;
     localStorage.setItem(key, JSON.stringify(updatedDraft));
     
     console.log(`✅ DraftManager: Updated draft ${entityType} with field preservation`, {
@@ -200,26 +228,26 @@ export class DraftManager {
   }
 
   /**
-   * Handle draft cleanup during authentication state changes
-   * Called when users transition between unauthenticated/authenticated states
+   * Handle cleanup during authentication state changes
+   * Implements hard wall between playground and member data
    */
   static clearDraftsOnAuthChange(wasUnauthenticated: boolean, isNowAuthenticated: boolean): void {
-    // Clear playground drafts when user authenticates
+    // Clear playground data when user authenticates to prevent contamination
     if (wasUnauthenticated && isNowAuthenticated) {
-      console.log('DraftManager: User authenticated - clearing all playground drafts to prevent contamination');
-      this.clearAllDrafts();
+      console.log('🔄 DraftManager: User authenticated - clearing ALL playground data to prevent contamination');
+      this.clearAllPlayground();
       return;
     }
     
-    // Clear authenticated drafts when user signs out
+    // When user signs out, we keep playground data but should clear any member cache
+    // The member cache clearing is handled by React Query in auth.ts
     if (!wasUnauthenticated && !isNowAuthenticated) {
-      console.log('DraftManager: User signed out - clearing all authenticated drafts');
-      this.clearAllDrafts();
+      console.log('🔄 DraftManager: User signed out - playground data preserved, member cache cleared by React Query');
       return;
     }
     
     // No action needed for other transitions
-    console.log('DraftManager: No draft clearing needed for this auth state change');
+    console.log('DraftManager: No playground clearing needed for this auth state change');
   }
 
 

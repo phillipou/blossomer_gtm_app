@@ -1,8 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { UserScopedQueryClientProvider } from './lib/query/UserScopedQueryClient'
 import './index.css'
 import './App.css'
 import LandingPage from './pages/LandingPage'
@@ -27,7 +28,7 @@ const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <UserScopedQueryClientProvider client={queryClient}>
       <StagewiseToolbar />
       <NeonAuthWrapper>
         <BrowserRouter>
@@ -64,6 +65,6 @@ createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       </NeonAuthWrapper>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </UserScopedQueryClientProvider>
   </StrictMode>,
 )

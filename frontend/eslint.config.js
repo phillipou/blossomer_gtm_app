@@ -22,5 +22,40 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Prevent direct use of raw OpenAPI types in components
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '../types/generated-api',
+              message: 'Import UI types from lib/mappers instead of raw API types. Use mappers for API boundary transformations.'
+            },
+            {
+              name: './types/generated-api', 
+              message: 'Import UI types from lib/mappers instead of raw API types. Use mappers for API boundary transformations.'
+            },
+            {
+              name: '../../types/generated-api',
+              message: 'Import UI types from lib/mappers instead of raw API types. Use mappers for API boundary transformations.'
+            }
+          ],
+          patterns: [
+            {
+              group: ['**/types/generated-api*'],
+              message: 'Import UI types from lib/mappers instead of raw API types. Use mappers for API boundary transformations.'
+            }
+          ]
+        }
+      ]
+    }
   },
+  // Allow mappers and service layer to import raw API types
+  {
+    files: ['**/lib/mappers/**/*.{ts,tsx}', '**/lib/*Service.ts'],
+    rules: {
+      'no-restricted-imports': 'off'
+    }
+  }
 ], storybook.configs["flat/recommended"]);
