@@ -18,6 +18,7 @@ import { DraftManager } from "../lib/draftManager";
 import { getPersonaName, getPersonaDescription } from "../lib/entityDisplayUtils";
 import { useCompanyContext } from '../lib/hooks/useCompanyContext';
 import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
+import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
@@ -25,16 +26,17 @@ export default function TargetPersonas() {
 
   // Universal company context detection
   const { overview, companyId, isLoading: isCompanyLoading } = useCompanyContext();
+  
+  // Universal persona creation
+  const { create: createPersonaUniversal } = useEntityCRUD<TargetPersonaResponse>('persona');
 
   // Step 2: Always call hooks first (Rules of Hooks)
   const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "");
   const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId || "");
 
-  // Update mutation hooks to use correct types for TargetPersonaResponse
+  // Update and delete mutation hooks (still needed for existing personas)
   const updatePersonaMutation = useUpdatePersona("");
   const { mutate: deletePersona } = useDeletePersona("");
-  const createPersonaMutation = useCreatePersona();
-  const generatePersonaMutation = useGeneratePersona();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
@@ -300,53 +302,40 @@ export default function TargetPersonas() {
           // Get the selected account data for context
           const selectedAccount = accounts?.find(acc => acc.id === accountId);
           
-          // Step 1: Generate AI data (matching account pattern)
-          setIsSavingPersona(true);
-          setSaveError(null);
+          console.log('[PERSONAS-PAGE] Starting universal persona creation:', { name, description, accountId });
           
-          generatePersonaMutation.mutate(
-            { 
-              accountId, 
-              personaData: {
-                websiteUrl: overview?.companyUrl || '',
-                personaProfileName: name,
-                hypothesis: description,
-                companyContext: overview, // Company data
-                targetAccountContext: selectedAccount // Selected account data
-              }
-            },
-            {
-              onSuccess: (generatedData) => {
-                console.log("Persona generated successfully", generatedData);
-                
-                // Step 2: Create persona directly (matching account pattern)
-                const personaToSave = {
-                  name: generatedData.targetPersonaName || name,
-                  data: generatedData, // Direct assignment like accounts
-                };
-                
-                createPersonaMutation.mutate(
-                  { accountId, personaData: personaToSave },
-                  {
-                    onSuccess: (savedPersona) => {
-                      console.log("Persona created successfully", savedPersona);
-                      setAddModalOpen(false);
-                      setIsSavingPersona(false);
-                      navigate(`${isAuthenticated ? '/app' : '/playground'}/accounts/${accountId}/personas/${savedPersona.id}`);
-                    },
-                    onError: (error) => {
-                      setIsSavingPersona(false);
-                      setSaveError(error?.message || "Failed to save persona");
-                    }
-                  }
-                );
-              },
-              onError: (error) => {
-                setIsSavingPersona(false);
-                setSaveError(error?.message || "Failed to generate persona");
-              }
-            }
-          );
+          // Create persona data in AI request format (matches universal pattern)
+          const personaData = {
+            websiteUrl: overview?.companyUrl || '',
+            personaProfileName: name,
+            hypothesis: description,
+            companyContext: overview, // Company data
+            targetAccountContext: selectedAccount // Selected account data
+          };
+          
+          try {
+            setIsSavingPersona(true);
+            setSaveError(null);
+            
+            // Universal create handles both AI generation and saving automatically
+            const result = await createPersonaUniversal(personaData, {
+              parentId: accountId,
+              customCompanyId: companyId,
+              navigateOnSuccess: false
+            });
+            
+            console.log('[PERSONAS-PAGE] Persona created successfully:', result);
+            
+            // Close modal and navigate to the new persona
+            setAddModalOpen(false);
+            setIsSavingPersona(false);
+            navigateToEntity('persona', result.id);
+            
+          } catch (error) {
+            console.error('[PERSONAS-PAGE] Persona creation failed:', error);
+            setIsSavingPersona(false);
+            setSaveError(error?.message || "Failed to create persona");
+          }
         }}
         title="Generate Target Persona"
         subtitle="Describe a new buyer persona to generate detailed insights."
@@ -356,7 +345,7 @@ export default function TargetPersonas() {
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
         submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Persona</>}
         cancelLabel="Cancel"
-        isLoading={isSavingPersona || createPersonaMutation.isPending}
+        isLoading={isSavingPersona}
         accounts={accounts?.map(a => ({ id: a.id, name: a.name }))}
         selectedAccountId={selectedAccountId}
         onAccountChange={setSelectedAccountId}

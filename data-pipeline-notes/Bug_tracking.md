@@ -32,6 +32,119 @@ This document tracks bugs, issues, and solutions related to PUT request implemen
 
 ---
 
+## 🚨 **CRITICAL: Infinite Re-Render Loop Issues** ✅ **RESOLVED**
+
+### **Issue #20: Infinite Re-Render Loop in Account Creation (Unauthenticated Users)** ✅ **RESOLVED**
+
+**Problem:** Account creation for unauthenticated users triggered infinite re-render loops, causing "Maximum update depth exceeded" errors and browser freezing.
+
+**Root Cause Analysis:**
+
+The infinite re-render loop was caused by **debugging code** in `AccountDetail.tsx`:
+
+1. **Lines 54-90**: A `testComponentStateSync` function that performed expensive operations
+2. **Lines 247-256**: A `useEffect` that called this function with `queryClient` in the dependency array  
+3. **Line 41**: Excessive logging in `BuyingSignalsCard` on every render
+
+**The Core Problem:**
+
+The `useEffect` had `queryClient` as a dependency, but `queryClient` from `useQueryClient()` can change reference on every render, creating an infinite loop:
+
+```typescript
+useEffect(() => {
+  if (accountId && entityPageState.displayEntity) {
+    testComponentStateSync(queryClient, accountId, entityPageState.displayEntity, 'component-mount-or-update');
+  }
+}, [accountId, entityPageState.displayEntity, queryClient]); // ← queryClient causing infinite loop
+```
+
+**Solutions Applied:**
+
+1. **Removed the debugging function entirely** - It was performing expensive JSON comparisons on every render
+2. **Removed the problematic useEffect** - No longer needed for functionality  
+3. **Removed excessive console logging** - Cleaned up BuyingSignalsCard component
+
+### **Issue #21: Maximum Update Depth Exceeded - Duplicate State Management** ✅ **RESOLVED**
+
+**Problem:** Even after fixing the debugging code, still getting "Maximum update depth exceeded" errors.
+
+**Root Cause:** **Duplicate state management** in `AccountDetail.tsx`:
+1. `entityPageState.displayEntity.buyingSignals` (from the entity system)
+2. Local `buyingSignals` state (duplicated)
+3. A `useEffect` that synced between them, causing infinite loops
+
+```typescript
+// ❌ PROBLEMATIC: Duplicate state causing infinite sync loops
+const [buyingSignals, setBuyingSignals] = useState<APIBuyingSignal[]>([]);
+
+useEffect(() => {
+  if (entityPageState.displayEntity?.buyingSignals) {
+    setBuyingSignals(entityPageState.displayEntity.buyingSignals); // ← Infinite loop
+  } else {
+    setBuyingSignals([]);
+  }
+}, [entityPageState.displayEntity]); // ← entityPageState changes on every render
+```
+
+**Solution Applied:**
+
+**Eliminated duplicate state** by:
+1. **Removed** `const [buyingSignals, setBuyingSignals] = useState<APIBuyingSignal[]>([]);`
+2. **Removed** the problematic `useEffect` that was syncing the states
+3. **Updated all references** to use `entityPageState.displayEntity?.buyingSignals || []` directly
+4. **Fixed modal handlers** to work with the entity system instead of local state
+
+```typescript
+// ✅ FIXED: Single source of truth, no duplicate state
+{(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
+  <BuyingSignalsCard
+    buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
+    onDelete={(signal) => {
+      const updatedSignals = (entityPageState.displayEntity?.buyingSignals || [])
+        .filter(s => s.title !== signal.title);
+      handleBuyingSignalsUpdate(updatedSignals); // Use entity system directly
+    }}
+  />
+) : (
+  <div>No buying signals identified</div>
+)}
+```
+
+### **🎯 Critical Lessons Learned**
+
+**The Key Insight:** We need to **simplify our rendering logic significantly**. The debugging/testing code we added was actually causing more problems than it solved.
+
+**Lesson learned:** Debugging code with complex dependencies can create performance issues and infinite loops. It's better to:
+- **Use simpler, targeted logging** - avoid complex debugging functions
+- **Avoid putting complex objects like `queryClient` in dependency arrays** - they change reference frequently
+- **Keep debugging code minimal and temporary** - remove after debugging is complete
+- **Eliminate duplicate state** - maintain single source of truth for data
+- **Avoid syncing state with useEffect** - often leads to infinite loops
+
+### **🚨 Red Flags for Future Development**
+
+**Infinite Re-Render Warning Signs:**
+- `useEffect` with `queryClient` in dependencies
+- Duplicate state that syncs with `useEffect`
+- Complex debugging functions called on every render
+- Objects recreated on every render in dependency arrays
+- State updates inside `useEffect` without proper memoization
+
+**Best Practices:**
+- **Single source of truth** - don't duplicate state unnecessarily
+- **Memoize objects** passed to dependency arrays with `useMemo`
+- **Remove debugging code** after debugging is complete  
+- **Use direct data access** instead of local state copies
+- **Question every `useEffect`** - many can be eliminated
+
+### **Success Metrics:**
+- ✅ **Account creation flow** works for unauthenticated users without infinite loops
+- ✅ **Browser performance** - no more freezing or "Maximum update depth exceeded" errors
+- ✅ **Simplified codebase** - eliminated unnecessary debugging and duplicate state
+- ✅ **Better patterns** - established guidelines for preventing similar issues
+
+---
+
 ## 🎉 MAJOR SUCCESS: POST Request Authentication Flows Fixed
 
 ### **Issue #15: Data Format Inconsistency Between Auth and Unauth Flows** ✅ **RESOLVED**

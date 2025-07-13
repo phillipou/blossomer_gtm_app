@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import {
   EditDialog,
@@ -54,9 +54,17 @@ export default function EditDialogModal({
   children,
 }: EditDialogModalProps) {
   const [form, setForm] = useState<Record<string, string | boolean>>(initialValues);
+  const lastInitialValuesRef = useRef<Record<string, string | boolean>>();
 
   useEffect(() => {
-    setForm(initialValues);
+    // Deep comparison to prevent unnecessary updates when object reference changes but content is the same
+    const hasChanged = !lastInitialValuesRef.current || 
+      JSON.stringify(lastInitialValuesRef.current) !== JSON.stringify(initialValues);
+    
+    if (hasChanged) {
+      lastInitialValuesRef.current = initialValues;
+      setForm(initialValues);
+    }
   }, [initialValues, isOpen]);
 
   const handleChange = (name: string, value: string | boolean) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEntityPage } from '../lib/hooks/useEntityPage';
 import { accountConfig, generationModalConfigs } from '../lib/entityConfigs';
@@ -21,6 +21,11 @@ import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import { normalizeAccountResponse } from '../lib/accountService';
 import { useGetCompany, useGetUserCompany } from '../lib/hooks/useCompany';
 import { useAuthState } from '../lib/auth';
+
+// Stable references to prevent re-renders
+const emptyObject = {};
+const emptyMutate = () => {};
+const dummyGenerateResult = { mutate: emptyMutate, isPending: false, error: null };
 import { useCompanyContext } from '../lib/hooks/useCompanyContext';
 import { Wand2, Plus, Pencil } from 'lucide-react';
 import type { TargetAccountResponse, AccountCreate, TargetAccountAPIRequest, APIBuyingSignal, Firmographics } from '../types/api';
@@ -46,43 +51,7 @@ const handleComponentError = (operation: string, error: any) => {
   // For now, just log for debugging
 };
 
-// Component state synchronization testing - Stage 4 improvement
-const testComponentStateSync = (
-  queryClient: any, 
-  accountId: string, 
-  displayEntity: any, 
-  operation: string
-) => {
-  const cachedAccount = queryClient.getQueryData(['account', accountId]);
-  
-  console.log(`[STATE-SYNC-TEST] ${operation} synchronization check:`, {
-    accountId,
-    operation,
-    displayEntityExists: !!displayEntity,
-    cachedAccountExists: !!cachedAccount,
-    formatConsistency: {
-      displayEntity: displayEntity ? {
-        hasTargetAccountName: !!displayEntity.targetAccountName,
-        isNormalized: !Object.keys(displayEntity).some((k: string) => k.includes('_')),
-        fieldCount: Object.keys(displayEntity).length
-      } : null,
-      cachedAccount: cachedAccount ? {
-        hasTargetAccountName: !!(cachedAccount as any).targetAccountName,
-        isNormalized: !Object.keys(cachedAccount as any).some((k: string) => k.includes('_')),
-        fieldCount: Object.keys(cachedAccount as any).length
-      } : null
-    },
-    stateSync: displayEntity && cachedAccount ? 
-      JSON.stringify(displayEntity) === JSON.stringify(cachedAccount) : 'partial-data',
-    timestamp: new Date().toISOString()
-  });
-  
-  return {
-    inSync: displayEntity && cachedAccount && 
-           JSON.stringify(displayEntity) === JSON.stringify(cachedAccount),
-    bothExist: !!displayEntity && !!cachedAccount
-  };
-};
+// Removed debugging function that was causing infinite re-renders
 
 export default function AccountDetail() {
   const { token } = useAuthState();
@@ -95,7 +64,7 @@ export default function AccountDetail() {
   const [firmographicsModalOpen, setFirmographicsModalOpen] = useState(false);
   const [buyingSignalsModalOpen, setBuyingSignalsModalOpen] = useState(false);
   const [modalEditingSignal, setModalEditingSignal] = useState<any>(null);
-  const [buyingSignals, setBuyingSignals] = useState<APIBuyingSignal[]>([]);
+  // Removed duplicate buyingSignals state - use entityPageState.displayEntity.buyingSignals directly
   
   // Handle "new" route - show creation modal
   const isNewAccount = accountId === 'new';
@@ -132,25 +101,16 @@ export default function AccountDetail() {
           data: data as unknown as TargetAccountResponse | undefined,
           isLoading,
           error,
-          refetch: () => { refetch(); }
+          refetch
         };
       },
       useGetList: (token) => {
         // useGetAccountsForEntityPage returns { data, isLoading, error }
         return useGetAccountsForEntityPage(token);
       },
-      useGenerateWithAI: (token, entityId) => {
-        // useGenerateAccount expects (companyId, token), but we don't have companyId here, so return dummy
-        return { mutate: () => {}, isPending: false, error: null };
-      },
-      useCreate: (token) => {
-        // useCreateAccount expects (companyId, token), but we don't have companyId here, so return dummy
-        return {};
-      },
-      useUpdate: (token, entityId) => {
-        // useUpdateAccount expects (companyId, token), but we don't have companyId here, so return dummy
-        return {};
-      },
+      useGenerateWithAI: () => dummyGenerateResult,
+      useCreate: () => emptyObject,
+      useUpdate: () => emptyObject,
       useUpdatePreserveFields: (token, entityId) => {
         return useUpdateAccountPreserveFields(token, entityId);
       },
@@ -160,17 +120,15 @@ export default function AccountDetail() {
     },
   });
 
-  console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
-  console.log('🔍 [AccountDetail] Token:', token ? 'exists' : 'missing');
-  console.log('🔍 [AccountDetail] Entity display data:', entityPageState.displayEntity);
-  console.log('🔍 [AccountDetail] Entity display data keys:', entityPageState.displayEntity ? Object.keys(entityPageState.displayEntity) : 'no entity');
+  // Temporarily disable all logging to identify root cause
+  // console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
 
-  // Transform function for firmographics to CriteriaTable format
-  const transformFirmographicsToCriteria = (firmographics: any) => {
+  // Transform function for firmographics to CriteriaTable format (memoized to prevent re-renders)
+  const transformFirmographicsToCriteria = useCallback((firmographics: any) => {
     if (!firmographics) return [] as any[];
     const criteria: any[] = [];
     
-    console.log('🔍 [AccountDetail] Transforming firmographics to criteria table:', firmographics);
+    // console.log('🔍 [AccountDetail] Transforming firmographics to criteria table:', firmographics);
     
     // Helper function to safely handle arrays and single values
     const safeMapArray = (value: any, color: string) => {
@@ -211,10 +169,10 @@ export default function AccountDetail() {
     });
     
     return criteria.map((item, index) => ({ ...item, id: String(index) }));
-  };
+  }, []); // Empty dependency array since this is a pure transformation function
 
-  // Transform function from CriteriaTable format back to dynamic firmographics structure
-  const transformCriteriaToFirmographics = (rows: any[]): Record<string, any> => {
+  // Transform function from CriteriaTable format back to dynamic firmographics structure (memoized)
+  const transformCriteriaToFirmographics = useCallback((rows: any[]): Record<string, any> => {
     const result: Record<string, any> = {};
     
     (rows as any[]).forEach((row: any) => {
@@ -230,7 +188,7 @@ export default function AccountDetail() {
     });
     
     return result;
-  };
+  }, []); // Empty dependency array since this is a pure transformation function
   
   // Show creation modal for new accounts (only once)
   useEffect(() => {
@@ -240,26 +198,9 @@ export default function AccountDetail() {
     }
   }, [isNewAccount, isCreationModalOpen]);
 
-  // Populate buying signals state when account data changes
-  useEffect(() => {
-    if (entityPageState.displayEntity?.buyingSignals) {
-      setBuyingSignals(entityPageState.displayEntity.buyingSignals);
-    } else {
-      setBuyingSignals([]);
-    }
-  }, [entityPageState.displayEntity]);
+  // Removed problematic useEffect that was causing infinite re-renders
 
-  // Component state synchronization testing - Stage 4 improvement
-  useEffect(() => {
-    if (accountId && entityPageState.displayEntity) {
-      testComponentStateSync(
-        queryClient, 
-        accountId, 
-        entityPageState.displayEntity, 
-        'component-mount-or-update'
-      );
-    }
-  }, [accountId, entityPageState.displayEntity, queryClient]);
+  // Removed infinite re-render causing useEffect
   
   // Handle creation modal close
   const handleCreationModalClose = () => {
@@ -536,32 +477,35 @@ export default function AccountDetail() {
     }
   };
 
-  // Get account name for display
-  const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
-  
-  // Get company name for breadcrumb
-  const companyDisplayName = company?.companyName || overview?.companyName || 'Company';
-  
-  // Dynamic path prefix based on authentication
-  const pathPrefix = token ? '/app' : '/playground';
-  
-  console.log('[AccountDetail] Breadcrumb data:', {
-    accountId,
-    accountName,
-    companyDisplayName,
-    pathPrefix,
-    isAuthenticated: !!token,
-    companyData: company ? { id: company.id, companyName: company.companyName } : null,
-    overviewData: overview ? { companyName: overview.companyName } : null
-  });
+  // Memoized breadcrumb data to prevent re-renders
+  const breadcrumbData = useMemo(() => {
+    const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
+    const companyDisplayName = company?.companyName || overview?.companyName || 'Company';
+    const pathPrefix = token ? '/app' : '/playground';
+    
+    const data = {
+      accountId,
+      accountName,
+      companyDisplayName,
+      pathPrefix,
+      isAuthenticated: !!token,
+      companyData: company ? { id: company.id, companyName: company.companyName } : null,
+      overviewData: overview ? { companyName: overview.companyName } : null
+    };
+    
+    // Temporarily disable logging
+    // console.log('[AccountDetail] Breadcrumb data:', data);
+    
+    return data;
+  }, [accountId, entityPageState.displayEntity, company, overview, token]);
 
   return (
     <>
       <SubNav
         breadcrumbs={[
-          { label: "Company", href: `${pathPrefix}/company` },
-          { label: "Target Accounts", href: `${pathPrefix}/accounts` },
-          { label: accountName },
+          { label: "Company", href: `${breadcrumbData.pathPrefix}/company` },
+          { label: "Target Accounts", href: `${breadcrumbData.pathPrefix}/accounts` },
+          { label: breadcrumbData.accountName },
         ]}
         activeSubTab=""
         setActiveSubTab={() => {}}
@@ -576,7 +520,7 @@ export default function AccountDetail() {
       overviewProps={{
         pageTitle: "Target Account",
         pageSubtitle: "Account analysis and insights",
-        overviewTitle: entityPageState.displayEntity?.targetAccountName || "Target Account",
+        overviewTitle: breadcrumbData.accountName,
         bodyTitle: 'Account Profile',
         bodyText: entityPageState.displayEntity?.targetAccountDescription || 'No description available',
         entityType: 'account',
@@ -602,7 +546,10 @@ export default function AccountDetail() {
         <CardContent>
           {entityPageState.displayEntity?.firmographics ? (
             <CriteriaTable 
-              data={transformFirmographicsToCriteria(entityPageState.displayEntity.firmographics)}
+              data={useMemo(() => 
+                transformFirmographicsToCriteria(entityPageState.displayEntity.firmographics), 
+                [entityPageState.displayEntity, transformFirmographicsToCriteria]
+              )}
             />
           ) : (
             <div className="text-center py-8 text-gray-500">No firmographics data available</div>
@@ -622,15 +569,19 @@ export default function AccountDetail() {
           <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
         </CardHeader>
         <CardContent>
-          {buyingSignals.length > 0 ? (
+          {(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
             <BuyingSignalsCard
-              buyingSignals={buyingSignals}
+              buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
               editable={true}
               onEdit={(signal) => {
                 setModalEditingSignal(signal);
                 setBuyingSignalsModalOpen(true);
               }}
-              onDelete={(signal) => setBuyingSignals(signals => signals.filter(s => s.title !== signal.title))}
+              onDelete={(signal) => {
+                // Handle delete through the entity update system instead of local state
+                const updatedSignals = (entityPageState.displayEntity?.buyingSignals || []).filter(s => s.title !== signal.title);
+                handleBuyingSignalsUpdate(updatedSignals);
+              }}
             />
           ) : (
             <div className="text-center py-8 text-gray-500">No buying signals identified</div>
@@ -671,17 +622,15 @@ export default function AccountDetail() {
         
         const newSignal = { title, description, priority, type, detection_method };
         
+        const currentSignals = entityPageState.displayEntity?.buyingSignals || [];
         let updatedSignals: APIBuyingSignal[];
         if (modalEditingSignal) {
-          updatedSignals = buyingSignals.map(s => 
+          updatedSignals = currentSignals.map(s => 
             s.title === modalEditingSignal.title ? newSignal : s
           );
         } else {
-          updatedSignals = [...buyingSignals, newSignal];
+          updatedSignals = [...currentSignals, newSignal];
         }
-        
-        // Update local state immediately
-        setBuyingSignals(updatedSignals);
         
         // Handle buying signals update with field preservation
         handleBuyingSignalsUpdate(updatedSignals);

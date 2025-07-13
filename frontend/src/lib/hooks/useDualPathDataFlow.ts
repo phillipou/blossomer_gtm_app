@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // Service imports for each entity type
 import { createCompany, normalizeCompanyResponse } from '../companyService';
-import { createAccount, normalizeAccountResponse } from '../accountService';
+import { createAccount, generateAccount, normalizeAccountResponse } from '../accountService';
 import { createPersona, normalizePersonaResponse } from '../personaService';
 // import { createCampaign, normalizeCampaignResponse } from '../campaignService';
 
@@ -80,8 +80,18 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           if (!options?.companyId) {
             throw new Error('Account creation requires companyId');
           }
-          // Note: createAccount expects different signature - need to adapt
-          savedEntity = await createAccount(options.companyId, aiResponse as any, token);
+          
+          // Step 1: Generate AI account data (firmographics, buying signals, etc.)
+          console.log('[DUAL-PATH-AUTH-ACCOUNT] Generating AI account data:', aiResponse);
+          const generatedAccountData = await generateAccount(aiResponse as any, token);
+          
+          // Step 2: Create account with generated data  
+          console.log('[DUAL-PATH-AUTH-ACCOUNT] Creating account with generated data:', generatedAccountData);
+          savedEntity = await createAccount(options.companyId, {
+            name: generatedAccountData.targetAccountName || (aiResponse as any).account_profile_name,
+            data: generatedAccountData
+          }, token);
+          
           normalized = normalizeAccountResponse(savedEntity as Account) as T;
           break;
           
@@ -150,14 +160,22 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           break;
           
         case 'account':
-          // Create database-identical Account structure  
+          // For unauthenticated users, we need to generate AI data first
+          console.log('[DUAL-PATH-UNAUTH-ACCOUNT] Generating AI account data for unauthenticated user:', aiResponse);
+          
+          // Step 1: Generate AI account data using demo endpoint
+          const generatedAccountData = await generateAccount(aiResponse as any, null); // null token for demo endpoint
+          
+          console.log('[DUAL-PATH-UNAUTH-ACCOUNT] Generated account data:', generatedAccountData);
+          
+          // Step 2: Create database-identical Account structure  
           // Top-level fields: id, name, company_id, created_at, updated_at
           // JSON data field: targetAccountDescription, firmographics, buyingSignals
           const fakeAccountResponse = {
             id: `temp_${Date.now()}`,
-            name: (aiResponse as any).targetAccountName || (aiResponse as any).name,
+            name: generatedAccountData.targetAccountName || (aiResponse as any).account_profile_name,
             company_id: options?.companyId || 'temp_company',
-            data: aiResponse, // AI analysis stored in JSONB data column (NOT in top-level)
+            data: generatedAccountData, // Full AI-generated data with firmographics and buying signals
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

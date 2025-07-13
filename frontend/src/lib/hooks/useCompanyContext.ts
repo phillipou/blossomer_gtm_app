@@ -1,3 +1,4 @@
+import { useMemo, useRef } from 'react';
 import { useAuthState } from '../auth';
 import { useCompanyOverview } from '../useCompanyOverview';
 import { useGetUserCompany } from './useCompany';
@@ -26,45 +27,55 @@ export function useCompanyContext() {
   // Step 2: Get fetched overview (authenticated users only)
   const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
   
-  // Step 3: Determine active overview with fallback hierarchy
-  let overview: CompanyOverviewResponse | null = cachedOverview || fetchedOverview || null;
-  
-  // Step 4: For unauthenticated users, check DraftManager as final fallback
-  if (!token && !overview) {
-    const drafts = DraftManager.getDrafts('company');
-    if (drafts.length > 0) {
-      // DraftManager should already contain normalized CompanyOverviewResponse format
-      overview = drafts[0].data;
+  // Step 3: For unauthenticated users, get draft overview (cached to prevent re-render loops)
+  const draftOverviewRef = useRef<CompanyOverviewResponse | null>(null);
+  const draftOverview = useMemo(() => {
+    if (!token) {
+      // Only fetch drafts if we don't have cached data or if this is the first call
+      if (!draftOverviewRef.current) {
+        const drafts = DraftManager.getDrafts('company');
+        if (drafts.length > 0) {
+          // DraftManager should already contain normalized CompanyOverviewResponse format
+          draftOverviewRef.current = drafts[0].data;
+        }
+      }
+      return draftOverviewRef.current;
+    } else {
+      // Clear cache when switching to authenticated mode
+      draftOverviewRef.current = null;
+      return null;
     }
-  }
+  }, [token]); // Only re-run when auth state changes
+  
+  // Step 4: Determine active overview with fallback hierarchy
+  const overview: CompanyOverviewResponse | null = cachedOverview || fetchedOverview || draftOverview;
   
   // Step 5: Extract company ID safely
   const companyId = overview?.companyId;
   
-  // Step 6: Debug logging (matches existing patterns from Accounts.tsx)
-  console.log('[COMPANY-CONTEXT] Company context detection:', {
-    token: !!token,
-    cachedOverview: !!cachedOverview,
-    fetchedOverview: !!fetchedOverview,
-    overview: !!overview,
-    companyId,
-    isCompanyLoading,
-    draftCount: !token ? DraftManager.getDraftCount('company') : 'N/A (authenticated)'
-  });
-  
-  return {
-    overview,
-    companyId,
-    companyName: overview?.companyName,
-    isLoading: isCompanyLoading,
-    hasValidContext: !!companyId,
-    isAuthenticated: !!token,
+  // Step 5: Memoize the return object to prevent infinite re-renders
+  const contextResult = useMemo(() => {
+    const companyId = overview?.companyId;
     
-    // Additional context helpers
-    hasCompanyData: !!overview,
-    isDraft: !token && !!overview,
-    isEmpty: !overview && !isCompanyLoading
-  };
+    // Temporarily disable all logging to identify root cause
+    // console.log('[COMPANY-CONTEXT] Company context detection:', { ... });
+    
+    return {
+      overview,
+      companyId,
+      companyName: overview?.companyName,
+      isLoading: isCompanyLoading,
+      hasValidContext: !!companyId,
+      isAuthenticated: !!token,
+      
+      // Additional context helpers
+      hasCompanyData: !!overview,
+      isDraft: !token && !!overview,
+      isEmpty: !overview && !isCompanyLoading
+    };
+  }, [overview, isCompanyLoading, token]);
+  
+  return contextResult;
 }
 
 /**

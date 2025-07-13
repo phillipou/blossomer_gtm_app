@@ -38,7 +38,6 @@ export default function BuyingSignalsCard({
   className = ""
 }: BuyingSignalsCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  console.log("🔍 [BuyingSignalsCard] buyingSignals", buyingSignals);
   if (!buyingSignals || buyingSignals.length === 0) {
     return (
       <div className="text-center text-gray-500 py-8">

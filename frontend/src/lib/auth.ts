@@ -103,12 +103,15 @@ export function useAuthState(): AuthState & { loading: boolean } {
     const wasUnauthenticated = !previousAuthState.isAuthenticated;
     const isNowAuthenticated = authState.isAuthenticated;
     
-    console.log('[AUTH DEBUG] Auth state transition:', {
-      wasUnauthenticated,
-      isNowAuthenticated,
-      previousUserId: previousAuthState.userInfo?.user_id,
-      currentUserId: authState.userInfo?.user_id
-    });
+    // Reduced auth debug logging to prevent spam
+    if (wasUnauthenticated !== !authState.isAuthenticated) {
+      console.log('[AUTH DEBUG] Auth state transition:', {
+        wasUnauthenticated,
+        isNowAuthenticated,
+        previousUserId: previousAuthState.userInfo?.user_id,
+        currentUserId: authState.userInfo?.user_id
+      });
+    }
     
     if (wasUnauthenticated !== !authState.isAuthenticated) {
       console.log('[AUTH DEBUG] Auth state changed: implementing cache segregation');

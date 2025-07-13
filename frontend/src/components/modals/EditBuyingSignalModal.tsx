@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import EditDialogModal from "./EditDialogModal";
 
 interface EditBuyingSignalModalProps {
@@ -19,9 +19,13 @@ interface BuyingSignal {
 export default function EditBuyingSignalModal({ isOpen, onClose, onSave, editingSignal }: EditBuyingSignalModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const editing = !!editingSignal;
-  const initialValues = editingSignal
-    ? { label: editingSignal.label, description: editingSignal.description, priority: editingSignal.priority || "" }
-    : { label: "", description: "", priority: "" };
+  
+  // Memoize initialValues to prevent re-render loops
+  const initialValues = useMemo(() => {
+    return editingSignal
+      ? { label: editingSignal.label, description: editingSignal.description, priority: editingSignal.priority || "" }
+      : { label: "", description: "", priority: "" };
+  }, [editingSignal]);
 
   const handleSave = (values: Record<string, string | boolean>) => {
     setIsLoading(true);
