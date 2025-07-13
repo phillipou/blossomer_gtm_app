@@ -155,15 +155,22 @@ npm run lint           # Should enforce mapper usage rules
 - Mappers handle camelCase ↔ snake_case conversions
 - ESLint prevents direct OpenAPI type imports
 
-### Stage 2: Universal Auth Abstraction Layer 🔄 **HIGH PRIORITY**
+### Stage 2: Universal Auth Abstraction Layer ✅ **COMPLETED**
 **Duration:** 2-3 days  
 **Dependencies:** Stage 1 completion
 
-#### Objectives:
-- [ ] Create `useAuthAwareNavigation` hook for consistent routing across ALL entities
-- [ ] Create `useCompanyContext` hook eliminating 30+ lines of duplication
-- [ ] Create `useDualPathDataFlow` hook enforcing transformation lockstep for ALL entities
-- [ ] Create `useEntityCRUD` hook providing consistent CRUD operations for Companies, Accounts, Personas, Campaigns
+#### Objectives: ✅ **ALL COMPLETE**
+- [x] Create `useAuthAwareNavigation` hook for consistent routing across ALL entities
+- [x] Create `useCompanyContext` hook eliminating 30+ lines of duplication
+- [x] Create `useDualPathDataFlow` hook enforcing transformation lockstep for ALL entities
+- [x] Create `useEntityCRUD` hook providing consistent CRUD operations for Companies, Accounts, Personas, Campaigns
+
+#### Key Deliverables Completed:
+- ✅ **Universal hooks created**: All four core hooks implemented and working
+- ✅ **Auth-aware routing**: Consistent `/app` vs `/playground` navigation across entities
+- ✅ **Company context detection**: Eliminates duplicate logic across pages
+- ✅ **Dual-path data flow**: Enforces transformation lockstep for auth/unauth flows
+- ✅ **Entity CRUD system**: Universal create/update/delete operations
 
 #### Critical Pattern to Establish:
 ```typescript
@@ -187,25 +194,72 @@ export function useEntityCRUD<T>(entityType: EntityType) {
 - **Automatic lockstep** - All entities use identical transformation patterns
 - **Route consistency** - All navigation uses centralized prefix logic
 
-### Stage 2: Migrate Company Entity to Universal Patterns 🔄 **HIGH PRIORITY**
-**Duration:** 1-2 days  
-**Dependencies:** Stage 1 completion
-
-#### Objectives:
-- [ ] Replace Company.tsx auth logic with `useEntityCRUD('company')`
-- [ ] Remove 30+ lines of custom auth detection code
-- [ ] Verify both authenticated and unauthenticated company flows work identically
-- [ ] Establish template for other entity migrations
-
-### Stage 3: Migration Template & Entity Migrations 🔄 **PENDING**
+### Stage 3: Entity Migration to Universal Patterns 🔄 **IN PROGRESS**
 **Duration:** 2-3 days  
 **Dependencies:** Stage 2 completion
 
-#### Objectives:
-- [ ] Apply universal hook migration template to Accounts.tsx (remove 15+ lines duplication)
-- [ ] Apply universal hook migration template to Personas.tsx (remove 15+ lines duplication)  
-- [ ] Apply universal hook migration template to Campaigns.tsx
-- [ ] Verify ALL entity CRUD operations (create, update, delete, get) work for both auth states
+#### Progress Status:
+- [x] **Accounts.tsx Migration**: ✅ **COMPLETED** - Successfully migrated to universal hooks
+- [ ] **Personas.tsx Migration**: 🔄 **IN PROGRESS** - Partial migration, needs completion
+- [ ] **Company.tsx Migration**: 🔄 **PENDING** - Still using legacy patterns
+- [ ] **Campaigns.tsx Migration**: 🔄 **PENDING** - Awaiting other entity completion
+
+#### ✅ **Accounts.tsx - COMPLETED** 
+**Status:** Successfully using universal hooks without infinite re-render issues
+
+**Migration Results:**
+- ✅ **Universal hooks integrated**: Uses `useEntityCRUD`, `useCompanyContext`, `useAuthAwareNavigation`
+- ✅ **Code reduction achieved**: Eliminated duplicate auth logic and state management
+- ✅ **Re-render issues resolved**: Fixed infinite loops from duplicate state and debugging code
+- ✅ **Account creation working**: Both authenticated and unauthenticated flows functional
+
+**Critical Fixes Applied:**
+- ✅ **Removed debugging code**: Eliminated `testComponentStateSync` causing infinite loops
+- ✅ **Eliminated duplicate state**: Removed local `buyingSignals` state, using entity system directly
+- ✅ **Simplified modal handlers**: Direct integration with entity update system
+
+#### 🚨 **CRITICAL ISSUE RESOLVED: Infinite Re-Render Loops**
+
+**Problem:** Account creation for unauthenticated users was causing infinite re-render loops and "Maximum update depth exceeded" errors.
+
+**Root Causes Identified:**
+1. **Debugging code with complex dependencies**: `testComponentStateSync` function with `queryClient` in `useEffect` dependency array
+2. **Duplicate state management**: Local `buyingSignals` state syncing with `entityPageState.displayEntity.buyingSignals` via `useEffect`
+3. **Object recreation on every render**: `initialValues` objects in modal components not memoized
+
+**Solutions Applied:**
+1. **Removed all debugging code**: Eliminated expensive debugging functions that were causing infinite loops
+2. **Single source of truth**: Removed duplicate state, using only `entityPageState.displayEntity?.buyingSignals || []` directly
+3. **Memoized modal props**: Added `useMemo` to prevent object recreation in `EditBuyingSignalModal`
+4. **Simplified rendering logic**: Eliminated complex state synchronization patterns
+
+**Key Lesson:** Debugging code with complex dependencies can create more problems than it solves. Always prefer simple, direct data access over complex state synchronization.
+
+**Documentation:** Full details and prevention guidelines added to `/data-pipeline-notes/Bug_tracking.md` Issues #20-21
+
+#### 🔄 **Personas.tsx - IN PROGRESS**
+**Status:** Partially migrated but still has legacy patterns that need updating
+
+**Current Issues:**
+- ❌ **Mixed hook usage**: Still using legacy `useGetAllPersonas`, `useUpdatePersona`, `useDeletePersona` alongside universal hooks
+- ❌ **Inconsistent patterns**: Create uses universal hooks, but update/delete use legacy hooks
+- ❌ **Complex draft management**: Manual draft handling instead of using universal system
+- ❌ **Navigation inconsistency**: Still has hardcoded route logic in places
+
+**Needed Updates:**
+- [ ] Replace legacy persona hooks with universal `useEntityCRUD('persona')`
+- [ ] Simplify draft management using universal patterns
+- [ ] Standardize update/delete operations
+- [ ] Remove manual route construction
+
+#### 🔄 **Company.tsx - PENDING**
+**Status:** Still using legacy patterns, needs full migration
+
+**Needed Updates:**
+- [ ] Replace existing auth logic with `useEntityCRUD('company')`
+- [ ] Remove custom auth detection code
+- [ ] Verify company flows work identically for both auth states
+- [ ] Establish as template for remaining entities
 
 #### Migration Template Pattern (from Company.tsx success):
 **Before Migration (65+ lines):**
@@ -335,6 +389,31 @@ navigate('/playground/company', {
 - **Root Cause:** Accounts page checked for `overview` existence but couldn't find DraftManager data
 - **Solution:** Added DraftManager integration to company context detection
 - **Replaced:** Aggressive redirects with user-friendly "No Company Found" message and navigation button
+
+## 🎯 **IMMEDIATE NEXT STEPS**
+
+### **Priority 1: Complete Personas.tsx Migration** 🔄 **URGENT**
+**Duration:** 1 day  
+**Dependencies:** None - can proceed immediately
+
+#### Specific Tasks:
+- [ ] Replace `useGetAllPersonas`, `useUpdatePersona`, `useDeletePersona` with `useEntityCRUD('persona')`
+- [ ] Remove manual draft management logic (lines 51-65)
+- [ ] Standardize update/delete operations to use universal patterns
+- [ ] Remove hardcoded navigation logic (line 109)
+- [ ] Test persona creation, update, and delete flows for both auth states
+
+**File to Update:** `/frontend/src/pages/Personas.tsx`
+
+### **Priority 2: Migrate Company.tsx to Universal Patterns** 🔄 **HIGH PRIORITY**
+**Duration:** 1 day  
+**Dependencies:** Personas.tsx completion
+
+#### Objectives:
+- [ ] Replace existing auth logic with `useEntityCRUD('company')`
+- [ ] Remove custom auth detection code
+- [ ] Verify company flows work identically for both auth states
+- [ ] Establish final template for entity patterns
 
 ### Stage 4: Universal Entity Detail Pages 🔄 **PENDING**
 **Duration:** 1-2 days  

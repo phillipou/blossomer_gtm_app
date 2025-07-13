@@ -76,21 +76,14 @@ export default function AccountDetail() {
   const { create: createAccountUniversal } = useEntityCRUD<TargetAccountResponse>('account');
   const { navigateWithPrefix } = useAuthAwareNavigation();
   
-  // For existing accounts, get account data
-  const { data: account } = useGetAccount(isNewAccount ? undefined : accountId, token);
+  // For existing accounts, get account data (always call hook, conditionally use result)
+  const { data: account } = useGetAccount(accountId, token);
   const existingCompanyId = account?.companyId;
   
   // Get company data for context (use account's companyId for existing accounts)
   const { data: company } = useGetCompany(token, existingCompanyId || companyId);
   
-  // Generation hook
-  const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
-  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
-  
-  // Field-preserving update hook (for authenticated users)
-  const { mutate: updateWithFieldPreservation } = useUpdateAccountPreserveFields(token, accountId);
-  
-  // Initialize entity page hook
+  // Initialize entity page hook FIRST (before any conditional logic to avoid hook order issues)
   const entityPageState = useEntityPage<TargetAccountResponse>({
     config: accountConfig,
     hooks: {
@@ -119,6 +112,13 @@ export default function AccountDetail() {
       },
     },
   });
+
+  // Generation hooks (after entityPageState to maintain hook order)
+  const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
+  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
+  
+  // Field-preserving update hook (for authenticated users)
+  const { mutate: updateWithFieldPreservation } = useUpdateAccountPreserveFields(token, accountId);
 
   // Temporarily disable all logging to identify root cause
   // console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
@@ -189,6 +189,31 @@ export default function AccountDetail() {
     
     return result;
   }, []); // Empty dependency array since this is a pure transformation function
+
+  // Memoized breadcrumb data to prevent re-renders (MOVED HERE to avoid hook order issues)
+  const breadcrumbData = useMemo(() => {
+    const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
+    const companyDisplayName = company?.companyName || overview?.companyName || 'Company';
+    const pathPrefix = token ? '/app' : '/playground';
+    
+    const data = {
+      accountId,
+      accountName,
+      companyDisplayName,
+      pathPrefix,
+      isAuthenticated: !!token,
+      companyData: company ? { id: company.id, companyName: company.companyName } : null,
+      overviewData: overview ? { companyName: overview.companyName } : null
+    };
+    
+    return data;
+  }, [accountId, entityPageState.displayEntity, company, overview, token]);
+
+  // Memoized firmographics transformation (MOVED HERE to avoid hook order issues)
+  const firmographicsTableData = useMemo(() => 
+    transformFirmographicsToCriteria(entityPageState.displayEntity?.firmographics), 
+    [entityPageState.displayEntity?.firmographics, transformFirmographicsToCriteria]
+  );
   
   // Show creation modal for new accounts (only once)
   useEffect(() => {
@@ -477,27 +502,7 @@ export default function AccountDetail() {
     }
   };
 
-  // Memoized breadcrumb data to prevent re-renders
-  const breadcrumbData = useMemo(() => {
-    const accountName = entityPageState.displayEntity?.targetAccountName || 'Target Account';
-    const companyDisplayName = company?.companyName || overview?.companyName || 'Company';
-    const pathPrefix = token ? '/app' : '/playground';
-    
-    const data = {
-      accountId,
-      accountName,
-      companyDisplayName,
-      pathPrefix,
-      isAuthenticated: !!token,
-      companyData: company ? { id: company.id, companyName: company.companyName } : null,
-      overviewData: overview ? { companyName: overview.companyName } : null
-    };
-    
-    // Temporarily disable logging
-    // console.log('[AccountDetail] Breadcrumb data:', data);
-    
-    return data;
-  }, [accountId, entityPageState.displayEntity, company, overview, token]);
+  // Breadcrumb data moved to top of component to avoid hook order issues
 
   return (
     <>
