@@ -8,6 +8,7 @@ except ImportError:
     from starlette.exceptions import HTTPException
 from backend.app.core.llm_singleton import get_llm_client
 from backend.app.prompts.registry import render_prompt
+from backend.app.services.web_content_service import WebContentService
 
 try:
     from pydantic import BaseModel, ValidationError
@@ -99,7 +100,6 @@ class ContextOrchestratorService:
         try:
             total_start = time.monotonic()
             website_url = getattr(request_data, "website_url", None)
-            website_content = None
 
             # --- Prompt Construction and LLM Call ---
             t4 = time.monotonic()
@@ -107,6 +107,17 @@ class ContextOrchestratorService:
                 analysis_type, request_data, website_url
             )
             prompt_vars = prompt_vars_class(**prompt_vars_kwargs)
+
+            # --- TRACE LOG: Verify content before rendering ---
+            if hasattr(prompt_vars, 'website_content'):
+                content_to_render = getattr(prompt_vars, 'website_content', None)
+                if content_to_render:
+                    logger.info(f"[PROMPT_TRACE] Rendering prompt with {len(content_to_render)} chars of website_content.")
+                    logger.info(f"[PROMPT_TRACE] First 100 chars: {content_to_render[:100]}")
+                else:
+                    logger.warning("[PROMPT_TRACE] website_content is None or empty before rendering.")
+            # --- END TRACE LOG ---
+
             prompt = render_prompt(prompt_template, prompt_vars)
             t5 = time.monotonic()
             print(f"[{analysis_type}] Prompt construction took {t5 - t4:.2f}s")
@@ -142,10 +153,27 @@ class ContextOrchestratorService:
     ) -> Dict[str, Any]:
         """Helper to construct prompt variables based on analysis type."""
         prompt_vars_kwargs = {"input_website_url": website_url}
-        
+
+        website_content = None
+        if website_url:
+            try:
+                content_result = WebContentService().get_content_for_llm(website_url)
+                website_content = content_result["processed_content"]
+
+                # Log cache performance
+                cache_status = content_result["cache_status"]
+                content_length = content_result["processed_content_length"]
+                print(f"[WEB_CONTENT] Cache status: {cache_status}, Content length: {content_length} chars")
+                logger.info(f"[WEB_CONTENT] Passing {content_length} chars of website content to prompt.")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch website content for {website_url}: {e}")
+                website_content = None
+
         if analysis_type == "product_overview":
             prompt_vars_kwargs.update({
                 "user_inputted_context": getattr(request_data, "user_inputted_context", None),
+                "website_content": website_content,
             })
         elif analysis_type == "target_account":
             prompt_vars_kwargs.update({
@@ -169,7 +197,7 @@ class ContextOrchestratorService:
                 "target_persona": getattr(request_data, "target_persona", None),
                 "preferences": getattr(request_data, "preferences", None),
             })
-            
+
         return prompt_vars_kwargs
 
     async def _resolve_context(self, request_data: Any, analysis_type: str) -> dict:

@@ -44,8 +44,19 @@ class HTMLSectionChunker(IChunker):
         for tag in soup(["script", "style", "nav", "footer", "aside"]):
             tag.decompose()
 
-        cleaned_text = soup.get_text(separator=" ", strip=True)
-        return [cleaned_text]
+        # Chunk based on semantic tags
+        chunks = []
+        for element in soup.find_all(['h1', 'h2', 'h3', 'p', 'li', 'div']):
+            # Get text and strip leading/trailing whitespace
+            text_chunk = element.get_text(separator=' ', strip=True)
+            if text_chunk:
+                chunks.append(text_chunk)
+
+        if not chunks:
+            # Fallback to the original text if no chunks are found
+            return [soup.get_text(separator=" ", strip=True)]
+
+        return chunks
 
 
 class LangChainSummarizer(ISummarizer):

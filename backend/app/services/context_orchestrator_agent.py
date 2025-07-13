@@ -14,7 +14,7 @@ from backend.app.prompts.models import (
 )
 from backend.app.prompts.registry import render_prompt
 from backend.app.core.llm_singleton import get_llm_client
-from backend.app.services.website_scraper import extract_website_content
+from backend.app.services.web_content_service import WebContentService
 
 
 def ensure_dict(context: Any) -> Dict[str, Any]:
@@ -175,17 +175,16 @@ async def resolve_context_for_endpoint(
                 }
         if website_url:
             print("[ContextOrchestrator] Resorting to website scraping for context.")
-            scrape_result = extract_website_content(website_url)
-            content = scrape_result.get("content", "")
-            html = scrape_result.get("html", None)
-            from_cache = scrape_result.get("from_cache", False)
+            content_result = WebContentService().get_content_for_llm(website_url)
+            content = content_result["processed_content"]
+            cache_status = content_result["cache_status"]
             return {
                 "source": "website",
                 "context": content,
                 "content": content,
-                "html": html,
+                "processed_content": content,
                 "is_ready": True,
-                "from_cache": from_cache,
+                "from_cache": cache_status != "fresh_scrape",
             }
         print(
             "[ContextOrchestrator] No sufficient context found and no website_url provided."
@@ -213,17 +212,16 @@ async def resolve_context_for_endpoint(
                     return {"source": label, "context": ctx, "is_ready": True}
         if website_url:
             print("[ContextOrchestrator] Resorting to website scraping for context.")
-            scrape_result = extract_website_content(website_url)
-            content = scrape_result.get("content", "")
-            html = scrape_result.get("html", None)
-            from_cache = scrape_result.get("from_cache", False)
+            content_result = WebContentService().get_content_for_llm(website_url)
+            content = content_result["processed_content"]
+            cache_status = content_result["cache_status"]
             return {
                 "source": "website",
                 "context": content,
                 "content": content,
-                "html": html,
+                "processed_content": content,
                 "is_ready": True,
-                "from_cache": from_cache,
+                "from_cache": cache_status != "fresh_scrape",
             }
         print(
             "[ContextOrchestrator] No sufficient context found and no website_url provided."
@@ -238,17 +236,16 @@ async def resolve_context_for_endpoint(
     # Then try website scraping
     if website_url:
         print("[ContextOrchestrator] Resorting to website scraping for context.")
-        scrape_result = extract_website_content(website_url)
-        content = scrape_result.get("content", "")
-        html = scrape_result.get("html", None)
-        from_cache = scrape_result.get("from_cache", False)
+        content_result = WebContentService().get_content_for_llm(website_url)
+        content = content_result["processed_content"]
+        cache_status = content_result["cache_status"]
         return {
             "source": "website",
             "context": content,
             "content": content,
-            "html": html,
+            "processed_content": content,
             "is_ready": True,
-            "from_cache": from_cache,
+            "from_cache": cache_status != "fresh_scrape",
         }
 
     print("[ContextOrchestrator] No context found and no website_url provided.")
@@ -296,17 +293,16 @@ class ContextOrchestrator:
         Assess the quality of a website URL's content for a target endpoint.
         Uses the shared LLM client instance from llm_singleton.
         """
-        scrape_result = extract_website_content(url, crawl=crawl)
-        content = scrape_result.get("content", "")
-        html = scrape_result.get("html", None)
-        from_cache = scrape_result.get("from_cache", False)
+        content_result = WebContentService().get_content_for_llm(url)
+        content = content_result["processed_content"]
+        cache_status = content_result["cache_status"]
 
         if not content:
             return ContextAssessmentResult(
                 quality=ContextQuality.INSUFFICIENT,
                 reason="No content extracted from website.",
                 source="website",
-                from_cache=from_cache,
+                from_cache=cache_status != "fresh_scrape",
             )
 
         assessment = await self.assess_context(
@@ -327,7 +323,7 @@ class ContextOrchestrator:
             recommendations={},  # Placeholder
             summary=assessment.company_overview,  # Using company_overview as summary for now
             source="website",
-            from_cache=from_cache,
+            from_cache=cache_status != "fresh_scrape",
         )
 
     def check_endpoint_readiness(

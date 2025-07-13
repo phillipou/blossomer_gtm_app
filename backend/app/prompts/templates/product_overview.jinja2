@@ -9,7 +9,7 @@ Before finalizing any section, verify:
 
 1. Can each point be traced to source material?
    - Every claim must have a direct source in the website content
-   - If inferring, mark with [ASSUMPTION] and explain the basis
+   - If inferring, mark with [ASSUMPTION] and explain the basis in metadata
    - Do not make unsupported claims about competitors or market position
 
 2. Are insights actionable and specific?
@@ -34,6 +34,8 @@ Before finalizing any section, verify:
 
 ### ANALYSIS APPROACH
 
+- **Website Content Analysis**: When website content is provided, prioritize specific information over general assumptions
+- **Content Quality**: If website content is insufficient or unclear, mark assumptions clearly with [ASSUMPTION] in metadata
 - Focus on extracting insights that would be valuable for discovery call preparation
   - What questions would a sales engineer need answered?
   - What technical challenges might come up?
@@ -181,7 +183,13 @@ REMEMBER: Always return valid JSON. Focus on discovery call preparation value.
 **Company URL:** {{input_website_url}}
 
 {% if user_inputted_context %}
-**User-provided context:** {{user_inputted_context}}
+**User-provided context:** 
+{{user_inputted_context}}
+{% endif %}
+
+{% if website_content %}
+**Website Content:** 
+{{ website_content }}
 {% endif %}
 
 Please analyze this company's website and context to create a discovery call preparation report following the JSON format specified in the system instructions. Focus on extracting actionable insights that would help prepare for a discovery call with their team.

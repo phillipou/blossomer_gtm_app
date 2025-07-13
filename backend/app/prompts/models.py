@@ -41,6 +41,7 @@ class ProductOverviewPromptVars(BaseModel):
     """Variables for the product_overview.jinja2 prompt template."""
 
     user_inputted_context: Optional[str] = None
+    website_content: Optional[str] = None
     company_context: Optional[str] = None
     context_quality: Optional[str] = None
     assessment_summary: Optional[str] = None

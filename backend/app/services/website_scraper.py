@@ -3,12 +3,15 @@ import urllib.parse
 import socket
 import requests
 import logging
+import re
 from urllib import robotparser
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from backend.app.services.dev_file_cache import (
     load_cached_scrape,
     save_scrape_to_cache,
+    load_processed_from_cache,
+    save_processed_to_cache,
 )
 import time
 
@@ -44,6 +47,94 @@ def normalize_url(url: str) -> str:
         raise ValueError("URL netloc must contain a dot (e.g., example.com)")
 
     return url
+
+
+def clean_text_for_llm(text: str) -> str:
+    """
+    Final text cleaning for LLM consumption.
+    
+    Firecrawl's .content field already provides well-structured markdown,
+    so we focus on removing noise while preserving the good structure.
+
+    - Remove URLs and links
+    - Remove excessive whitespace
+    - Remove navigation elements
+    - Remove contact forms and boilerplate
+    - Preserve structured content (headers, lists, paragraphs)
+    """
+    # Remove URLs and markdown links
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    text = re.sub(url_pattern, '', text)
+    # Convert [text](url) to just text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    
+    # Remove common navigation and boilerplate patterns
+    nav_patterns = [
+        r'Skip to (?:main )?content',
+        r'Home\s+About\s+(?:Services|Products)\s+Contact',
+        r'Menu\s+Toggle',
+        r'Search\s+for:',
+        r'Cookie Policy',
+        r'Privacy Policy',
+        r'Terms of Service',
+        r'All rights reserved',
+        r'Copyright ©.*',
+        r'Follow us on',
+        r'Subscribe to our newsletter',
+        r'Sign up for updates',
+    ]
+    for pattern in nav_patterns:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+    # Remove contact form patterns
+    text = re.sub(r'Email\*?\s+Name\*?\s+Message\*?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'Your email address\*?', '', text, flags=re.IGNORECASE)
+    
+    # Remove social media links and handles
+    text = re.sub(r'@\w+', '', text)  # Remove @handles
+    text = re.sub(r'#\w+', '', text)  # Remove #hashtags
+    
+    # Clean up whitespace (preserve paragraph breaks)
+    text = re.sub(r'\n{3,}', '\n\n', text)  # Max 2 consecutive newlines
+    text = re.sub(r' {2,}', ' ', text)  # Multiple spaces to single space
+    text = re.sub(r'\t+', ' ', text)  # Tabs to spaces
+    
+    # Remove empty lines with just spaces
+    lines = text.split('\n')
+    cleaned_lines = [line.rstrip() for line in lines if line.strip()]
+    text = '\n'.join(cleaned_lines)
+
+    return text.strip()
+
+
+def process_raw_content(content: str, html: str) -> str:
+    """
+    Process raw Firecrawl content into clean text suitable for LLM consumption.
+
+    Args:
+        content (str): Markdown content from Firecrawl
+        html (str): HTML content from Firecrawl (unused, but kept for signature consistency)
+
+    Returns:
+        str: Clean, processed text with boilerplate removed
+    """
+    return clean_text_for_llm(content)
+
+
+def get_processed_website_content(url: str) -> str:
+    """
+    Get processed website content, using cache if available.
+    """
+    cached_content = load_processed_from_cache(url)
+    if cached_content:
+        return cached_content
+
+    raw_content = extract_website_content(url)
+    processed_content = process_raw_content(
+        raw_content.get("content", ""), raw_content.get("html", "")
+    )
+    save_processed_to_cache(url, processed_content)
+    return processed_content
 
 
 def validate_url(url: str, user_agent: str = "BlossomerBot") -> dict:
@@ -216,6 +307,7 @@ def extract_website_content(
     formats: Optional[List[str]] = None,
     only_main_content: bool = True,
     wait_for: int = 1000,
+    return_processed: bool = False,
 ) -> Dict[str, Any]:
     """
     Validate the URL and extract (but do not store) website content using Firecrawl. Returns a dict.
@@ -226,9 +318,15 @@ def extract_website_content(
         formats (Optional[List[str]]): Output formats, e.g., ['markdown', 'html'].
         only_main_content (bool): If True, extract only the main content of each page (crawl mode).
         wait_for (int): Milliseconds to wait for dynamic content to load (crawl mode).
+        return_processed (bool): If True, return processed content.
     Returns:
         Dict[str, Any]: Structured result with validation, content, and metadata.
     """
+    if return_processed:
+        cached_processed = load_processed_from_cache(url)
+        if cached_processed:
+            return {"url": url, "processed_content": cached_processed, "from_cache": True}
+
     # Use file-based cache in development (not in production)
     if os.getenv("ENV") != "production":
         t_cache0 = time.monotonic()
@@ -249,9 +347,9 @@ def extract_website_content(
                 )
                 cached = None
             else:
-                print(
-                    f"[DEV CACHE] Cache hit for URL: {url} (retrieval took {t_cache1 - t_cache0:.2f}s)"
-                )
+                cache_time = t_cache1 - t_cache0
+                print(f"[DEV CACHE] Cache hit for URL: {url} (retrieval took {cache_time:.2f}s)")
+                cached["from_cache"] = True
                 return cached
         else:
             print(
@@ -297,6 +395,10 @@ def extract_website_content(
 
     # Step 3: Content processing
     t_processing0 = time.monotonic()
+    processed_content = None
+    if return_processed:
+        processed_content = process_raw_content(content, html)
+        save_processed_to_cache(url, processed_content)
 
     t_scrape1 = time.monotonic()
     t_processing1 = time.monotonic()
@@ -311,7 +413,11 @@ def extract_website_content(
         "html": html,
         "metadata": metadata,
         "crawl": crawl,
+        "from_cache": False,
     }
+    if processed_content:
+        result["processed_content"] = processed_content
+
     if os.getenv("ENV") != "production":
         save_scrape_to_cache(url, result)
     return result
@@ -324,7 +430,7 @@ if __name__ == "__main__":
     url = "https://plandex.ai/"
     try:
         print("=== Single Page Scrape ===")
-        result = extract_website_content(url, crawl=False)
+        result = extract_website_content(url, crawl=False, return_processed=True)
         pprint(result)
     except Exception as e:
         print(f"Single page scrape failed: {e}")
