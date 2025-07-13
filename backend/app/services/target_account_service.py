@@ -19,6 +19,5 @@ async def generate_target_account_profile(
         prompt_template="target_account",
         prompt_vars_class=TargetAccountPromptVars,
         response_model=TargetAccountResponse,
-        use_preprocessing=False,
     )
     return response

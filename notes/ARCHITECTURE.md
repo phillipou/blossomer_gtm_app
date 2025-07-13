@@ -1,6 +1,6 @@
 # Blossomer GTM API - System Architecture
 
-*Last updated: July 11, 2025*
+*Last updated: July 12, 2025*
 
 ## Overview
 
@@ -22,7 +22,7 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite with hot reload
 - **Styling**: Tailwind CSS + shadcn/ui components
-- **State Management**: React hooks + localStorage
+- **State Management**: TanStack Query, React Hooks, localStorage
 - **Authentication**: Stack Auth (Google OAuth integration)
 - **Icons**: Lucide React
 - **Routing**: React Router
@@ -113,9 +113,9 @@ Blossomer GTM API is an AI-powered B2B go-to-market intelligence platform built 
 ```sql
 -- User management with Stack Auth integration
 users (
-    id VARCHAR PRIMARY KEY,  -- Stack Auth user ID as primary key
-    email VARCHAR UNIQUE,
-    name VARCHAR,
+    id UUID PRIMARY KEY,  -- Stack Auth user ID as primary key (UUID from SQLAlchemy)
+    -- email and name are managed by Stack Auth and not directly stored here
+    role VARCHAR(20) DEFAULT 'user', -- user, admin, super_admin
     created_at TIMESTAMP DEFAULT NOW(),
     last_login TIMESTAMP
 )
@@ -123,30 +123,30 @@ users (
 -- Company data from website analysis
 companies (
     id UUID PRIMARY KEY,
-    user_id VARCHAR REFERENCES users(id),  -- One user can have multiple companies
-    name VARCHAR NOT NULL,
-    url VARCHAR NOT NULL,
-    analysis_data JSONB,  -- All website analysis data (flexible)
+    user_id UUID REFERENCES users(id),  -- One user can have multiple companies
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    data JSONB,  -- All website analysis data (flexible JSONB)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 )
 
 -- Target accounts (ideal customer profiles)
-target_accounts (
+accounts (
     id UUID PRIMARY KEY,
     company_id UUID REFERENCES companies(id),
-    name VARCHAR NOT NULL,
-    account_data JSONB NOT NULL,  -- All account data (firmographics, buying signals, etc.)
+    name VARCHAR(255) NOT NULL,
+    data JSONB NOT NULL,  -- All account data (firmographics, buyingSignals, etc.)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 )
 
 -- Target personas (buyers within accounts)
-target_personas (
+personas (
     id UUID PRIMARY KEY,
-    target_account_id UUID REFERENCES target_accounts(id),
-    name VARCHAR NOT NULL,
-    persona_data JSONB NOT NULL,  -- All persona data (demographics, use cases, etc.)
+    account_id UUID REFERENCES accounts(id),
+    name VARCHAR(255) NOT NULL,
+    data JSONB NOT NULL,  -- All persona data (demographics, useCases, etc.)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 )
@@ -154,11 +154,11 @@ target_personas (
 -- Generated campaigns (emails, LinkedIn, etc.)
 campaigns (
     id UUID PRIMARY KEY,
-    target_account_id UUID REFERENCES target_accounts(id),
-    target_persona_id UUID REFERENCES target_personas(id),
-    name VARCHAR NOT NULL,
-    campaign_type VARCHAR NOT NULL,  -- flexible: email, linkedin, cold_call, ad
-    campaign_data JSONB NOT NULL,  -- All campaign content and configuration
+    account_id UUID REFERENCES accounts(id),
+    persona_id UUID REFERENCES personas(id),
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL,  -- flexible: email, linkedin, cold_call, ad
+    data JSONB NOT NULL,  -- All campaign content and configuration
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 )
@@ -168,11 +168,12 @@ campaigns (
 ```
 
 #### **Data Storage Strategy**
-- **Database-first persistence**: All user data (companies, accounts, personas, campaigns) stored in Neon PostgreSQL
-- **Row-level security**: All data isolated by Stack Auth user ID
-- **JSONB schema**: Flexible storage for AI-generated content using PostgreSQL JSONB
-- **Development caching**: File-based cache for website scrapes (dev_cache/)
-- **Rate limiting**: JWT-based using Stack Auth user ID
+- **Database-first persistence**: All user data (companies, accounts, personas, campaigns) stored in Neon PostgreSQL.
+- **Row-level security**: All data isolated by Stack Auth user ID.
+- **JSONB schema**: Flexible storage for AI-generated content using PostgreSQL JSONB.
+- **Data Model Flattening**: To simplify UI integration and prevent data corruption during edits, most complex AI-generated object fields are flattened into lists of strings (e.g., `business_profile` becomes `business_profile_insights: ["Category: ..."]`). Key structured data required for specific UI components (e.g., `Firmographics`, `Demographics`) are preserved in their complex format.
+- **Development caching**: File-based cache for website scrapes (dev_cache/).
+- **Rate limiting**: JWT-based using Stack Auth user ID.
 
 ## Frontend Architecture
 
@@ -209,303 +210,115 @@ useEffect(() => {
 - Prevents unauthenticated users from accessing database-backed, persistent routes.
 - Ensures a clear, secure, and consistent user experience.
 
-#### **Route Configuration**
-```typescript
-// Main route structure
-<Route path="/" element={<LandingPage />} />
-<Route element={<NavbarOnlyLayout />}>
-  <Route path="auth" element={<Auth />} />
-  <Route path="handler/error" element={<AuthError />} />
-  <Route path="handler/oauth-callback" element={<OAuthCallback />} />
-  <Route path="account-settings" element={<AccountSettings />} />
-</Route>
-{/* Unauthenticated/demo routes */}
-<Route path="playground" element={<MainLayout />}>
-  <Route path="company" element={<Company />} />
-  <Route path="accounts" element={<Accounts />} />
-  <Route path="accounts/:id" element={<AccountDetail />} />
-  <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
-  <Route path="personas" element={<Personas />} />
-  <Route path="campaigns" element={<Campaigns />} />
-  <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-</Route>
-{/* Authenticated routes */}
-<Route path="app" element={<MainLayout />}>
-  <Route path="company/:id" element={<Company />} />
-  <Route path="accounts" element={<Accounts />} />
-  <Route path="accounts/:id" element={<AccountDetail />} />
-  <Route path="accounts/:id/personas/:personaId" element={<PersonaDetail />} />
-  <Route path="personas" element={<Personas />} />
-  <Route path="campaigns" element={<Campaigns />} />
-  <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
-</Route>
+### **Project Structure**
+```
+frontend/src/lib/
+├── api/                             # API layer (NEW)
+│   ├── client.ts                    # Base API client
+│   ├── accounts.ts                  # Account API operations
+│   ├── companies.ts                 # Company API operations
+│   ├── personas.ts                  # Persona API operations
+│   ├── campaigns.ts                 # Campaign API operations
+│   └── transformations.ts           # Data transformation utilities
+├── hooks/                           # React Query hooks
+│   ├── useAccounts.ts               # Account hooks
+│   ├── useCompany.ts                # Company hooks
+│   ├── usePersonas.ts               # Persona hooks
+│   ├── useCampaigns.ts              # Campaign hooks
+│   └── useEntityPage.ts             # Entity abstraction
+├── cache/                           # Cache management (NEW)
+│   ├── queryKeys.ts                 # Standardized query key patterns
+│   ├── invalidation.ts              # Cache invalidation utilities
+│   └── normalization.ts             # Cache normalization functions
+├── auth.ts                          # Authentication state
+├── draftManager.ts                  # Draft management
+├── entityConfigs.ts                 # Entity configurations
+└── types/                           # Service-specific types
+    ├── api.ts                       # API request/response types
+    ├── entities.ts                  # Entity-specific types
+    └── cache.ts                     # Cache-specific types
 ```
 
-#### **Navigation Logic**
-```typescript
-// Authenticated users - redirect to last company (most recent)
-const handleAuthenticatedNavigation = () => {
-  if (token && companies.length > 0) {
-    navigate(`/app/company/${companies[companies.length - 1].id}`);
-  } else if (token) {
-    navigate('/app/company');
-  }
-};
+### **Data Transformation & Casing Conventions**
 
-// Unauthenticated users - use playground mode
-const handleUnauthenticatedNavigation = () => {
-  navigate('/playground/company');
-};
+A critical aspect of the Blossomer GTM API's frontend and backend interaction is the consistent handling of data casing and transformations. This ensures data integrity and a predictable development experience.
 
-// Company component - handle /company redirect for authenticated users
-useEffect(() => {
-  if (token && !companyId && companies && companies.length > 0) {
-    // Authenticated user on /company - redirect to most recent company
-    navigate(`/app/company/${companies[companies.length - 1].id}`, { replace: true });
-  } else if (!token && companyId) {
-    // Unauthenticated user on /company/:id - redirect to /playground/company
-    navigate('/playground/company', { replace: true });
-  }
-}, [token, companyId, companies, navigate]);
-```
+-   **Backend (Python/FastAPI)**: Utilizes `snake_case` for all API request/response fields and database column names.
+-   **Frontend (React/TypeScript)**: Utilizes `camelCase` for all UI state, component props, and data structures.
 
-#### **Rationale for Route Prefixes**
-- **Separation of concerns**: Clear distinction between authenticated (database-backed) and unauthenticated (localStorage/demo) experiences.
-- **Scalability**: Enables future expansion (e.g., /admin, /public, /api) without route collisions.
-- **Consistent navigation**: Simplifies route guards, layouts, and navigation logic.
-- **Migration clarity**: Makes it easy to identify and migrate legacy/demo code to production flows.
+#### **The "Transformation Lockstep" Principle**
 
-#### **Migration Notes**
-- All navigation, redirects, and deep links must be updated to use the new prefixes.
-- Stack Auth and all authentication flows now redirect to `/app/company` after login.
-- Demo/unauthenticated flows are now consistently under `/playground/*`.
+To bridge the `snake_case` backend and `camelCase` frontend, a strict "Transformation Lockstep" principle is enforced. This means that data transformations (between `snake_case` and `camelCase`) occur at well-defined, single points, and both authenticated and unauthenticated data flows converge on an identical data shape for the UI.
 
-### **Component Structure**
-```
-src/
-├── components/
-│   ├── ui/                    # Atomic UI primitives (Button, Card, Input)
-│   ├── cards/                 # Business logic cards (InfoCard, etc.)
-│   ├── modals/                # Modal dialogs
-│   ├── headers/               # Navigation components  
-│   ├── tables/                # Data display components
-│   └── dashboard/             # Dashboard-specific components
-├── pages/                     # Route-level views
-├── lib/                       # API clients and utilities
-├── services/                  # Data fetching services
-└── types/                     # TypeScript definitions
-```
+This principle is implemented through:
 
-### **State Management**
+1.  **API Boundary Transformation**: 
+    *   **Frontend to Backend**: Data sent from the frontend (camelCase) is transformed to `snake_case` just before the API call using utilities like `transformKeysToSnakeCase()`.
+    *   **Backend to Frontend**: Data received from the backend (snake_case) is transformed to `camelCase` immediately upon receipt using utilities like `transformKeysToCamelCase()`.
 
-#### **Data Model & UI Integration (July 2025 Refactoring)**
+2.  **Consistent Normalization Functions**: Dedicated normalization functions (e.g., `normalizeCompanyResponse()`, `normalizeAccountResponse()`) are used consistently across both authenticated and unauthenticated data paths. These functions ensure that regardless of the data's origin (database via API or `localStorage` draft), it conforms to the expected `camelCase` frontend format.
 
-**Field Preservation Pattern (CRITICAL)**:
-Implemented comprehensive field preservation for all entity updates to prevent data loss:
+#### **Role of `DraftManager` in Dual Architecture**
 
-```typescript
-// Service Layer - Field-preserving updates
-function mergeEntityUpdates(
-  currentEntity: EntityOverviewResponse,
-  updates: { name?: string; description?: string; [key: string]: any }
-): EntityUpdate {
-  const frontendData = {
-    description: updates.description || currentEntity.description,
-    entityName: updates.name || currentEntity.entityName,
-    // Preserve ALL existing analysis data
-    businessProfile: currentEntity.businessProfile,
-    capabilities: currentEntity.capabilities,
-    useCaseAnalysis: currentEntity.useCaseAnalysis,
-    // ... all other fields preserved
-  };
-  
-  const backendData = transformKeysToSnakeCase(frontendData);
-  return { entityId: currentEntity.entityId, name: updates.name, data: backendData };
-}
-```
+The `DraftManager` plays a crucial role in enabling the dual-path architecture for unauthenticated users, ensuring that the "Transformation Lockstep" principle is maintained.
 
-**Data Model Flattening Strategy**:
-Flattened AI-generated fields from complex objects to `List[str]` format:
+-   **Temporary Storage**: For unauthenticated users, AI-generated content is initially stored in `localStorage` via `DraftManager` instead of being immediately persisted to the database.
+-   **Normalization Integration**: Before saving to `localStorage`, data is passed through the same normalization functions (e.g., `normalizeCompanyResponse()`) used for authenticated users. This ensures that the `localStorage` drafts are in the identical `camelCase` format expected by the frontend components.
+-   **Seamless Transition**: When an unauthenticated user authenticates, their `localStorage` drafts can be seamlessly converted to database entries, as their format already aligns with the normalized frontend structure.
 
-- **Before**: `business_profile: { "category": "...", "business_model": "..." }`
-- **After**: `business_profile_insights: ["Category: ...", "Business Model: ..."]`
+This approach prevents data format inconsistencies and ensures that UI components can render data identically, regardless of whether it originated from the backend database or a `localStorage` draft.
 
-**Benefits**:
-- Aligns data structure with UI editing capabilities (ListInfoCard)
-- Eliminates risky string-parsing logic
-- Prevents data corruption during edits
-- Moves formatting responsibility to LLM
+### **State Management & Frontend Data Flow**
 
-**Preserved Complex Types** (have dedicated UIs):
-- `Firmographics` (TargetAccount) - structured editing UI
-- `Demographics` (TargetPersona) - dedicated demographics UI  
-- `BuyingSignals` (all entities) - specialized signal structure
+The frontend employs a sophisticated, hybrid state management architecture centered around TanStack Query, universal hooks, and a configuration-driven abstraction layer for entity management. This ensures data consistency, maintainability, and a robust user experience across both authenticated and unauthenticated flows.
 
-**Modal Logic Centralization**:
-Refactored modal management to prevent duplicate state and UI bugs:
+#### **Core Principles**
 
-```typescript
-// BEFORE: Duplicate modal logic in ListInfoCard + parent
-// AFTER: Centralized in parent component
-<ListInfoCard 
-  onEditRequest={(field) => {
-    setEditingField(field);
-    setIsModalOpen(true);
-  }}
-/>
+- **Single Source of Truth**: TanStack Query is the primary owner of server state. UI state is managed locally in components via React hooks (`useState`, `useReducer`).
+- **Transformation Lockstep**: Data transformations happen at the same logical point in both authenticated and unauthenticated flows to ensure identical data shapes and prevent field-mismatch bugs.
+- **Field Preservation**: All entity update operations are designed to be non-destructive. Partial updates (e.g., changing a name) merge changes with the existing data, preserving all previously generated AI analysis fields to prevent data loss.
+- **Strict Data Isolation**: A critical principle is the complete separation of data between authenticated and unauthenticated states.
+    - **Authenticated Users (`/app/*`)**: ONLY use data from the backend database, managed via TanStack Query.
+    - **Unauthenticated Users (`/playground/*`)**: ONLY use `localStorage` drafts.
+    - **No Cross-Contamination**: Authenticated users *never* see or fall back to `localStorage` data. The entire React Query cache and any relevant `localStorage` drafts are cleared upon authentication state changes.
 
-// All modal state, rendering, and save logic in parent
-<ListInfoCardEditModal 
-  isOpen={isModalOpen}
-  onSave={handleSave} // Unified save handler
-  onClose={() => setIsModalOpen(false)}
-/>
-```
+#### **Universal Hooks Architecture**
 
-**Result**: Fixed double-click bug, simplified state management, unified update patterns.
+A set of universal, composable hooks provides the foundation for all data and navigation logic, eliminating code duplication and enforcing consistent patterns.
 
-#### **TanStack Query Integration**
-- **Primary Data Layer**: TanStack Query manages all server state, caching, and synchronization
-- **Optimistic Updates**: Immediate UI feedback while API calls process in background
-- **Background Sync**: Automatic refetching, invalidation, and error recovery
-- **Query Hooks**: Custom hooks for each entity type (useGetCompany, useGetAccounts, etc.)
-- **Mutation Hooks**: Separate hooks for create, update, delete operations with cache updates
-- **Cache Invalidation**: Automatic cache clearing on authentication state changes to prevent data contamination between demo and authenticated modes
-- **Field-Preserving Hooks**: Specialized hooks for safe partial updates (`useUpdateEntityPreserveFields`)
+-   **`useAuthAwareNavigation`**: A single source of truth for routing. Provides functions like `navigateWithPrefix` and `navigateToEntity` that automatically handle `/app` vs. `/playground` prefixes based on auth state.
+-   **`useCompanyContext`**: Centralizes the logic for detecting the active company context, whether from the database for authenticated users or `localStorage` for unauthenticated users.
+-   **`useDualPathDataFlow`**: Enforces the "Transformation Lockstep" principle. It provides `saveEntity`, `updateEntity`, and `deleteEntity` functions that automatically handle the correct data flow for both auth states (API calls vs. `DraftManager`).
+-   **`useEntityCRUD`**: A high-level hook that composes the other hooks to provide a complete set of CRUD operations (`create`, `update`, `delete`, `list`) for any entity, abstracting away the complexities of auth state, data normalization, and navigation.
 
-#### **Hybrid State Architecture**
-- **Server State**: TanStack Query for all persisted data (companies, accounts, personas, campaigns)
-- **UI State**: React useState/useReducer for component-specific state (modals, forms, etc.)
-- **Draft State**: localStorage for temporary drafts during AI generation flow
-- **Auth State**: Stack Auth JWT token cached and available via `useAuthState().token`
+#### **Configuration-Driven Entity Management**
 
-#### **Draft/Auto-Save Pattern (Core UX Flow)**
+To avoid duplicating complex UI and state logic across pages for different entities (Company, Account, Persona), the application uses a powerful abstraction layer.
 
-**Current Implementation Status**:
-- ✅ **Company**: Implemented - generates draft, auto-navigates to Company page
-- ⚠️ **Account**: Partially implemented - has `/generate-ai` endpoint but no draft pattern
-- ❌ **Persona**: Not implemented - needs full draft/auto-save pattern
-- ❌ **Email**: Not implemented - needs full draft/auto-save pattern
+-   **`useEntityPage` Hook**: This is the central hook for detail pages. It takes an entity configuration and a set of entity-specific data-fetching hooks and manages all page logic: route guards, data source selection, field editing, modal state, auto-save flows, and error handling.
+-   **`EntityPageLayout` Component**: A standardized layout component that renders the UI for any entity detail page based on the state provided by `useEntityPage`. It handles loading, error, and empty states consistently.
+-   **Entity Configurations (`entityConfigs.ts`)**: Declarative objects that define the structure and behavior of each entity page, including the fields to display, modal configurations, and child relationships.
 
-**Pattern Workflow**:
-```
-1. User clicks "Generate" → POST /api/{entity}/generate-ai
-2. Response stored as draft_* in localStorage (no backend save yet)
-3. UI renders immediately from draft data
-4. First user interaction triggers auto-save:
-   - POST /api/{entity} → creates entity with ID
-   - Remove draft_* from localStorage
-   - Add to TanStack Query cache
-5. Subsequent edits → debounced PUT /api/{entity}/{id}
-6. All changes sync to TanStack Query cache
-```
+This abstraction reduces entity detail pages from 700+ lines of bespoke code to ~100 lines of configuration and standardized component usage.
 
-**Entity-Specific Patterns**:
-- **Company**: Draft → navigate to Company page → auto-save on first edit
-- **Account**: Draft → render in list → auto-save on first edit or timeout
-- **Persona**: Draft → render in persona list → auto-save on first edit
-- **Email**: Draft → render in campaign view → auto-save on first edit
+#### **Frontend Component Rendering & Data Structure Handling**
 
-**Technical Implementation**:
-- **Draft Storage**: `localStorage['draft_company_${tempId}']` with unique IDs
-- **Auto-Save Triggers**: Field blur, typing pause (500ms), navigation, timeout (30s)
-- **Auth-Aware Fallbacks**: Never use drafts as fallback for authenticated users
-- **Conflict Resolution**: Last-write-wins with optimistic updates
-- **Error Handling**: Retry logic, fallback to draft state only for unauthenticated users
-- **Field Preservation**: Both backend and localStorage updates use field-preserving merge patterns
+Frontend components are designed to render data consistently, regardless of its origin (top-level database columns or flexible JSONB `data` fields). Special attention is paid to handling flattened vs. complex nested data structures to prevent rendering bugs.
 
-**DraftManager Field Preservation**:
-Extended field preservation to localStorage operations:
+-   **JSONB Data Access**: Data stored in the backend's `JSONB` `data` columns is accessed and rendered dynamically. Frontend components are built to expect this nested structure (e.g., `entity.data.firmographics`).
+-   **Flattened Data**: For certain AI-generated fields that are primarily consumed as lists in the UI (e.g., insights, capabilities), the backend flattens complex objects into `List[str]` format (e.g., `business_profile_insights: ["Category: ...", "Business Model: ..."]`). Frontend components render these using generic list components (e.g., `ListInfoCard`). This simplifies UI logic and avoids complex parsing.
+-   **Preserved Complex Types**: Some complex data structures (e.g., `Firmographics`, `Demographics`, `BuyingSignals`, `UseCases`) are *not* flattened. These retain their nested object/array structure because they require dedicated, structured UI components for editing and display (e.g., `CriteriaTable`, `BuyingSignalsCard`, `UseCasesCard`). Components accessing these fields are specifically designed to handle their complex structure.
+-   **Centralized Modal Logic**: To prevent common rendering and state management bugs (e.g., double-click issues, inconsistent updates), modal logic for editing fields is centralized in parent components. This ensures a single source of truth for modal state, rendering, and unified save handlers.
+-   **UI Feedback & Error Handling**: Components provide immediate visual feedback for save operations (loading, saved, error states) and clear error messages, as detailed in `UI_UX_doc.md`. This ensures a predictable and robust user experience.
 
-```typescript
-// DraftManager.updateDraftPreserveFields() - preserves all existing analysis data
-static updateDraftPreserveFields(
-  entityType: EntityType, 
-  tempId: string, 
-  updates: { name?: string; description?: string; [key: string]: any }
-): boolean {
-  const currentDraft = this.getDraft(entityType, tempId);
-  const preservedData = {
-    ...currentDraft.data, // Preserve all existing fields
-    ...updates, // Apply updates
-  };
-  const updatedDraft = { ...currentDraft, data: preservedData };
-  localStorage.setItem(key, JSON.stringify(updatedDraft));
-  return true;
-}
-```
+#### **Hybrid Architecture: List Views vs. Detail Views**
 
-### **Data Flow**
-1. **User Input** → Landing page or generation forms
-2. **AI Generation** → Backend `/generate-ai` endpoints
-3. **Draft Storage** → localStorage temporary storage for immediate UI
-4. **Auto-Save Trigger** → User interaction or timeout
-5. **API Persistence** → POST/PUT to backend with TanStack Query
-6. **Cache Updates** → TanStack Query invalidation and refetch
-7. **UI Sync** → Components re-render from updated cache
+A hybrid approach is used to optimize for different view types:
 
-### **Cache Management & Data Isolation (CRITICAL)**
+-   **Detail Views (`/app/accounts/:id`)**: Use the full entity abstraction layer (`useEntityPage`, `EntityPageLayout`) to manage their high complexity (deep editing, modal logic, field preservation).
+-   **List Views (`/app/accounts`)**: Use a simpler, more direct implementation focused on browsing, searching, and navigation. This avoids the overhead of the abstraction layer where it's not needed, improving performance and maintainability.
 
-#### **Authentication-Based Data Separation**
-- **Authenticated Users (`/app/*`)**: ONLY use backend database data via React Query
-- **Unauthenticated Users (`/playground/*`)**: ONLY use localStorage drafts for generation flow
-- **Zero Cross-Contamination**: Authenticated users never see localStorage data, even as fallback
-
-#### **Implementation Pattern**
-```typescript
-// CORRECT: Auth-aware data source selection
-const displayOverview = token ? overview : (overview || draftOverview);
-
-// WRONG: Can show corrupted drafts to authenticated users
-const displayOverview = overview || draftOverview;
-```
-
-#### **Field-Preserving Update Hooks**
-Implemented specialized hooks for safe partial updates:
-
-```typescript
-// Standard update (full replacement)
-const { mutate: updateEntity } = useUpdateEntity(token, entityId);
-
-// Field-preserving update (partial merge)
-const { mutate: updateEntityPreserving } = useUpdateEntityPreserveFields(token, entityId);
-
-// Usage in components
-handleEdit({ name: newName, description: newDescription }) {
-  updateEntityPreserving({
-    currentEntity, // Current complete entity data
-    updates: { name: newName, description: newDescription }
-  });
-}
-```
-
-#### **Cache Clearing Strategy**
-- **React Query cache clears** on authentication state changes
-- **localStorage drafts clear** when transitioning between auth states
-- **Component state resets** prevent stale data persistence
-- **Standard PLG pattern**: Follows Linear, Notion, Figma for clean auth transitions
-
-### **Company-Specific Data Flow**
-
-#### **Authenticated Users (`/app/company/:id`)**
-```
-1. User navigates → Check auth state and companies
-2. If has companies: Auto-redirect to /app/company/{last_company_id}
-3. If no companies: Show empty state with "Generate" option
-4. React Query fetches company data by ID from database
-5. Component renders ONLY with database-backed data
-6. localStorage drafts NEVER used as fallback (prevents corruption)
-7. All edits persist to database via PUT /api/companies/{id}
-```
-
-#### **Unauthenticated Users (`/playground/company`)**
-```
-1. User navigates → Check auth state
-2. Component uses localStorage-only mode for drafts
-3. Generation creates localStorage draft → immediate UI render
-4. No database calls (uses /demo/* endpoints for generation)
-5. localStorage drafts cleared when user authenticates
-```
+This "right tool for the job" approach ensures that list views are lightweight and fast, while detail views are powerful and consistent.
 
 ## AI Processing Architecture
 
@@ -654,287 +467,3 @@ The system uses **Stack Auth JWT tokens** for all authentication and authorizati
 - **Database Connectivity**: Connection pool monitoring
 - **External API Status**: LLM provider availability checks
 - **Circuit Breaker Metrics**: Failure rates and recovery times
-
-## Entity Management Abstraction Layer (July 2025)
-
-### **Problem Statement**
-
-The original `Company.tsx` component grew to 700+ lines with complex, bespoke logic for:
-- Route/auth management
-- Data source selection (backend vs localStorage)
-- Field editing with modal management
-- Auto-save and generation flows
-- Cache management
-- Error handling
-
-This pattern would need to be duplicated for Accounts, Personas, and Campaigns, creating maintainability issues.
-
-### **Solution: Configuration-Driven Entity Management**
-
-#### **Core Architecture**
-
-```typescript
-// Single hook handles 80% of entity page logic
-const entityPageState = useEntityPage({
-  config: companyConfig,    // Configuration object
-  hooks: companyHooks       // Entity-specific hooks
-});
-
-// Render with standardized layout
-<EntityPageLayout
-  config={companyConfig}
-  entityPageState={entityPageState}
-  onGenerate={handleGenerate}
-  generateModalProps={generationModalConfigs.company}
-/>
-```
-
-#### **Key Abstractions**
-
-**1. `useEntityPage` Hook** (`lib/hooks/useEntityPage.ts`):
-- Handles route/auth logic with automatic redirects
-- Manages auth-aware data source selection
-- Provides field editing with modal state management
-- Implements auto-save and generation flows
-- Handles cache management and error states
-- Returns standardized interface for all entity types
-
-**2. `EntityPageLayout` Component** (`components/EntityPageLayout.tsx`):
-- Standardized layout for all entity pages
-- Handles loading, error, and empty states
-- Renders overview cards and field cards
-- Manages edit and generation modals
-- Accepts custom child content (e.g., target accounts)
-
-**3. Entity Configuration** (`lib/entityConfigs.ts`):
-- Declarative configuration for each entity type
-- Defines field cards, routes, empty states, progress stages
-- Specifies preserved complex types
-- Configures generation modal properties
-
-#### **Configuration Structure**
-
-```typescript
-interface EntityPageConfig<T> {
-  entityType: 'company' | 'account' | 'persona' | 'campaign';
-  cardConfigs: EntityCardConfig<T>[];
-  preservedComplexTypes?: string[];
-  generateEndpoint: string;
-  childEntities?: EntityType[];
-  routePrefix: {
-    authenticated: string;
-    unauthenticated: string;
-  };
-  emptyStateConfig: {
-    title: string;
-    subtitle: string;
-    buttonText: string;
-    icon: React.ComponentType;
-  };
-  progressStages?: Array<{ label: string; percent: number }>;
-}
-```
-
-#### **Entity Card Configuration**
-
-```typescript
-interface EntityCardConfig<T> {
-  key: string;                           // Field key in entity data
-  label: string;                         // Display title
-  bulleted?: boolean;                    // Render as bulleted list
-  getItems: (entity: T) => string[];     // Extract items from entity
-  subtitle: string;                      // Edit modal subtitle
-}
-```
-
-### **Implementation Benefits**
-
-#### **Dramatic Code Reduction**
-- **Company.tsx**: 700+ lines → ~100 lines (85% reduction)
-- **Future entities**: ~100 lines each vs 700+ lines
-- **Maintainability**: Single source of truth for common patterns
-
-#### **Standardized Patterns**
-- **Consistent UX**: All entities follow same interaction patterns
-- **Unified Auth Logic**: Route guards and data source selection
-- **Standardized Error Handling**: Common error states and retry logic
-- **Consistent Field Preservation**: Same safe update patterns
-
-#### **Configuration-Driven Development**
-- **Rapid Development**: New entities require only configuration
-- **Easy Customization**: Override specific behaviors when needed
-- **Type Safety**: Full TypeScript support with generic types
-- **Testability**: Isolated, reusable components
-
-### **Entity-Specific Implementations**
-
-#### **Company Entity** (`pages/CompanyV2.tsx`):
-```typescript
-const entityPageState = useEntityPage<CompanyOverviewResponse>({
-  config: companyConfig,
-  hooks: {
-    useGet: useGetCompany,
-    useGetList: useGetCompanies,
-    useGenerate: useAnalyzeCompany,
-    useCreate: useCreateCompany,
-    useUpdate: useUpdateCompany,
-    useUpdatePreserveFields: useUpdateCompanyPreserveFields,
-    useUpdateListFieldsPreserveFields: useUpdateCompanyListFieldsPreserveFields,
-  },
-});
-```
-
-#### **Account Entity** (to be implemented):
-```typescript
-const entityPageState = useEntityPage<TargetAccountResponse>({
-  config: accountConfig,
-  hooks: {
-    useGet: useGetAccount,
-    useGetList: useGetAccounts,
-    useGenerate: useAnalyzeAccount,
-    useCreate: useCreateAccount,
-    useUpdate: useUpdateAccount,
-    useUpdatePreserveFields: useUpdateAccountPreserveFields,
-    useUpdateListFieldsPreserveFields: useUpdateAccountListFieldsPreserveFields,
-  },
-});
-```
-
-### **Entity Configurations**
-
-#### **Company Configuration**:
-- **6 field cards**: Business Profile, Capabilities, Positioning, Use Case Analysis, Target Customer Insights, Objections
-- **Complex types preserved**: firmographics, demographics, buyingSignals
-- **Child entities**: accounts
-- **4 progress stages**: Loading website → Analyzing → Researching → Finalizing
-
-#### **Account Configuration**:
-- **5 field cards**: Profile, Strengths, Challenges, Opportunities, Approach Strategy
-- **Complex types preserved**: firmographics, buyingSignals
-- **Child entities**: personas
-- **4 progress stages**: Analyzing market → Researching → Generating → Finalizing
-
-#### **Persona Configuration**:
-- **5 field cards**: Insights, Pain Points, Motivations, Communication Style, Decision Factors
-- **Complex types preserved**: demographics, buyingSignals
-- **Child entities**: campaigns
-- **4 progress stages**: Analyzing persona → Researching behavior → Generating → Finalizing
-
-#### **Campaign Configuration**:
-- **5 field cards**: Insights, Messaging Strategy, Channel Strategy, Content Variations, Optimization Tips
-- **Complex types preserved**: emailContent, linkedinContent, callScript
-- **Child entities**: none
-- **4 progress stages**: Analyzing context → Crafting message → Optimizing → Finalizing
-
-### **Migration Strategy**
-
-#### **Phase 1: Abstraction Creation** ✅
-- Created `useEntityPage` hook with comprehensive entity management
-- Built `EntityPageLayout` component with standardized UI patterns
-- Developed entity configurations for all entity types
-- Implemented `CompanyV2.tsx` as reference implementation
-
-#### **Phase 2: Hybrid Implementation Strategy** ✅
-- **Decision**: Implement hybrid approach (list views + detail views)
-- **Rationale**: Entity abstraction excels at detail views but is over-engineered for list views
-- **Account Entity**: AccountDetail.tsx uses full abstraction, Accounts.tsx simplified for list view
-- **Implementation**: Created AccountDetail.tsx with entity abstraction, simplified Accounts.tsx for navigation
-
-#### **Phase 3: Hybrid Pattern Rollout** (Next)
-- Apply hybrid pattern to Persona and Campaign entities
-- Simplify existing list views while creating abstraction-based detail views
-- Test navigation between list and detail views
-- Establish hybrid pattern as standard approach
-
-#### **Phase 4: Migration Completion** (Future)
-- Replace original Company.tsx with CompanyV2.tsx
-- Update routing to use new implementations
-- Remove duplicate/bespoke logic
-- Comprehensive testing across all entity types
-
-### **Developer Experience**
-
-#### **Rapid Entity Development**:
-```typescript
-// Adding a new entity type requires only:
-1. Entity configuration object (entityConfigs.ts)
-2. Generation modal configuration
-3. ~100 line page component
-4. Entity-specific hooks (if needed)
-```
-
-#### **Consistent Patterns**:
-- **Same debugging approach**: Common console.log patterns
-- **Same error handling**: Standardized error states
-- **Same testing patterns**: Reusable test utilities
-- **Same field preservation**: Consistent update patterns
-
-### **Hybrid Architecture: List Views + Detail Views**
-
-#### **Architecture Decision: Hybrid Approach**
-After implementing the entity abstraction layer, we recognized that different view types have fundamentally different requirements:
-
-**List Views:**
-- **Purpose**: Browse, search, filter, navigate
-- **Complexity**: Low - focus on lightweight interactions
-- **Abstraction**: Minimal - over-engineering reduces performance and maintainability
-
-**Detail Views:**
-- **Purpose**: Deep editing, field management, complex state
-- **Complexity**: High - complex modal logic, field preservation, generation flows
-- **Abstraction**: Full - entity abstraction adds significant value
-
-#### **Implementation Strategy**
-```typescript
-// List View: Simplified, focused on navigation
-// frontend/src/pages/Accounts.tsx (~200-250 lines)
-export default function Accounts() {
-  // Simple state management
-  // Search, filter, navigation logic
-  // Click account → navigate to detail view
-  // No complex modal logic or field editing
-}
-
-// Detail View: Full entity abstraction
-// frontend/src/pages/AccountDetail.tsx (~100-150 lines)
-export default function AccountDetail() {
-  const entityPageState = useEntityPage<TargetAccountResponse>({
-    config: accountConfig,
-    hooks: accountHooks,
-  });
-  
-  return (
-    <EntityPageLayout
-      config={accountConfig}
-      entityPageState={entityPageState}
-      // Full abstraction benefits
-    />
-  );
-}
-```
-
-#### **Benefits of Hybrid Approach**
-1. **Right Tool for Right Job**: Each view optimized for its specific purpose
-2. **Performance**: List views load faster, detail views can be more sophisticated
-3. **Maintainability**: Simpler list views, complex detail views handled by abstraction
-4. **User Experience**: Optimized interaction patterns for each use case
-5. **Developer Experience**: Faster development for list features, powerful abstraction for detail features
-
-#### **Navigation Pattern**
-```typescript
-// Standard navigation flow
-List View (`/app/accounts`) → Detail View (`/app/accounts/:id`)
-Browse & Search              → Deep Editing & Management
-```
-
-#### **Hybrid Pattern Implementation Status**
-- ✅ **Company**: Detail view uses full abstraction (Company.tsx)
-- ✅ **Account**: Hybrid implemented (Accounts.tsx list + AccountDetail.tsx detail)
-- ⚠️ **Persona**: Pending - will implement hybrid pattern
-- ⚠️ **Campaign**: Pending - will implement hybrid pattern
-
-This hybrid architecture provides the best of both worlds: simple, performant list views combined with powerful, abstraction-based detail views. The approach scales efficiently across all entity types while maintaining optimal user experience.
-
-This abstraction layer transforms entity management from bespoke, error-prone implementations to a standardized, maintainable, and rapidly extensible system. The investment in abstraction pays dividends immediately and scales with future entity types.
-
-This architecture provides a solid foundation for an AI-powered B2B platform with room for growth into microservices as the system scales.

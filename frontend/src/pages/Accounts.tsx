@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
-import { useCompanyOverview } from "../lib/useCompanyOverview";
-import { useGetUserCompany } from "../lib/hooks/useCompany";
 import { useGetAccounts, useDeleteAccount } from "../lib/hooks/useAccounts";
 import type { Account } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
@@ -13,9 +11,12 @@ import { getEntityColorForParent, getAddCardHoverClasses } from "../lib/entityCo
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
-import { useAuthState } from '../lib/auth';
 import { getAccountName, getAccountDescription } from "../lib/entityDisplayUtils";
-import { DraftManager } from '../lib/draftManager';
+import { useCompanyContext } from '../lib/hooks/useCompanyContext';
+import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
+import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
+import InputModal from '../components/modals/InputModal';
+import type { TargetAccountResponse } from '../types/api';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -24,10 +25,7 @@ interface TargetAccountCardProps {
 }
 
 function TargetAccountCard({ targetAccount, onDelete, companyName }: TargetAccountCardProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isAuthenticated = location.pathname.startsWith('/app');
-  const prefix = isAuthenticated ? '/app' : '/playground';
+  const { navigateToEntity } = useAuthAwareNavigation();
   
   return (
     <SummaryCard
@@ -36,7 +34,7 @@ function TargetAccountCard({ targetAccount, onDelete, companyName }: TargetAccou
       parents={[
         { name: companyName, color: getEntityColorForParent('company'), label: "Company" }
       ]}
-      onClick={() => navigate(`${prefix}/accounts/${targetAccount.id}`)}
+      onClick={() => navigateToEntity('account', targetAccount.id)}
       entityType="account"
     >
       <Button size="icon" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(targetAccount.id); }} className="text-red-500">
@@ -61,48 +59,22 @@ function AddAccountCard({ onClick }: { onClick: () => void }) {
 }
 
 export default function TargetAccountsList() {
-  const { token } = useAuthState();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { navigateWithPrefix, navigateToEntity } = useAuthAwareNavigation();
   
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   
-  // Determine route prefix for navigation
-  const isAuthenticated = location.pathname.startsWith('/app');
-  const prefix = isAuthenticated ? '/app' : '/playground';
+  // Universal company context detection
+  const { overview, companyId, isLoading: isCompanyLoading, hasValidContext } = useCompanyContext();
   
-  // Step 1: Determine if we have a valid company context
-  const cachedOverview = useCompanyOverview();
-  const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
-  
-  // For unauthenticated users, check DraftManager
-  let overview = cachedOverview || fetchedOverview;
-  if (!token && !overview) {
-    const drafts = DraftManager.getDrafts('company');
-    if (drafts.length > 0) {
-      // DraftManager should already contain normalized CompanyResponse format
-      overview = drafts[0].data;
-    }
-  }
-  
-  const companyId = overview?.companyId;
+  // Universal account creation
+  const { create: createAccountUniversal } = useEntityCRUD<TargetAccountResponse>('account');
   
   // Step 2: Always call hooks first (Rules of Hooks)
-  const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
-  const { mutate: deleteAccount } = useDeleteAccount(companyId, token);
-  
-  // Debug logging
-  console.log('[ACCOUNTS] Company context debug:', {
-    token: !!token,
-    cachedOverview: !!cachedOverview,
-    fetchedOverview: !!fetchedOverview,
-    overview: !!overview,
-    companyId,
-    isCompanyLoading,
-    draftCount: !token ? DraftManager.getDraftCount('company') : 'N/A (authenticated)'
-  });
+  const { data: accounts, isLoading, error } = useGetAccounts(companyId || "");
+  const { mutate: deleteAccount } = useDeleteAccount(companyId);
   
   // Step 3: THEN check for early returns
   if (!isCompanyLoading && !companyId) {
@@ -110,7 +82,7 @@ export default function TargetAccountsList() {
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <h2 className="text-xl font-semibold mb-2">No Company Found</h2>
         <p className="text-gray-600 mb-4">You need to create or select a company before managing accounts.</p>
-        <Button onClick={() => navigate(`${prefix}/company`)}>
+        <Button onClick={() => navigateWithPrefix('/company')}>
           Go to Company Page
         </Button>
       </div>
@@ -123,9 +95,53 @@ export default function TargetAccountsList() {
     }
   };
 
-  // Navigate to create new account (detail view handles generation)
+  // Show creation modal directly (no navigation needed)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
   const handleCreateAccount = () => {
-    navigate(`${prefix}/accounts/new`);
+    setIsCreateModalOpen(true);
+  };
+  
+  // Handle account creation using universal hooks
+  const handleSubmitAccount = async ({ name, description }: { name: string; description: string }) => {
+    if (!hasValidContext || !overview) {
+      console.error("Cannot create account without company context");
+      return;
+    }
+    
+    console.log('[ACCOUNTS-PAGE] Starting account creation:', { name, description });
+    
+    // Create account data in AI request format
+    const accountData = {
+      website_url: overview.companyUrl || '',
+      account_profile_name: name,
+      hypothesis: description,
+      company_context: {
+        companyName: overview.companyName || '',
+        description: overview.description || '',
+        businessProfileInsights: overview.businessProfileInsights || [],
+        capabilities: overview.capabilities || [],
+        useCaseAnalysisInsights: overview.useCaseAnalysisInsights || [],
+        positioningInsights: overview.positioningInsights || [],
+        targetCustomerInsights: overview.targetCustomerInsights || [],
+      },
+    };
+    
+    try {
+      const result = await createAccountUniversal(accountData, {
+        customCompanyId: companyId,
+        navigateOnSuccess: false
+      });
+      
+      console.log('[ACCOUNTS-PAGE] Account created successfully:', result);
+      
+      // Close modal and navigate to the new account
+      setIsCreateModalOpen(false);
+      navigateToEntity('account', result.id);
+      
+    } catch (error) {
+      console.error('[ACCOUNTS-PAGE] Account creation failed:', error);
+    }
   };
 
   const filteredAccounts = accounts?.filter(
@@ -152,10 +168,6 @@ export default function TargetAccountsList() {
       <PageHeader
         title="Target Accounts"
         subtitle="Identify and manage your ideal target accounts"
-        primaryAction={{
-          label: "Create Target Account",
-          onClick: handleCreateAccount,
-        }}
       />
 
       <div className="flex-1 p-8 space-y-8">
@@ -220,6 +232,24 @@ export default function TargetAccountsList() {
           </div>
         </div>
       </div>
+      
+      {/* Account Creation Modal */}
+      <InputModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleSubmitAccount}
+        title="Create Target Account"
+        subtitle="Create a detailed analysis of your ideal customer account."
+        nameLabel="Account Profile Name"
+        namePlaceholder="Mid-market SaaS companies"
+        descriptionLabel="Account Hypothesis"
+        descriptionPlaceholder="e.g., Companies with 100-500 employees in the software industry..."
+        submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
+        cancelLabel="Cancel"
+        defaultName=""
+        defaultDescription=""
+        isLoading={false}
+      />
     </div>
   );
 }

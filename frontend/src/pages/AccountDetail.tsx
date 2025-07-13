@@ -16,10 +16,12 @@ import {
   useGetAccounts, 
   useCreateAccount 
 } from '../lib/hooks/useAccounts';
+import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
+import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import { normalizeAccountResponse } from '../lib/accountService';
 import { useGetCompany, useGetUserCompany } from '../lib/hooks/useCompany';
 import { useAuthState } from '../lib/auth';
-import { useCompanyOverview } from '../lib/useCompanyOverview';
+import { useCompanyContext } from '../lib/hooks/useCompanyContext';
 import { Wand2, Plus, Pencil } from 'lucide-react';
 import type { TargetAccountResponse, AccountCreate, TargetAccountAPIRequest, APIBuyingSignal, Firmographics } from '../types/api';
 import BuyingSignalsCard from '../components/cards/BuyingSignalsCard';
@@ -98,11 +100,12 @@ export default function AccountDetail() {
   // Handle "new" route - show creation modal
   const isNewAccount = accountId === 'new';
   
-  // Get company data for context (needed for both existing and new accounts)
-  const cachedOverview = useCompanyOverview();
-  const { data: fetchedOverview } = useGetUserCompany(token);
-  const overview = cachedOverview || fetchedOverview;
-  const companyId = overview?.companyId || "";
+  // Get company data for context using universal hook (supports both auth and unauth)
+  const { overview, companyId, hasValidContext } = useCompanyContext();
+  
+  // Universal hooks for consistent CRUD operations
+  const { create: createAccountUniversal } = useEntityCRUD<TargetAccountResponse>('account');
+  const { navigateWithPrefix } = useAuthAwareNavigation();
   
   // For existing accounts, get account data
   const { data: account } = useGetAccount(isNewAccount ? undefined : accountId, token);
@@ -229,12 +232,13 @@ export default function AccountDetail() {
     return result;
   };
   
-  // Show creation modal for new accounts
+  // Show creation modal for new accounts (only once)
   useEffect(() => {
-    if (isNewAccount) {
+    if (isNewAccount && !isCreationModalOpen) {
+      console.log('[ACCOUNT-DETAIL] Opening creation modal for new account');
       setIsCreationModalOpen(true);
     }
-  }, [isNewAccount]);
+  }, [isNewAccount, isCreationModalOpen]);
 
   // Populate buying signals state when account data changes
   useEffect(() => {
@@ -263,57 +267,89 @@ export default function AccountDetail() {
     navigate(-1); // Go back to accounts list
   };
   
-  // Handle account creation
-  const handleCreateAccount = ({ name, description }: { name: string; description: string }) => {
-    if (!overview) {
-      console.error("Cannot generate account without company overview.");
+  // Handle account creation using universal hooks
+  const handleCreateAccount = async ({ name, description }: { name: string; description: string }) => {
+    if (!hasValidContext || !overview) {
+      console.error("Cannot generate account without company context.", {
+        hasValidContext,
+        overview: !!overview,
+        companyId,
+        isAuthenticated: !!token
+      });
+      handleComponentError("Account creation", "Missing company context. Please create a company first.");
       return;
     }
     
-    const companyContext = {
-      companyName: overview.companyName || '',
-      description: overview.description || '',
-      businessProfileInsights: overview.businessProfileInsights || [],
-      capabilities: overview.capabilities || [],
-      useCaseAnalysisInsights: overview.useCaseAnalysisInsights || [],
-      positioningInsights: overview.positioningInsights || [],
-      targetCustomerInsights: overview.targetCustomerInsights || [],
-    };
-
-    generateAccount({
+    console.log('[ACCOUNT-CREATION] Starting universal account creation:', {
+      name,
+      description,
+      companyId,
+      isAuthenticated: !!token
+    });
+    
+    // Create the account data in the AI request format
+    const accountProfileData = {
       website_url: overview.companyUrl || '',
       account_profile_name: name,
       hypothesis: description,
-      company_context: companyContext,
-    }, {
-      onSuccess: (generatedData) => {
-        console.log("Account generated successfully", generatedData);
-        // Create the account
-        const accountToSave: AccountCreate = {
-          name: generatedData.targetAccountName || name,
-          data: generatedData,
-        };
-        
-        createAccount(accountToSave, {
-          onSuccess: (savedAccount) => {
-            console.log("Account created successfully", savedAccount);
-            setIsCreationModalOpen(false);
-            const prefix = token ? '/app' : '/playground';
-            navigate(`${prefix}/accounts/${savedAccount.id}`, { replace: true });
-          },
-          onError: (error) => {
-            handleComponentError("Account creation", error);
-          },
-        });
+      company_context: {
+        companyName: overview.companyName || '',
+        description: overview.description || '',
+        businessProfileInsights: overview.businessProfileInsights || [],
+        capabilities: overview.capabilities || [],
+        useCaseAnalysisInsights: overview.useCaseAnalysisInsights || [],
+        positioningInsights: overview.positioningInsights || [],
+        targetCustomerInsights: overview.targetCustomerInsights || [],
       },
-      onError: (error) => {
-        handleComponentError("Account generation", error);
-      },
-    });
+    };
+
+    try {
+      // Universal create handles both auth and unauth flows automatically
+      const result = await createAccountUniversal(accountProfileData, {
+        customCompanyId: companyId,
+        navigateOnSuccess: false // Handle navigation manually for modal closing
+      });
+      
+      console.log('[ACCOUNT-CREATION] Universal create successful:', {
+        accountId: result.id,
+        isTemporary: result.isTemporary,
+        isAuthenticated: !!token,
+        fullResult: result
+      });
+      
+      // Close modal and navigate appropriately
+      setIsCreationModalOpen(false);
+      
+      // For temporary/draft accounts, navigate to accounts list instead of detail
+      if (result.isTemporary || !token) {
+        console.log('[ACCOUNT-CREATION] Navigating to accounts list for unauthenticated user');
+        navigateWithPrefix('/accounts');
+      } else {
+        console.log('[ACCOUNT-CREATION] Navigating to account detail for authenticated user');
+        navigateWithPrefix(`/accounts/${result.id}`);
+      }
+      
+    } catch (error) {
+      console.error('[ACCOUNT-CREATION] Universal create failed:', error);
+      handleComponentError("Account creation", error);
+    }
   };
   
   // If this is a new account, show creation modal
   if (isNewAccount) {
+    // Check for valid company context before allowing account creation
+    if (!hasValidContext) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <h2 className="text-xl font-semibold mb-2">Company Required</h2>
+          <p className="text-gray-600 mb-4">You need to create a company before adding target accounts.</p>
+          <Button onClick={() => navigate(token ? '/app/company' : '/playground/company')}>
+            Create Company First
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center justify-center h-full">
         <div>Creating new account...</div>

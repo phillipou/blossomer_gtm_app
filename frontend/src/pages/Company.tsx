@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Edit3, Trash2 } from 'lucide-react';
 import { useEntityPage } from '../lib/hooks/useEntityPage';
@@ -24,7 +23,6 @@ import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
 
 export default function Company() {
-  const navigate = useNavigate();
   const { token } = useAuthState();
   const [targetAccounts, setTargetAccounts] = useState<
     (TargetAccountResponse & { id: string; createdAt: string })[]
@@ -36,7 +34,7 @@ export default function Company() {
 
   // Direct hooks for generation and creation flow
   const { mutate: analyzeCompany, isPending: isAnalyzing } = useAnalyzeCompany(token);
-  const { mutate: createCompany, isPending: isCreating } = useCreateCompany(token);
+  const { isPending: isCreating } = useCreateCompany(token);
   
   // Initialize entity page hook
   const entityPageState = useEntityPage<CompanyOverviewResponse>({
@@ -132,15 +130,13 @@ export default function Company() {
       entityPageState={entityPageState}
       onGenerate={handleGenerate}
       generateModalProps={{
-        ...generationModalConfigs.company,
-        isLoading: isAnalyzing || isCreating
+        ...generationModalConfigs.company
       }}
       overviewProps={{
-        title: companyName,
-        subtitle: entityPageState.displayEntity?.companyUrl || '',
+        pageTitle: companyName,
+        pageSubtitle: entityPageState.displayEntity?.companyUrl || '',
         bodyTitle: 'Company Overview',
-        bodyText: entityPageState.displayEntity?.description || 'No description available',
-        entityType: 'company',
+        bodyText: entityPageState.displayEntity?.description || 'No description available'
       }}
     >
       {/* Target Accounts Section */}

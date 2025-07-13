@@ -25,7 +25,6 @@ async def generate_target_persona_profile(
         prompt_template="target_persona",
         prompt_vars_class=TargetPersonaPromptVars,
         response_model=TargetPersonaResponse,
-        use_preprocessing=False,
     )
     # Set target_persona_name from persona_profile_name if present
     if request.persona_profile_name:

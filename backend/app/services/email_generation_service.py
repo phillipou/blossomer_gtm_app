@@ -59,7 +59,6 @@ async def generate_email_campaign_service(
             prompt_template=prompt_template,
             prompt_vars_class=EmailGenerationPromptVars,
             response_model=EmailGenerationResponse,
-            use_preprocessing=False,  # No web scraping needed
         )
         result = EmailGenerationResponse.parse_obj(result)
 

@@ -5,7 +5,6 @@ import { Button } from "../components/ui/button";
 import { Loader2, Edit3, Trash2, Wand2 } from "lucide-react";
 import { useGetAllPersonas, useUpdatePersona, useDeletePersona, useCreatePersona, useGeneratePersona } from "../lib/hooks/usePersonas";
 import { useGetAccounts } from "../lib/hooks/useAccounts";
-import { useCompanyOverview } from "../lib/useCompanyOverview";
 import SummaryCard from "../components/cards/SummaryCard";
 import type { Persona, PersonaUpdate, TargetPersonaResponse } from "../types/api";
 import { getEntityColorForParent } from "../lib/entityColors";
@@ -15,51 +14,27 @@ import InputModal from "../components/modals/InputModal";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, Filter } from "lucide-react";
-import { useAuthState } from '../lib/auth';
 import { DraftManager } from "../lib/draftManager";
 import { getPersonaName, getPersonaDescription } from "../lib/entityDisplayUtils";
-import { useGetUserCompany } from "../lib/hooks/useCompany";
+import { useCompanyContext } from '../lib/hooks/useCompanyContext';
+import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
-  const { token } = useAuthState();
+  const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
 
-  // Step 1: Determine if we have a valid company context (copied from Accounts.tsx)
-  const cachedOverview = useCompanyOverview();
-  const { data: fetchedOverview, isLoading: isCompanyLoading } = useGetUserCompany(token);
-  
-  // For unauthenticated users, check DraftManager
-  let overview = cachedOverview || fetchedOverview;
-  if (!token && !overview) {
-    const drafts = DraftManager.getDrafts('company');
-    if (drafts.length > 0) {
-      // DraftManager should already contain normalized CompanyResponse format
-      overview = drafts[0].data;
-    }
-  }
-  
-  const companyId = overview?.companyId;
+  // Universal company context detection
+  const { overview, companyId, isLoading: isCompanyLoading } = useCompanyContext();
 
-  // Step 2: Always call hooks first (Rules of Hooks) (copied from Accounts.tsx)
-  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "", token);
-  const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId || "", token);
-
-  // Debug logging
-  console.log('[PERSONAS] Company context debug:', {
-    token: !!token,
-    cachedOverview: !!cachedOverview,
-    fetchedOverview: !!fetchedOverview,
-    overview: !!overview,
-    companyId,
-    isCompanyLoading,
-    draftCount: !token ? DraftManager.getDraftCount('company') : 'N/A (authenticated)'
-  });
+  // Step 2: Always call hooks first (Rules of Hooks)
+  const { data: accounts, isLoading: isAccountsLoading, error: accountsError } = useGetAccounts(companyId || "");
+  const { data: personas, isLoading: isPersonasLoading, error: personasError } = useGetAllPersonas(companyId || "");
 
   // Update mutation hooks to use correct types for TargetPersonaResponse
-  const updatePersonaMutation = useUpdatePersona("", token);
-  const { mutate: deletePersona } = useDeletePersona("", token);
-  const createPersonaMutation = useCreatePersona(token);
-  const generatePersonaMutation = useGeneratePersona(token);
+  const updatePersonaMutation = useUpdatePersona("");
+  const { mutate: deletePersona } = useDeletePersona("");
+  const createPersonaMutation = useCreatePersona();
+  const generatePersonaMutation = useGeneratePersona();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
@@ -90,37 +65,46 @@ export default function TargetPersonas() {
   // Effect: When generatedPersonaData is set, immediately create the persona
   // This useEffect is removed as per the edit hint.
 
-  // Step 3: THEN check for early returns (copied from Accounts.tsx)
+  // Step 3: THEN check for early returns
   if (!isCompanyLoading && !companyId) {
-    const prefix = token ? '/app' : '/playground';
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <h2 className="text-xl font-semibold mb-2">No Company Found</h2>
-        <p className="text-gray-600 mb-4">You need to create or select a company before managing personas.</p>
-        <Button onClick={() => navigate(`${prefix}/company`)}>
-          Go to Company Page
-        </Button>
+      <div className="flex flex-col h-full">
+        <PageHeader
+          title="Target Personas"
+          subtitle="Manage buyer personas across all target accounts"
+        />
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <h2 className="text-xl font-semibold mb-2">No Company Found</h2>
+          <p className="text-gray-600 mb-4">You need to create or select a company before managing personas.</p>
+          <Button onClick={() => navigateWithPrefix('/company')}>
+            Go to Company Page
+          </Button>
+        </div>
       </div>
     );
   }
 
   // Check for no accounts available (personas need accounts)
   if (!isAccountsLoading && (!accounts || accounts.length === 0)) {
-    const prefix = token ? '/app' : '/playground';
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <h2 className="text-xl font-semibold mb-2">No Accounts Found</h2>
-        <p className="text-gray-600 mb-4">You need to create target accounts before managing personas.</p>
-        <Button onClick={() => navigate(`${prefix}/accounts`)}>
-          Go to Accounts Page
-        </Button>
+      <div className="flex flex-col h-full">
+        <PageHeader
+          title="Target Personas"
+          subtitle="Manage buyer personas across all target accounts"
+        />
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <h2 className="text-xl font-semibold mb-2">No Accounts Found</h2>
+          <p className="text-gray-600 mb-4">You need to create target accounts before managing personas.</p>
+          <Button onClick={() => navigateWithPrefix('/accounts')}>
+            Go to Accounts Page
+          </Button>
+        </div>
       </div>
     );
   }
   
   const handlePersonaClick = (customerId: string, personaId: string) => {
-    const prefix = token ? '/app' : '/playground';
-    navigate(`${prefix}/accounts/${customerId}/personas/${personaId}`);
+    navigate(`${isAuthenticated ? '/app' : '/playground'}/accounts/${customerId}/personas/${personaId}`);
   };
 
   const handleEditPersona = (persona: Persona) => {
@@ -348,8 +332,7 @@ export default function TargetPersonas() {
                       console.log("Persona created successfully", savedPersona);
                       setAddModalOpen(false);
                       setIsSavingPersona(false);
-                      const prefix = token ? '/app' : '/playground';
-                      navigate(`${prefix}/accounts/${accountId}/personas/${savedPersona.id}`);
+                      navigate(`${isAuthenticated ? '/app' : '/playground'}/accounts/${accountId}/personas/${savedPersona.id}`);
                     },
                     onError: (error) => {
                       setIsSavingPersona(false);
