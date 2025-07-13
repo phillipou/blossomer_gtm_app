@@ -17,6 +17,7 @@ import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 import InputModal from '../components/modals/InputModal';
 import type { TargetAccountResponse } from '../types/api';
+import { DraftManager } from '../lib/draftManager';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -60,11 +61,12 @@ function AddAccountCard({ onClick }: { onClick: () => void }) {
 
 export default function TargetAccountsList() {
   const navigate = useNavigate();
-  const { navigateWithPrefix, navigateToEntity } = useAuthAwareNavigation();
+  const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
   
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [forceUpdate, setForceUpdate] = useState(0);
   
   // Universal company context detection
   const { overview, companyId, isLoading: isCompanyLoading, hasValidContext } = useCompanyContext();
@@ -75,6 +77,16 @@ export default function TargetAccountsList() {
   // Step 2: Always call hooks first (Rules of Hooks)
   const { data: accounts, isLoading, error } = useGetAccounts(companyId || "");
   const { mutate: deleteAccount } = useDeleteAccount(companyId);
+  
+  // Get draft accounts for unauthenticated users
+  const draftAccounts = DraftManager.getDrafts('account').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  }));
+  
+  // Combine authenticated accounts with drafts
+  const allAccounts = [...(accounts || []), ...draftAccounts];
   
   // Step 3: THEN check for early returns
   if (!isCompanyLoading && !companyId) {
@@ -91,7 +103,20 @@ export default function TargetAccountsList() {
 
   const handleDeleteAccount = (id: string) => {
     if (confirm('Are you sure you want to delete this target account?')) {
-      deleteAccount(id);
+      // Check if this is a draft account (temp ID format)
+      if (id.startsWith('temp_')) {
+        // Draft account - remove from DraftManager
+        console.log('[ACCOUNTS-DELETE] Deleting draft account:', id);
+        DraftManager.removeDraft('account', id);
+        // Force component re-render by updating forceUpdate state
+        setForceUpdate(prev => prev + 1);
+      } else if (isAuthenticated) {
+        // Authenticated account - use mutation
+        console.log('[ACCOUNTS-DELETE] Deleting authenticated account:', id);
+        deleteAccount(id);
+      } else {
+        console.warn('[ACCOUNTS-DELETE] Cannot delete non-draft account for unauthenticated user:', id);
+      }
     }
   };
 
@@ -144,16 +169,17 @@ export default function TargetAccountsList() {
     }
   };
 
-  const filteredAccounts = accounts?.filter(
+  const filteredAccounts = allAccounts.filter(
     (account) => {
-      console.log("[DEBUG] Filtering account:", account);
+      const accountName = getAccountName(account) || '';
+      const accountDescription = getAccountDescription(account) || '';
       const matchesSearch =
-        getAccountName(account).toLowerCase().includes(search.toLowerCase()) ||
-        getAccountDescription(account).toLowerCase().includes(search.toLowerCase());
+        accountName.toLowerCase().includes(search.toLowerCase()) ||
+        accountDescription.toLowerCase().includes(search.toLowerCase());
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
     }
-  ) || [];
+  );
 
   if (error) {
     return <div>Error: {error.message}</div>;

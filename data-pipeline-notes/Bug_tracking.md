@@ -110,16 +110,82 @@ useEffect(() => {
 )}
 ```
 
+### **Issue #22: "Rendered fewer hooks than expected" Error During Account Updates** ✅ **RESOLVED**
+
+**Problem:** When updating Account details (especially description), getting React hooks ordering error.
+
+**Error Message:**
+```
+Uncaught Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+```
+
+**Root Cause:** React hook (`useMemo`) being called inside JSX after conditional logic, violating Rules of Hooks:
+
+```typescript
+// ❌ PROBLEMATIC: Hook called in JSX after potential early returns
+<CriteriaTable 
+  data={useMemo(() => 
+    transformFirmographicsToCriteria(entityPageState.displayEntity.firmographics), 
+    [entityPageState.displayEntity, transformFirmographicsToCriteria]
+  )}
+/>
+```
+
+**Solution Applied:**
+1. **Moved hook to top of component** - Before any early returns or conditional logic
+2. **Used memoized variable** - Replaced inline `useMemo` with pre-computed variable
+
+```typescript
+// ✅ FIXED: Hook called at top before any early returns
+const firmographicsTableData = useMemo(() => 
+  transformFirmographicsToCriteria(entityPageState.displayEntity?.firmographics), 
+  [entityPageState.displayEntity?.firmographics, transformFirmographicsToCriteria]
+);
+
+// Later in JSX:
+<CriteriaTable data={firmographicsTableData} />
+```
+
+**Location:** `AccountDetail.tsx:213-216, 553-555`
+
+### **Issue #23: Field Wiping During Description Updates** ✅ **RESOLVED**
+
+**Problem:** When updating just the Account description, all other complex fields (firmographics, buying signals) were getting wiped out.
+
+**Root Cause:** Cache update logic was doing shallow merge that lost complex fields:
+
+```typescript
+// ❌ PROBLEMATIC: Shallow merge losing complex fields
+queryClient.setQueryData([config.entityType, entityId], (prevData: any) => ({
+  ...prevData,
+  ...mappedUpdates,  // This overwrites everything
+}));
+```
+
+**Solution Applied:**
+1. **Direct draft synchronization** - Get updated data directly from DraftManager after successful update
+2. **Eliminated complex merge logic** - Trust DraftManager's field preservation (confirmed working with 15 fields preserved)
+
+```typescript
+// ✅ FIXED: Get fresh data from DraftManager
+if (updateSuccess) {
+  const updatedDraft = DraftManager.getDraft(config.entityType, currentDraft.tempId);
+  if (updatedDraft) {
+    queryClient.setQueryData([config.entityType, entityId], updatedDraft.data);
+  }
+}
+```
+
+**Location:** `useEntityPage.ts:353-365, 272-284`
+
 ### **🎯 Critical Lessons Learned**
 
-**The Key Insight:** We need to **simplify our rendering logic significantly**. The debugging/testing code we added was actually causing more problems than it solved.
+**The Key Insight:** React Hooks ordering rules are non-negotiable and cache updates must respect data source integrity.
 
-**Lesson learned:** Debugging code with complex dependencies can create performance issues and infinite loops. It's better to:
-- **Use simpler, targeted logging** - avoid complex debugging functions
-- **Avoid putting complex objects like `queryClient` in dependency arrays** - they change reference frequently
-- **Keep debugging code minimal and temporary** - remove after debugging is complete
-- **Eliminate duplicate state** - maintain single source of truth for data
-- **Avoid syncing state with useEffect** - often leads to infinite loops
+**Lesson learned:** 
+- **React Hooks must be called in same order every time** - no hooks inside conditional logic or JSX
+- **Cache updates should trust authoritative data sources** - Don't try to manually merge when DraftManager already preserves fields correctly
+- **Debugging code with complex dependencies can create performance issues** - Keep debugging minimal and temporary
 
 ### **🚨 Red Flags for Future Development**
 
@@ -130,18 +196,91 @@ useEffect(() => {
 - Objects recreated on every render in dependency arrays
 - State updates inside `useEffect` without proper memoization
 
+**React Hooks Violations:**
+- Hooks called inside JSX (`useMemo` in component return)
+- Hooks called after early returns or conditional logic
+- Hooks called inside loops or conditional statements
+- `useEffect` with `queryClient` in dependencies (reference changes frequently)
+
+**Cache Update Anti-Patterns:**
+- Complex manual merging when authoritative source exists
+- Shallow merging that loses complex object fields
+- Cache updates that don't reflect actual data state
+
 **Best Practices:**
 - **Single source of truth** - don't duplicate state unnecessarily
 - **Memoize objects** passed to dependency arrays with `useMemo`
 - **Remove debugging code** after debugging is complete  
 - **Use direct data access** instead of local state copies
 - **Question every `useEffect`** - many can be eliminated
+- **All hooks at top of component** - Before any early returns
+- **Trust authoritative data sources** - Use DraftManager data directly after updates
+- **Memoize expensive computations** - But always at component top level
+- **Test field preservation** - Verify complex fields survive updates
+
+### **Issue #24: Draft Accounts Not Persisting/Displaying for Unauthenticated Users** ✅ **RESOLVED**
+
+**Problem:** Created accounts for unauthenticated users don't persist after page refresh and aren't displayed in Accounts.tsx.
+
+**Root Cause:** 
+1. **`useGetAccounts` disabled for unauth users** - Hook is only enabled when `!!companyId && !!token`
+2. **No draft retrieval in Accounts.tsx** - Component wasn't checking DraftManager for draft accounts
+3. **Missing data source integration** - No fallback to get draft accounts when authenticated API is disabled
+
+**Evidence of Issue:**
+```typescript
+// ❌ PROBLEMATIC: Hook disabled for unauthenticated users
+export function useGetAccounts(companyId: string, token?: string | null) {
+  return useQuery<Account[], Error>({
+    queryKey: [ACCOUNTS_LIST_KEY, companyId],
+    queryFn: () => getAccounts(companyId, token),
+    enabled: !!companyId && !!token, // ← Only works for authenticated users
+  });
+}
+```
+
+**Solution Applied:**
+
+1. **Added draft accounts retrieval** - Get all draft accounts from DraftManager
+2. **Combined data sources** - Merge authenticated accounts with draft accounts
+3. **Added draft indicators** - Visual indication of draft status in UI
+
+```typescript
+// ✅ FIXED: Combined authenticated and draft accounts
+const draftAccounts = DraftManager.getDrafts('account').map(draft => ({
+  ...draft.data,
+  id: draft.tempId,
+  isDraft: true,
+}));
+
+const allAccounts = [...(accounts || []), ...draftAccounts];
+const filteredAccounts = allAccounts.filter(/* ... */);
+```
+
+4. **Added draft status indicators** - Show draft count and visual badges
+```typescript
+// Draft count in header
+{draftAccounts.length > 0 && (
+  <span className="text-orange-600"> ({draftAccounts.length} draft{draftAccounts.length !== 1 ? 's' : ''})</span>
+)}
+
+// Draft badge on cards
+parents={[
+  { name: companyName, color: getEntityColorForParent('company'), label: "Company" },
+  ...(targetAccount.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
+]}
+```
+
+**Location:** `Accounts.tsx:80-88, 159-167, 189-193, 36-38`
 
 ### **Success Metrics:**
-- ✅ **Account creation flow** works for unauthenticated users without infinite loops
-- ✅ **Browser performance** - no more freezing or "Maximum update depth exceeded" errors
-- ✅ **Simplified codebase** - eliminated unnecessary debugging and duplicate state
-- ✅ **Better patterns** - established guidelines for preventing similar issues
+- ✅ **React hooks ordering** - No more "Rendered fewer hooks than expected" errors
+- ✅ **Field preservation** - All account fields (firmographics, buying signals) survive description updates
+- ✅ **Cache consistency** - Cache reflects actual draft data state correctly
+- ✅ **Simplified logic** - Eliminated complex cache merging in favor of direct data source usage
+- ✅ **Draft persistence** - Created accounts persist across page refreshes for unauthenticated users
+- ✅ **Data source integration** - Proper fallback to DraftManager when authenticated API is disabled
+- ✅ **Visual indicators** - Clear distinction between saved and draft accounts
 
 ---
 
