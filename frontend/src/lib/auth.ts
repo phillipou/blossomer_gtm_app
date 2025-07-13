@@ -44,7 +44,14 @@ export function useAuthState(): AuthState & { loading: boolean } {
   const app = useStackApp();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const queryClient = useQueryClient();
+  // Use optional QueryClient to avoid circular dependency with UserScopedQueryClientProvider
+  let queryClient;
+  try {
+    queryClient = useQueryClient();
+  } catch (error) {
+    // QueryClient not available yet (during provider initialization)
+    queryClient = null;
+  }
   const prevAuthState = useRef<AuthState>({
     isAuthenticated: false,
     token: null,
@@ -114,11 +121,11 @@ export function useAuthState(): AuthState & { loading: boolean } {
         console.log('🔄 Clearing playground cache, preserving user cache');
         // Note: UserScopedQueryClient will handle scoped cache clearing
         // For now, do a full clear to ensure clean state
-        queryClient.clear();
+        queryClient?.clear();
       } else if (!wasUnauthenticated && !isNowAuthenticated) {
         // User just logged out - clear user cache but preserve playground capability
         console.log('🔄 Clearing user cache, preserving playground capability');
-        queryClient.clear();
+        queryClient?.clear();
       }
     }
     

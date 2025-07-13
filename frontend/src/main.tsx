@@ -21,6 +21,7 @@ import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
 import { Auth } from './pages/Auth'
 import { AuthError } from './pages/AuthError'
 import { OAuthCallback } from './components/auth/OAuthCallback'
+import { NewArchitectureTest } from './components/test/NewArchitectureTest'
 // Stagewise import
 import { StagewiseToolbar } from '@stagewise/toolbar-react'
 
@@ -28,9 +29,9 @@ const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <UserScopedQueryClientProvider client={queryClient}>
-      <StagewiseToolbar />
-      <NeonAuthWrapper>
+    <StagewiseToolbar />
+    <NeonAuthWrapper>
+      <UserScopedQueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -39,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="handler/error" element={<AuthError />} />
               <Route path="handler/oauth-callback" element={<OAuthCallback />} />
               <Route path="account-settings" element={<AccountSettings />} />
+              <Route path="test-architecture" element={<NewArchitectureTest />} />
             </Route>
             {/* Unauthenticated/demo routes */}
             <Route path="playground" element={<MainLayout />}>
@@ -63,8 +65,8 @@ createRoot(document.getElementById('root')!).render(
             </Route>
           </Routes>
         </BrowserRouter>
-      </NeonAuthWrapper>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </UserScopedQueryClientProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </UserScopedQueryClientProvider>
+    </NeonAuthWrapper>
   </StrictMode>,
 )
