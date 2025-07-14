@@ -254,17 +254,47 @@ export function EmailWizardModal({
           availableAccountNames: allAccounts.map(acc => ({ id: acc.id, name: getAccountName(acc) }))
         });
         
-        // Only include personas that belong to available accounts
-        const accountExists = accountId && allAccounts.some(account => account.id === accountId)
+        // Match personas to accounts by extracting timestamp from IDs
+        // Account IDs: temp_{timestamp}
+        // Persona account IDs: temp_account_{timestamp+1}_{random}
+        let matchedAccountId = null;
+        if (accountId) {
+          // Try exact match first
+          const exactMatch = allAccounts.find(account => account.id === accountId);
+          if (exactMatch) {
+            matchedAccountId = exactMatch.id;
+          } else {
+            // Try timestamp-based matching for cases where persona has temp_account_ format
+            const personaTimestampMatch = accountId.match(/temp_account_(\d+)_/);
+            if (personaTimestampMatch) {
+              const personaTimestamp = parseInt(personaTimestampMatch[1]);
+              // Look for account with timestamp within 10ms (personas created right after accounts)
+              const timestampMatch = allAccounts.find(account => {
+                const accountTimestampMatch = account.id.match(/temp_(\d+)/);
+                if (accountTimestampMatch) {
+                  const accountTimestamp = parseInt(accountTimestampMatch[1]);
+                  return Math.abs(personaTimestamp - accountTimestamp) <= 10;
+                }
+                return false;
+              });
+              if (timestampMatch) {
+                matchedAccountId = timestampMatch.id;
+                console.log('[EMAIL-WIZARD] 🔗 Matched persona to account via timestamp:', {
+                  personaAccountId: accountId,
+                  matchedAccountId,
+                  timestampDiff: personaTimestamp - parseInt(timestampMatch.id.match(/temp_(\d+)/)[1])
+                });
+              }
+            }
+          }
+        }
+        
+        const accountExists = !!matchedAccountId;
         console.log('[EMAIL-WIZARD] Account exists check:', { 
-          accountId, 
+          originalAccountId: accountId,
+          matchedAccountId,
           accountExists,
-          reason: !accountId ? 'No accountId' : !accountExists ? 'Account ID not found in available accounts' : 'OK',
-          accountIdMatches: allAccounts.map(acc => ({
-            accountId: acc.id,
-            matches: acc.id === accountId,
-            similarity: accountId ? (acc.id.includes(accountId.split('_')[1]) ? 'partial' : 'none') : 'none'
-          }))
+          matchType: accountId === matchedAccountId ? 'exact' : matchedAccountId ? 'timestamp' : 'none'
         });
         
         if (accountExists) {
@@ -274,16 +304,17 @@ export function EmailWizardModal({
           const wizardPersona: WizardPersona = {
             id: personaId,
             name: persona.targetPersonaName || persona.name || 'Untitled Persona',
-            accountId: accountId
+            accountId: matchedAccountId  // Use the matched account ID, not the original
           }
           
           transformedPersonas.push(wizardPersona)
-          allPersonasData.push({ persona: { ...persona, id: personaId }, accountId })
+          allPersonasData.push({ persona: { ...persona, id: personaId }, accountId: matchedAccountId })
           
           console.log('[EMAIL-WIZARD] ✅ Added persona:', {
             personaId,
             name: wizardPersona.name,
-            accountId,
+            originalAccountId: accountId,
+            matchedAccountId,
             source: isApiPersona ? 'API' : 'DRAFT',
             hasUseCases: !!(persona.useCases && persona.useCases.length > 0),
             useCasesCount: persona.useCases?.length || 0
@@ -358,13 +389,26 @@ export function EmailWizardModal({
 
   const handleNext = async () => {
     if (isLastStep) {
+      console.log('[EMAIL-WIZARD] Starting email generation...', {
+        config,
+        isGenerating,
+        currentStep: safeCurrentStep
+      });
+      
       setIsGenerating(true)
       try {
+        console.log('[EMAIL-WIZARD] Calling onComplete with config:', config);
         await onComplete(config)
+        console.log('[EMAIL-WIZARD] onComplete successful, setting isGenerating to false');
         setIsGenerating(false)
       } catch (error) {
+        console.error('[EMAIL-WIZARD] Email generation failed:', {
+          error,
+          errorMessage: error?.message,
+          errorStack: error?.stack,
+          config
+        });
         setIsGenerating(false)
-        console.error('Email generation failed:', error)
       }
     } else {
       setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
