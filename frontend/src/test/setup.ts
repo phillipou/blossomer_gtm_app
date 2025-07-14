@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import '@testing-library/jest-dom'
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
+(globalThis as any).IntersectionObserver = class IntersectionObserver {
   root = null
   rootMargin = ''
   thresholds = [0]
@@ -38,4 +38,4 @@ const localStorageMock = {
   clear: vi.fn(),
   key: vi.fn(),
 }
-global.localStorage = localStorageMock as any
+(globalThis as any).localStorage = localStorageMock as any

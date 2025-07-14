@@ -37,8 +37,22 @@ export async function apiFetch<T>(
   // Prepare headers
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
   };
+
+  // Add headers from options, ensuring proper type conversion
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (typeof options.headers === 'object') {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          headers[key] = value;
+        }
+      });
+    }
+  }
 
   // Add authorization header if authenticated with Stack Auth token
   if (authToken) {
@@ -125,8 +139,22 @@ export async function apiFetchWithRateLimit<T>(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
   };
+
+  // Add headers from options, ensuring proper type conversion
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (typeof options.headers === 'object') {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          headers[key] = value;
+        }
+      });
+    }
+  }
 
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;

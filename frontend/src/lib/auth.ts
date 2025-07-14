@@ -17,6 +17,7 @@ export interface UserInfo {
 export interface AuthState {
   isAuthenticated: boolean
   token: string | null
+  apiKey: string | null
   userInfo: UserInfo | null
 }
 
@@ -24,6 +25,7 @@ export interface AuthState {
 let globalAuthState: AuthState = {
   isAuthenticated: false,
   token: null,
+  apiKey: null,
   userInfo: null
 };
 
@@ -77,6 +79,7 @@ export function useAuthState(): AuthState & { loading: boolean } {
   const authState = useMemo(() => user ? {
     isAuthenticated: true,
     token,
+    apiKey: token, // For compatibility with useAuth hook
     userInfo: {
       user_id: user.id,
       email: user.primaryEmail || '',
@@ -85,6 +88,7 @@ export function useAuthState(): AuthState & { loading: boolean } {
   } : {
     isAuthenticated: false,
     token: null,
+    apiKey: null,
     userInfo: null
   }, [user, token]);
 
@@ -237,4 +241,22 @@ export function parseRateLimitHeaders(response: Response): RateLimitInfo | null 
   }
 
   return null
+}
+
+// Legacy functions for backward compatibility with useAuth hook
+export function setAuthState(apiKey: string, userInfo: UserInfo) {
+  // Store auth state in localStorage for persistence
+  const authData = { apiKey, userInfo }
+  localStorage.setItem('authState', JSON.stringify(authData))
+}
+
+export function clearAuthState() {
+  // Clear auth state from localStorage
+  localStorage.removeItem('authState')
+}
+
+export async function validateApiKey(apiKey: string): Promise<UserInfo> {
+  // This would typically validate the API key with the backend
+  // For now, return a placeholder implementation
+  throw new Error('API key validation not implemented with Stack Auth')
 }

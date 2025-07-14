@@ -32,6 +32,12 @@ export interface ApiError {
     suggestions?: string[];
   };
   retryRecommended?: boolean;
+  rateLimitInfo?: {
+    limit: number;
+    remaining: number;
+    reset: number;
+    retryAfter?: number;
+  };
 }
 
 export interface AnalysisState {
@@ -153,6 +159,10 @@ export interface Account {
   data: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  // Additional properties from TargetAccountResponse
+  targetAccountName?: string;
+  targetAccountDescription?: string;
+  description?: string;
 }
 
 export interface AccountCreate {
@@ -204,6 +214,13 @@ export interface Persona {
   data: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  // Additional properties from TargetPersonaResponse
+  targetPersonaName?: string;
+  targetPersonaDescription?: string;
+  description?: string;
+  demographics?: Demographics;
+  useCases?: UseCase[];
+  buyingSignals?: APIBuyingSignal[];
 }
 
 export interface PersonaCreate {
@@ -414,4 +431,16 @@ export interface EmailGenerationResponse {
   emailBody: EmailSegment[];
   breakdown: EmailBreakdown;
   metadata: EmailGenerationMetadata;
+  // Additional properties referenced in code
+  campaignInsights?: string[];
+  messagingStrategy?: string[];
+  channelStrategy?: string[];
+  contentVariations?: string[];
+  optimizationTips?: string[];
+  // Properties needed for GeneratedEmail compatibility
+  id?: string;
+  timestamp?: string;
+  subject?: string;
+  body?: string;
+  segments?: EmailSegment[];
 }
