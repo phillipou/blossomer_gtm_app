@@ -69,7 +69,7 @@ export function EmailWizardModal({
 }: EmailWizardModalProps) {
   const { token } = useAuthState()
   const { companyId, isLoading: isCompanyLoading } = useCompanyContext()
-  const { isLoading: isDataLoading } = useDataContext()
+  const { isLoading: isDataLoading, syncData } = useDataContext()
   
   const [currentStep, setCurrentStep] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -88,13 +88,9 @@ export function EmailWizardModal({
     socialProof: "",
   })
 
-  // Temporarily simplify data access for debugging
-  const allAccounts: any[] = []
-  const allDraftPersonas: any[] = []
-  
-  // TODO: Re-enable after debugging
-  // const allAccounts = DraftManager.getDrafts('account').map(draft => draft.data)
-  // const allDraftPersonas = DraftManager.getDrafts('persona')
+  // Get all data from DraftManager (works for both authenticated and unauthenticated users)
+  const allAccounts = DraftManager.getDrafts('account').map(draft => draft.data)
+  const allDraftPersonas = DraftManager.getDrafts('persona')
 
   // Define steps based on mode
   const getSteps = () => {
@@ -198,6 +194,14 @@ export function EmailWizardModal({
 
   // Simple data loading - works for both authenticated and unauthenticated users
   useEffect(() => {
+    console.log('[EMAIL-WIZARD] Modal effect triggered:', {
+      isOpen,
+      isCompanyLoading,
+      token: !!token,
+      isDataLoading,
+      shouldWait: token && isDataLoading
+    });
+    
     if (!isOpen || isCompanyLoading) return
     
     // For authenticated users, wait for DataProvider to finish syncing
@@ -210,7 +214,13 @@ export function EmailWizardModal({
         isAuthenticated: !!token,
         accountsCount: allAccounts.length,
         personasCount: allDraftPersonas.length,
-        dataProviderLoading: isDataLoading
+        dataProviderLoading: isDataLoading,
+        allAccountsData: allAccounts.map(acc => ({ id: acc.id, name: acc.name || acc.targetAccountName })),
+        allPersonasData: allDraftPersonas.map(p => ({ 
+          id: p.data.id || p.tempId, 
+          accountId: p.parentId || p.data.accountId,
+          name: p.data.targetPersonaName || p.data.name 
+        }))
       });
       
       // Transform accounts for wizard use
@@ -400,9 +410,25 @@ export function EmailWizardModal({
                 ) : targetAccounts.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-600 mb-4">No target accounts found.</p>
-                    <p className="text-sm text-gray-500">
-                      Generate target accounts and personas from the Accounts or Personas pages first.
+                    <p className="text-sm text-gray-500 mb-4">
+                      {token 
+                        ? "Click 'Sync Data' to load your accounts from the API, or create accounts on the Accounts page."
+                        : "Generate target accounts and personas from the Accounts or Personas pages first."
+                      }
                     </p>
+                    {token && (
+                      <Button 
+                        onClick={() => {
+                          console.log('[EMAIL-WIZARD] Manual sync triggered');
+                          syncData();
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Sync Data
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <>

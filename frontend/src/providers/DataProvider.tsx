@@ -67,12 +67,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       isCompanyLoading
     });
     
-    // For now, just set loading to false to not block rendering
-    setIsLoading(false);
-    setError(null);
-    
-    // TODO: Re-enable automatic sync after debugging
-    /*
     if (isCompanyLoading) return;
     
     if (token && companyId) {
@@ -83,7 +77,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setIsLoading(false);
       setError(null);
     }
-    */
   }, [token, companyId, isCompanyLoading]);
 
   /**
