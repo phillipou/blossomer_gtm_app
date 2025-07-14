@@ -242,7 +242,7 @@ export function EmailWizardModal({
       
       allDraftPersonas.forEach(draft => {
         const persona = draft.data
-        const accountId = draft.parentId || persona.accountId
+        let accountId = draft.parentId || persona.accountId || persona.account_id
         
         console.log('[EMAIL-WIZARD] Processing persona:', {
           personaId: persona.id || draft.tempId,
@@ -254,8 +254,17 @@ export function EmailWizardModal({
         });
         
         // Only include personas that belong to available accounts
-        const accountExists = allAccounts.some(account => account.id === accountId)
+        let accountExists = accountId && allAccounts.some(account => account.id === accountId)
         console.log('[EMAIL-WIZARD] Account exists check:', { accountId, accountExists });
+        
+        // For unauthenticated users, if no accountId or account doesn't exist, 
+        // try to assign to the first available account
+        if (!accountExists && allAccounts.length > 0) {
+          const fallbackAccountId = allAccounts[0].id;
+          console.log('[EMAIL-WIZARD] Using fallback account:', { fallbackAccountId });
+          accountId = fallbackAccountId;
+          accountExists = true;
+        }
         
         if (accountExists) {
           const personaId = persona.id || draft.tempId;

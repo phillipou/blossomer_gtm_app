@@ -246,7 +246,7 @@ export default function TargetPersonas() {
                     title={getPersonaName(persona)}
                     description={getPersonaDescription(persona)}
                     parents={[
-                      { name: accounts?.find(a => a.id === persona.accountId)?.name || 'Account', color: getEntityColorForParent('account'), label: "Account" },
+                      { name: allAccounts?.find(a => a.id === persona.accountId)?.name || 'Account', color: getEntityColorForParent('account'), label: "Account" },
                       { name: overview?.companyName || "Company", color: getEntityColorForParent('company'), label: "Company" },
                       ...(persona.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
                     ]}
