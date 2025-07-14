@@ -672,49 +672,55 @@ export default function AccountDetail() {
             <span className="text-gray-500 ml-2">({allPersonas.length})</span>
           )}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
-          {allPersonas.map((persona) => (
-            <SummaryCard
-              key={persona.id}
-              title={getPersonaName(persona)}
-              description={getPersonaDescription(persona)}
-              parents={[
-                { 
-                  name: entityPageState.displayEntity?.targetAccountName || 'Target Account', 
-                  color: getEntityColorForParent('account'), 
-                  label: 'Account' 
-                },
-                ...(persona.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
-              ]}
-              onClick={() => handlePersonaClick(persona.id)}
-              entityType="persona"
-            >
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                onClick={e => { 
-                  e.stopPropagation(); 
-                  handleEditPersona(persona); 
-                }} 
-                className="text-blue-600"
+        {allPersonas.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
+            {allPersonas.map((persona) => (
+              <SummaryCard
+                key={persona.id}
+                title={getPersonaName(persona)}
+                description={getPersonaDescription(persona)}
+                parents={[
+                  { 
+                    name: entityPageState.displayEntity?.targetAccountName || 'Target Account', 
+                    color: getEntityColorForParent('account'), 
+                    label: 'Account' 
+                  },
+                  ...(persona.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
+                ]}
+                onClick={() => handlePersonaClick(persona.id)}
+                entityType="persona"
               >
-                <Edit3 className="w-5 h-5" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                onClick={e => { 
-                  e.stopPropagation(); 
-                  handleDeletePersona(persona.id); 
-                }} 
-                className="text-red-500"
-              >
-                <Trash2 className="w-5 h-5" />
-              </Button>
-            </SummaryCard>
-          ))}
-          <AddCard onClick={handleAddPersona} label="Add New" />
-        </div>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  onClick={e => { 
+                    e.stopPropagation(); 
+                    handleEditPersona(persona); 
+                  }} 
+                  className="text-blue-600"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  onClick={e => { 
+                    e.stopPropagation(); 
+                    handleDeletePersona(persona.id); 
+                  }} 
+                  className="text-red-500"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </SummaryCard>
+            ))}
+            <AddCard onClick={handleAddPersona} label="Add New" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
+            <AddCard onClick={handleAddPersona} label="Add New" />
+          </div>
+        )}
       </div>
     </EntityPageLayout>
 

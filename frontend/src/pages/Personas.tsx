@@ -57,7 +57,7 @@ export default function TargetPersonas() {
   })) : [];
   
   // Combine accounts based on auth state - NO mixing of playground and database data
-  const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
+  const allAccounts = isAuthenticated ? (accounts || []) : draftAccounts;
   
   // Get personas for all accounts (authenticated users only) - following Implementation.md guidance
   const { data: authenticatedPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
@@ -182,8 +182,18 @@ export default function TargetPersonas() {
 
   // Persona creation handler
   const handleCreatePersona = async ({ name, description, accountId }: { name: string; description: string; accountId: string }) => {
+    console.log('[PERSONAS-DEBUG] Form submitted with:', { 
+      name, 
+      description, 
+      accountId,
+      selectedAccountId,
+      hasValidContext,
+      allAccountsLength: allAccounts?.length,
+      allAccounts: allAccounts?.map(a => ({ id: a.id, name: a.name }))
+    });
+    
     if (!hasValidContext || !accountId) {
-      console.error("Cannot create persona without valid context");
+      console.error("Cannot create persona without valid context", { hasValidContext, accountId });
       return;
     }
     
@@ -363,7 +373,7 @@ export default function TargetPersonas() {
         subtitle="Update the name and description for this buyer persona."
         nameLabel="Persona Name"
         namePlaceholder="e.g., Marketing Director, Sales Manager..."
-        descriptionLabel="Description"
+        descriptionLabel="Target Persona Description"
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
         submitLabel="Update"
         cancelLabel="Cancel"
@@ -379,7 +389,7 @@ export default function TargetPersonas() {
         subtitle="Describe a new buyer persona to generate detailed insights."
         nameLabel="Persona Name"
         namePlaceholder="e.g., Marketing Director, Sales Manager..."
-        descriptionLabel="Description"
+        descriptionLabel="Target Persona Description"
         descriptionPlaceholder="Describe this persona's role, responsibilities, and characteristics..."
         submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Persona</>}
         loadingMessage="Generating Persona..."
@@ -390,6 +400,7 @@ export default function TargetPersonas() {
         onAccountChange={setSelectedAccountId}
         accountLabel="Target Account"
         accountPlaceholder="None"
+        descriptionRequired={false}
       />
     </div>
   );

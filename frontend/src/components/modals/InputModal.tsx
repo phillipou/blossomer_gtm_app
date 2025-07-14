@@ -102,8 +102,22 @@ export default function InputModal({
   };
 
   const handleSubmit = () => {
-    if (accounts.length > 0 && !accountId) return;
+    console.log('[INPUT-MODAL-DEBUG] Submit clicked:', { 
+      accountsLength: accounts.length, 
+      accountId, 
+      name: name.trim(), 
+      description: description.trim(),
+      nameRequired,
+      showDescription,
+      descriptionRequired
+    });
+    
+    if (accounts.length > 0 && !accountId) {
+      console.log('[INPUT-MODAL-DEBUG] Early return: No account selected');
+      return;
+    }
     if (nameRequired && !name.trim()) {
+      console.log('[INPUT-MODAL-DEBUG] Early return: Name required but empty');
       setNameError('This field is required');
       return;
     }
@@ -122,8 +136,12 @@ export default function InputModal({
         return;
       }
     }
-    if (showDescription && descriptionRequired && !description.trim()) return;
+    if (showDescription && descriptionRequired && !description.trim()) {
+      console.log('[INPUT-MODAL-DEBUG] Early return: Description required but empty');
+      return;
+    }
     
+    console.log('[INPUT-MODAL-DEBUG] All validations passed, calling onSubmit');
     setNameError(null);
     onSubmit({ name: name.trim(), description: description.trim(), accountId });
   };

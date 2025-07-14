@@ -31,6 +31,7 @@ import EditCriteriaModal from '../components/modals/EditCriteriaModal';
 import { CriteriaTable } from '../components/tables/CriteriaTable';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import AddCard from '../components/ui/AddCard';
 import { LoadingStates } from '../components/ui/page-loading';
 
 // Stable references to prevent re-renders
@@ -670,27 +671,11 @@ export default function PersonaDetail() {
                   </div>
                 </div>
               ))}
-              <div 
-                className="flex items-center justify-center cursor-pointer border-dashed border-2 border-orange-200 min-h-[120px] rounded-lg transition-all duration-200 hover:bg-orange-50 hover:shadow-md hover:scale-[1.01]"
-                onClick={() => navigateWithPrefix('/campaigns')}
-              >
-                <div className="flex flex-col items-center">
-                  <Plus className="w-8 h-8 text-orange-500 mb-2" />
-                  <span className="text-orange-600 font-medium">Add New</span>
-                </div>
-              </div>
+              <AddCard onClick={() => navigateWithPrefix('/campaigns')} label="Add New" />
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <div className="mb-4">No campaigns created yet</div>
-              <Button 
-                onClick={() => navigateWithPrefix('/campaigns')}
-                size="lg"
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Create First Campaign
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
+              <AddCard onClick={() => navigateWithPrefix('/campaigns')} label="Add New" />
             </div>
           )}
         </div>
