@@ -16,13 +16,14 @@ import {
 import { getAllPersonas } from '../lib/personaService';
 import { useGetAccount } from '../lib/hooks/useAccounts';
 import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
+import { useGetCampaigns } from '../lib/hooks/useCampaigns';
 import { useCompanyContext } from '../lib/hooks/useCompanyContext';
 import { useAuthState } from '../lib/auth';
 import { DraftManager } from '../lib/draftManager';
 import { useQueryClient } from '@tanstack/react-query';
 import { normalizePersonaResponse } from '../lib/personaService';
 import { Wand2, Pencil, Plus } from 'lucide-react';
-import type { TargetPersonaResponse, TargetPersonaRequest, APIBuyingSignal, Demographics, UseCase } from '../types/api';
+import type { TargetPersonaResponse, TargetPersonaRequest, APIBuyingSignal, Demographics, UseCase, Persona } from '../types/api';
 import BuyingSignalsCard from '../components/cards/BuyingSignalsCard';
 import UseCasesCard from '../components/cards/UseCasesCard';
 import EditBuyingSignalModal from '../components/modals/EditBuyingSignalModal';
@@ -71,6 +72,15 @@ export default function PersonaDetail() {
   
   // Get company data for context  
   const { overview: company, companyId } = useCompanyContext();
+  
+  // Get campaigns data
+  const { data: allCampaigns } = useGetCampaigns(token, companyId);
+  
+  // Filter campaigns for this persona
+  const personaCampaigns = useMemo(() => 
+    allCampaigns?.filter(campaign => campaign.personaId === personaId) || [],
+    [allCampaigns, personaId]
+  );
   
   // Initialize entity page hook FIRST (before any conditional logic to avoid hook order issues)
   const entityPageState = useEntityPage<TargetPersonaResponse>({
@@ -128,7 +138,7 @@ export default function PersonaDetail() {
   const { mutate: generatePersona, isPending: isGenerating } = useGeneratePersona(token);
   
   // Auth-aware navigation
-  const { navigateToEntity } = useAuthAwareNavigation();
+  const { navigateToEntity, navigateWithPrefix } = useAuthAwareNavigation();
   
   // Handle "new" route - show creation modal
   useEffect(() => {
@@ -192,7 +202,7 @@ export default function PersonaDetail() {
     (rows as any[]).forEach((row: any) => {
       const values = row.values.map((v: any) => v.text);
       // Convert label back to camelCase key
-      const fieldKey = row.label.toLowerCase().replace(/\s+(.)/g, (_, char) => char.toUpperCase());
+      const fieldKey = row.label.toLowerCase().replace(/\s+(.)/g, (_: string, char: string) => char.toUpperCase());
       
       // Store as array (demographics fields are typically arrays)
       result[fieldKey] = values;
@@ -541,85 +551,149 @@ export default function PersonaDetail() {
           bodyText: entityPageState.displayEntity?.targetPersonaDescription || 'No description available',
           entityType: 'persona',
         }}
-      >
-        {/* Demographics Section */}
-        {entityPageState.displayEntity.demographics && (
-          <Card className="w-full">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base font-medium">Demographics</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDemographicsModalOpen(true)}
-                className="h-8 w-8 p-0"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <CriteriaTable data={demographicsTableData} />
-            </CardContent>
-          </Card>
-        )}
+        preFieldCards={
+          <>
+            {/* Demographics Section */}
+            {entityPageState.displayEntity.demographics && (
+              <Card className="mt-8 group">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-base font-medium">Demographics</CardTitle>
+                    <div className="text-sm text-gray-500">Target audience characteristics and job-related attributes</div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDemographicsModalOpen(true)}
+                    className="h-8 w-8 p-0 invisible group-hover:visible"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <CriteriaTable data={demographicsTableData} />
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Use Cases Section */}
-        <UseCasesCard
-          useCases={entityPageState.displayEntity?.useCases || []}
-          onAdd={(newUseCase: UseCase) => {
-            const currentUseCases = entityPageState.displayEntity?.useCases || [];
-            const updatedUseCases = [...currentUseCases, newUseCase];
-            handleUseCasesUpdate(updatedUseCases);
-          }}
-          onEdit={(idx: number, updatedUseCase: UseCase) => {
-            const currentUseCases = entityPageState.displayEntity?.useCases || [];
-            const updatedUseCases = currentUseCases.map((uc, i) => i === idx ? updatedUseCase : uc);
-            handleUseCasesUpdate(updatedUseCases);
-          }}
-          onDelete={(idx: number) => {
-            const currentUseCases = entityPageState.displayEntity?.useCases || [];
-            const updatedUseCases = currentUseCases.filter((_, i) => i !== idx);
-            handleUseCasesUpdate(updatedUseCases);
-          }}
-        />
-
-        {/* Buying Signals Section */}
-        <Card className="w-full">
-          <CardHeader>
-            <div className="flex items-center justify-between mb-2">
-              <CardTitle>Buying Signals</CardTitle>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={() => { 
-                  setModalEditingSignal(null); 
-                  setBuyingSignalsModalOpen(true); 
+            {/* Use Cases Section */}
+            <div className="mt-8">
+              <UseCasesCard
+                useCases={entityPageState.displayEntity?.useCases || []}
+                onAdd={(newUseCase: UseCase) => {
+                  const currentUseCases = entityPageState.displayEntity?.useCases || [];
+                  const updatedUseCases = [...currentUseCases, newUseCase];
+                  handleUseCasesUpdate(updatedUseCases);
                 }}
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add
-              </Button>
-            </div>
-            <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
-          </CardHeader>
-          <CardContent>
-            {(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
-              <BuyingSignalsCard
-                buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
-                editable={true}
-                onEdit={(signal) => {
-                  setModalEditingSignal(signal);
-                  setBuyingSignalsModalOpen(true);
+                onEdit={(idx: number, updatedUseCase: UseCase) => {
+                  const currentUseCases = entityPageState.displayEntity?.useCases || [];
+                  const updatedUseCases = currentUseCases.map((uc, i) => i === idx ? updatedUseCase : uc);
+                  handleUseCasesUpdate(updatedUseCases);
                 }}
-                onDelete={(signal) => {
-                  const updatedSignals = (entityPageState.displayEntity?.buyingSignals || [])
-                    .filter(s => s.title !== signal.title);
-                  handleBuyingSignalsUpdate(updatedSignals);
+                onDelete={(idx: number) => {
+                  const currentUseCases = entityPageState.displayEntity?.useCases || [];
+                  const updatedUseCases = currentUseCases.filter((_, i) => i !== idx);
+                  handleUseCasesUpdate(updatedUseCases);
                 }}
               />
-            ) : (
-              <div className="text-center py-8 text-gray-500">No buying signals identified</div>
+            </div>
+
+            {/* Buying Signals Section */}
+            <Card className="mt-8">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle>Buying Signals</CardTitle>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => { 
+                      setModalEditingSignal(null); 
+                      setBuyingSignalsModalOpen(true); 
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add
+                  </Button>
+                </div>
+                <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+              </CardHeader>
+              <CardContent>
+                {(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
+                  <BuyingSignalsCard
+                    buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
+                    editable={true}
+                    onEdit={(signal) => {
+                      setModalEditingSignal(signal);
+                      setBuyingSignalsModalOpen(true);
+                    }}
+                    onDelete={(signal) => {
+                      const updatedSignals = (entityPageState.displayEntity?.buyingSignals || [])
+                        .filter(s => s.title !== signal.title);
+                      handleBuyingSignalsUpdate(updatedSignals);
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">No buying signals identified</div>
+                )}
+              </CardContent>
+            </Card>
+
+          </>
+        }
+      >
+        {/* Associated Campaigns Section */}
+        <div>
+          <h2 className="text-lg font-semibold mb-4">
+            Associated Campaigns
+            {personaCampaigns.length > 0 && (
+              <span className="text-gray-500 ml-2">({personaCampaigns.length})</span>
             )}
-          </CardContent>
-        </Card>
+          </h2>
+          {personaCampaigns.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
+              {personaCampaigns.map((campaign) => (
+                <div 
+                  key={campaign.id}
+                  className="flex items-center justify-between p-4 bg-white border rounded-lg hover:shadow-md cursor-pointer transition-all duration-200 hover:scale-[1.01]"
+                  onClick={() => navigateToEntity('campaign', campaign.id)}
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-1">{campaign.name || 'Untitled Campaign'}</h4>
+                    <p className="text-sm text-gray-600 mb-2">{campaign.type || 'Email Campaign'}</p>
+                    {campaign.createdAt && (
+                      <p className="text-xs text-gray-500">
+                        Created {new Date(campaign.createdAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  </div>
+                </div>
+              ))}
+              <div 
+                className="flex items-center justify-center cursor-pointer border-dashed border-2 border-orange-200 min-h-[120px] rounded-lg transition-all duration-200 hover:bg-orange-50 hover:shadow-md hover:scale-[1.01]"
+                onClick={() => navigateWithPrefix('/campaigns')}
+              >
+                <div className="flex flex-col items-center">
+                  <Plus className="w-8 h-8 text-orange-500 mb-2" />
+                  <span className="text-orange-600 font-medium">Add New</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <div className="mb-4">No campaigns created yet</div>
+              <Button 
+                onClick={() => navigateWithPrefix('/campaigns')}
+                size="lg"
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create First Campaign
+              </Button>
+            </div>
+          )}
+        </div>
       </EntityPageLayout>
 
       {/* Demographics Edit Modal */}
@@ -638,7 +712,6 @@ export default function PersonaDetail() {
           setDemographicsModalOpen(false);
         }}
         title="Edit Demographics"
-        subtitle="Update the demographic information for this persona."
         initialRows={demographicsTableData}
       />
 

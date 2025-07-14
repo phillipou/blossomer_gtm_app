@@ -18,6 +18,7 @@ import {
 } from '../lib/hooks/useAccounts';
 import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
+import { useGetPersonas } from '../lib/hooks/usePersonas';
 import { normalizeAccountResponse } from '../lib/accountService';
 import { useGetCompany, useGetUserCompany } from '../lib/hooks/useCompany';
 import { useAuthState } from '../lib/auth';
@@ -27,14 +28,18 @@ const emptyObject = {};
 const emptyMutate = () => {};
 const dummyGenerateResult = { mutate: emptyMutate, isPending: false, error: null };
 import { useCompanyContext } from '../lib/hooks/useCompanyContext';
-import { Wand2, Plus, Pencil } from 'lucide-react';
-import type { TargetAccountResponse, AccountCreate, TargetAccountAPIRequest, APIBuyingSignal, Firmographics } from '../types/api';
+import { Wand2, Plus, Pencil, Trash2, Edit3 } from 'lucide-react';
+import type { TargetAccountResponse, AccountCreate, TargetAccountAPIRequest, APIBuyingSignal, Firmographics, Persona } from '../types/api';
 import BuyingSignalsCard from '../components/cards/BuyingSignalsCard';
+import SummaryCard from '../components/cards/SummaryCard';
+import AddCard from '../components/ui/AddCard';
 import EditBuyingSignalModal from '../components/modals/EditBuyingSignalModal';
 import EditCriteriaModal from '../components/modals/EditCriteriaModal';
 import { CriteriaTable } from '../components/tables/CriteriaTable';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { getPersonaName, getPersonaDescription } from '../lib/entityDisplayUtils';
+import { useDeletePersona } from '../lib/hooks/usePersonas';
 import { DraftManager } from '../lib/draftManager';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -59,6 +64,7 @@ export default function AccountDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   
   // Modal state for firmographics and buying signals
   const [firmographicsModalOpen, setFirmographicsModalOpen] = useState(false);
@@ -119,6 +125,22 @@ export default function AccountDetail() {
   
   // Field-preserving update hook (for authenticated users)
   const { mutate: updateWithFieldPreservation } = useUpdateAccountPreserveFields(token, accountId);
+
+  // Get personas for this account (for Personas section)
+  const { data: personas = [] } = useGetPersonas(accountId || "", token);
+  
+  // Get draft personas for unauthenticated users
+  const draftPersonas = !token ? DraftManager.getDraftsByParent('persona', accountId || "").map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+  
+  // Combine personas based on auth state
+  const allPersonas = token ? (personas || []) : [...(personas || []), ...draftPersonas];
+
+  // Delete hook for authenticated personas
+  const { mutate: deletePersona } = useDeletePersona(companyId || "", token);
 
   // Temporarily disable all logging to identify root cause
   // console.log('🔍 [AccountDetail] Component rendered with accountId:', accountId);
@@ -253,6 +275,9 @@ export default function AccountDetail() {
       isAuthenticated: !!token
     });
     
+    // Set loading state to show spinner
+    setIsCreatingAccount(true);
+    
     // Create the account data in the AI request format
     const accountProfileData = {
       website_url: overview.companyUrl || '',
@@ -298,6 +323,9 @@ export default function AccountDetail() {
     } catch (error) {
       console.error('[ACCOUNT-CREATION] Universal create failed:', error);
       handleComponentError("Account creation", error);
+    } finally {
+      // Clear loading state
+      setIsCreatingAccount(false);
     }
   };
   
@@ -328,12 +356,13 @@ export default function AccountDetail() {
           nameLabel="Account Profile Name"
           namePlaceholder="Mid-market SaaS companies"
           descriptionLabel="Account Hypothesis"
-          descriptionPlaceholder="e.g., Companies with 100-500 employees in the software industry..."
+          descriptionPlaceholder="Describe what types of companies you're targeting"
+          descriptionRequired={false}
           submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
           cancelLabel="Cancel"
           defaultName=""
           defaultDescription=""
-          isLoading={isGenerating || isCreating}
+          isLoading={isGenerating || isCreating || isCreatingAccount}
         />
       </div>
     );
@@ -502,13 +531,53 @@ export default function AccountDetail() {
     }
   };
 
+  // Persona handlers following Company.tsx pattern
+  const handlePersonaClick = (personaId: string) => {
+    navigateWithPrefix(`/personas/${personaId}`);
+  };
+
+  const handleEditPersona = (persona: Persona) => {
+    navigateWithPrefix(`/personas/${persona.id}`);
+  };
+
+  const handleDeletePersona = (personaId: string) => {
+    if (confirm('Are you sure you want to delete this persona?')) {
+      // Check if this is a draft persona (temp ID format)
+      if (personaId.startsWith('temp_')) {
+        // Draft persona - remove from DraftManager
+        DraftManager.removeDraft('persona', personaId);
+        // Invalidate query cache to trigger re-render
+        queryClient.invalidateQueries({ queryKey: ['personas', companyId] });
+        // Also invalidate any general personas queries
+        queryClient.invalidateQueries({ queryKey: ['personas'] });
+      } else if (token) {
+        // Authenticated persona - use mutation
+        deletePersona(personaId);
+      } else {
+        console.warn('[ACCOUNT-DETAIL-DELETE] Cannot delete non-draft persona for unauthenticated user:', personaId);
+      }
+    }
+  };
+
+  const handleAddPersona = () => {
+    navigateWithPrefix('/personas');
+  };
+
+  // Helper function for entity colors (used in personas section)
+  const getEntityColorForParent = (entityType: string) => {
+    const colorMap: Record<string, string> = {
+      'account': 'bg-green-100 text-green-800',
+      'company': 'bg-blue-100 text-blue-800',
+    };
+    return colorMap[entityType] || 'bg-gray-100 text-gray-800';
+  };
+
   // Breadcrumb data moved to top of component to avoid hook order issues
 
   return (
     <>
       <SubNav
         breadcrumbs={[
-          { label: "Company", href: `${breadcrumbData.pathPrefix}/company` },
           { label: "Target Accounts", href: `${breadcrumbData.pathPrefix}/accounts` },
           { label: breadcrumbData.accountName },
         ]}
@@ -530,66 +599,123 @@ export default function AccountDetail() {
         bodyText: entityPageState.displayEntity?.targetAccountDescription || 'No description available',
         entityType: 'account',
       }}
-    >
-      {/* Firmographics Section */}
-      <Card className="mt-8 group">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Firmographics</CardTitle>
-            <div className="text-sm text-gray-500">Searchable attributes for prospecting tools and databases</div>
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Edit Firmographics"
-            onClick={() => setFirmographicsModalOpen(true)}
-            className="ml-2 invisible group-hover:visible"
-          >
-            <Pencil className="w-4 h-4 text-blue-600" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {entityPageState.displayEntity?.firmographics ? (
-            <CriteriaTable 
-              data={firmographicsTableData}
-            />
-          ) : (
-            <div className="text-center py-8 text-gray-500">No firmographics data available</div>
-          )}
-        </CardContent>
-      </Card>
+      preFieldCards={
+        <>
+          {/* Firmographics Section */}
+          <Card className="mt-8 group">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Firmographics</CardTitle>
+                <div className="text-sm text-gray-500">Searchable attributes for prospecting tools and databases</div>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Edit Firmographics"
+                onClick={() => setFirmographicsModalOpen(true)}
+                className="ml-2 invisible group-hover:visible"
+              >
+                <Pencil className="w-4 h-4 text-blue-600" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {entityPageState.displayEntity?.firmographics ? (
+                <CriteriaTable 
+                  data={firmographicsTableData}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">No firmographics data available</div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Buying Signals Block */}
-      <Card className="mt-8">
-        <CardHeader>
-          <div className="flex items-center justify-between mb-2">
-            <CardTitle>Buying Signals</CardTitle>
-            <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setBuyingSignalsModalOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" /> Add
-            </Button>
-          </div>
-          <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
-        </CardHeader>
-        <CardContent>
-          {(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
-            <BuyingSignalsCard
-              buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
-              editable={true}
-              onEdit={(signal) => {
-                setModalEditingSignal(signal);
-                setBuyingSignalsModalOpen(true);
-              }}
-              onDelete={(signal) => {
-                // Handle delete through the entity update system instead of local state
-                const updatedSignals = (entityPageState.displayEntity?.buyingSignals || []).filter(s => s.title !== signal.title);
-                handleBuyingSignalsUpdate(updatedSignals);
-              }}
-            />
-          ) : (
-            <div className="text-center py-8 text-gray-500">No buying signals identified</div>
+          {/* Buying Signals Block */}
+          <Card className="mt-8">
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle>Buying Signals</CardTitle>
+                <Button size="sm" variant="ghost" onClick={() => { setModalEditingSignal(null); setBuyingSignalsModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> Add
+                </Button>
+              </div>
+              <div className="text-sm text-gray-500">Indicators that suggest a prospect is ready to buy or engage with your solution</div>
+            </CardHeader>
+            <CardContent>
+              {(entityPageState.displayEntity?.buyingSignals || []).length > 0 ? (
+                <BuyingSignalsCard
+                  buyingSignals={entityPageState.displayEntity?.buyingSignals || []}
+                  editable={true}
+                  onEdit={(signal) => {
+                    setModalEditingSignal(signal);
+                    setBuyingSignalsModalOpen(true);
+                  }}
+                  onDelete={(signal) => {
+                    // Handle delete through the entity update system instead of local state
+                    const updatedSignals = (entityPageState.displayEntity?.buyingSignals || []).filter(s => s.title !== signal.title);
+                    handleBuyingSignalsUpdate(updatedSignals);
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">No buying signals identified</div>
+              )}
+            </CardContent>
+          </Card>
+
+        </>
+      }
+    >
+      {/* Target Personas Section - Following Company.tsx pattern */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">
+          Target Personas
+          {allPersonas.length > 0 && (
+            <span className="text-gray-500 ml-2">({allPersonas.length})</span>
           )}
-        </CardContent>
-      </Card>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
+          {allPersonas.map((persona) => (
+            <SummaryCard
+              key={persona.id}
+              title={getPersonaName(persona)}
+              description={getPersonaDescription(persona)}
+              parents={[
+                { 
+                  name: entityPageState.displayEntity?.targetAccountName || 'Target Account', 
+                  color: getEntityColorForParent('account'), 
+                  label: 'Account' 
+                },
+                ...(persona.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])
+              ]}
+              onClick={() => handlePersonaClick(persona.id)}
+              entityType="persona"
+            >
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  handleEditPersona(persona); 
+                }} 
+                className="text-blue-600"
+              >
+                <Edit3 className="w-5 h-5" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  handleDeletePersona(persona.id); 
+                }} 
+                className="text-red-500"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            </SummaryCard>
+          ))}
+          <AddCard onClick={handleAddPersona} label="Add New" />
+        </div>
+      </div>
     </EntityPageLayout>
 
     {/* Edit Modals */}

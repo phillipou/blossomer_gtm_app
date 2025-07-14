@@ -9,8 +9,8 @@ interface EditBuyingSignalModalProps {
 }
 
 interface BuyingSignal {
-  id: string;
-  label: string;
+  id?: string;
+  title: string;
   description: string;
   enabled?: boolean;
   priority?: string;
@@ -23,7 +23,7 @@ export default function EditBuyingSignalModal({ isOpen, onClose, onSave, editing
   // Memoize initialValues to prevent re-render loops
   const initialValues = useMemo(() => {
     return editingSignal
-      ? { label: editingSignal.label, description: editingSignal.description, priority: editingSignal.priority || "" }
+      ? { label: editingSignal.title, description: editingSignal.description, priority: editingSignal.priority || "" }
       : { label: "", description: "", priority: "" };
   }, [editingSignal]);
 

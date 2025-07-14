@@ -290,15 +290,37 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           
           console.log('[DUAL-PATH-UNAUTH-CAMPAIGN] Generated email data:', generatedEmailData);
           
-          // Step 2: Create database-identical Campaign structure
+          // Step 2: Create database-identical Campaign structure with snapshots
+          // Extract account and persona snapshots from the AI request
+          const campaignRequest = aiResponse as any;
+          const companySnapshot = campaignRequest.companyContext ? {
+            companyName: campaignRequest.companyContext.companyName,
+            companyUrl: campaignRequest.companyContext.companyUrl
+          } : null;
+          
+          const accountSnapshot = campaignRequest.targetAccount ? {
+            targetAccountName: campaignRequest.targetAccount.target_account_name || campaignRequest.targetAccount.targetAccountName || campaignRequest.targetAccount.name,
+            targetAccountDescription: campaignRequest.targetAccount.target_account_description || campaignRequest.targetAccount.targetAccountDescription || campaignRequest.targetAccount.description
+          } : null;
+          
+          const personaSnapshot = campaignRequest.targetPersona ? {
+            targetPersonaName: campaignRequest.targetPersona.target_persona_name || campaignRequest.targetPersona.targetPersonaName || campaignRequest.targetPersona.name,
+            targetPersonaDescription: campaignRequest.targetPersona.target_persona_description || campaignRequest.targetPersona.targetPersonaDescription || campaignRequest.targetPersona.description
+          } : null;
+          
           // Top-level fields: id, name, persona_id, type, created_at, updated_at  
-          // JSON data field: emailBody, subjects, breakdown (preserved complex email content)
+          // JSON data field: emailBody, subjects, breakdown + snapshots for parent entity display
           const fakeCampaignResponse = {
             id: `temp_${Date.now()}`,
             name: generatedEmailData.subjects?.primary || (aiResponse as any).campaignName || 'Generated Campaign',
             persona_id: options?.parentId || 'temp_persona',
             type: 'email',
-            data: generatedEmailData, // Full AI-generated email data with segments, breakdown, metadata
+            data: {
+              ...generatedEmailData, // Full AI-generated email data with segments, breakdown, metadata
+              companySnapshot,
+              accountSnapshot,
+              personaSnapshot
+            },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

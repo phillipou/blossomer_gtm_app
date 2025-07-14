@@ -80,54 +80,22 @@ export function useEntityCRUD<T>(entityType: EntityType) {
         if (customCompanyId || companyId) saveOptions.companyId = customCompanyId || companyId;
     }
     
-    console.log('[ENTITY-CRUD-CREATE] Starting creation:', {
-      entityType,
-      isAuthenticated,
-      hasCompanyContext: !!companyId,
-      saveOptions,
-      navigateOnSuccess
-    });
     
     try {
       const result = await saveEntity(aiData, saveOptions);
       
-      console.log('[ENTITY-CRUD-CREATE] Raw result from saveEntity:', {
-        result,
-        resultId: result?.id,
-        resultKeys: result ? Object.keys(result) : 'null'
-      });
       
       // Automatic navigation after successful creation
       if (navigateOnSuccess && result?.id) {
-        console.log('[ENTITY-CRUD-CREATE] Navigating to created entity:', {
-          entityType,
-          entityId: result.id
-        });
         // Simplified navigation - all entities use direct routing
         navigateToEntity(entityType, result.id);
       } else if (navigateOnSuccess && !result?.id) {
-        console.error('[ENTITY-CRUD-CREATE] Cannot navigate - no ID in result:', {
-          entityType,
-          result,
-          navigateOnSuccess
-        });
       }
       
-      console.log('[ENTITY-CRUD-CREATE] Successfully created entity:', {
-        entityType,
-        entityId: result?.id,
-        isTemporary: result?.isTemporary,
-        navigated: navigateOnSuccess && !!result?.id
-      });
       
       return result;
       
     } catch (error) {
-      console.error('[ENTITY-CRUD-CREATE] Failed to create entity:', {
-        entityType,
-        error,
-        saveOptions
-      });
       throw error;
     }
   };
@@ -136,30 +104,14 @@ export function useEntityCRUD<T>(entityType: EntityType) {
    * Update existing entity with field preservation patterns
    */
   const update = async (entityId: string, updates: Partial<T>): Promise<T> => {
-    console.log('[ENTITY-CRUD-UPDATE] Starting update:', {
-      entityType,
-      entityId,
-      isAuthenticated,
-      updateFields: Object.keys(updates)
-    });
     
     try {
       const result = await updateEntity(entityId, updates);
       
-      console.log('[ENTITY-CRUD-UPDATE] Successfully updated entity:', {
-        entityType,
-        entityId,
-        isAuthenticated
-      });
       
       return result;
       
     } catch (error) {
-      console.error('[ENTITY-CRUD-UPDATE] Failed to update entity:', {
-        entityType,
-        entityId,
-        error
-      });
       throw error;
     }
   };
@@ -168,27 +120,12 @@ export function useEntityCRUD<T>(entityType: EntityType) {
    * Delete existing entity with dual-path handling
    */
   const remove = async (entityId: string): Promise<void> => {
-    console.log('[ENTITY-CRUD-DELETE] Starting deletion:', {
-      entityType,
-      entityId,
-      isAuthenticated
-    });
     
     try {
       await deleteEntity(entityId);
       
-      console.log('[ENTITY-CRUD-DELETE] Successfully deleted entity:', {
-        entityType,
-        entityId,
-        isAuthenticated
-      });
       
     } catch (error) {
-      console.error('[ENTITY-CRUD-DELETE] Failed to delete entity:', {
-        entityType,
-        entityId,
-        error
-      });
       throw error;
     }
   };

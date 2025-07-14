@@ -1,163 +1,228 @@
-# Performance Audit Report - Duplicate Requests & Unnecessary Re-renders
+# Performance Audit Report - Hooks, Callbacks & Re-render Analysis
 
 **Date**: 2025-07-14  
 **Auditor**: Claude Code  
-**Scope**: React useEffect, modal performance, and duplicate API calls  
+**Scope**: Comprehensive analysis of all hooks and callbacks in Accounts.tsx affecting InputModal typing performance  
 
 ## Executive Summary
 
-Critical performance issues identified causing lag in modal editing and page loading:
-- **EmailWizardModal**: 160+ lines of data transformation in useEffect causing severe lag
-- **Duplicate API calls**: Multiple components fetching identical data simultaneously  
-- **Cascading re-renders**: useEntityPage.ts triggering chain reactions
-- **Debug logging**: Performance degradation from excessive console output
+Comprehensive analysis of all hooks and callbacks in `/Users/phillipou/dev/active/blossomer_gtm_app/frontend/src/pages/Accounts.tsx` reveals critical performance issues affecting InputModal typing:
+
+**Key Findings:**
+- **11 total hooks** analyzed across 6 different hook types
+- **4 Critical** and **2 High** impact issues identified
+- **Primary concern:** Multiple custom hooks causing cascading re-renders during typing
+- **Root cause:** Unstable dependencies and forceUpdate pattern triggering complete component re-renders
 
 ## Critical Issues (High Priority)
 
-### 1. EmailWizardModal.tsx - Severe Performance Bottleneck
-**Location**: `frontend/src/components/campaigns/EmailWizardModal.tsx:224-385`  
-**Impact**: 🔴 CRITICAL - Causes modal lag and freezing
+### 1. forceUpdate State Cascade - ACCOUNTS.TSX
+**Location**: `frontend/src/pages/Accounts.tsx:72, 95, 125`  
+**Impact**: 🔴 CRITICAL - Causes InputModal typing lag and complete component re-renders
 
 **Issues**:
-- Heavy data transformation (160+ lines) inside useEffect
-- Triggers on `allAccounts.length` and `allPersonasForProcessing.length` changes
-- No debouncing or memoization for expensive operations
-- Complex dependency array causes frequent re-execution
+- `forceUpdate` state (line 72) triggers complete component re-render on every increment
+- Used in `draftAccounts` useMemo dependency array (line 95) causing expensive re-computations
+- Called in `handleDeleteAccount` (line 125) which can execute during typing sessions
+- Cascades through `allAccounts` → `filteredAccounts` → entire component tree
 
 **Performance Impact**:
-- Modal becomes unresponsive during data transformation
-- Re-triggers on every array length change
-- Blocks UI thread with synchronous operations
+- InputModal becomes laggy during typing as parent re-renders
+- Complete component re-render including all child components
+- Triggers expensive `DraftManager.getDrafts` calls on every update
 
-### 2. Duplicate API Call Patterns
-**Impact**: 🔴 CRITICAL - Network overhead and race conditions
-
-**Pattern 1: Campaigns Page + EmailWizardModal**
-- Both components fetch identical accounts/personas data
-- No coordination between parent and modal data fetching
-- Creates unnecessary network requests
-
-**Pattern 2: useCompanyContext Overlapping Requests**
-- Every page calls `useCompanyContext()` independently
-- Triggers multiple simultaneous company data fetches
-- No cache coordination between pages
-
-**Pattern 3: Entity Page Chain Requests**
-- Sequential API calls without proper dependency management
-- Child requests fire with undefined IDs while parent loads
-- Causes unnecessary 404/error requests
-
-### 3. useEntityPage.ts - Cascading Re-renders
-**Location**: `frontend/src/lib/hooks/useEntityPage.ts:139-265`  
-**Impact**: 🟡 HIGH - Auth changes trigger performance cascades
+### 2. useCompanyContext Complexity - ACCOUNTS.TSX  
+**Location**: `frontend/src/pages/Accounts.tsx:77` + `useCompanyContext.ts`
+**Impact**: 🔴 CRITICAL - Complex hook composition causing cascading re-renders
 
 **Issues**:
-- 4 overlapping useEffect hooks with shared dependencies
-- Auth state changes trigger cascading cache clears
-- Missing memoization for expensive operations like cache clearing
-- Navigation loops possible during auth transitions
+- **Multiple nested hooks:** `useAuthState` → `useCompanyOverview` → `useGetUserCompany` → `DraftManager`
+- **Complex memoization:** Line 57-76 with multiple dependencies that could be unstable
+- **Draft management:** `useMemo` with `DraftManager.getDrafts` calls on every evaluation
+- **Ref usage:** `useRef` for draft caching may not prevent all re-renders
 
-### 4. Modal Debug Logging Performance Degradation
-**Location**: `frontend/src/components/cards/ListInfoCardEditModal.tsx:46-69`  
-**Impact**: 🟡 MEDIUM - Degrades modal editing performance
+**Dependency Chain Impact**:
+```
+useCompanyContext → useAuthState (token changes)
+                 → useCompanyOverview (cache changes)  
+                 → useGetUserCompany (API calls)
+                 → DraftManager operations
+```
+
+### 3. React Query Hook Dependencies - ACCOUNTS.TSX
+**Location**: `frontend/src/pages/Accounts.tsx:83-84`  
+**Impact**: 🔴 CRITICAL - Unstable dependencies causing query re-runs
 
 **Issues**:
-- Excessive debug logging in render cycle
-- Deep object logging on every prop change
-- Console.log statements create memory pressure
-- No development-only guards
+- `useGetAccounts(companyId || "", token)` - both dependencies from unstable hooks
+- `useDeleteAccount(companyId)` - depends on potentially unstable `companyId`
+- If `companyId` or `token` change during typing, queries re-run causing network requests
+- Background refetching could trigger during modal interaction
+
+**Performance Risk**:
+- Query cache invalidation during typing sessions
+- Unnecessary API calls triggered by unstable dependencies
+- React Query normalization running on every hook evaluation
+
+### 4. useMemo Cascade Pattern - ACCOUNTS.TSX
+**Location**: `frontend/src/pages/Accounts.tsx:89-206`  
+**Impact**: 🟡 HIGH - Cascading memoization failures
+
+**Issues**:
+- `draftAccounts` useMemo depends on unstable `forceUpdate` (lines 89-96)
+- `allAccounts` useMemo depends on unstable `draftAccounts` (lines 99-102)  
+- `filteredAccounts` useMemo depends on unstable `allAccounts` (lines 196-206)
+- Each failure cascades to dependent memoizations
+
+**Cascade Pattern**:
+```
+forceUpdate changes → draftAccounts recalculates → allAccounts recalculates → filteredAccounts recalculates → component re-renders
+```
 
 ## Medium Priority Issues
 
-### 5. Missing React Optimizations
-**Impact**: 🟡 MEDIUM - Unnecessary re-renders
+### 5. useEntityCRUD Hook Complexity - ACCOUNTS.TSX
+**Location**: `frontend/src/pages/Accounts.tsx:80` + `useEntityCRUD.ts`
+**Impact**: 🟡 HIGH - Complex hook nesting causing performance overhead
 
 **Issues**:
-- Modal components lack React.memo optimization
-- Missing useMemo for expensive computations
-- Heavy color calculations not memoized
-- Form validation could benefit from useCallback
+- **Three-level hook nesting:** `useDualPathDataFlow` → `useCompanyContext` → `useAuthAwareNavigation`
+- **Extensive logging:** Lines 83-89, 94-98, 101-114 with detailed console logging on every evaluation
+- **Complex dependency chain:** Company context + auth state + navigation state changes
+- **No memoization:** Hook results not memoized, recalculated on every parent re-render
 
-### 6. State Management Anti-patterns
-**Impact**: 🟡 MEDIUM - Inefficient state updates
+**Performance Risk**:
+- Company context changes cascade to this hook
+- Logging overhead during rapid re-renders
+- Navigation utilities recreated on every render
 
-**Issues**:
-- Multiple setState calls without batching
-- Object/array dependencies without proper memoization
-- Missing useRef for values that don't need re-renders
-- Stale closure bugs in useEffect
-
-### 7. Loading State Coordination
-**Impact**: 🟡 MEDIUM - UI flickering and race conditions
+### 6. Debug Logging Overhead - HOOK IMPLEMENTATIONS
+**Location**: Multiple hook files (`useEntityCRUD.ts`, `useAuthAwareNavigation.ts`)
+**Impact**: 🟡 HIGH - Performance degradation from excessive logging
 
 **Issues**:
-- Multiple loading states checked independently
-- No coordination between related loading states
-- Missing proper loading boundaries
-- Cache invalidation triggers cascading refetches
+- Console logging on every hook evaluation/call
+- Deep object logging creates memory pressure
+- No development-only guards for production builds
+- Synchronous logging blocks render cycles
 
-## Detailed Performance Metrics
+**Files Affected**:
+- `useEntityCRUD.ts`: Lines 83-89, 94-98, 101-114, 126-131
+- `useAuthAwareNavigation.ts`: Lines 31-36
+- `useAccounts.ts`: Multiple validation and cache logging statements
 
-### Most Problematic Files:
-1. **EmailWizardModal.tsx** - 160+ line useEffect (CRITICAL)
-2. **useEntityPage.ts** - 4 cascading useEffect hooks (HIGH)
-3. **ListInfoCardEditModal.tsx** - Excessive debug logging (MEDIUM)
-4. **Campaigns.tsx + Modal coordination** - Duplicate API calls (CRITICAL)
-5. **useCompanyContext pattern** - Overlapping requests (HIGH)
+### 7. Callback Optimization Missing - ACCOUNTS.TSX
+**Impact**: 🟡 MEDIUM - Callback recreation on every render
 
-### Performance Anti-patterns Identified:
-- ❌ Heavy synchronous operations in useEffect
-- ❌ Missing debouncing for rapid state changes
-- ❌ Incorrect dependency arrays causing loops
-- ❌ No memoization for expensive transformations
-- ❌ Missing request cancellation in useEffect
-- ❌ Debug logging in production render cycles
-- ❌ Duplicate data fetching without coordination
+**Issues**:
+- `handleDeleteAccount` (lines 117-134) - not wrapped in useCallback
+- `handleCreateAccount` (lines 136-138) - not wrapped in useCallback  
+- `handleCloseModal` (lines 140-142) - not wrapped in useCallback
+- `handleSubmitAccount` (lines 145-188) - complex async callback not memoized
+
+**Performance Impact**:
+- Child components (TargetAccountCard) receive new callback references on every render
+- Potential for breaking React.memo optimizations in child components
+
+## Detailed Hook & Callback Analysis - ACCOUNTS.TSX
+
+### Complete Hook Inventory:
+1. **useState hooks (5)**: search, filterBy, forceUpdate, isCreateModalOpen, isCreatingAccount
+2. **Custom hooks (6)**: useAuthState, useAuthAwareNavigation, useCompanyContext, useEntityCRUD, useGetAccounts, useDeleteAccount  
+3. **useMemo hooks (4)**: draftAccounts, allAccounts, companyName, filteredAccounts
+4. **useEffect hooks (0)**: None found - positive for performance
+5. **Callback functions (4)**: handleDeleteAccount, handleCreateAccount, handleCloseModal, handleSubmitAccount
+
+### Performance Impact Assessment:
+| Hook/Callback | Impact Level | Re-render Trigger | Stability | Notes |
+|---------------|--------------|-------------------|-----------|-------|
+| `forceUpdate` state | 🔴 CRITICAL | Every increment | Unstable | Cascades through entire component |
+| `useCompanyContext` | 🔴 CRITICAL | Token/company changes | Complex deps | Multiple nested hooks |
+| `useGetAccounts` | 🔴 CRITICAL | companyId/token changes | Depends on unstable hooks | React Query re-runs |
+| `draftAccounts` useMemo | 🔴 CRITICAL | forceUpdate changes | Unstable | Expensive DraftManager calls |
+| `useEntityCRUD` | 🟡 HIGH | Company context changes | Complex nesting | Three-level hook composition |
+| `allAccounts` useMemo | 🟡 HIGH | draftAccounts changes | Cascades from above | Array operations |
+| `filteredAccounts` useMemo | 🟡 HIGH | allAccounts changes | Cascades from above | String operations on every account |
+
+### Performance Anti-patterns Identified in Accounts.tsx:
+- ❌ forceUpdate anti-pattern causing complete re-renders
+- ❌ Unstable hook dependencies triggering cascading updates  
+- ❌ Complex hook composition without proper memoization
+- ❌ Missing useCallback for event handlers
+- ❌ Debug logging in production hook implementations
+- ❌ useMemo dependency chains amplifying single changes
+- ❌ Draft management triggering expensive operations on every update
 
 ## Impact Assessment
 
 ### User Experience Impact:
-- **Modal Lag**: EmailWizardModal becomes unresponsive during editing
-- **Page Loading**: Duplicate requests slow initial page loads
-- **Network Overhead**: Unnecessary bandwidth usage from duplicate calls
-- **UI Flickering**: Uncoordinated loading states cause visual inconsistencies
+- **InputModal Typing Lag**: forceUpdate pattern causes stuttering during typing
+- **Component Re-render Cascades**: Complete Accounts page re-renders during modal interaction
+- **Network Overhead**: Unstable dependencies trigger unnecessary API calls during typing
+- **Memory Pressure**: Debug logging and object re-creation during rapid re-renders
 
 ### Technical Debt:
-- Performance issues will compound as data size grows
-- Missing optimizations make future features slower to implement
-- Debug logging in production creates security and performance risks
-- Cascading re-render patterns are difficult to debug and maintain
+- **forceUpdate Anti-pattern**: Forces complete component re-renders, hard to debug
+- **Complex Hook Dependencies**: Cascading updates difficult to trace and optimize  
+- **Missing Memoization**: Expensive operations re-run on every parent update
+- **Production Debug Logging**: Security and performance risks in production builds
+
+### Root Cause Analysis:
+1. **Primary Issue**: `forceUpdate` state management bypasses React's optimization patterns
+2. **Secondary Issue**: Complex custom hook composition without stable dependencies
+3. **Amplifying Factor**: Missing `useCallback`/`useMemo` optimizations allow cascading updates
 
 ## Recommendations
 
-### Immediate Actions (This Sprint):
-1. Remove debug logging from production code
-2. Add React.memo to heavy modal components
-3. Implement data coordination between Campaigns page and EmailWizardModal
-4. Add debouncing to EmailWizardModal data loading
+### Immediate Actions (Critical - This Sprint):
+1. **Replace forceUpdate pattern** with React Query cache invalidation in `handleDeleteAccount`
+2. **Remove debug logging** from all production hook implementations  
+3. **Stabilize useCompanyContext** dependencies with proper memoization
+4. **Add useCallback** to all event handlers in Accounts.tsx
 
-### Short Term (Next Sprint):
-1. Refactor EmailWizardModal useEffect with useMemo
-2. Consolidate useEntityPage.ts useEffect hooks
-3. Implement proper loading state coordination
-4. Add request cancellation to prevent race conditions
+### Short Term (High Priority - Next Sprint):
+1. **Audit useCompanyContext implementation** for unnecessary re-renders and complex dependency chains
+2. **Memoize useEntityCRUD results** to prevent cascading updates from context changes
+3. **Implement dependency debugging** to identify and fix unstable hook dependencies
+4. **Add React.memo** to TargetAccountCard components to prevent unnecessary re-renders
 
-### Long Term (Future Sprints):
-1. Centralized data loading strategy
-2. Request batching for related API calls
-3. Optimistic updates to reduce perceived loading time
-4. Comprehensive React Query cache strategy
+### Long Term (Medium Priority - Future Sprints):
+1. **Comprehensive hook dependency audit** across all custom hooks
+2. **Performance monitoring** for hook re-render cycles during user interactions
+3. **Consider React Query cache patterns** for draft management instead of forceUpdate
+4. **Implement hook performance profiling** in development builds
 
 ## Success Metrics
 
 ### Performance Targets:
-- **Modal Responsiveness**: < 100ms interaction response time
-- **API Efficiency**: Reduce duplicate requests by 80%
-- **Memory Usage**: Eliminate debug logging memory pressure
-- **Re-render Frequency**: Reduce unnecessary re-renders by 60%
+- **InputModal Typing Responsiveness**: < 50ms keystroke response time (currently laggy)
+- **Component Re-render Reduction**: Eliminate forceUpdate cascading re-renders  
+- **Hook Dependency Stability**: 95% stable dependencies across custom hooks
+- **Memory Usage**: Eliminate debug logging memory pressure in production
 
 ### Monitoring Points:
-- React DevTools Profiler measurements
-- Network tab duplicate request tracking
-- User interaction response times
-- Memory usage during modal operations
+- React DevTools Profiler during InputModal typing sessions
+- Hook dependency change frequency measurement
+- Component re-render count during typing
+- Network request frequency during modal interactions
+
+### Specific Success Criteria:
+1. **forceUpdate eliminated**: No more complete component re-renders on draft operations
+2. **Stable hook dependencies**: useCompanyContext, useEntityCRUD dependencies stabilized
+3. **Optimized callbacks**: All event handlers wrapped in useCallback
+4. **Clean production builds**: Zero debug logging in production hook implementations
+
+---
+
+## Conclusion
+
+The comprehensive audit of all hooks and callbacks in Accounts.tsx reveals that **InputModal typing performance issues stem primarily from the forceUpdate state management pattern** combined with **complex nested hook dependencies**. 
+
+**Root Cause**: The `forceUpdate` state triggers complete component re-renders that cascade through the entire component tree, including the InputModal. This is amplified by unstable dependencies in custom hooks like `useCompanyContext` and `useEntityCRUD`.
+
+**Immediate Fix Priority**: 
+1. Replace forceUpdate with React Query cache invalidation patterns
+2. Stabilize custom hook dependencies with proper memoization
+3. Remove production debug logging creating performance overhead
+
+This focused approach will restore smooth typing performance in the InputModal while maintaining all existing functionality.

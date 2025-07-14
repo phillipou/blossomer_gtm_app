@@ -512,7 +512,7 @@ export const EmailWizardModal = memo(function EmailWizardModal({
 
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
-      <EditDialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <EditDialogContent className={isGenerating ? "sm:max-w-[500px]" : "sm:max-w-2xl max-h-[90vh] overflow-y-auto"}>
         <ModalLoadingOverlay isLoading={isGenerating} message={ModalLoadingMessages.generatingEmail}>
         <div className="px-6 pb-6 pt-2">
           <EditDialogHeader className="flex flex-row items-center justify-between">
@@ -539,7 +539,7 @@ export const EmailWizardModal = memo(function EmailWizardModal({
           </div>
 
           {/* Step Content */}
-          <div className="space-y-6 min-h-[300px]">
+          <div className={`space-y-6 ${isGenerating ? "min-h-[100px]" : "min-h-[300px]"}`}>
             {/* Target Selection Step */}
             {safeCurrentStep === 0 && mode === "create" && (
               <div className="space-y-4">

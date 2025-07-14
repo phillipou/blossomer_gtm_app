@@ -266,9 +266,9 @@ export const generationModalConfigs = {
     namePlaceholder: 'Mid-market SaaS companies',
     nameRequired: true,
     descriptionLabel: 'Account Hypothesis',
-    descriptionPlaceholder: 'e.g., Companies with 100-500 employees in the software industry...',
+    descriptionPlaceholder: 'Describe what types of companies you\'re targeting',
     showDescription: true,
-    descriptionRequired: true,
+    descriptionRequired: false,
   },
   persona: {
     title: 'Generate Target Persona',

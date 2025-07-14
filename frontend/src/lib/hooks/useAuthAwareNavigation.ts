@@ -28,11 +28,6 @@ export function useAuthAwareNavigation() {
    */
   const navigateWithPrefix = (path: string, options?: { replace?: boolean; state?: any }) => {
     const fullPath = `${getPrefix()}${path}`;
-    console.log('[AUTH-NAV] Navigating with prefix:', { 
-      isAuthenticated: !!token, 
-      originalPath: path, 
-      fullPath 
-    });
     navigate(fullPath, options);
   };
   

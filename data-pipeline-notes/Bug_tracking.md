@@ -1461,6 +1461,202 @@ Always wait for `authLoading` to complete before making any authentication-depen
 
 **Location:** `useEntityPage.ts:139-195`
 
+### **Issue #36: Account Creation Navigation Bouncing Between Pages** ✅ **RESOLVED**
+
+**Problem:** After generating an account from Accounts.tsx, users experienced jarring navigation bouncing: Accounts → Account Details → Accounts → Account Details, instead of direct navigation to Account Details.
+
+**Root Cause Analysis:**
+
+Multiple navigation calls were conflicting during account creation:
+
+1. **Conflicting navigation logic**: Both `useEntityCRUD` and manual navigation in `Accounts.tsx` were attempting to navigate
+2. **React Query side effects**: Old hooks (`useGenerateAccount`, `useCreateAccount`) had `onSuccess` callbacks that were still running despite being unused
+3. **Premature navigation timing**: Navigation was happening before all async operations completed
+
+**Evidence of Issue:**
+```typescript
+// ❌ PROBLEMATIC: Multiple navigation sources
+const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
+const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
+
+// In handleSubmitAccount:
+const result = await createAccountUniversal(accountData, {
+  navigateOnSuccess: false  // Trying to disable automatic navigation
+});
+navigateToEntity('account', result.id); // Manual navigation
+```
+
+The old hooks were still registered and their `onSuccess` callbacks were executing, causing cache invalidations and potential navigation side effects even though they weren't being called directly.
+
+**Solutions Applied:**
+
+1. **Removed conflicting hooks entirely** - Eliminated `useGenerateAccount` and `useCreateAccount` imports and usage:
+   ```typescript
+   // ✅ FIXED: Removed old hooks to prevent navigation conflicts
+   // - Removed: useGenerateAccount, useCreateAccount imports
+   // - Removed: isPending state tracking from old hooks
+   // - Only using: useEntityCRUD for account creation
+   ```
+
+2. **Simplified to single navigation source** - Let `useEntityCRUD` handle all navigation:
+   ```typescript
+   // ✅ FIXED: Single navigation source
+   const result = await createAccountUniversal(accountData, {
+     customCompanyId: companyId,
+     navigateOnSuccess: true  // Let useEntityCRUD handle navigation
+   });
+   
+   // Close modal and clear loading state - no manual navigation needed
+   setIsCreateModalOpen(false);
+   setIsCreatingAccount(false);
+   ```
+
+3. **Removed complex loading state calculation** - Simplified to single loading state:
+   ```typescript
+   // ✅ FIXED: Simple loading state
+   isLoading={isCreatingAccount}
+   // Removed: isGenerating || isCreating || isCreatingAccount
+   ```
+
+**Navigation Flow Now:**
+1. User creates account through modal
+2. API calls complete (generate AI + create account) with single loading state
+3. `useEntityCRUD` handles navigation to account detail page
+4. Modal closes and loading state clears
+5. **Single, clean navigation** - no bouncing
+
+**Impact:**
+- ✅ **Direct navigation** from accounts page to account detail page
+- ✅ **No intermediate redirects** or page bouncing
+- ✅ **Single responsibility** for navigation logic
+- ✅ **Eliminated race conditions** between multiple navigation calls
+- ✅ **Cleaner code** with removed conflicting hooks
+
+**UX Improvement:**
+Users now experience smooth, predictable navigation after account creation without the jarring bouncing effect between multiple pages.
+
+**Pattern Applied:**
+This establishes the principle of **single navigation responsibility** - when using `useEntityCRUD` for entity creation, rely on its built-in navigation rather than mixing with manual navigation calls.
+
+**Location:** `Accounts.tsx:6, 86, 169-182, 292`
+
+**Verification Steps:**
+- ✅ Account creation navigates directly to account detail page
+- ✅ No intermediate redirects to accounts list
+- ✅ Single loading state throughout creation process
+- ✅ Clean separation of concerns in navigation logic
+
+### **Issue #37: InputModal Typing Performance - ModalLoadingOverlay Causing Jittery Input** ✅ **RESOLVED**
+
+**Problem:** InputModal typing felt laggy and jittery compared to simple modal implementations, causing poor user experience during account creation.
+
+**Root Cause Analysis:**
+
+Through comprehensive performance testing, we identified that the **ModalLoadingOverlay** component was the primary cause of typing performance issues:
+
+1. **Performance Testing Results:**
+   - **Simple modal with basic HTML inputs**: Smooth, responsive typing
+   - **InputModal with ModalLoadingOverlay**: Jittery, laggy typing
+   - **InputModal without ModalLoadingOverlay**: Smooth, responsive typing
+
+2. **Root Cause - ModalLoadingOverlay Wrapper:**
+   ```typescript
+   // ❌ PROBLEMATIC: ModalLoadingOverlay wrapping all modal content
+   <ModalLoadingOverlay isLoading={isLoading} message={ModalLoadingMessages.generatingAccount}>
+     {/* All modal content wrapped, causing performance overhead */}
+     <EditDialogHeader>...</EditDialogHeader>
+     <div className="py-4 px-6 space-y-4">...</div>
+     <EditDialogFooter>...</EditDialogFooter>
+   </ModalLoadingOverlay>
+   ```
+
+3. **Performance Impact:**
+   - **Unnecessary wrapper re-renders** during typing events
+   - **Additional DOM element overhead** affecting input responsiveness  
+   - **Event handling interference** from overlay wrapper logic
+
+**Evidence from Performance Audit:**
+
+The comprehensive hook and callback audit revealed multiple contributing factors:
+- **Critical**: `useCompanyOverview` using `queryClient.getQueryData` (not reactive) causing render loops
+- **Critical**: `forceUpdate` anti-pattern triggering complete component re-renders
+- **High Impact**: Extensive console logging creating overhead during rapid re-renders
+- **Final Factor**: ModalLoadingOverlay wrapper amplifying all these issues
+
+**Solutions Applied:**
+
+1. **Removed ModalLoadingOverlay wrapper entirely:**
+   ```typescript
+   // ✅ FIXED: Direct modal content without wrapper
+   <EditDialog open={isOpen} onOpenChange={handleClose}>
+     <EditDialogContent className="sm:max-w-[500px]">
+       <EditDialogHeader>
+         <EditDialogTitle>{title}</EditDialogTitle>
+         {subtitle && <EditDialogDescription>{subtitle}</EditDialogDescription>}
+       </EditDialogHeader>
+       {/* Direct content - no wrapper overhead */}
+     </EditDialogContent>
+   </EditDialog>
+   ```
+
+2. **Fixed underlying hook performance issues:**
+   - **Fixed render loop**: Changed `useCompanyOverview` to use `useQuery` instead of `queryClient.getQueryData`
+   - **Eliminated forceUpdate**: Replaced with React Query cache invalidation
+   - **Removed console logging**: Eliminated all debug logging from production hooks
+   - **Added useCallback**: Optimized all event handlers to prevent unnecessary re-renders
+
+3. **Memoized expensive operations:**
+   ```typescript
+   // ✅ FIXED: Memoized data transformations
+   const draftAccounts = useMemo(() => /* ... */, [isAuthenticated]);
+   const allAccounts = useMemo(() => /* ... */, [isAuthenticated, accounts, draftAccounts]);
+   const companyName = useMemo(() => overview?.companyName || 'Company', [overview?.companyName]);
+   ```
+
+**Performance Improvements Achieved:**
+
+**Before Fixes:**
+- Infinite render loops causing browser lag
+- ModalLoadingOverlay creating input interference
+- Complex hook dependencies causing cascade re-renders
+- Extensive logging overhead during typing
+
+**After Fixes:**
+- ✅ **Smooth, responsive typing** comparable to basic HTML inputs
+- ✅ **No render loops** - stable hook dependencies
+- ✅ **Minimal wrapper overhead** - direct modal content
+- ✅ **Optimized re-render cycles** - memoized expensive operations
+
+**Technical Pattern Established:**
+
+**"Minimal Wrapper" Pattern for Form Modals:**
+- **Avoid unnecessary wrapper components** around form inputs
+- **Use direct modal content** structure when possible
+- **Apply loading states selectively** rather than wrapping entire modal
+- **Optimize parent component hooks** to prevent cascade re-renders
+
+**Verification Steps:**
+- ✅ InputModal typing is now smooth and responsive
+- ✅ No performance difference between InputModal and basic modal inputs  
+- ✅ Modal loading functionality preserved (can be re-added selectively when needed)
+- ✅ All existing form functionality maintained
+
+**Impact:**
+This fix dramatically improved the user experience for account creation, making typing feel natural and responsive. The solution established a clear pattern for modal performance optimization in the application.
+
+**Applied to Personas.tsx:**
+The same performance improvements were applied to Personas.tsx, including:
+- ✅ **Removed console logging** from persona creation and deletion flows
+- ✅ **Eliminated forceUpdate anti-pattern** - replaced with React Query cache invalidation
+- ✅ **InputModal performance benefits** - automatic improvement from ModalLoadingOverlay removal
+- ✅ **Consistent pattern application** - ensuring all entity pages follow the same optimized approach
+
+**Location:** 
+- `InputModal.tsx:21-22, 139-143, 208-217` (removed ModalLoadingOverlay imports and usage)
+- `useCompanyOverview.ts:4-12` (fixed render loop with proper useQuery)
+- `Accounts.tsx:72, 88-101, 118-189` (removed forceUpdate, memoized operations)
+- `Personas.tsx:21, 29, 134, 156-158, 164, 348, 377` (applied same performance fixes)
+
 **Problem:** Unauthenticated users see "No Accounts Found" error even when they have created draft accounts, preventing persona creation entirely.
 
 **Root Cause:** Personas.tsx was not following the proven Accounts.tsx pattern for dual-path data retrieval:

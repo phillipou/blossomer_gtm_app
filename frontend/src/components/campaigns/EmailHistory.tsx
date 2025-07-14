@@ -85,7 +85,7 @@ export function EmailHistory({ emails, onSelectEmail, onEditEmail, onDeleteEmail
               key={email.id}
               title={subject}
               description={body.substring(0, 120) + (body.length > 120 ? "..." : "")}
-              parents={[...parents, ...(email.isDraft ? [{ name: "Draft", color: "bg-orange-100 text-orange-800", label: "Status" }] : [])]}
+              parents={parents}
               onClick={() => onSelectEmail(email)}
               entityType="campaign"
             >

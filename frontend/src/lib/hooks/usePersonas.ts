@@ -127,13 +127,15 @@ export function useUpdatePersona(accountId: string, token?: string | null) {
   });
 }
 
-export function useDeletePersona(accountId: string, token?: string | null) {
+export function useDeletePersona(companyId: string, token?: string | null) {
   const queryClient = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: (personaId) => deletePersona(personaId, token),
     onSuccess: () => {
-      // Use consistent key - Stage 4 improvement
-      queryClient.invalidateQueries({ queryKey: [PERSONAS_LIST_KEY, accountId] });
+      // Invalidate all persona queries for this company (used by Personas.tsx and AccountDetail.tsx)
+      queryClient.invalidateQueries({ queryKey: ['personas', companyId] });
+      // Also invalidate account-specific persona queries if any exist
+      queryClient.invalidateQueries({ queryKey: [PERSONAS_LIST_KEY] });
     },
   });
 }

@@ -21,25 +21,25 @@ export const ENTITY_COLORS: Record<EntityType, EntityColorConfig> = {
     navHover: 'hover:bg-blue-50 hover:text-blue-700 hover:font-medium'
   },
   account: {
-    dot: 'bg-red-400',
-    cardTitle: 'text-red-700',
-    cardHoverBorder: 'hover:border-red-400',
-    navActive: 'bg-red-50 text-red-700 font-medium',
-    navHover: 'hover:bg-red-50 hover:text-red-700 hover:font-medium'
+    dot: 'bg-green-400',
+    cardTitle: 'text-green-700',
+    cardHoverBorder: 'hover:border-green-400',
+    navActive: 'bg-green-50 text-green-700 font-medium',
+    navHover: 'hover:bg-green-50 hover:text-green-700 hover:font-medium'
   },
   persona: {
-    dot: 'bg-blue-400',
-    cardTitle: 'text-blue-700',
-    cardHoverBorder: 'hover:border-blue-400',
-    navActive: 'bg-blue-50 text-blue-700 font-medium',
-    navHover: 'hover:bg-blue-50 hover:text-blue-700 hover:font-medium'
-  },
-  campaign: {
     dot: 'bg-purple-400',
     cardTitle: 'text-purple-700',
     cardHoverBorder: 'hover:border-purple-400',
     navActive: 'bg-purple-50 text-purple-700 font-medium',
     navHover: 'hover:bg-purple-50 hover:text-purple-700 hover:font-medium'
+  },
+  campaign: {
+    dot: 'bg-orange-400',
+    cardTitle: 'text-orange-700',
+    cardHoverBorder: 'hover:border-orange-400',
+    navActive: 'bg-orange-50 text-orange-700 font-medium',
+    navHover: 'hover:bg-orange-50 hover:text-orange-700 hover:font-medium'
   }
 };
 

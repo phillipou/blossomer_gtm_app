@@ -48,6 +48,7 @@ export const ModalLoadingMessages = {
   // Specific entity actions
   creatingAccount: 'Creating account...',
   updatingAccount: 'Updating account...',
+  generatingAccount: 'Generating Account...',
   creatingPersona: 'Creating persona...',
   updatingPersona: 'Updating persona...',
   creatingCampaign: 'Creating campaign...',

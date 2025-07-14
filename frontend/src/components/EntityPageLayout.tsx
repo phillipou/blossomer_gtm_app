@@ -35,6 +35,7 @@ export interface EntityPageLayoutProps<T = any> {
     cancelLabel?: string;
   };
   children?: React.ReactNode;
+  preFieldCards?: React.ReactNode;
   overviewProps?: {
     pageTitle?: string;
     pageSubtitle?: string;
@@ -52,6 +53,7 @@ export default function EntityPageLayout<T = any>({
   onGenerate,
   generateModalProps,
   children,
+  preFieldCards,
   overviewProps,
 }: EntityPageLayoutProps<T>) {
   const {
@@ -199,6 +201,9 @@ export default function EntityPageLayout<T = any>({
             onEdit={handleOverviewEdit}
             entityType={overviewProps?.entityType || config.entityType}
           />
+          
+          {/* Pre-Field Cards Content (e.g., Firmographics, Buying Signals) */}
+          {preFieldCards}
           
           {/* Field Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

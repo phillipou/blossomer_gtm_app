@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect } from "react";
 import {
   EditDialog,
   EditDialogContent,
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Wand2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading";
 
 interface InputModalProps {
@@ -32,6 +33,8 @@ interface InputModalProps {
   namePlaceholder?: string;
   descriptionPlaceholder?: string;
   submitLabel?: React.ReactNode;
+  loadingLabel?: React.ReactNode;
+  loadingMessage?: string;
   cancelLabel?: string;
   isLoading?: boolean;
   defaultName?: string;
@@ -50,7 +53,7 @@ interface InputModalProps {
   customNameValidation?: (value: string) => string | null;
 }
 
-export default memo(function InputModal({
+export default function InputModal({
   isOpen,
   onClose,
   onSubmit,
@@ -61,6 +64,8 @@ export default memo(function InputModal({
   namePlaceholder = "Enter name...",
   descriptionPlaceholder = "Enter description...",
   submitLabel = "Enter",
+  loadingLabel,
+  loadingMessage,
   cancelLabel = "Cancel",
   isLoading = false,
   defaultName = "",
@@ -84,7 +89,6 @@ export default memo(function InputModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form when modal opens
       setName(defaultName);
       setDescription(defaultDescription);
       setAccountId(selectedAccountId);
@@ -97,11 +101,7 @@ export default memo(function InputModal({
     if (onAccountChange) onAccountChange(value);
   };
 
-  // Removed complex validation useEffect entirely - following Bug_tracking.md "Remove, Don't Fix" pattern
-  // Validation now happens only on submit for better typing performance
-
   const handleSubmit = () => {
-    // Simple validation on submit only - no complex useEffect validation during typing
     if (accounts.length > 0 && !accountId) return;
     if (nameRequired && !name.trim()) {
       setNameError('This field is required');
@@ -124,7 +124,7 @@ export default memo(function InputModal({
     }
     if (showDescription && descriptionRequired && !description.trim()) return;
     
-    setNameError(null); // Clear any previous errors
+    setNameError(null);
     onSubmit({ name: name.trim(), description: description.trim(), accountId });
   };
 
@@ -141,12 +141,15 @@ export default memo(function InputModal({
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
       <EditDialogContent className="sm:max-w-[500px]">
-        <ModalLoadingOverlay isLoading={isLoading} message={ModalLoadingMessages.generating}>
-        <EditDialogHeader>
-          <EditDialogTitle>{title}</EditDialogTitle>
-          {subtitle && <EditDialogDescription>{subtitle}</EditDialogDescription>}
-        </EditDialogHeader>
-        <div className="py-4 px-6 space-y-4">
+        <ModalLoadingOverlay 
+          isLoading={isLoading} 
+          message={loadingMessage || ModalLoadingMessages.generating}
+        >
+          <EditDialogHeader>
+            <EditDialogTitle>{title}</EditDialogTitle>
+            {subtitle && <EditDialogDescription>{subtitle}</EditDialogDescription>}
+          </EditDialogHeader>
+          <div className="py-4 px-6 space-y-4">
           {accounts.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="input-modal-account">{accountLabel}</Label>
@@ -205,19 +208,23 @@ export default memo(function InputModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={
-              isLoading ||
-              (accounts.length > 0 && !accountId) ||
-              (nameRequired && !name.trim()) ||
-              (showDescription && descriptionRequired && !description.trim())
-            }
+            disabled={isLoading}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {submitLabel}
+            {isLoading ? (
+              loadingLabel || (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              )
+            ) : (
+              submitLabel
+            )}
           </Button>
         </EditDialogFooter>
         </ModalLoadingOverlay>
       </EditDialogContent>
     </EditDialog>
   );
-}); 
+} 

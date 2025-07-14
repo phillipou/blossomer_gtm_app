@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
-import { useGetAccounts, useDeleteAccount, useGenerateAccount, useCreateAccount } from "../lib/hooks/useAccounts";
+import { useGetAccounts, useDeleteAccount } from "../lib/hooks/useAccounts";
 import type { Account } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
@@ -20,6 +20,7 @@ import type { TargetAccountResponse } from '../types/api';
 import { DraftManager } from '../lib/draftManager';
 import { useAuthState } from '../lib/auth';
 import { LoadingStates } from '../components/ui/page-loading';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -65,12 +66,15 @@ export default function TargetAccountsList() {
   const navigate = useNavigate();
   const { token } = useAuthState();
   const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
+  const queryClient = useQueryClient();
   
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
-  const [forceUpdate, setForceUpdate] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   
   // Universal company context detection
   const { overview, companyId, isLoading: isCompanyLoading, hasValidContext } = useCompanyContext();
@@ -82,18 +86,16 @@ export default function TargetAccountsList() {
   const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId);
   
-  // Generation and creation hooks for loading state tracking
-  const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
-  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
+  // Removed old hooks to prevent navigation conflicts - using only useEntityCRUD
   
-  // Get draft accounts ONLY for unauthenticated users
+  // Get draft accounts for unauthenticated users
   const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
     ...draft.data,
     id: draft.tempId,
     isDraft: true,
   })) : [];
   
-  // Combine accounts based on auth state - NO mixing of playground and database data
+  // Combine authenticated accounts with drafts
   const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
   
   // Step 3: THEN check for early returns
@@ -114,13 +116,11 @@ export default function TargetAccountsList() {
       // Check if this is a draft account (temp ID format)
       if (id.startsWith('temp_')) {
         // Draft account - remove from DraftManager
-        console.log('[ACCOUNTS-DELETE] Deleting draft account:', id);
         DraftManager.removeDraft('account', id);
-        // Force component re-render by updating forceUpdate state
-        setForceUpdate(prev => prev + 1);
+        // Force re-render using forceUpdate (following Campaigns.tsx pattern)
+        setRefreshKey(prev => prev + 1);
       } else if (isAuthenticated) {
         // Authenticated account - use mutation
-        console.log('[ACCOUNTS-DELETE] Deleting authenticated account:', id);
         deleteAccount(id);
       } else {
         console.warn('[ACCOUNTS-DELETE] Cannot delete non-draft account for unauthenticated user:', id);
@@ -132,59 +132,72 @@ export default function TargetAccountsList() {
     setIsCreateModalOpen(true);
   };
   
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+  };
+  
   // Handle account creation using universal hooks
   const handleSubmitAccount = async ({ name, description }: { name: string; description: string }) => {
-    if (!hasValidContext || !overview) {
+    if (!hasValidContext || !companyId) {
       console.error("Cannot create account without company context");
       return;
     }
     
-    console.log('[ACCOUNTS-PAGE] Starting account creation:', { name, description });
+    // Set loading state to show spinner
+    setIsCreatingAccount(true);
+    
+    // Get fresh overview data at submission time
+    const currentOverview = overview;
+    if (!currentOverview) {
+      console.error("No overview data available");
+      setIsCreatingAccount(false);
+      return;
+    }
     
     // Create account data in AI request format
     const accountData = {
-      website_url: overview.companyUrl || '',
+      website_url: currentOverview.companyUrl || '',
       account_profile_name: name,
       hypothesis: description,
       company_context: {
-        companyName: overview.companyName || '',
-        description: overview.description || '',
-        businessProfileInsights: overview.businessProfileInsights || [],
-        capabilities: overview.capabilities || [],
-        useCaseAnalysisInsights: overview.useCaseAnalysisInsights || [],
-        positioningInsights: overview.positioningInsights || [],
-        targetCustomerInsights: overview.targetCustomerInsights || [],
+        companyName: currentOverview.companyName || '',
+        description: currentOverview.description || '',
+        businessProfileInsights: currentOverview.businessProfileInsights || [],
+        capabilities: currentOverview.capabilities || [],
+        useCaseAnalysisInsights: currentOverview.useCaseAnalysisInsights || [],
+        positioningInsights: currentOverview.positioningInsights || [],
+        targetCustomerInsights: currentOverview.targetCustomerInsights || [],
       },
     };
     
     try {
       const result = await createAccountUniversal(accountData, {
         customCompanyId: companyId,
-        navigateOnSuccess: false
+        navigateOnSuccess: true  // Let useEntityCRUD handle navigation
       });
       
-      console.log('[ACCOUNTS-PAGE] Account created successfully:', result);
-      
-      // Close modal and navigate to the new account
+      // Close modal and clear loading state - no manual navigation needed
       setIsCreateModalOpen(false);
-      navigateToEntity('account', result.id);
+      setIsCreatingAccount(false);
       
     } catch (error) {
       console.error('[ACCOUNTS-PAGE] Account creation failed:', error);
+      setIsCreatingAccount(false);
     }
   };
 
-  const filteredAccounts = useMemo(() => 
-    allAccounts.filter((account) => {
-      const accountName = getAccountName(account) || '';
-      const accountDescription = getAccountDescription(account) || '';
-      const matchesSearch =
-        accountName.toLowerCase().includes(search.toLowerCase()) ||
-        accountDescription.toLowerCase().includes(search.toLowerCase());
-      if (filterBy === "all") return matchesSearch;
-      return matchesSearch;
-    }), [allAccounts, search, filterBy]
-  );
+  // Get company name
+  const companyName = overview?.companyName || 'Company';
+
+  const filteredAccounts = allAccounts.filter((account) => {
+    const accountName = getAccountName(account) || '';
+    const accountDescription = getAccountDescription(account) || '';
+    const matchesSearch =
+      accountName.toLowerCase().includes(search.toLowerCase()) ||
+      accountDescription.toLowerCase().includes(search.toLowerCase());
+    if (filterBy === "all") return matchesSearch;
+    return matchesSearch;
+  });
 
   if (error) {
     return <div>Error: {error.message}</div>;
@@ -254,7 +267,7 @@ export default function TargetAccountsList() {
                     key={account.id}
                     targetAccount={account}
                     onDelete={handleDeleteAccount}
-                    companyName={overview.companyName}
+                    companyName={companyName}
                   />
                 ))}
                 <AddAccountCard onClick={handleCreateAccount} />
@@ -267,19 +280,21 @@ export default function TargetAccountsList() {
       {/* Account Creation Modal */}
       <InputModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={handleCloseModal}
         onSubmit={handleSubmitAccount}
         title="Create Target Account"
         subtitle="Create a detailed analysis of your ideal customer account."
         nameLabel="Account Profile Name"
         namePlaceholder="Mid-market SaaS companies"
         descriptionLabel="Account Hypothesis"
-        descriptionPlaceholder="e.g., Companies with 100-500 employees in the software industry..."
+        descriptionPlaceholder="Describe what types of companies you're targeting"
+        descriptionRequired={false}
         submitLabel={<><Wand2 className="w-4 h-4 mr-2" />Generate Account</>}
+        loadingMessage="Generating Account..."
         cancelLabel="Cancel"
         defaultName=""
         defaultDescription=""
-        isLoading={isGenerating || isCreating}
+        isLoading={isCreatingAccount}
       />
     </div>
   );

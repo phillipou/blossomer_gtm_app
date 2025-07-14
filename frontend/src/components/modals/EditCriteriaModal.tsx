@@ -80,9 +80,8 @@ export default memo(function EditCriteriaModal({ isOpen, onClose, onSave, initia
     setRows((prev) =>
       prev.map((row) => {
         if (row.id === rowId) {
-          const existingColors = row.values.map((v: { color: string }) => v.color);
-          const availableColors = colorOptions.filter((color: string) => !existingColors.includes(color));
-          const selectedColor = availableColors.length > 0 ? availableColors[0] : colorOptions[0];
+          // Use the same color as existing tags in this row for consistency
+          const selectedColor = row.values.length > 0 ? row.values[0].color : colorOptions[0];
           return {
             ...row,
             values: [...row.values, { text: newValue, color: selectedColor }],
@@ -296,7 +295,7 @@ export default memo(function EditCriteriaModal({ isOpen, onClose, onSave, initia
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600" type="button">
-            Save
+            Update attributes
           </Button>
         </DialogFooter>
         </ModalLoadingOverlay>

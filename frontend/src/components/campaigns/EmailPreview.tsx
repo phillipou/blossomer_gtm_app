@@ -454,10 +454,6 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
               <Copy className="w-4 h-4 mr-2" />
               Copy
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onCreateVariant(email)}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Create Variant
-            </Button>
           </div>
         </div>
         
@@ -551,11 +547,11 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
             modifiers={[restrictToVerticalAxis, restrictToParentElement]}
           >
             <SortableContext 
-              items={segments.map(s => s.type)}
+              items={segments.filter(s => isEmailBodySegment(s.type)).map(s => s.type)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {segments.map((segment, index) => (
+                {segments.filter((segment) => isEmailBodySegment(segment.type)).map((segment, index) => (
                   <SortableSegment
                     key={segment.type}
                     segment={segment}

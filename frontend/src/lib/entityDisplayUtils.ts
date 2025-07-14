@@ -6,6 +6,7 @@ import type {
   Account,
   TargetAccountResponse 
 } from '../types/api';
+import { getEntityColorForParent } from './entityColors';
 
 // =================================================================
 // Unified Display Utilities
@@ -89,48 +90,49 @@ export function getCampaignParents(campaign: (Campaign & { isDraft?: boolean }) 
     const email = campaign as GeneratedEmail;
     
     if (email.companySnapshot?.companyName) {
-      parents.push({ name: email.companySnapshot.companyName, color: 'bg-blue-100 text-blue-800', label: "Company" });
+      parents.push({ name: email.companySnapshot.companyName, color: getEntityColorForParent('company'), label: "Company" });
     } else if (email.config?.companyName) {
-      parents.push({ name: email.config.companyName, color: 'bg-blue-100 text-blue-800', label: "Company" });
+      parents.push({ name: email.config.companyName, color: getEntityColorForParent('company'), label: "Company" });
     } else {
-      parents.push({ name: "Demo Company", color: 'bg-blue-100 text-blue-800', label: "Company" });
+      parents.push({ name: "Demo Company", color: getEntityColorForParent('company'), label: "Company" });
     }
     
     if (email.accountSnapshot?.targetAccountName) {
-      parents.push({ name: email.accountSnapshot.targetAccountName, color: 'bg-green-100 text-green-800', label: "Account" });
+      parents.push({ name: email.accountSnapshot.targetAccountName, color: getEntityColorForParent('account'), label: "Account" });
     } else if (email.config?.accountName) {
-      parents.push({ name: email.config.accountName, color: 'bg-green-100 text-green-800', label: "Account" });
+      parents.push({ name: email.config.accountName, color: getEntityColorForParent('account'), label: "Account" });
     } else {
-      parents.push({ name: "Demo Account", color: 'bg-green-100 text-green-800', label: "Account" });
+      parents.push({ name: "Demo Account", color: getEntityColorForParent('account'), label: "Account" });
     }
     
     if (email.personaSnapshot?.targetPersonaName) {
-      parents.push({ name: email.personaSnapshot.targetPersonaName, color: 'bg-purple-100 text-purple-800', label: "Persona" });
+      parents.push({ name: email.personaSnapshot.targetPersonaName, color: getEntityColorForParent('persona'), label: "Persona" });
     } else if (email.config?.personaName) {
-      parents.push({ name: email.config.personaName, color: 'bg-purple-100 text-purple-800', label: "Persona" });
+      parents.push({ name: email.config.personaName, color: getEntityColorForParent('persona'), label: "Persona" });
     } else {
-      parents.push({ name: "Demo Persona", color: 'bg-purple-100 text-purple-800', label: "Persona" });
+      parents.push({ name: "Demo Persona", color: getEntityColorForParent('persona'), label: "Persona" });
     }
   } else {
-    // Database entity format (Campaign) - extract from data field
-    const campaignData = campaign.data;
+    // Database entity format (Campaign) - extract from data field or direct properties
+    // For draft campaigns, snapshots are stored directly in the campaign object after normalization
+    const campaignData = campaign.data || campaign;
     
     if (campaignData?.companySnapshot?.companyName) {
-      parents.push({ name: campaignData.companySnapshot.companyName, color: 'bg-blue-100 text-blue-800', label: "Company" });
+      parents.push({ name: campaignData.companySnapshot.companyName, color: getEntityColorForParent('company'), label: "Company" });
     } else {
-      parents.push({ name: "Company", color: 'bg-blue-100 text-blue-800', label: "Company" });
+      parents.push({ name: "Company", color: getEntityColorForParent('company'), label: "Company" });
     }
     
     if (campaignData?.accountSnapshot?.targetAccountName) {
-      parents.push({ name: campaignData.accountSnapshot.targetAccountName, color: 'bg-green-100 text-green-800', label: "Account" });
+      parents.push({ name: campaignData.accountSnapshot.targetAccountName, color: getEntityColorForParent('account'), label: "Account" });
     } else {
-      parents.push({ name: "Account", color: 'bg-green-100 text-green-800', label: "Account" });
+      parents.push({ name: "Account", color: getEntityColorForParent('account'), label: "Account" });
     }
     
     if (campaignData?.personaSnapshot?.targetPersonaName) {
-      parents.push({ name: campaignData.personaSnapshot.targetPersonaName, color: 'bg-purple-100 text-purple-800', label: "Persona" });
+      parents.push({ name: campaignData.personaSnapshot.targetPersonaName, color: getEntityColorForParent('persona'), label: "Persona" });
     } else {
-      parents.push({ name: "Persona", color: 'bg-purple-100 text-purple-800', label: "Persona" });
+      parents.push({ name: "Persona", color: getEntityColorForParent('persona'), label: "Persona" });
     }
   }
   

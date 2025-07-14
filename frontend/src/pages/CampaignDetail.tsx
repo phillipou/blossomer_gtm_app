@@ -57,14 +57,8 @@ export default function CampaignDetail() {
   const { update: updateCampaignUniversal, delete: deleteCampaignUniversal } = useEntityCRUD<EmailGenerationResponse>('campaign');
   const { navigateWithPrefix, navigateToEntityList, isAuthenticated } = useAuthAwareNavigation();
   
-  // Get campaign data first to extract parent IDs (following PersonaDetail.tsx pattern)
+  // Get campaign data first
   const { data: campaignData } = useGetCampaignForEntityPage(token, campaignId);
-  const personaId = campaignData?.personaId;
-  const accountId = campaignData?.accountId;
-  
-  // Get parent entity data using extracted IDs (conditional hooks to prevent unauthenticated API calls)
-  const { data: persona } = useGetPersonaForEntityPage(token, personaId);
-  const { data: account } = useGetAccountForEntityPage(token, accountId);
   
   // Handle draft campaigns for unauthenticated users
   const draftCampaign = !isAuthenticated && campaignId?.startsWith('temp_') 
@@ -73,6 +67,14 @@ export default function CampaignDetail() {
   
   // Use draft data if available, otherwise use API data
   const campaign = draftCampaign?.data || campaignData;
+  
+  // Extract parent IDs from campaign data (campaigns store snapshots, not direct IDs)
+  const personaId = campaign?.personaId;
+  const accountId = campaign?.accountId;
+  
+  // Get parent entity data using extracted IDs (conditional hooks to prevent unauthenticated API calls)
+  const { data: persona } = useGetPersonaForEntityPage(token, personaId);
+  const { data: account } = useGetAccountForEntityPage(token, accountId);
   
   // THEN check for early returns (after ALL hooks)
   if (!companyId) {
@@ -198,52 +200,41 @@ export default function CampaignDetail() {
     }
   };
 
-  // Build nested breadcrumb navigation
+  // Build simple breadcrumb navigation: Campaigns / {name}
   const breadcrumbs = [
-    { label: "Company", href: isAuthenticated ? "/app/company" : "/playground/company" },
+    { 
+      label: "Campaigns", 
+      href: isAuthenticated ? "/app/campaigns" : "/playground/campaigns" 
+    },
+    { 
+      label: campaign.subjects?.primary || campaign.name || campaignId || "Campaign",
+      href: "" // Current page, no href needed
+    }
   ];
-  
-  if (account) {
-    breadcrumbs.push({ 
-      label: account.name || "Account", 
-      href: isAuthenticated ? `/app/accounts/${account.id}` : `/playground/accounts/${account.id}`
-    });
-  }
-  
-  if (persona) {
-    breadcrumbs.push({ 
-      label: persona.name || "Persona", 
-      href: isAuthenticated ? `/app/personas/${persona.id}` : `/playground/personas/${persona.id}`
-    });
-  }
-  
-  breadcrumbs.push({ 
-    label: campaign.subjects?.primary || campaign.name || campaignId || "Campaign",
-    href: "" // Current page, no href needed
-  });
 
   const modeTabs = [
     { label: "Component Mode", value: EditingMode.Component, icon: <LayoutGrid className="w-4 h-4 mr-2" /> },
     { label: "Writing Mode", value: EditingMode.Writing, icon: <Pencil className="w-4 h-4 mr-2" /> },
   ];
 
-  // Prepare context data for header
-  const companySnapshot = company ? { 
+  // Prepare context data for header - prioritize snapshots from campaign data
+  // For draft campaigns, snapshots are in campaign.data; for normalized campaigns, they're at campaign root
+  const companySnapshot = campaign?.companySnapshot || campaign?.data?.companySnapshot || (company ? { 
     companyName: company.companyName, 
     companyUrl: company.companyUrl 
-  } : null;
+  } : null);
   
-  const accountSnapshot = account ? { 
+  const accountSnapshot = campaign?.accountSnapshot || campaign?.data?.accountSnapshot || (account ? { 
     id: account.id, 
     targetAccountName: account.name, 
     targetAccountDescription: account.description 
-  } : null;
+  } : null);
   
-  const personaSnapshot = persona ? { 
+  const personaSnapshot = campaign?.personaSnapshot || campaign?.data?.personaSnapshot || (persona ? { 
     id: persona.id, 
     targetPersonaName: persona.name, 
     targetPersonaDescription: persona.description 
-  } : null;
+  } : null);
 
   return (
     <div className="flex flex-col min-h-screen">
