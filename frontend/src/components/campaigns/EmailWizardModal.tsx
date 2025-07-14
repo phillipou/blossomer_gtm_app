@@ -13,6 +13,8 @@ import { DraftManager } from "../../lib/draftManager"
 import { getAccountName } from "../../lib/entityDisplayUtils"
 import { useDataContext } from "../../contexts/DataContext"
 import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading"
+import { useGetAccounts } from "../../lib/hooks/useAccounts"
+import { useGetAllPersonas } from "../../lib/hooks/usePersonas"
 
 interface EmailWizardModalProps {
   isOpen: boolean
@@ -88,15 +90,32 @@ export function EmailWizardModal({
     socialProof: "",
   })
 
-  // Get all data from DraftManager (works for both authenticated and unauthenticated users)
-  const allAccountDrafts = DraftManager.getDrafts('account')
-  const allDraftPersonas = DraftManager.getDrafts('persona')
+  // Conditional data loading: authenticated users get API data, unauthenticated users get DraftManager data
+  const isAuthenticated = !!token
   
-  // Transform account drafts to include tempId as the id
-  const allAccounts = allAccountDrafts.map(draft => ({
+  // Authenticated data sources - use real API IDs
+  const { data: authenticatedAccounts } = useGetAccounts(companyId!, token)
+  const { data: authenticatedPersonas } = useGetAllPersonas(companyId!, token)
+  
+  // Unauthenticated data sources - use DraftManager with tempIds
+  const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
     ...draft.data,
-    id: draft.tempId  // Use DraftManager tempId as the account ID
-  }))
+    id: draft.tempId  // Use DraftManager tempId as the account ID for unauthenticated users
+  })) : []
+  
+  const draftPersonas = !isAuthenticated ? DraftManager.getDrafts('persona') : []
+  
+  // Use the appropriate data source based on authentication status
+  const allAccounts = isAuthenticated ? (authenticatedAccounts || []) : draftAccounts
+  
+  // Both authenticated and unauthenticated personas now use the same schema
+  // Authenticated: direct API data, Unauthenticated: DraftManager data (already normalized)
+  const allPersonasForProcessing = isAuthenticated 
+    ? (authenticatedPersonas || [])
+    : draftPersonas.map(draft => ({
+        ...draft.data,
+        id: draft.tempId  // Use DraftManager tempId as the persona ID for unauthenticated users
+      }))
 
   // Define steps based on mode
   const getSteps = () => {
@@ -172,18 +191,21 @@ export function EmailWizardModal({
       selectedPersonaId: config.selectedPersona,
       foundPersonaData: !!selectedPersonaData,
       personaKeys: selectedPersonaData ? Object.keys(selectedPersonaData.persona) : 'no persona',
-      hasUseCases: !!(selectedPersonaData?.persona.useCases),
-      useCasesLength: selectedPersonaData?.persona.useCases?.length || 0,
-      useCasesData: selectedPersonaData?.persona.useCases,
+      hasDataUseCases: !!(selectedPersonaData?.persona.data?.useCases),
+      dataUseCasesLength: selectedPersonaData?.persona.data?.useCases?.length || 0,
+      dataUseCasesData: selectedPersonaData?.persona.data?.useCases,
       fullPersonaData: selectedPersonaData?.persona
     });
     
-    if (!selectedPersonaData?.persona.useCases) {
+    // Use cases are always in persona.data.useCases (unified schema)
+    const useCasesData = selectedPersonaData?.persona.data?.useCases;
+    
+    if (!useCasesData || !Array.isArray(useCasesData)) {
       console.log('[USE-CASES] No use cases found in persona data');
       return [];
     }
     
-    const useCases = selectedPersonaData.persona.useCases.map((useCase: any, index: number) => ({
+    const useCases = useCasesData.map((useCase: any, index: number) => ({
       id: `${config.selectedPersona}_${index}`,
       title: useCase.useCase || useCase.title || `Use Case ${index + 1}`,
       description: useCase.painPoints && useCase.desiredOutcome 
@@ -219,10 +241,10 @@ export function EmailWizardModal({
       console.log('[EMAIL-WIZARD] Loading data from DraftManager:', {
         isAuthenticated: !!token,
         accountsCount: allAccounts.length,
-        personasCount: allDraftPersonas.length,
+        personasCount: allPersonasForProcessing.length,
         dataProviderLoading: isDataLoading,
         allAccountsData: allAccounts.map(acc => ({ id: acc.id, name: acc.name || acc.targetAccountName })),
-        allPersonasData: allDraftPersonas.map(p => ({ 
+        allPersonasData: allPersonasForProcessing.map(p => ({ 
           id: p.data.id || p.tempId, 
           accountId: p.parentId || p.data.accountId,
           name: p.data.targetPersonaName || p.data.name 
@@ -246,14 +268,12 @@ export function EmailWizardModal({
       const transformedPersonas: WizardPersona[] = []
       const allPersonasData: Array<{ persona: any; accountId: string }> = []
       
-      allDraftPersonas.forEach(draft => {
-        const persona = draft.data
-        let accountId = draft.parentId || persona.accountId || persona.account_id
+      allPersonasForProcessing.forEach(persona => {
+        let accountId = persona.accountId || persona.account_id
         
         console.log('[EMAIL-WIZARD] Processing persona:', {
-          personaId: persona.id || draft.tempId,
+          personaId: persona.id,
           personaName: persona.targetPersonaName || persona.name,
-          accountIdFromParent: draft.parentId,
           accountIdFromPersona: persona.accountId,
           finalAccountId: accountId,
           availableAccountIds: allAccounts.map(acc => acc.id),
@@ -304,7 +324,7 @@ export function EmailWizardModal({
         });
         
         if (accountExists) {
-          const personaId = draft.tempId; // Always use DraftManager tempId
+          const personaId = persona.id; // Use the actual persona ID (works for both auth/unauth)
           const isApiPersona = !!(persona.id && !persona.id.startsWith('temp_'));
           
           const wizardPersona: WizardPersona = {
@@ -314,7 +334,7 @@ export function EmailWizardModal({
           }
           
           transformedPersonas.push(wizardPersona)
-          allPersonasData.push({ persona: { ...persona, id: personaId }, accountId: matchedAccountId })
+          allPersonasData.push({ persona, accountId: matchedAccountId })
           
           console.log('[EMAIL-WIZARD] ✅ Added persona:', {
             personaId,
@@ -322,12 +342,12 @@ export function EmailWizardModal({
             originalAccountId: accountId,
             matchedAccountId,
             source: isApiPersona ? 'API' : 'DRAFT',
-            hasUseCases: !!(persona.useCases && persona.useCases.length > 0),
-            useCasesCount: persona.useCases?.length || 0
+            hasUseCases: !!(persona.data?.useCases && persona.data.useCases.length > 0),
+            useCasesCount: persona.data?.useCases?.length || 0
           });
         } else {
           console.log('[EMAIL-WIZARD] ❌ SKIPPED persona due to account mismatch:', {
-            personaId: persona.id || draft.tempId,
+            personaId: persona.id,
             personaName: persona.targetPersonaName || persona.name,
             personaAccountId: accountId,
             availableAccountIds: allAccounts.map(acc => acc.id),
@@ -362,7 +382,7 @@ export function EmailWizardModal({
     } finally {
       setLoading(false)
     }
-  }, [isOpen, isCompanyLoading, isDataLoading, allAccounts.length, allDraftPersonas.length, token])
+  }, [isOpen, isCompanyLoading, isDataLoading, allAccounts.length, allPersonasForProcessing.length, token])
 
   // Initialize config when modal opens
   useEffect(() => {

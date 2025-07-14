@@ -13,6 +13,8 @@ import { useAuthAwareNavigation } from "../lib/hooks/useAuthAwareNavigation";
 import { useCompanyContext } from "../lib/hooks/useCompanyContext";
 import { useGetCampaigns } from "../lib/hooks/useCampaigns";
 import { DraftManager } from "../lib/draftManager";
+import { useGetAllPersonas } from "../lib/hooks/usePersonas";
+import { useGetAccounts } from "../lib/hooks/useAccounts";
 import { getCampaignSubject, getCampaignBody } from "../lib/entityDisplayUtils";
 // import NoCompanyFound from "../components/auth/NoCompanyFound";
 
@@ -38,14 +40,31 @@ export default function CampaignsPage() {
   const { overview, companyId } = useCompanyContext();
   const { create: createCampaignUniversal, delete: deleteCampaignUniversal } = useEntityCRUD<EmailGenerationResponse>('campaign');
   
-  // Get personas from DraftManager (automatically synced from API by useGetAllPersonas hook)
-  const draftPersonas = DraftManager.getDrafts('persona').map(draft => ({
+  // Get accounts - authenticated users get API data, unauthenticated users get DraftManager data
+  const { data: authenticatedAccounts } = useGetAccounts(companyId || "", token);
+  
+  // Get draft accounts ONLY for unauthenticated users (following Personas.tsx pattern)
+  const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
     ...draft.data,
     id: draft.tempId,
     isDraft: true,
-  }));
+  })) : [];
   
-  const allPersonas = draftPersonas;
+  // Use authenticated data for authenticated users, draft data for unauthenticated users
+  const allAccounts = isAuthenticated ? (authenticatedAccounts || []) : draftAccounts;
+  
+  // Get personas - authenticated users get API data, unauthenticated users get DraftManager data
+  const { data: authenticatedPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
+  
+  // Get draft personas ONLY for unauthenticated users (following Personas.tsx pattern)
+  const draftPersonas = !isAuthenticated ? DraftManager.getDrafts('persona').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+  
+  // Use authenticated data for authenticated users, draft data for unauthenticated users
+  const allPersonas = isAuthenticated ? (authenticatedPersonas || []) : draftPersonas;
   
   // Campaign data retrieval (following exact Accounts.tsx pattern)
   const { data: campaigns } = useGetCampaigns(token);
@@ -103,82 +122,133 @@ export default function CampaignsPage() {
   const handleWizardComplete = async (config: EmailConfig) => {
     if (!overview) return;
     
-    // Debug: Check what's actually in DraftManager
-    const allAccounts = DraftManager.getDrafts('account');
-    const allPersonas = DraftManager.getDrafts('persona');
+    // Debug: Check what's actually in DraftManager (use different variable names to avoid shadowing)
+    const draftAccountsDebug = DraftManager.getDrafts('account');
+    const draftPersonasDebug = DraftManager.getDrafts('persona');
     
     console.log('[CAMPAIGNS-WIZARD] Debug DraftManager contents:', {
       requestedAccountId: config.selectedAccount,
       requestedPersonaId: config.selectedPersona,
-      availableAccounts: allAccounts.map(a => ({ id: a.tempId, name: a.data?.targetAccountName || a.data?.name })),
-      availablePersonas: allPersonas.map(p => ({ id: p.tempId, name: p.data?.targetPersonaName || p.data?.name, parentId: p.parentId }))
+      availableAccounts: draftAccountsDebug.map(a => ({ id: a.tempId, name: a.data?.targetAccountName || a.data?.name })),
+      availablePersonas: draftPersonasDebug.map(p => ({ id: p.tempId, name: p.data?.targetPersonaName || p.data?.name, parentId: p.parentId }))
     });
     
-    // Look up the actual account and persona objects from DraftManager
-    let accountDraft = DraftManager.getDraft('account', config.selectedAccount);
-    let personaDraft = DraftManager.getDraft('persona', config.selectedPersona);
+    // Look up the actual account and persona objects based on authentication state
+    let selectedAccount = null;
+    let selectedPersona = null;
     
-    // If direct ID lookup fails, try to find by matching name/data
-    if (!accountDraft) {
-      console.warn('[CAMPAIGNS-WIZARD] Account ID not found, searching by partial match...');
-      accountDraft = allAccounts.find(acc => 
-        acc.tempId.includes(config.selectedAccount.split('_')[1]) || // Match timestamp part
-        config.selectedAccount.includes(acc.tempId.split('_')[1]) // Match reverse
-      ) || null;
-      if (accountDraft) {
-        console.log('[CAMPAIGNS-WIZARD] Found account by partial match:', accountDraft.tempId);
+    if (isAuthenticated) {
+      // For authenticated users, find by real ID in allAccounts/allPersonas (which come from component state)
+      console.log('[CAMPAIGNS-WIZARD] Authenticated lookup data:', {
+        allAccountsCount: allAccounts.length,
+        allPersonasCount: allPersonas.length,
+        lookingForAccountId: config.selectedAccount,
+        lookingForPersonaId: config.selectedPersona,
+        accountIdMatch: allAccounts.map(acc => acc.id).includes(config.selectedAccount),
+        personaIdMatch: allPersonas.map(per => per.id).includes(config.selectedPersona)
+      });
+      
+      console.log('[CAMPAIGNS-WIZARD] Available account IDs:', allAccounts.map(acc => acc.id));
+      console.log('[CAMPAIGNS-WIZARD] Available persona IDs:', allPersonas.map(per => per.id));
+      console.log('[CAMPAIGNS-WIZARD] Detailed account inspection:', allAccounts.map((acc, i) => ({
+        index: i,
+        accId: acc.id,
+        accKeys: Object.keys(acc),
+        hasId: 'id' in acc,
+        idType: typeof acc.id,
+        accObj: acc
+      })));
+      console.log('[CAMPAIGNS-WIZARD] Detailed persona inspection:', allPersonas.map((per, i) => ({
+        index: i,
+        perId: per.id,
+        perKeys: Object.keys(per),
+        hasId: 'id' in per,
+        idType: typeof per.id,
+        perObj: per
+      })));
+      
+      selectedAccount = allAccounts.find(acc => acc.id === config.selectedAccount);
+      selectedPersona = allPersonas.find(per => per.id === config.selectedPersona);
+      
+      console.log('[CAMPAIGNS-WIZARD] Authenticated lookup results:', {
+        foundAccount: !!selectedAccount,
+        foundPersona: !!selectedPersona,
+        selectedAccountId: selectedAccount?.id,
+        selectedPersonaId: selectedPersona?.id
+      });
+    } else {
+      // For unauthenticated users, look up in DraftManager
+      let accountDraft = DraftManager.getDraft('account', config.selectedAccount);
+      let personaDraft = DraftManager.getDraft('persona', config.selectedPersona);
+      
+      // If direct ID lookup fails, try to find by matching name/data
+      if (!accountDraft) {
+        console.warn('[CAMPAIGNS-WIZARD] Account ID not found, searching by partial match...');
+        const allAccountDrafts = DraftManager.getDrafts('account');
+        accountDraft = allAccountDrafts.find(acc => 
+          acc.tempId.includes(config.selectedAccount.split('_')[1]) || // Match timestamp part
+          config.selectedAccount.includes(acc.tempId.split('_')[1]) // Match reverse
+        ) || null;
+        if (accountDraft) {
+          console.log('[CAMPAIGNS-WIZARD] Found account by partial match:', accountDraft.tempId);
+        }
       }
+      
+      if (!personaDraft) {
+        console.warn('[CAMPAIGNS-WIZARD] Persona ID not found, searching by partial match...');
+        const allPersonaDrafts = DraftManager.getDrafts('persona');
+        personaDraft = allPersonaDrafts.find(per => 
+          per.tempId.includes(config.selectedPersona.split('_')[1]) || // Match timestamp part
+          config.selectedPersona.includes(per.tempId.split('_')[1]) // Match reverse
+        ) || null;
+        if (personaDraft) {
+          console.log('[CAMPAIGNS-WIZARD] Found persona by partial match:', personaDraft.tempId);
+        }
+      }
+      
+      selectedAccount = accountDraft?.data;
+      selectedPersona = personaDraft?.data;
     }
     
-    if (!personaDraft) {
-      console.warn('[CAMPAIGNS-WIZARD] Persona ID not found, searching by partial match...');
-      personaDraft = allPersonas.find(per => 
-        per.tempId.includes(config.selectedPersona.split('_')[1]) || // Match timestamp part
-        config.selectedPersona.includes(per.tempId.split('_')[1]) // Match reverse
-      ) || null;
-      if (personaDraft) {
-        console.log('[CAMPAIGNS-WIZARD] Found persona by partial match:', personaDraft.tempId);
-      }
-    }
-    
-    console.log('[CAMPAIGNS-WIZARD] Draft lookup results:', {
-      accountDraft: accountDraft ? { id: accountDraft.tempId, keys: Object.keys(accountDraft.data) } : null,
-      personaDraft: personaDraft ? { id: personaDraft.tempId, keys: Object.keys(personaDraft.data) } : null
+    console.log('[CAMPAIGNS-WIZARD] Lookup results:', {
+      selectedAccount: selectedAccount ? { id: selectedAccount.id, keys: Object.keys(selectedAccount) } : null,
+      selectedPersona: selectedPersona ? { id: selectedPersona.id, keys: Object.keys(selectedPersona) } : null
     });
     
-    if (!accountDraft || !personaDraft) {
+    if (!selectedAccount || !selectedPersona) {
       console.error('[CAMPAIGNS-WIZARD] Missing account or persona data after all lookups:', {
         accountId: config.selectedAccount,
         personaId: config.selectedPersona,
-        hasAccount: !!accountDraft,
-        hasPersona: !!personaDraft,
-        availableAccountIds: allAccounts.map(a => a.tempId),
-        availablePersonaIds: allPersonas.map(p => p.tempId)
+        hasAccount: !!selectedAccount,
+        hasPersona: !!selectedPersona,
+        isAuthenticated,
+        availableAccountIds: allAccounts.map(a => isAuthenticated ? a.id : a.id),
+        availablePersonaIds: allPersonas.map(p => isAuthenticated ? p.id : p.id)
       });
       return;
     }
     
     // Create properly formatted target account and persona objects for the prompt
     const targetAccount = {
-      target_account_name: accountDraft.data.targetAccountName || accountDraft.data.name,
-      ...accountDraft.data // Include all original fields
+      target_account_name: selectedAccount.targetAccountName || selectedAccount.name,
+      ...selectedAccount // Include all original fields
     };
     
     const targetPersona = {
-      target_persona_name: personaDraft.data.targetPersonaName || personaDraft.data.name,
-      ...personaDraft.data // Include all original fields
+      target_persona_name: selectedPersona.targetPersonaName || selectedPersona.name,
+      ...selectedPersona // Include all original fields
     };
     
     console.log('[CAMPAIGNS-WIZARD] Mapped target data:', {
       targetAccount: {
         target_account_name: targetAccount.target_account_name,
-        hasData: !!accountDraft.data,
-        dataKeys: Object.keys(accountDraft.data)
+        hasData: !!selectedAccount,
+        dataKeys: Object.keys(selectedAccount)
       },
       targetPersona: {
         target_persona_name: targetPersona.target_persona_name,
-        hasData: !!personaDraft.data,
-        dataKeys: Object.keys(personaDraft.data)
+        hasData: !!selectedPersona,
+        dataKeys: Object.keys(selectedPersona)
       }
     });
 

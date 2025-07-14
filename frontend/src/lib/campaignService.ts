@@ -33,7 +33,7 @@ export async function deleteCampaign(campaignId: string, token?: string | null):
 
 export async function generateEmail(generationData: GenerateEmailRequest, token?: string | null): Promise<EmailGenerationResponse> {
     // Use different endpoints for authenticated vs demo users
-    const endpoint = token ? '/campaigns/generate-email' : '/campaigns/generate-ai';
+    const endpoint = '/campaigns/generate-ai';
     
     console.log('[CAMPAIGN-SERVICE] Starting generateEmail:', {
         hasToken: !!token,

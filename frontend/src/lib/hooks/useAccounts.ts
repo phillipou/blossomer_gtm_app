@@ -77,7 +77,11 @@ export function useGenerateAccount(companyId: string, token?: string | null) {
 export function useGetAccounts(companyId: string, token?: string | null) {
   return useQuery<Account[], Error>({
     queryKey: [ACCOUNTS_LIST_KEY, companyId],
-    queryFn: () => getAccounts(companyId, token),
+    queryFn: async () => {
+      const accounts = await getAccounts(companyId, token);
+      // Normalize each account to ensure consistent data format
+      return accounts.map(account => normalizeAccountResponse(account));
+    },
     // Only enabled for authenticated users - unauthenticated users use DraftManager only
     enabled: !!companyId && !!token,
   });
