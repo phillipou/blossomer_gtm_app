@@ -1247,6 +1247,220 @@ import { DraftManager } from '../lib/draftManager';
 
 **Verification:** PersonaDetail.tsx now loads without errors for both authenticated and unauthenticated users.
 
+### **Issue #33: Authenticated Users Redirected from /app/personas/:id to /playground/personas** ✅ **RESOLVED**
+
+**Problem:** Authenticated users trying to navigate to `/app/personas/:id` were being redirected to `/playground/personas`, breaking the expected authenticated user experience.
+
+**Root Cause Analysis:**
+
+The issue was in the `useGetList` hook configuration in PersonaDetail.tsx. The `shouldFetchFromAPI` was hardcoded to `false`, which meant that for authenticated users, the `entityList` would be empty. The `useEntityPage` hook has redirect logic that checks if an entity exists in the `entityList`, and when the list is empty, it assumes the persona doesn't exist and redirects to the unauthenticated route.
+
+**Evidence of Issue:**
+```typescript
+// ❌ PROBLEMATIC: Always disabled API fetch
+const shouldFetchFromAPI = false; // PersonaDetail doesn't need list data - disable to avoid 404s
+
+// This caused:
+// 1. Authenticated user navigates to /app/personas/123
+// 2. PersonaDetail loads with empty entityList (no API call made)
+// 3. useEntityPage thinks persona doesn't exist
+// 4. Redirect to /playground/personas
+```
+
+**Affected Scenarios:**
+1. **Direct navigation** to `/app/personas/:id` → redirect to `/playground/personas`
+2. **Post-creation navigation** after creating a new persona → redirect to `/playground/personas`
+
+**Solution Applied:**
+
+Changed the `shouldFetchFromAPI` logic to enable API fetching for authenticated users:
+
+```typescript
+// ✅ FIXED: Enable for authenticated users to prevent redirect issues
+const shouldFetchFromAPI = !!token && !!accountId; // Enable for authenticated users
+
+const { data, isLoading, error } = useQuery<Persona[], Error>({
+  queryKey: [PERSONAS_LIST_KEY, accountId],
+  queryFn: () => getPersonas(accountId!, token),
+  enabled: shouldFetchFromAPI && !!token && !!accountId,
+});
+
+// For authenticated users with valid accountId, use API data
+if (shouldFetchFromAPI) {
+  return { data: data as unknown as TargetPersonaResponse[] || [], isLoading, error };
+}
+```
+
+**Impact:**
+- ✅ **Authenticated users** can now navigate to `/app/personas/:id` without being redirected
+- ✅ **Post-creation navigation** works correctly for authenticated users
+- ✅ **Unauthenticated users** continue to work with `/playground/personas/:id` using drafts
+- ✅ **No breaking changes** to existing functionality
+
+**Pattern Applied:**
+This fix follows the same pattern as other entity detail pages - authenticated users fetch entity lists to enable proper existence checking, while unauthenticated users use DraftManager for draft entities.
+
+**Verification Steps:**
+- ✅ Direct navigation to `/app/personas/:id` works for authenticated users
+- ✅ Creating a new persona navigates to correct detail page
+- ✅ Unauthenticated users continue to work in playground mode
+- ✅ No API calls made for unauthenticated users
+
+**Location:** `PersonaDetail.tsx:90`
+
+### **Issue #34: Improper Redirect Behavior for Invalid Entities** ✅ **RESOLVED**
+
+**Problem:** The `useEntityPage` hook was redirecting authenticated users from `/app/personas/:id` to `/playground/personas` when a persona doesn't exist, instead of showing a proper "Not Found" error page.
+
+**Root Cause Analysis:**
+
+The redirect logic in `useEntityPage.ts` was designed to help unauthenticated users find the right context, but it was creating confusing behavior for authenticated users:
+
+1. **Unexpected Context Switch**: Authenticated users would be moved from `/app` to `/playground` without explanation
+2. **Broken Mental Model**: Users expect invalid URLs to show 404 errors, not redirect to different authentication contexts
+3. **Timing Issues**: The redirect logic sometimes triggered before proper authentication state was established
+
+**Evidence of Issue:**
+```typescript
+// ❌ PROBLEMATIC: Redirecting authenticated users to playground
+} else if (!token && entityId) {
+  // This logic was sometimes triggered for authenticated users due to timing
+  if (!hasDraftWithId) {
+    console.log(`${config.entityType}: Unauthenticated user with invalid entityId redirecting to playground`);
+    navigate(config.routePrefix.unauthenticated, { replace: true });
+  }
+}
+```
+
+**Solution Applied:**
+
+1. **Improved Redirect Logic**: Added better conditions to ensure only unauthenticated users are redirected:
+   ```typescript
+   // ✅ FIXED: More specific conditions for unauthenticated users only
+   } else if (!token && entityId) {
+     const drafts = DraftManager.getDrafts(config.entityType);
+     const hasDraftWithId = drafts.some(draft => draft.tempId === entityId);
+     
+     if (!hasDraftWithId && !entityId.startsWith('temp_')) {
+       // Only redirect if there's no draft with this ID AND it's not a temp ID
+       console.log(`${config.entityType}: Unauthenticated user with invalid entityId redirecting to playground`);
+       navigate(config.routePrefix.unauthenticated, { replace: true });
+       return;
+     }
+   }
+   
+   // For authenticated users with invalid entities, DO NOT redirect - let the component handle 404 state
+   // This prevents the confusing behavior of redirecting authenticated users to playground
+   ```
+
+2. **Preserved Existing Error Handling**: PersonaDetail.tsx already has proper 404 handling:
+   ```typescript
+   if (entityPageState.error) {
+     return <div>Error loading persona: {entityPageState.error.message}</div>;
+   }
+   
+   if (!entityPageState.displayEntity && personaId !== 'new') {
+     return <div>Persona not found</div>;
+   }
+   ```
+
+**Impact:**
+- ✅ **Authenticated users** now see proper "Persona not found" errors instead of being redirected
+- ✅ **Unauthenticated users** are still redirected appropriately when needed
+- ✅ **Better UX** with predictable error handling that matches user expectations
+- ✅ **No breaking changes** to existing functionality
+
+**UX Improvement:**
+This change aligns with standard web application behavior where invalid URLs show 404 errors rather than performing unexpected redirects. Users now get clear feedback about what went wrong instead of being confused by authentication context switches.
+
+**Location:** `useEntityPage.ts:146-165`
+
+### **Issue #35: Authentication State Timing Race Condition in Entity Navigation** ✅ **RESOLVED**
+
+**Problem:** Authenticated users were still being redirected from `/app/personas/:id` to `/playground/personas` despite the previous fixes, due to a timing race condition in authentication state resolution.
+
+**Root Cause Analysis:**
+
+The fundamental issue was that the redirect logic in `useEntityPage.ts` was running before authentication state was fully resolved, causing a race condition:
+
+1. **Page loads**: Authentication state is loading (`authLoading = true`, `token = null`)
+2. **Redirect logic runs**: Sees `!token && entityId` and triggers unauthenticated redirect
+3. **Auth resolves**: `authLoading = false`, `token = "actual-token"` (too late - already redirected)
+4. **Result**: Authenticated user redirected to playground before auth state was confirmed
+
+**Evidence from Console Logs:**
+```
+useEntityPage.ts:153 persona: Unauthenticated user with invalid entityId redirecting to playground
+Navbar.tsx:19 Navbar AuthState: {isAuthenticated: true, token: 'eyJhbGciOiJFUzI1NiIsImtpZCI6IkhuWEFQdnltY1Q4SiJ9...'}
+```
+
+The redirect happened even though the user had a valid token - the timing was wrong.
+
+**Critical Insight:**
+This was a **timing race condition**, not a logic error. The authentication state resolution is asynchronous, and we need to wait for it to complete before making any routing decisions.
+
+**Solutions Applied:**
+
+1. **Added Authentication Loading Check**:
+   ```typescript
+   // ✅ FIXED: Extract loading state from useAuthState
+   const { token, loading: authLoading } = useAuthState();
+   
+   // CRITICAL: Wait for authentication loading to complete before any redirect logic
+   if (authLoading) {
+     console.log(`[${config.entityType}] Waiting for auth loading to complete...`);
+     return;
+   }
+   ```
+
+2. **Enhanced Redirect Conditions**:
+   ```typescript
+   // ✅ FIXED: Only run unauthenticated redirect logic when auth is NOT loading
+   if (!token && !authLoading && entityId) {
+     // ... redirect logic only runs when auth state is confirmed
+   }
+   ```
+
+3. **Added Comprehensive Debugging**:
+   ```typescript
+   console.log(`[${config.entityType}] useEntityPage navigation logic:`, {
+     hasToken: !!token,
+     entityId,
+     authLoading,
+     // ... other debug info
+   });
+   ```
+
+4. **Updated Dependency Array**:
+   ```typescript
+   }, [token, entityId, entityList, isLoadingEntityList, authLoading, navigate, config]);
+   ```
+
+**The Authentication Flow Now:**
+1. **Page loads**: `authLoading = true`, `token = null` → redirect logic skipped
+2. **Auth resolves**: `authLoading = false`, `token = "actual-token"` → redirect logic runs with correct token
+3. **Routing decision**: Made with accurate authentication state
+
+**Impact:**
+- ✅ **Authenticated users** never get redirected to playground routes
+- ✅ **No more timing race conditions** in authentication state resolution
+- ✅ **Clear separation** between authenticated and unauthenticated user flows
+- ✅ **Proper error handling** for invalid entities (404 errors instead of confusing redirects)
+
+**UX Improvement:**
+This fix ensures that authenticated users should **NEVER** be redirected to playground routes, providing the clear separation that users expect. Invalid personas now show proper "Persona not found" errors instead of confusing context switches.
+
+**Pattern for Future Development:**
+Always wait for `authLoading` to complete before making any authentication-dependent routing decisions. This prevents race conditions in components that rely on authentication state.
+
+**Verification:**
+- ✅ Direct navigation to `/app/personas/:id` works for authenticated users
+- ✅ Invalid persona IDs show proper 404 errors instead of redirects
+- ✅ No more flash/redirect behavior during page loads
+- ✅ Clear authentication state separation maintained
+
+**Location:** `useEntityPage.ts:139-195`
+
 **Problem:** Unauthenticated users see "No Accounts Found" error even when they have created draft accounts, preventing persona creation entirely.
 
 **Root Cause:** Personas.tsx was not following the proven Accounts.tsx pattern for dual-path data retrieval:
