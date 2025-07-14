@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
   EditDialog,
   EditDialogContent,
@@ -50,7 +50,7 @@ interface InputModalProps {
   customNameValidation?: (value: string) => string | null;
 }
 
-export default function InputModal({
+export default memo(function InputModal({
   isOpen,
   onClose,
   onSubmit,
@@ -220,4 +220,4 @@ export default function InputModal({
       </EditDialogContent>
     </EditDialog>
   );
-} 
+}); 

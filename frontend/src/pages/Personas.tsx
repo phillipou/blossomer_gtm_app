@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Edit3, Trash2, Wand2 } from "lucide-react";
@@ -74,6 +74,19 @@ export default function TargetPersonas() {
 
   // NO mixing - authenticated users get only database personas, unauthenticated get only drafts
   const allPersonas = isAuthenticated ? (authenticatedPersonas || []) : [...(authenticatedPersonas || []), ...allDraftPersonas];
+
+  // Memoized filtering (must be after all hooks, before early returns)
+  const filteredPersonas = useMemo(() => 
+    allPersonas.filter((persona) => {
+      const personaName = getPersonaName(persona) || '';
+      const personaDescription = getPersonaDescription(persona) || '';
+      const matchesSearch =
+        personaName.toLowerCase().includes(search.toLowerCase()) ||
+        personaDescription.toLowerCase().includes(search.toLowerCase());
+      if (filterBy === "all") return matchesSearch;
+      return matchesSearch;
+    }), [allPersonas, search, filterBy]
+  );
 
   // Removed problematic useEffect following Issue #26 "Remove, Don't Fix" pattern
 
@@ -174,17 +187,6 @@ export default function TargetPersonas() {
   if (saveError) {
     return <div>Error: {saveError}</div>;
   }
-
-  // Use allPersonas for filtering and rendering (dual-path data)
-  const filteredPersonas = allPersonas.filter((persona) => {
-    const personaName = getPersonaName(persona) || '';
-    const personaDescription = getPersonaDescription(persona) || '';
-    const matchesSearch =
-      personaName.toLowerCase().includes(search.toLowerCase()) ||
-      personaDescription.toLowerCase().includes(search.toLowerCase());
-    if (filterBy === "all") return matchesSearch;
-    return matchesSearch;
-  });
 
   // Open modal for persona creation
   const handleOpenAddModal = () => {

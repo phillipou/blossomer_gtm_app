@@ -7,7 +7,6 @@ import EntityPageLayout from '../components/EntityPageLayout';
 import SummaryCard from '../components/cards/SummaryCard';
 import AddCard from '../components/ui/AddCard';
 import { getEntityColorForParent } from '../lib/entityColors';
-import { getStoredTargetAccounts } from '../lib/accountService';
 import { useAuthState } from '../lib/auth';
 import { 
   useGetCompany, 
@@ -18,15 +17,15 @@ import {
   useGetCompanies, 
   useCreateCompany 
 } from '../lib/hooks/useCompany';
+import { useGetAccounts, useDeleteAccount } from '../lib/hooks/useAccounts';
 import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
 import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
-import type { CompanyOverviewResponse, TargetAccountResponse } from '../types/api';
+import { DraftManager } from '../lib/draftManager';
+import type { CompanyOverviewResponse, TargetAccountResponse, Account } from '../types/api';
 
 export default function Company() {
   const { token } = useAuthState();
-  const [targetAccounts, setTargetAccounts] = useState<
-    (TargetAccountResponse & { id: string; createdAt: string })[]
-  >([]);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Universal hooks replace multiple auth-specific patterns
   const { create: createCompanyUniversal, isAuthenticated } = useEntityCRUD<CompanyOverviewResponse>('company');
@@ -50,12 +49,22 @@ export default function Company() {
     },
   });
 
+  // Get company ID from entity page state
+  const companyId = entityPageState.displayEntity?.companyId || entityPageState.displayEntity?.id;
 
-  // Load target accounts
-  useEffect(() => {
-    const accounts = getStoredTargetAccounts();
-    setTargetAccounts(accounts);
-  }, []);
+  // Fetch accounts using dual-path pattern from Accounts.tsx
+  const { data: accounts, isLoading: isAccountsLoading } = useGetAccounts(companyId || "", token);
+  const { mutate: deleteAccount } = useDeleteAccount(companyId);
+
+  // Get draft accounts ONLY for unauthenticated users
+  const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+
+  // Combine accounts based on auth state - NO mixing of playground and database data
+  const allAccounts = isAuthenticated ? (accounts || []) : [...(accounts || []), ...draftAccounts];
 
   // Simplified generation handler using universal hooks
   const handleGenerate = ({ name, description }: { name: string; description: string }) => {
@@ -102,19 +111,32 @@ export default function Company() {
     );
   };
 
-  // Target account handlers using universal navigation
+  // Target account handlers using universal navigation and dual-path pattern
   const handleAccountClick = (accountId: string) => {
     navigateToEntity('account', accountId);
   };
 
-  const handleEditAccount = (account: TargetAccountResponse & { id: string; createdAt: string }) => {
+  const handleEditAccount = (account: Account) => {
     navigateToEntity('account', account.id);
   };
 
   const handleDeleteAccount = (accountId: string) => {
-    setTargetAccounts(prev => prev.filter(account => account.id !== accountId));
-    const updatedAccounts = getStoredTargetAccounts().filter(account => account.id !== accountId);
-    localStorage.setItem('target_accounts', JSON.stringify(updatedAccounts));
+    if (confirm('Are you sure you want to delete this target account?')) {
+      // Check if this is a draft account (temp ID format)
+      if (accountId.startsWith('temp_')) {
+        // Draft account - remove from DraftManager
+        console.log('[COMPANY-DELETE] Deleting draft account:', accountId);
+        DraftManager.removeDraft('account', accountId);
+        // Force component re-render by updating forceUpdate state
+        setForceUpdate(prev => prev + 1);
+      } else if (isAuthenticated) {
+        // Authenticated account - use mutation
+        console.log('[COMPANY-DELETE] Deleting authenticated account:', accountId);
+        deleteAccount(accountId);
+      } else {
+        console.warn('[COMPANY-DELETE] Cannot delete non-draft account for unauthenticated user:', accountId);
+      }
+    }
   };
 
   const handleAddAccount = () => {
@@ -123,6 +145,15 @@ export default function Company() {
 
   // Get company name for target accounts display
   const companyName = entityPageState.displayEntity?.companyName || 'Company';
+
+  // Helper functions for account data (similar to Accounts.tsx)
+  const getAccountName = (account: Account) => {
+    return account.targetAccountName || account.name || 'Unnamed Account';
+  };
+
+  const getAccountDescription = (account: Account) => {
+    return account.targetAccountDescription || account.description || 'No description available';
+  };
 
   return (
     <EntityPageLayout
@@ -133,27 +164,32 @@ export default function Company() {
         ...generationModalConfigs.company
       }}
       overviewProps={{
-        pageTitle: companyName,
-        pageSubtitle: entityPageState.displayEntity?.companyUrl || '',
+        pageTitle: 'Company Overview',
+        pageSubtitle: 'Summary of your company',
         bodyTitle: 'Company Overview',
         bodyText: entityPageState.displayEntity?.description || 'No description available'
       }}
     >
       {/* Target Accounts Section */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Target Accounts</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          Target Accounts
+          {allAccounts.length > 0 && (
+            <span className="text-gray-500 ml-2">({allAccounts.length})</span>
+          )}
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-visible p-1">
-          {targetAccounts.map((account) => (
+          {allAccounts.map((account) => (
             <SummaryCard
               key={account.id}
-              title={account.targetAccountName}
-              description={account.targetAccountDescription}
+              title={getAccountName(account)}
+              description={getAccountDescription(account)}
               parents={[
                 { 
                   name: companyName, 
                   color: getEntityColorForParent('company'), 
                   label: 'Company' 
-                },
+                }
               ]}
               onClick={() => handleAccountClick(account.id)}
               entityType="account"

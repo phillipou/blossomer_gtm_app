@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import type { ReactNode } from "react";
 import {
   EditDialog,
@@ -40,7 +40,7 @@ interface EditDialogModalProps {
   children?: ReactNode;
 }
 
-export default function EditDialogModal({
+export default memo(function EditDialogModal({
   isOpen,
   onClose,
   onSave,
@@ -153,4 +153,4 @@ export default function EditDialogModal({
       </EditDialogContent>
     </EditDialog>
   );
-} 
+}); 

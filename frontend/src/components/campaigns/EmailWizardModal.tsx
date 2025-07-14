@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo, useMemo, useCallback } from "react"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
@@ -61,7 +61,7 @@ interface WizardUseCase {
   personaIds: string[];
 }
 
-export function EmailWizardModal({
+export const EmailWizardModal = memo(function EmailWizardModal({
   isOpen,
   onClose,
   onComplete,
@@ -116,6 +116,41 @@ export function EmailWizardModal({
         ...draft.data,
         id: draft.tempId  // Use DraftManager tempId as the persona ID for unauthenticated users
       }))
+
+  // Memoized data transformations to replace heavy useEffect
+  const transformedAccounts = useMemo(() => 
+    allAccounts.map(account => ({
+      id: account.id,
+      name: getAccountName(account) || 'Untitled Account'
+    })), [allAccounts]
+  );
+
+  const transformedPersonasData = useMemo(() => {
+    const transformedPersonas: WizardPersona[] = []
+    const allPersonasData: Array<{ persona: any; accountId: string }> = []
+    
+    allPersonasForProcessing.forEach(persona => {
+      const accountId = persona.accountId || persona.data?.accountId;
+      if (accountId) {
+        const personaForWizard: WizardPersona = {
+          id: persona.id || persona.tempId,
+          name: persona.targetPersonaName || persona.name || 'Untitled Persona',
+          accountId: accountId,
+          useCases: persona.useCases || [],
+          description: persona.targetPersonaDescription || persona.description || '',
+          personaIds: [persona.id || persona.tempId]
+        };
+        
+        transformedPersonas.push(personaForWizard);
+        allPersonasData.push({
+          persona: persona,
+          accountId: accountId
+        });
+      }
+    });
+    
+    return { transformedPersonas, allPersonasData };
+  }, [allPersonasForProcessing]);
 
   // Define steps based on mode
   const getSteps = () => {
@@ -946,4 +981,4 @@ export function EmailWizardModal({
       </EditDialogContent>
     </EditDialog>
   )
-} 
+}) 

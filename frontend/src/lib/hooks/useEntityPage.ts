@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthState } from '../auth';
@@ -194,14 +194,19 @@ export function useEntityPage<T = any>({
     // This ensures authenticated users NEVER get redirected to playground routes
   }, [token, entityId, entityList, isLoadingEntityList, authLoading, navigate, config]);
   
-  // Clear cache for authenticated users
-  useEffect(() => {
+  // Memoized cache clearing function to reduce re-renders
+  const clearEntityCache = useCallback(() => {
     if (token && entityId) {
       console.log(`${config.entityType}: Clearing stale cache for authenticated user`);
       queryClient.removeQueries({ queryKey: [config.entityType, entityId] });
       queryClient.invalidateQueries({ queryKey: [config.entityType, entityId] });
     }
   }, [token, entityId, queryClient, config.entityType]);
+
+  // Clear cache for authenticated users - only when cache clear function changes
+  useEffect(() => {
+    clearEntityCache();
+  }, [clearEntityCache]);
   
   // Fetch entity data
   const { data: entity, isLoading: isGetLoading, error: getError, refetch } = hooks.useGet(token, entityId);
@@ -236,7 +241,8 @@ export function useEntityPage<T = any>({
   });
   
   // Handle API response from location state (for unauthenticated users)
-  useEffect(() => {
+  // Memoized API response processing to avoid unnecessary re-runs
+  const processApiResponse = useCallback(() => {
     const apiResponse = location.state?.apiResponse;
     if (apiResponse && !apiResponseProcessed.current && !token) {
       console.log(`${config.entityType}: Processing API response from location state`);
@@ -246,7 +252,11 @@ export function useEntityPage<T = any>({
     } else if (apiResponse && token) {
       console.log(`${config.entityType}: Ignoring location state for authenticated user`);
     }
-  }, [location.state, queryClient, entityId, token, config.entityType]);
+  }, [location.state?.apiResponse, queryClient, entityId, token, config.entityType]);
+
+  useEffect(() => {
+    processApiResponse();
+  }, [processApiResponse]);
   
   // Generation progress handling
   useEffect(() => {

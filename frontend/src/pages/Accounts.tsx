@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -174,8 +174,8 @@ export default function TargetAccountsList() {
     }
   };
 
-  const filteredAccounts = allAccounts.filter(
-    (account) => {
+  const filteredAccounts = useMemo(() => 
+    allAccounts.filter((account) => {
       const accountName = getAccountName(account) || '';
       const accountDescription = getAccountDescription(account) || '';
       const matchesSearch =
@@ -183,7 +183,7 @@ export default function TargetAccountsList() {
         accountDescription.toLowerCase().includes(search.toLowerCase());
       if (filterBy === "all") return matchesSearch;
       return matchesSearch;
-    }
+    }), [allAccounts, search, filterBy]
   );
 
   if (error) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { EditDialog as Dialog, EditDialogContent as DialogContent, EditDialogHeader as DialogHeader, EditDialogTitle as DialogTitle, EditDialogFooter as DialogFooter } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -48,7 +48,7 @@ const getColorClass = (color: string) => {
   }
 };
 
-export default function EditCriteriaModal({ isOpen, onClose, onSave, initialRows, title = "Edit Criteria" }: EditCriteriaModalProps) {
+export default memo(function EditCriteriaModal({ isOpen, onClose, onSave, initialRows, title = "Edit Criteria" }: EditCriteriaModalProps) {
   const [rows, setRows] = useState<CriteriaRow[]>([]);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<{ rowId: string; isNew: boolean } | null>(null);
@@ -303,4 +303,4 @@ export default function EditCriteriaModal({ isOpen, onClose, onSave, initialRows
       </DialogContent>
     </Dialog>
   );
-}
+});

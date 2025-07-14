@@ -7,7 +7,7 @@ import ListInfoCardEditModal, { type ListInfoCardItem } from "./ListInfoCardEdit
 import { isValidElement } from "react";
 
 import type { EntityType } from "../../lib/entityColors";
-import { getEntityDotColor } from "../../lib/entityColors";
+import { getEntityDotColor, getCardHoverClasses } from "../../lib/entityColors";
 
 interface ListInfoCardProps {
   title: string;
@@ -48,7 +48,7 @@ export default function ListInfoCard({ title, items, onEditRequest, renderItem, 
 
   return (
     <Card
-      className="group relative"
+      className={`group relative ${getCardHoverClasses()}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Button } from "../ui/button";
 
 interface EditingProfile {
@@ -12,7 +13,7 @@ interface AddAccountModalProps {
   editingProfile?: EditingProfile;
 }
 
-export default function AddAccountModal({ isOpen, onClose, onSave, editingProfile }: AddAccountModalProps) {
+export default memo(function AddAccountModal({ isOpen, onClose, onSave, editingProfile }: AddAccountModalProps) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -30,4 +31,4 @@ export default function AddAccountModal({ isOpen, onClose, onSave, editingProfil
       </div>
     </div>
   );
-} 
+}); 
