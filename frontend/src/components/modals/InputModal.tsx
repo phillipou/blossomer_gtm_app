@@ -209,7 +209,6 @@ export default function InputModal({
               isLoading ||
               (accounts.length > 0 && !accountId) ||
               (nameRequired && !name.trim()) ||
-              !!nameError ||
               (showDescription && descriptionRequired && !description.trim())
             }
             className="bg-blue-600 hover:bg-blue-700"
