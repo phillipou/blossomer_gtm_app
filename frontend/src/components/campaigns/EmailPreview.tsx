@@ -451,7 +451,27 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
             </div>
           </div>
 
-          <Button onClick={() => onSend(email)} className="w-full bg-green-600 hover:bg-green-700">
+          <Button onClick={() => {
+            // Create updated email object with current UI state
+            const updatedEmail = {
+              ...email,
+              subject: subjectValue,
+              segments: segments,
+              breakdown: breakdown,
+              // Update subjects object to reflect the new primary subject
+              subjects: {
+                ...email.subjects,
+                primary: subjectValue
+              }
+            };
+            console.log('[EMAIL-PREVIEW] Sending updated email data:', {
+              originalSubject: email.subject,
+              updatedSubject: subjectValue,
+              originalSubjectsPrimary: email.subjects?.primary,
+              updatedSubjectsPrimary: updatedEmail.subjects.primary
+            });
+            onSend(updatedEmail);
+          }} className="w-full bg-green-600 hover:bg-green-700">
             <Save className="w-4 h-4 mr-2" />
             Save Email
           </Button>

@@ -67,7 +67,7 @@ export default function CampaignsPage() {
   const allPersonas = isAuthenticated ? (authenticatedPersonas || []) : draftPersonas;
   
   // Campaign data retrieval (following exact Accounts.tsx pattern)
-  const { data: campaigns } = useGetCampaigns(token);
+  const { data: campaigns } = useGetCampaigns(token, companyId);
   const draftCampaigns = !isAuthenticated ? DraftManager.getDrafts('campaign').map(draft => ({
     ...draft.data,
     id: draft.tempId,
@@ -295,24 +295,15 @@ export default function CampaignsPage() {
   };
 
   const handleSelectEmail = (email: any) => {
-    // Extract parent context from campaign data structure (following AccountDetail.tsx pattern)
-    const personaId = email.personaId || email.data?.personaId || selectedPersonaId;
-    const accountId = email.accountId || email.data?.accountId;
-    
     console.log('[CAMPAIGNS-SELECT] Navigating to campaign:', {
       campaignId: email.id,
-      personaId,
-      accountId,
-      isAuthenticated
+      campaignName: email.name || email.subjects?.primary,
+      isAuthenticated,
+      routePath: isAuthenticated ? `/app/campaigns/${email.id}` : `/playground/campaigns/${email.id}`
     });
     
-    // Use proper nested navigation with full parent context
-    if (accountId && personaId) {
-      navigateToNestedEntity('account', accountId, 'persona', personaId, 'campaign', email.id);
-    } else {
-      // Fallback to direct navigation if parent context is missing
-      navigateToEntity('campaign', email.id);
-    }
+    // Navigate directly to campaign detail page (campaigns have their own direct routes)
+    navigateToEntity('campaign', email.id);
   };
 
   const handleEditEmail = (email: any) => {

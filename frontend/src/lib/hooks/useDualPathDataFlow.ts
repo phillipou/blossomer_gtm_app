@@ -414,9 +414,12 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
       
       switch (entityType) {
         case 'campaign':
-          // Use campaign service update
-          const { updateCampaign } = await import('../campaignService');
-          updatedEntity = await updateCampaign(entityId, updates as any, token);
+          // Use field-preserving campaign update
+          const { updateCampaignPreserveFields, getCampaign } = await import('../campaignService');
+          
+          // Get current campaign data for field preservation
+          const currentCampaign = await getCampaign(entityId, token);
+          updatedEntity = await updateCampaignPreserveFields(entityId, currentCampaign, updates as any, token);
           break;
           
         case 'account':

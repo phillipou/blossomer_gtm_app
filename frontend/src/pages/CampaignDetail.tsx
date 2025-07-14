@@ -143,19 +143,57 @@ export default function CampaignDetail() {
       console.log('[CAMPAIGN-DETAIL] Saving email with universal patterns:', {
         campaignId,
         email,
-        isAuthenticated
+        isAuthenticated,
+        preservingFields: ['subjects', 'emailBody', 'breakdown', 'metadata'],
+        isTemporaryCampaign: campaignId?.startsWith('temp_'),
+        emailSubjectData: {
+          emailSubjectsPrimary: email.subjects?.primary,
+          emailSubject: email.subject,
+          emailSubjectsObject: email.subjects,
+          campaignName: campaign?.name
+        }
       });
       
       // Use universal update system for both draft and authenticated campaigns
-      await updateCampaignUniversal(campaignId, {
-        ...email,
-        // Preserve complex email structures
+      // For authenticated users, this will make a PUT request to the server
+      // For unauthenticated users, this will update DraftManager
+      const updateData = {
+        // Preserve and update complex email structures
         subjects: email.subjects,
         emailBody: email.emailBody,
-        breakdown: email.breakdown
-      } as any);
+        breakdown: email.breakdown,
+        metadata: email.metadata
+        // Don't set name here - let the merge logic in campaignService handle it
+        // This allows the updated subjects.primary to become the new campaign name
+      };
+      
+      console.log('[CAMPAIGN-DETAIL] About to call updateCampaignUniversal with:', {
+        campaignId,
+        updateData,
+        isAuthenticated,
+        willHitDatabase: isAuthenticated && !campaignId?.startsWith('temp_')
+      });
+      
+      const result = await updateCampaignUniversal(campaignId!, updateData as any);
+      
+      console.log('[CAMPAIGN-DETAIL] Universal update completed:', {
+        result,
+        campaignId,
+        isAuthenticated,
+        databaseUpdated: isAuthenticated && !campaignId?.startsWith('temp_')
+      });
+      
       setForceUpdate(prev => prev + 1);
+      
+      console.log('[CAMPAIGN-DETAIL] Email saved successfully with field preservation');
     } catch (error) {
+      console.error('[CAMPAIGN-DETAIL] Save email failed:', {
+        error,
+        campaignId,
+        isAuthenticated,
+        errorMessage: error?.message,
+        errorStack: error?.stack
+      });
       handleComponentError('Campaign save', error);
     }
   };

@@ -4,6 +4,7 @@ import {
   getCampaign,
   createCampaign,
   updateCampaign,
+  updateCampaignPreserveFields,
   deleteCampaign,
   generateEmail,
   normalizeCampaignResponse,
@@ -12,12 +13,13 @@ import type { Campaign, CampaignCreate, CampaignUpdate, GenerateEmailRequest, Ge
 
 const CAMPAIGN_QUERY_KEY = 'campaigns';
 
-export function useGetCampaigns(token?: string | null) {
+export function useGetCampaigns(token?: string | null, companyId?: string) {
   return useQuery<Campaign[], Error>({
-    queryKey: [CAMPAIGN_QUERY_KEY],
-    queryFn: () => getCampaigns(token),
-    // Always enabled - getCampaigns handles auth internally (follows dual-path pattern)
-    enabled: true,
+    queryKey: [CAMPAIGN_QUERY_KEY, companyId],
+    queryFn: () => getCampaigns(token, companyId),
+    // Only enabled for authenticated users with company context
+    // Unauthenticated users get campaigns from DraftManager in component logic
+    enabled: !!token && !!companyId,
   });
 }
 
@@ -82,4 +84,28 @@ export function useGenerateEmail(token?: string | null) {
             queryClient.invalidateQueries({ queryKey: [CAMPAIGN_QUERY_KEY] });
         },
     });
+}
+
+// =================================================================
+// Field-Preserving Update Hooks (for Entity Abstraction)
+// =================================================================
+
+export function useUpdateCampaignPreserveFields(token?: string | null, campaignId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Campaign,
+    Error,
+    { currentCampaign: any; updates: { name?: string; [key: string]: any } }
+  >({
+    mutationFn: ({ currentCampaign, updates }) => 
+      updateCampaignPreserveFields(campaignId!, currentCampaign, updates, token),
+    onSuccess: (savedCampaign) => {
+      console.log('[PRESERVE-FIELDS] Campaign updated with field preservation:', savedCampaign);
+      
+      // Update cache with normalized campaign
+      queryClient.setQueryData([CAMPAIGN_QUERY_KEY, campaignId], savedCampaign);
+      // Invalidate list queries to refresh campaign lists
+      queryClient.invalidateQueries({ queryKey: [CAMPAIGN_QUERY_KEY] });
+    },
+  });
 }

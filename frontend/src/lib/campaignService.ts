@@ -6,13 +6,64 @@ import { transformKeysToCamelCase } from "./utils";
 // Campaign CRUD API Functions
 // =================================================================
 
-export async function getCampaigns(token?: string | null): Promise<Campaign[]> {
-  // Note: There is no general GET /campaigns endpoint in the API
-  // Campaigns are retrieved via personas or accounts
-  // For now, return empty array to prevent API errors
-  // TODO: Implement proper campaign listing via parent entities
-  console.log('[CAMPAIGN-SERVICE] getCampaigns called - no general campaigns endpoint available');
-  return [];
+export async function getCampaigns(token?: string | null, companyId?: string): Promise<Campaign[]> {
+  if (!token) {
+    // Unauthenticated users - no server campaigns to fetch
+    console.log('[CAMPAIGN-SERVICE] No token provided - returning empty array for unauthenticated users');
+    return [];
+  }
+  
+  if (!companyId) {
+    console.warn('[CAMPAIGN-SERVICE] No companyId provided - cannot fetch campaigns without company context');
+    return [];
+  }
+  
+  try {
+    // Get all accounts for the company first
+    const accounts = await apiFetch<any[]>(`/accounts?company_id=${companyId}`, { method: 'GET' }, token);
+    
+    // Fetch campaigns for each account
+    const allCampaigns: Campaign[] = [];
+    
+    for (const account of accounts) {
+      try {
+        console.log('[CAMPAIGN-SERVICE] Fetching campaigns for account:', account.id);
+        const accountCampaigns = await apiFetch<Campaign[]>(`/campaigns?account_id=${account.id}`, { method: 'GET' }, token);
+        
+        // Normalize each campaign response
+        const normalizedCampaigns = accountCampaigns.map(campaign => {
+          const normalized = normalizeCampaignResponse(campaign);
+          // Add account context for frontend use
+          return {
+            ...normalized,
+            accountId: account.id,
+            accountName: account.name
+          };
+        });
+        
+        allCampaigns.push(...normalizedCampaigns);
+      } catch (accountError) {
+        console.warn('[CAMPAIGN-SERVICE] Failed to fetch campaigns for account:', account.id, accountError);
+        // Continue with other accounts even if one fails
+      }
+    }
+    
+    console.log('[CAMPAIGN-SERVICE] Successfully fetched campaigns:', {
+      totalCampaigns: allCampaigns.length,
+      accountsChecked: accounts.length,
+      companyId
+    });
+    
+    return allCampaigns;
+    
+  } catch (error) {
+    console.error('[CAMPAIGN-SERVICE] Failed to fetch campaigns:', {
+      error,
+      companyId,
+      hasToken: !!token
+    });
+    return [];
+  }
 }
 
 export async function getCampaign(campaignId: string, token?: string | null): Promise<Campaign> {
@@ -21,14 +72,148 @@ export async function getCampaign(campaignId: string, token?: string | null): Pr
 }
 
 export async function updateCampaign(campaignId: string, campaignData: CampaignUpdate, token?: string | null): Promise<Campaign> {
-  return apiFetch<Campaign>(`/campaigns/${campaignId}`, {
-    method: 'PUT',
-    body: JSON.stringify(campaignData),
-  }, token);
+  console.log('[CAMPAIGN-SERVICE] Updating campaign:', {
+    campaignId,
+    updateData: campaignData,
+    hasToken: !!token
+  });
+  
+  try {
+    const response = await apiFetch<Campaign>(`/campaigns/${campaignId}`, {
+      method: 'PUT',
+      body: JSON.stringify(campaignData),
+    }, token);
+    
+    // Normalize the response to ensure consistent format
+    const normalized = normalizeCampaignResponse(response);
+    
+    console.log('[CAMPAIGN-SERVICE] Campaign updated successfully:', {
+      campaignId: normalized.id,
+      hasSubjects: !!normalized.subjects,
+      hasEmailBody: !!normalized.emailBody,
+      emailBodyLength: normalized.emailBody?.length || 0
+    });
+    
+    return normalized;
+    
+  } catch (error) {
+    console.error('[CAMPAIGN-SERVICE] Failed to update campaign:', {
+      campaignId,
+      error,
+      campaignData
+    });
+    throw error;
+  }
 }
 
 export async function deleteCampaign(campaignId: string, token?: string | null): Promise<void> {
   await apiFetch<void>(`/campaigns/${campaignId}`, { method: 'DELETE' }, token);
+}
+
+// =================================================================
+// Field-Preserving Update Functions (for Entity Abstraction)
+// =================================================================
+
+/**
+ * Merge campaign updates while preserving complex email structures
+ */
+function mergeCampaignUpdates(
+  currentCampaign: Record<string, any> | null | undefined,
+  updates: Record<string, any>
+): CampaignUpdate {
+  console.log('[MERGE-CAMPAIGN] Campaign update merge:', {
+    currentCampaign,
+    updates,
+    currentHasData: !!currentCampaign?.data,
+    updatesKeys: Object.keys(updates || {})
+  });
+  
+  const safeCurrent = currentCampaign || {};
+  const currentData = safeCurrent.data || safeCurrent;
+  
+  // Merge updates with current data, preserving complex structures
+  const mergedData = {
+    ...currentData,
+    ...updates
+  };
+  
+  // Handle name updates - prioritize updates, then fall back to existing
+  let campaignName: string;
+  
+  console.log('[MERGE-CAMPAIGN] Name resolution logic:', {
+    updates: {
+      name: updates.name,
+      subjectsPrimary: updates.subjects?.primary,
+      hasSubjects: !!updates.subjects
+    },
+    safeCurrent: {
+      name: safeCurrent.name,
+      subjectsPrimary: safeCurrent.subjects?.primary,
+      hasSubjects: !!safeCurrent.subjects
+    }
+  });
+  
+  if (updates.name) {
+    campaignName = updates.name;
+    console.log('[MERGE-CAMPAIGN] Using updates.name:', campaignName);
+  } else if (updates.subjects?.primary) {
+    campaignName = updates.subjects.primary;
+    console.log('[MERGE-CAMPAIGN] Using updates.subjects.primary:', campaignName);
+  } else if (safeCurrent.name) {
+    campaignName = safeCurrent.name;
+    console.log('[MERGE-CAMPAIGN] Using safeCurrent.name:', campaignName);
+  } else if (safeCurrent.subjects?.primary) {
+    campaignName = safeCurrent.subjects.primary;
+    console.log('[MERGE-CAMPAIGN] Using safeCurrent.subjects.primary:', campaignName);
+  } else {
+    campaignName = 'Updated Campaign';
+    console.log('[MERGE-CAMPAIGN] Using default name:', campaignName);
+  }
+  
+  // Build clean data payload excluding top-level database fields
+  const topLevelFields = new Set(['id', 'name', 'type', 'accountId', 'personaId', 'createdAt', 'updatedAt']);
+  const dataPayload: Record<string, any> = {};
+  
+  Object.entries(mergedData).forEach(([key, value]) => {
+    if (!topLevelFields.has(key) && key !== 'data') {
+      dataPayload[key] = value;
+    }
+  });
+  
+  console.log('[MERGE-CAMPAIGN] Merged campaign data:', {
+    campaignName,
+    dataPayloadKeys: Object.keys(dataPayload),
+    preservedComplexStructures: {
+      hasSubjects: !!dataPayload.subjects,
+      hasEmailBody: !!dataPayload.emailBody,
+      hasBreakdown: !!dataPayload.breakdown
+    }
+  });
+  
+  return {
+    name: campaignName,
+    data: dataPayload
+  };
+}
+
+/**
+ * Update campaign with field preservation - preserves all email content and metadata
+ */
+export async function updateCampaignPreserveFields(
+  campaignId: string,
+  currentCampaign: any,
+  updates: { name?: string; [key: string]: any },
+  token?: string | null
+): Promise<Campaign> {
+  const mergedData = mergeCampaignUpdates(currentCampaign, updates);
+  
+  console.log('[PRESERVE-FIELDS] Campaign update with field preservation:', {
+    campaignId,
+    mergedData,
+    preservesEmailContent: !!(mergedData.data?.subjects && mergedData.data?.emailBody)
+  });
+  
+  return updateCampaign(campaignId, mergedData, token);
 }
 
 export async function generateEmail(generationData: GenerateEmailRequest, token?: string | null): Promise<EmailGenerationResponse> {
