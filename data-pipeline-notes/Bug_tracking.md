@@ -21,20 +21,19 @@ This document tracks bugs, issues, and solutions related to PUT request implemen
 - Use DraftManager directly for draft operations
 - Dual-path deletion: Check `id.startsWith('temp_')` for drafts vs real IDs
 
-## 📋 PUT Pipeline Project Status: COMPLETE
+## 📋 PUT Pipeline + Universal Architecture Project Status: COMPLETE
 
-### **🎉 ALL CRITICAL ISSUES RESOLVED**
-**Status:** ✅ COMPLETED - All 6 major PUT request issues successfully resolved  
-**Project Completion Date:** July 2025  
-**Next Phase:** Ready to apply proven patterns to Personas entity
+### **🎉 ALL CRITICAL ISSUES RESOLVED + UNIVERSAL PATTERNS ESTABLISHED**
+**Status:** ✅ COMPLETED - All PUT request and architectural issues successfully resolved  
+**Project Completion Date:** July 13, 2025  
+**Next Phase:** Ready to apply proven universal patterns to Campaigns entity
 
 ### **Key Issues Resolved:**
-- ✅ **Issue #1:** PUT Request Field Mapping Inconsistencies
-- ✅ **Issue #2:** Cache Update Bypass Normalization  
-- ✅ **Issue #3:** Field Preservation Complexity
-- ✅ **Issue #4:** Recursive Data Nesting on PUT
-- ✅ **Issue #5:** Description-Only Edit Clears Core Fields
-- ✅ **Issue #6:** Component Callback and Render Logic
+- ✅ **Issues #1-6:** PUT Request Field Mapping, Cache Updates, Field Preservation (original pipeline issues)
+- ✅ **Issues #15:** Data Format Inconsistency Between Auth and Unauth Flows
+- ✅ **Issues #20-26:** Critical React Hooks and Field Preservation Crisis (infinite loops, hooks ordering)
+- ✅ **Issues #27-32:** Personas Implementation and Integration (AI generation, draft management, navigation)
+- ✅ **Universal Architecture:** Established battle-tested patterns for all future entities
 
 ### **Root Problems Solved:**
 - **Multiple data transformation layers** with inconsistent field formats
@@ -358,12 +357,13 @@ setForceUpdate(prev => prev + 1); // Triggers re-render
 
 **Location:** `Accounts.tsx:70, 104-121`
 
-**🎯 Pattern for Personas.tsx:**
-This same pattern should be applied to Personas.tsx delete functionality:
+**🎯 Universal Pattern for All Entities (Applied to Accounts, Personas - Ready for Campaigns):**
+This pattern has been successfully applied to both Accounts and Personas and should be used for Campaigns:
 1. **Check ID format**: `id.startsWith('temp_')` for drafts vs real IDs
-2. **Dual deletion paths**: `DraftManager.removeDraft('persona', id)` vs authenticated mutation
+2. **Dual deletion paths**: `DraftManager.removeDraft(entityType, id)` vs authenticated mutation
 3. **Force re-render**: Use state update to trigger component refresh after draft deletion
 4. **Auth state check**: Use `isAuthenticated` to determine available deletion methods
+5. **Universal hooks**: Use `useEntityCRUD(entityType)` for consistent operations
 
 ### **Issue #26: Infinite Re-Render Loop in Auth State Transitions (All Users)** ✅ **RESOLVED**
 
@@ -1327,6 +1327,131 @@ const allDraftPersonas = allAccounts?.flatMap(account =>
 - **Context passing:** Both company and entity-specific context for AI
 - **Field preservation:** Use `updateEntityPreserveFields` pattern
 - **Form handling:** Always use form input values, not existing entity data
+
+---
+
+## 🎯 **CAMPAIGNS IMPLEMENTATION GUIDE**
+
+### **🏆 SUCCESS PATTERNS TO FOLLOW**
+*Based on successful Accounts and Personas implementations*
+
+#### **1. Component Structure Template (Battle-Tested)**
+```typescript
+export default function Campaigns() {
+  // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
+  const { token } = useAuthState();
+  const { navigateWithPrefix, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
+  const [search, setSearch] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Universal context and CRUD hooks
+  const { overview, companyId, hasValidContext } = useCompanyContext();
+  const { create: createCampaignUniversal } = useEntityCRUD<TargetCampaignResponse>('campaign');
+  
+  // Data fetching hooks (following Accounts.tsx pattern)
+  const { data: campaigns } = useGetCampaigns(companyId || "", token);
+  
+  // Get draft campaigns ONLY for unauthenticated users
+  const draftCampaigns = !isAuthenticated ? DraftManager.getDrafts('campaign').map(draft => ({
+    ...draft.data,
+    id: draft.tempId,
+    isDraft: true,
+  })) : [];
+  
+  // Combine based on auth state - NO mixing of playground and database data
+  const allCampaigns = isAuthenticated ? (campaigns || []) : [...(campaigns || []), ...draftCampaigns];
+  
+  // THEN check for early returns (after ALL hooks)
+  if (!companyId) {
+    return <NoCompanyFound />;
+  }
+  
+  // Component render logic...
+}
+```
+
+#### **2. Critical Success Patterns Applied:**
+
+**✅ React Hooks Compliance:**
+- All hooks called at component top before any early returns
+- No hooks inside conditional logic or JSX
+- Memoized objects to prevent recreation: `useMemo(() => ({ ... }), [deps])`
+
+**✅ Dual-Path Data Management:**
+- Clear separation: authenticated users get database data, unauthenticated get drafts
+- No mixing of playground and database data in same component
+- DraftManager integration following exact Accounts.tsx pattern
+
+**✅ Universal Hook Integration:**
+- `useEntityCRUD('campaign')` for all create/update/delete operations
+- `useAuthAwareNavigation()` for consistent routing
+- `useCompanyContext()` for company detection
+
+**✅ Error Prevention:**
+- "Remove, Don't Fix" pattern for infinite loops
+- Single source of truth - no duplicate state management
+- Direct data access instead of complex state synchronization
+
+#### **3. Dual-Path Deletion Pattern:**
+```typescript
+const handleDeleteCampaign = (id: string) => {
+  if (confirm('Are you sure you want to delete this campaign?')) {
+    if (id.startsWith('temp_')) {
+      // Draft campaign - remove from DraftManager
+      DraftManager.removeDraft('campaign', id);
+      setForceUpdate(prev => prev + 1);
+    } else if (isAuthenticated) {
+      // Authenticated campaign - use mutation
+      deleteAuthenticatedCampaign(id);
+    }
+  }
+};
+```
+
+#### **4. AI Generation Integration:**
+```typescript
+const handleCreateCampaign = async ({ name, description }: { name: string; description: string }) => {
+  try {
+    // Step 1: Call AI generation endpoint
+    // Step 2: Save with universal create system
+    const result = await createCampaignUniversal({
+      campaignName: name,
+      campaignDescription: description,
+      // ... other campaign-specific fields
+    }, { 
+      parentId: accountId, // If campaigns are nested under accounts
+      navigateOnSuccess: true 
+    });
+    
+    setIsCreateModalOpen(false);
+  } catch (error) {
+    console.error('[CAMPAIGNS-CREATE] Failed:', error);
+  }
+};
+```
+
+#### **5. Field Preservation for Updates:**
+Following the proven pattern from Issues #20-26, campaign updates should use the universal system to preserve all fields during partial edits.
+
+### **🚨 RED FLAGS TO AVOID**
+*Learned from intensive debugging sessions*
+
+**❌ Never Do:**
+- Complex `useEffect` with `queryClient` in dependencies
+- Duplicate state management (local state + entity system)
+- Hooks called inside JSX or after conditional logic
+- Auth state transition logic in useEffects
+- Manual cache manipulation bypassing normalization
+- Debugging functions with complex dependencies
+
+**✅ Always Do:**
+- Call all hooks at component top before early returns
+- Use single source of truth for data
+- Remove problematic code entirely rather than fixing dependencies
+- Trust DraftManager for field preservation
+- Use universal hooks for consistent operations
 
 ---
 
