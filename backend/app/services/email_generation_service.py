@@ -33,7 +33,6 @@ async def generate_email_campaign_service(
         # Use the context orchestrator service for LLM generation
         service = ContextOrchestratorService(
             orchestrator=orchestrator,
-            preprocessing_pipeline=None,  # No preprocessing needed for email generation
         )
 
         # Determine which template to use based on preferences

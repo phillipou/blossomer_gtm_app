@@ -32,10 +32,45 @@ export async function deleteCampaign(campaignId: string, token?: string | null):
 }
 
 export async function generateEmail(generationData: GenerateEmailRequest, token?: string | null): Promise<EmailGenerationResponse> {
-    return apiFetch<EmailGenerationResponse>('/campaigns/generate-email', {
-        method: 'POST',
-        body: JSON.stringify(generationData),
-    }, token);
+    // Use different endpoints for authenticated vs demo users
+    const endpoint = token ? '/campaigns/generate-email' : '/campaigns/generate-ai';
+    
+    console.log('[CAMPAIGN-SERVICE] Starting generateEmail:', {
+        hasToken: !!token,
+        endpoint,
+        generationData: {
+            companyContext: !!generationData.companyContext,
+            targetAccount: generationData.targetAccount,
+            targetPersona: generationData.targetPersona,
+            preferences: generationData.preferences
+        }
+    });
+    
+    try {
+        const result = await apiFetch<EmailGenerationResponse>(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(generationData),
+        }, token);
+        
+        console.log('[CAMPAIGN-SERVICE] generateEmail SUCCESS:', {
+            hasResult: !!result,
+            resultKeys: result ? Object.keys(result) : [],
+            hasSubjects: !!(result as any)?.subjects,
+            hasEmailBody: !!(result as any)?.emailBody,
+            hasBreakdown: !!(result as any)?.breakdown
+        });
+        
+        return result;
+    } catch (error) {
+        console.error('[CAMPAIGN-SERVICE] generateEmail FAILED:', {
+            error,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+            generationData,
+            endpoint
+        });
+        throw error;
+    }
 }
 
 // =================================================================
@@ -47,8 +82,32 @@ export async function generateEmail(generationData: GenerateEmailRequest, token?
  * Used by universal hooks for consistent AI generation flow
  */
 export async function generateCampaign(campaignData: any, token?: string | null): Promise<EmailGenerationResponse> {
-    // Use the same endpoint as generateEmail but return EmailGenerationResponse format
-    return generateEmail(campaignData, token);
+    console.log('[CAMPAIGN-SERVICE] generateCampaign called with:', {
+        hasToken: !!token,
+        campaignDataKeys: Object.keys(campaignData || {}),
+        campaignData
+    });
+    
+    try {
+        // Use the same endpoint as generateEmail but return EmailGenerationResponse format
+        const result = await generateEmail(campaignData, token);
+        
+        console.log('[CAMPAIGN-SERVICE] generateCampaign SUCCESS:', {
+            resultKeys: Object.keys(result || {}),
+            hasSubjects: !!result.subjects,
+            hasEmailBody: !!result.emailBody,
+            hasBreakdown: !!result.breakdown
+        });
+        
+        return result;
+    } catch (error) {
+        console.error('[CAMPAIGN-SERVICE] generateCampaign FAILED:', {
+            error,
+            errorMessage: error?.message,
+            campaignData
+        });
+        throw error;
+    }
 }
 
 /**

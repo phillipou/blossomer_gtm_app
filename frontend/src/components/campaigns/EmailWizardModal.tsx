@@ -89,8 +89,14 @@ export function EmailWizardModal({
   })
 
   // Get all data from DraftManager (works for both authenticated and unauthenticated users)
-  const allAccounts = DraftManager.getDrafts('account').map(draft => draft.data)
+  const allAccountDrafts = DraftManager.getDrafts('account')
   const allDraftPersonas = DraftManager.getDrafts('persona')
+  
+  // Transform account drafts to include tempId as the id
+  const allAccounts = allAccountDrafts.map(draft => ({
+    ...draft.data,
+    id: draft.tempId  // Use DraftManager tempId as the account ID
+  }))
 
   // Define steps based on mode
   const getSteps = () => {
@@ -298,7 +304,7 @@ export function EmailWizardModal({
         });
         
         if (accountExists) {
-          const personaId = persona.id || draft.tempId;
+          const personaId = draft.tempId; // Always use DraftManager tempId
           const isApiPersona = !!(persona.id && !persona.id.startsWith('temp_'));
           
           const wizardPersona: WizardPersona = {

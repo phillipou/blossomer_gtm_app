@@ -103,10 +103,89 @@ export default function CampaignsPage() {
   const handleWizardComplete = async (config: EmailConfig) => {
     if (!overview) return;
     
+    // Debug: Check what's actually in DraftManager
+    const allAccounts = DraftManager.getDrafts('account');
+    const allPersonas = DraftManager.getDrafts('persona');
+    
+    console.log('[CAMPAIGNS-WIZARD] Debug DraftManager contents:', {
+      requestedAccountId: config.selectedAccount,
+      requestedPersonaId: config.selectedPersona,
+      availableAccounts: allAccounts.map(a => ({ id: a.tempId, name: a.data?.targetAccountName || a.data?.name })),
+      availablePersonas: allPersonas.map(p => ({ id: p.tempId, name: p.data?.targetPersonaName || p.data?.name, parentId: p.parentId }))
+    });
+    
+    // Look up the actual account and persona objects from DraftManager
+    let accountDraft = DraftManager.getDraft('account', config.selectedAccount);
+    let personaDraft = DraftManager.getDraft('persona', config.selectedPersona);
+    
+    // If direct ID lookup fails, try to find by matching name/data
+    if (!accountDraft) {
+      console.warn('[CAMPAIGNS-WIZARD] Account ID not found, searching by partial match...');
+      accountDraft = allAccounts.find(acc => 
+        acc.tempId.includes(config.selectedAccount.split('_')[1]) || // Match timestamp part
+        config.selectedAccount.includes(acc.tempId.split('_')[1]) // Match reverse
+      ) || null;
+      if (accountDraft) {
+        console.log('[CAMPAIGNS-WIZARD] Found account by partial match:', accountDraft.tempId);
+      }
+    }
+    
+    if (!personaDraft) {
+      console.warn('[CAMPAIGNS-WIZARD] Persona ID not found, searching by partial match...');
+      personaDraft = allPersonas.find(per => 
+        per.tempId.includes(config.selectedPersona.split('_')[1]) || // Match timestamp part
+        config.selectedPersona.includes(per.tempId.split('_')[1]) // Match reverse
+      ) || null;
+      if (personaDraft) {
+        console.log('[CAMPAIGNS-WIZARD] Found persona by partial match:', personaDraft.tempId);
+      }
+    }
+    
+    console.log('[CAMPAIGNS-WIZARD] Draft lookup results:', {
+      accountDraft: accountDraft ? { id: accountDraft.tempId, keys: Object.keys(accountDraft.data) } : null,
+      personaDraft: personaDraft ? { id: personaDraft.tempId, keys: Object.keys(personaDraft.data) } : null
+    });
+    
+    if (!accountDraft || !personaDraft) {
+      console.error('[CAMPAIGNS-WIZARD] Missing account or persona data after all lookups:', {
+        accountId: config.selectedAccount,
+        personaId: config.selectedPersona,
+        hasAccount: !!accountDraft,
+        hasPersona: !!personaDraft,
+        availableAccountIds: allAccounts.map(a => a.tempId),
+        availablePersonaIds: allPersonas.map(p => p.tempId)
+      });
+      return;
+    }
+    
+    // Create properly formatted target account and persona objects for the prompt
+    const targetAccount = {
+      target_account_name: accountDraft.data.targetAccountName || accountDraft.data.name,
+      ...accountDraft.data // Include all original fields
+    };
+    
+    const targetPersona = {
+      target_persona_name: personaDraft.data.targetPersonaName || personaDraft.data.name,
+      ...personaDraft.data // Include all original fields
+    };
+    
+    console.log('[CAMPAIGNS-WIZARD] Mapped target data:', {
+      targetAccount: {
+        target_account_name: targetAccount.target_account_name,
+        hasData: !!accountDraft.data,
+        dataKeys: Object.keys(accountDraft.data)
+      },
+      targetPersona: {
+        target_persona_name: targetPersona.target_persona_name,
+        hasData: !!personaDraft.data,
+        dataKeys: Object.keys(personaDraft.data)
+      }
+    });
+
     const request: GenerateEmailRequest = {
         companyContext: overview,
-        targetAccount: config.selectedAccount as any,
-        targetPersona: config.selectedPersona as any,
+        targetAccount: targetAccount,
+        targetPersona: targetPersona,
         preferences: {
             useCase: config.selectedUseCase,
             emphasis: config.emphasis,
@@ -117,7 +196,7 @@ export default function CampaignsPage() {
         },
     };
     
-    const personaId = (config.selectedPersona as any)?.id || "";
+    const personaId = config.selectedPersona; // selectedPersona is already the ID string
     setSelectedPersonaId(personaId);
     setIsGenerating(true);
     
