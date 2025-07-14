@@ -91,17 +91,33 @@ export function useEntityCRUD<T>(entityType: EntityType) {
     try {
       const result = await saveEntity(aiData, saveOptions);
       
+      console.log('[ENTITY-CRUD-CREATE] Raw result from saveEntity:', {
+        result,
+        resultId: result?.id,
+        resultKeys: result ? Object.keys(result) : 'null'
+      });
+      
       // Automatic navigation after successful creation
-      if (navigateOnSuccess) {
+      if (navigateOnSuccess && result?.id) {
+        console.log('[ENTITY-CRUD-CREATE] Navigating to created entity:', {
+          entityType,
+          entityId: result.id
+        });
         // Simplified navigation - all entities use direct routing
         navigateToEntity(entityType, result.id);
+      } else if (navigateOnSuccess && !result?.id) {
+        console.error('[ENTITY-CRUD-CREATE] Cannot navigate - no ID in result:', {
+          entityType,
+          result,
+          navigateOnSuccess
+        });
       }
       
       console.log('[ENTITY-CRUD-CREATE] Successfully created entity:', {
         entityType,
-        entityId: result.id,
-        isTemporary: result.isTemporary,
-        navigated: navigateOnSuccess
+        entityId: result?.id,
+        isTemporary: result?.isTemporary,
+        navigated: navigateOnSuccess && !!result?.id
       });
       
       return result;

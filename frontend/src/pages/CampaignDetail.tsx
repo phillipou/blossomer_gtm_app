@@ -44,7 +44,7 @@ const EditingMode = {
 export default function CampaignDetail() {
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const { token } = useAuthState();
-  const { id: campaignId } = useParams<{ id: string }>();
+  const { campaignId } = useParams<{ campaignId: string }>();
   const navigate = useNavigate();
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -231,7 +231,11 @@ export default function CampaignDetail() {
         
         <div className="overflow-auto p-0">
           <EmailPreview
-            email={campaign}
+            email={{
+              ...campaign,
+              segments: campaign.emailBody || [],
+              subject: campaign.subjects?.primary || campaign.subject || 'Untitled Campaign'
+            }}
             onCreateVariant={handleCreateVariant}
             onCopy={handleCopyEmail}
             onSend={handleSaveEmail}
