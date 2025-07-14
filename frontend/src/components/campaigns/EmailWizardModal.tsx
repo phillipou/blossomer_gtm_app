@@ -224,10 +224,17 @@ export function EmailWizardModal({
       });
       
       // Transform accounts for wizard use
-      const transformedAccounts: WizardAccount[] = allAccounts.map(account => ({
-        id: account.id,
-        name: getAccountName(account) || 'Untitled Account'
-      }))
+      const transformedAccounts: WizardAccount[] = allAccounts.map(account => {
+        console.log('[EMAIL-WIZARD] Processing account:', {
+          accountId: account.id,
+          accountName: getAccountName(account),
+          accountKeys: Object.keys(account)
+        });
+        return {
+          id: account.id,
+          name: getAccountName(account) || 'Untitled Account'
+        };
+      })
       
       // Transform personas for wizard use
       const transformedPersonas: WizardPersona[] = []
@@ -237,8 +244,19 @@ export function EmailWizardModal({
         const persona = draft.data
         const accountId = draft.parentId || persona.accountId
         
+        console.log('[EMAIL-WIZARD] Processing persona:', {
+          personaId: persona.id || draft.tempId,
+          personaName: persona.targetPersonaName || persona.name,
+          accountIdFromParent: draft.parentId,
+          accountIdFromPersona: persona.accountId,
+          finalAccountId: accountId,
+          availableAccountIds: allAccounts.map(acc => acc.id)
+        });
+        
         // Only include personas that belong to available accounts
         const accountExists = allAccounts.some(account => account.id === accountId)
+        console.log('[EMAIL-WIZARD] Account exists check:', { accountId, accountExists });
+        
         if (accountExists) {
           const personaId = persona.id || draft.tempId;
           const isApiPersona = !!(persona.id && !persona.id.startsWith('temp_'));
