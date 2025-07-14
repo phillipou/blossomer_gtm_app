@@ -16,7 +16,8 @@ export function useGetCampaigns(token?: string | null) {
   return useQuery<Campaign[], Error>({
     queryKey: [CAMPAIGN_QUERY_KEY],
     queryFn: () => getCampaigns(token),
-    enabled: !!token,
+    // Always enabled - getCampaigns handles auth internally (follows dual-path pattern)
+    enabled: true,
   });
 }
 
@@ -26,6 +27,16 @@ export function useGetCampaign(campaignId: string, token?: string | null) {
         queryFn: () => getCampaign(campaignId, token),
         enabled: !!campaignId && !!token,
     });
+}
+
+// Add conditional hook for entity page usage (following AccountDetail.tsx pattern)
+export function useGetCampaignForEntityPage(token?: string | null, entityId?: string) {
+  return useQuery<Campaign, Error>({
+    queryKey: [CAMPAIGN_QUERY_KEY, entityId],
+    queryFn: () => getCampaign(entityId!, token),
+    // Only enabled for authenticated users - unauthenticated users use DraftManager only
+    enabled: !!entityId && entityId !== 'new' && !!token && entityId !== '*',
+  });
 }
 
 export function useCreateCampaign(token?: string | null) {

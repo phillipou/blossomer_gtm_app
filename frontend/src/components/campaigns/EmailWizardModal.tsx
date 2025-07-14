@@ -7,12 +7,11 @@ import { Label } from "../ui/label"
 import { Textarea } from "../ui/textarea"
 import { ChevronRight, ChevronLeft, Wand2, X, RefreshCw } from "lucide-react"
 import { EditDialog, EditDialogContent, EditDialogHeader, EditDialogTitle } from "../ui/dialog"
-import { useGetAccounts } from "../../lib/hooks/useAccounts"
-import { useGetAllPersonas } from "../../lib/hooks/usePersonas"
 import { useCompanyContext } from "../../lib/hooks/useCompanyContext"
 import { useAuthState } from "../../lib/auth"
 import { DraftManager } from "../../lib/draftManager"
 import { getAccountName } from "../../lib/entityDisplayUtils"
+import { useDataContext } from "../../contexts/DataContext"
 import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading"
 
 interface EmailWizardModalProps {
@@ -70,6 +69,7 @@ export function EmailWizardModal({
 }: EmailWizardModalProps) {
   const { token } = useAuthState()
   const { companyId, isLoading: isCompanyLoading } = useCompanyContext()
+  const { isLoading: isDataLoading } = useDataContext()
   
   const [currentStep, setCurrentStep] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -88,20 +88,13 @@ export function EmailWizardModal({
     socialProof: "",
   })
 
-  // Fetch all accounts and personas upfront using existing hooks
-  const { data: apiAccounts, isLoading: isAccountsLoading } = useGetAccounts(companyId || "", token)
+  // Temporarily simplify data access for debugging
+  const allAccounts: any[] = []
+  const allDraftPersonas: any[] = []
   
-  // For authenticated users, use the hook that automatically syncs personas to DraftManager
-  // This ensures API personas are available even if user hasn't visited Personas page
-  const { data: apiPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
-  
-  // Get all personas from DraftManager (works for both auth states)
-  // - For authenticated users: API personas synced by useGetAllPersonas in Personas page + any drafts
-  // - For unauthenticated users: only draft personas created in playground mode
-  const allDraftPersonas = DraftManager.getDrafts('persona')
-  
-  // Get draft accounts for unauthenticated users
-  const draftAccounts = !token ? DraftManager.getDrafts('account') : []
+  // TODO: Re-enable after debugging
+  // const allAccounts = DraftManager.getDrafts('account').map(draft => draft.data)
+  // const allDraftPersonas = DraftManager.getDrafts('persona')
 
   // Define steps based on mode
   const getSteps = () => {
@@ -203,43 +196,22 @@ export function EmailWizardModal({
   
   const filteredUseCases = getUseCasesForSelectedPersona()
 
-  // Combine all data sources when modal opens or data changes
+  // Simple data loading - works for both authenticated and unauthenticated users
   useEffect(() => {
-    if (!isOpen || isCompanyLoading || isAccountsLoading) return
+    if (!isOpen || isCompanyLoading) return
     
-    // For authenticated users, wait for persona loading to complete
-    if (token && isPersonasLoading) return
+    // For authenticated users, wait for DataProvider to finish syncing
+    if (token && isDataLoading) return
     
     try {
       setLoading(true)
       
-      console.log('[EMAIL-WIZARD] Starting data load:', {
+      console.log('[EMAIL-WIZARD] Loading data from DraftManager:', {
         isAuthenticated: !!token,
-        hasApiAccounts: !!(apiAccounts && apiAccounts.length > 0),
-        hasApiPersonas: !!(apiPersonas && apiPersonas.length > 0),
-        draftAccountsCount: draftAccounts.length,
-        draftPersonasCount: allDraftPersonas.length
+        accountsCount: allAccounts.length,
+        personasCount: allDraftPersonas.length,
+        dataProviderLoading: isDataLoading
       });
-      
-      // Combine all accounts from both sources
-      let allAccounts: any[] = []
-      
-      // Add API accounts (for authenticated users)
-      if (token && apiAccounts) {
-        allAccounts = [...apiAccounts]
-        console.log('[EMAIL-WIZARD] Added API accounts:', apiAccounts.length);
-      }
-      
-      // Add draft accounts (for unauthenticated users)
-      if (!token) {
-        const transformedDraftAccounts = draftAccounts.map(draft => ({
-          ...draft.data,
-          id: draft.tempId,
-          isDraft: true,
-        }))
-        allAccounts = [...allAccounts, ...transformedDraftAccounts]
-        console.log('[EMAIL-WIZARD] Added draft accounts for unauthenticated user:', transformedDraftAccounts.length);
-      }
       
       // Transform accounts for wizard use
       const transformedAccounts: WizardAccount[] = allAccounts.map(account => ({
@@ -247,7 +219,7 @@ export function EmailWizardModal({
         name: getAccountName(account) || 'Untitled Account'
       }))
       
-      // Transform all personas for wizard use
+      // Transform personas for wizard use
       const transformedPersonas: WizardPersona[] = []
       const allPersonasData: Array<{ persona: any; accountId: string }> = []
       
@@ -258,7 +230,6 @@ export function EmailWizardModal({
         // Only include personas that belong to available accounts
         const accountExists = allAccounts.some(account => account.id === accountId)
         if (accountExists) {
-          // Use the real persona ID if available, otherwise use the draft temp ID
           const personaId = persona.id || draft.tempId;
           const isApiPersona = !!(persona.id && !persona.id.startsWith('temp_'));
           
@@ -269,7 +240,6 @@ export function EmailWizardModal({
           }
           
           transformedPersonas.push(wizardPersona)
-          // Use the real persona ID for data lookup consistency
           allPersonasData.push({ persona: { ...persona, id: personaId }, accountId })
           
           console.log('[EMAIL-WIZARD] Added persona:', {
@@ -283,28 +253,18 @@ export function EmailWizardModal({
         }
       })
       
-      console.log('[EMAIL-WIZARD] Loaded data:', {
+      console.log('[EMAIL-WIZARD] Data loaded successfully:', {
         accountsCount: transformedAccounts.length,
         personasCount: transformedPersonas.length,
         isAuthenticated: !!token,
-        companyId,
-        allAccountIds: allAccounts.map(a => a.id),
-        allPersonaAccountIds: transformedPersonas.map(p => p.accountId),
         personaDataSample: allPersonasData.slice(0, 2).map(p => ({
           personaId: p.persona.id,
           name: p.persona.targetPersonaName || p.persona.name,
           source: p.persona.id && !p.persona.id.startsWith('temp_') ? 'API' : 'DRAFT',
           hasUseCases: !!(p.persona.useCases && p.persona.useCases.length > 0),
           useCasesCount: p.persona.useCases?.length || 0,
-          useCasesPreview: p.persona.useCases?.slice(0, 2),
-          dataKeys: Object.keys(p.persona.data || {}),
-          topLevelKeys: Object.keys(p.persona).filter(k => k !== 'data')
-        })),
-        loadingStates: {
-          isCompanyLoading,
-          isAccountsLoading,
-          isPersonasLoading: token ? isPersonasLoading : 'N/A (unauthenticated)'
-        }
+          useCasesPreview: p.persona.useCases?.slice(0, 2)
+        }))
       })
       
       setTargetAccounts(transformedAccounts)
@@ -312,14 +272,14 @@ export function EmailWizardModal({
       setAllPersonasData(allPersonasData)
       
     } catch (error) {
-      console.error('Error loading target accounts and personas:', error)
+      console.error('[EMAIL-WIZARD] Error loading data:', error)
       setTargetAccounts([])
       setTargetPersonas([])
       setAllPersonasData([])
     } finally {
       setLoading(false)
     }
-  }, [isOpen, token, companyId, isCompanyLoading, apiAccounts, isAccountsLoading, apiPersonas, isPersonasLoading, allDraftPersonas.length, draftAccounts.length])
+  }, [isOpen, isCompanyLoading, isDataLoading, allAccounts.length, allDraftPersonas.length, token])
 
   // Initialize config when modal opens
   useEffect(() => {

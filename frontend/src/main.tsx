@@ -18,6 +18,7 @@ import AccountSettings from './pages/AccountSettings'
 import MainLayout from './components/layout/MainLayout'
 import NavbarOnlyLayout from "./components/layout/NavbarOnlyLayout";
 import { NeonAuthWrapper } from './components/auth/NeonAuthWrapper'
+import { DataProvider } from './providers/DataProvider'
 import { Auth } from './pages/Auth'
 import { AuthError } from './pages/AuthError'
 import { OAuthCallback } from './components/auth/OAuthCallback'
@@ -32,8 +33,9 @@ createRoot(document.getElementById('root')!).render(
     <StagewiseToolbar />
     <NeonAuthWrapper>
       <UserScopedQueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
+        <DataProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route element={<NavbarOnlyLayout />}>
               <Route path="auth" element={<Auth />} />
@@ -63,8 +65,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:campaignId" element={<CampaignDetail />} />
             </Route>
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </DataProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </UserScopedQueryClientProvider>
     </NeonAuthWrapper>

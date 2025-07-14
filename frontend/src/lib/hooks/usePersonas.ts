@@ -11,6 +11,7 @@ import {
   normalizePersonaResponse,
   getAllPersonas,
 } from '../personaService';
+import { DraftManager } from '../draftManager';
 import type { Persona, PersonaCreate, PersonaUpdate, TargetPersonaRequest, TargetPersonaResponse } from '../../types/api';
 
 // Standardized query keys for consistency (matching Account patterns)

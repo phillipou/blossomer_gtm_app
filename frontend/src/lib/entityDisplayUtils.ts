@@ -33,25 +33,42 @@ export function getPersonaDescription(persona: (Persona & { isDraft?: boolean })
 }
 
 // Campaign Display Utilities
-export function getCampaignSubject(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail): string {
+export function getCampaignSubject(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail | null): string {
+  if (!campaign) {
+    return '';
+  }
   if ('subject' in campaign && typeof campaign.subject === 'string') {
     // AI response format (GeneratedEmail) or direct access
     return campaign.subject;
+  }
+  // Normalized campaign format - check for subjects.primary
+  if ('subjects' in campaign && campaign.subjects && typeof campaign.subjects === 'object') {
+    return (campaign.subjects as any).primary || '';
   }
   // Database entity format (Campaign)
   return (campaign.data?.subject as string) || campaign.name || '';
 }
 
-export function getCampaignBody(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail): string {
+export function getCampaignBody(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail | null): string {
+  if (!campaign) {
+    return '';
+  }
   if ('body' in campaign && typeof campaign.body === 'string') {
     // AI response format (GeneratedEmail) or direct access
     return campaign.body;
+  }
+  // Normalized campaign format - check for emailBody array
+  if ('emailBody' in campaign && Array.isArray(campaign.emailBody)) {
+    return campaign.emailBody.map((segment: any) => segment.text || '').join('\n\n');
   }
   // Database entity format (Campaign)
   return (campaign.data?.body as string) || '';
 }
 
-export function getCampaignTimestamp(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail): string {
+export function getCampaignTimestamp(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail | null): string {
+  if (!campaign) {
+    return '';
+  }
   if ('timestamp' in campaign) {
     // AI response format (GeneratedEmail)
     return campaign.timestamp;
@@ -61,7 +78,10 @@ export function getCampaignTimestamp(campaign: (Campaign & { isDraft?: boolean }
 }
 
 // Get parent information for campaigns
-export function getCampaignParents(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail) {
+export function getCampaignParents(campaign: (Campaign & { isDraft?: boolean }) | GeneratedEmail | null) {
+  if (!campaign) {
+    return [];
+  }
   let parents = [];
   
   if ('companySnapshot' in campaign || 'config' in campaign) {

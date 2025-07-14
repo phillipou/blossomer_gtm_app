@@ -7,7 +7,12 @@ import { transformKeysToCamelCase } from "./utils";
 // =================================================================
 
 export async function getCampaigns(token?: string | null): Promise<Campaign[]> {
-  return apiFetch<Campaign[]>('/campaigns', { method: 'GET' }, token);
+  // Note: There is no general GET /campaigns endpoint in the API
+  // Campaigns are retrieved via personas or accounts
+  // For now, return empty array to prevent API errors
+  // TODO: Implement proper campaign listing via parent entities
+  console.log('[CAMPAIGN-SERVICE] getCampaigns called - no general campaigns endpoint available');
+  return [];
 }
 
 export async function getCampaign(campaignId: string, token?: string | null): Promise<Campaign> {
@@ -49,8 +54,17 @@ export async function generateCampaign(campaignData: any, token?: string | null)
 /**
  * Create campaign for authenticated users using EmailGenerationResponse data
  * Integrates with universal useEntityCRUD patterns
+ * Requires account_id and persona_id as specified in API
  */
-export async function createCampaign(emailData: EmailGenerationResponse | GeneratedEmail, token?: string | null): Promise<Campaign> {
+export async function createCampaign(emailData: EmailGenerationResponse | GeneratedEmail, token?: string | null, options?: { accountId?: string; personaId?: string }): Promise<Campaign> {
+    // Extract required IDs from options or email data
+    const accountId = options?.accountId || (emailData as any).accountId;
+    const personaId = options?.personaId || (emailData as any).personaId;
+    
+    if (!accountId || !personaId) {
+        throw new Error('Campaign creation requires accountId and personaId parameters');
+    }
+    
     // Transform EmailGenerationResponse to Campaign create format
     const createData: CampaignCreate = {
         name: (emailData as any).subjects?.primary || (emailData as any).subject || 'Generated Campaign',
@@ -61,13 +75,24 @@ export async function createCampaign(emailData: EmailGenerationResponse | Genera
     console.log('[CAMPAIGN-SERVICE] Creating campaign with data:', {
         createData,
         originalEmailData: emailData,
+        accountId,
+        personaId,
         hasToken: !!token
     });
     
-    return apiFetch<Campaign>('/campaigns', {
+    // Include required query parameters as per API specification
+    const queryParams = new URLSearchParams({
+        account_id: accountId,
+        persona_id: personaId
+    });
+    
+    const response = await apiFetch<Campaign>(`/campaigns?${queryParams.toString()}`, {
         method: 'POST',
         body: JSON.stringify(createData),
     }, token);
+    
+    // Normalize the response to ensure consistent format
+    return normalizeCampaignResponse(response);
 }
 
 /**

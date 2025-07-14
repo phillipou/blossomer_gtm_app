@@ -117,7 +117,7 @@ export function useEntityCRUD<T>(entityType: EntityType) {
   };
   
   /**
-   * Update existing entity (placeholder for Stage 2)
+   * Update existing entity with field preservation patterns
    */
   const update = async (entityId: string, updates: Partial<T>): Promise<T> => {
     console.log('[ENTITY-CRUD-UPDATE] Starting update:', {
@@ -127,12 +127,29 @@ export function useEntityCRUD<T>(entityType: EntityType) {
       updateFields: Object.keys(updates)
     });
     
-    // Will implement in Stage 2 with same field preservation patterns
-    throw new Error(`Update operations for ${entityType} will be implemented in Stage 2`);
+    try {
+      const result = await updateEntity(entityId, updates);
+      
+      console.log('[ENTITY-CRUD-UPDATE] Successfully updated entity:', {
+        entityType,
+        entityId,
+        isAuthenticated
+      });
+      
+      return result;
+      
+    } catch (error) {
+      console.error('[ENTITY-CRUD-UPDATE] Failed to update entity:', {
+        entityType,
+        entityId,
+        error
+      });
+      throw error;
+    }
   };
   
   /**
-   * Delete existing entity (placeholder for Stage 2)
+   * Delete existing entity with dual-path handling
    */
   const remove = async (entityId: string): Promise<void> => {
     console.log('[ENTITY-CRUD-DELETE] Starting deletion:', {
@@ -141,8 +158,23 @@ export function useEntityCRUD<T>(entityType: EntityType) {
       isAuthenticated
     });
     
-    // Will implement in Stage 2 with both auth state handling
-    throw new Error(`Delete operations for ${entityType} will be implemented in Stage 2`);
+    try {
+      await deleteEntity(entityId);
+      
+      console.log('[ENTITY-CRUD-DELETE] Successfully deleted entity:', {
+        entityType,
+        entityId,
+        isAuthenticated
+      });
+      
+    } catch (error) {
+      console.error('[ENTITY-CRUD-DELETE] Failed to delete entity:', {
+        entityType,
+        entityId,
+        error
+      });
+      throw error;
+    }
   };
   
   /**

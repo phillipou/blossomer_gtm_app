@@ -139,6 +139,15 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
   const [breakdown, setBreakdown] = useState(email.breakdown)
   const [segmentValues, setSegmentValues] = useState(email.segments.map(s => s.text))
   const [bodyValue, setBodyValue] = useState(email.segments.map(s => s.text).join('\n\n'))
+  
+  // Fix stale closure bug: Update state when email prop changes (following React best practices)
+  useEffect(() => {
+    setSubjectValue(email.subject);
+    setSegments(email.segments);
+    setBreakdown(email.breakdown);
+    setSegmentValues(email.segments.map(s => s.text));
+    setBodyValue(email.segments.map(s => s.text).join('\n\n'));
+  }, [email.subject, email.segments, email.breakdown]);
   const subjectInputRef = useRef<HTMLInputElement>(null)
   const segmentInputRefs = useRef<(HTMLTextAreaElement | null)[]>([])
   const [bodyTextareaHeight, setBodyTextareaHeight] = useState<string | undefined>(undefined)

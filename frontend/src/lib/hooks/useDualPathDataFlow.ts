@@ -151,18 +151,21 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
             console.log('[DUAL-PATH-AUTH-CAMPAIGN] Step 1 SUCCESS: AI email generation complete:', generatedEmailData);
             
             // Step 2: Create campaign with generated email data
-            const campaignCreateData = {
-              name: generatedEmailData.subjects?.primary || (aiResponse as any).campaignName || 'Generated Campaign',
-              type: 'email',
-              data: generatedEmailData
-            };
+            // Extract accountId from AI response or use companyId as fallback
+            const accountId = (aiResponse as any).selectedAccount?.id || (aiResponse as any).targetAccount?.id || options?.companyId;
+            const personaId = options.parentId;
+            
             console.log('[DUAL-PATH-AUTH-CAMPAIGN] Starting Step 2: Creating campaign with data:', {
-              personaId: options.parentId,
-              campaignCreateData,
+              personaId,
+              accountId,
               hasToken: !!token,
-              endpoint: `/campaigns?persona_id=${options.parentId}`
+              endpoint: `/campaigns?account_id=${accountId}&persona_id=${personaId}`
             });
-            savedEntity = await createCampaign(generatedEmailData, token);
+            
+            savedEntity = await createCampaign(generatedEmailData, token, {
+              accountId,
+              personaId
+            });
             console.log('[DUAL-PATH-AUTH-CAMPAIGN] Step 2 SUCCESS: Campaign creation complete:', {
               savedEntityId: savedEntity.id,
               savedEntityKeys: Object.keys(savedEntity),
@@ -381,19 +384,184 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
   };
   
   /**
-   * Update existing entity (placeholder for future implementation)
+   * Update existing entity with dual-path handling and field preservation
    */
   const updateEntity = async (entityId: string, updates: Partial<T>): Promise<T> => {
-    // TODO: Implement update patterns with same lockstep principle
-    throw new Error('updateEntity not implemented yet - will be added in Stage 2');
+    console.log('[DUAL-PATH-UPDATE] Starting update operation:', {
+      entityType,
+      entityId,
+      isAuthenticated: !!token,
+      updateFields: Object.keys(updates)
+    });
+    
+    if (entityId.startsWith('temp_')) {
+      // Draft entity - use DraftManager field preservation
+      return updateDraftEntity(entityId, updates);
+    } else if (token) {
+      // Authenticated entity - use API update with field preservation
+      return updateAuthenticatedEntity(entityId, updates);
+    } else {
+      throw new Error('Cannot update non-draft entity for unauthenticated user');
+    }
   };
   
   /**
-   * Delete entity (placeholder for future implementation)
+   * Update authenticated entity via API
+   */
+  const updateAuthenticatedEntity = async (entityId: string, updates: Partial<T>): Promise<T> => {
+    try {
+      let updatedEntity: any;
+      
+      switch (entityType) {
+        case 'campaign':
+          // Use campaign service update
+          const { updateCampaign } = await import('../campaignService');
+          updatedEntity = await updateCampaign(entityId, updates as any, token);
+          break;
+          
+        case 'account':
+        case 'persona':
+        case 'company':
+          // TODO: Implement update for other entity types
+          throw new Error(`Update not yet implemented for ${entityType}`);
+          
+        default:
+          throw new Error(`Unsupported entity type: ${entityType}`);
+      }
+      
+      // Normalize and update cache
+      let normalized: T;
+      switch (entityType) {
+        case 'campaign':
+          const { normalizeCampaignResponse } = await import('../campaignService');
+          normalized = normalizeCampaignResponse(updatedEntity) as T;
+          break;
+        default:
+          normalized = updatedEntity as T;
+      }
+      
+      updateCache(entityId, normalized);
+      
+      console.log('[DUAL-PATH-UPDATE-AUTH] Successfully updated entity:', {
+        entityType,
+        entityId
+      });
+      
+      return normalized;
+      
+    } catch (error) {
+      console.error('[DUAL-PATH-UPDATE-AUTH] Failed to update entity:', { entityType, entityId, error });
+      throw error;
+    }
+  };
+  
+  /**
+   * Update draft entity with field preservation
+   */
+  const updateDraftEntity = async (entityId: string, updates: Partial<T>): Promise<T> => {
+    try {
+      const success = DraftManager.updateDraftPreserveFields(entityType, entityId, updates);
+      
+      if (!success) {
+        throw new Error(`Failed to update draft ${entityType} with id ${entityId}`);
+      }
+      
+      const updatedDraft = DraftManager.getDraft(entityType, entityId);
+      if (!updatedDraft) {
+        throw new Error(`Updated draft ${entityType} not found after update`);
+      }
+      
+      console.log('[DUAL-PATH-UPDATE-DRAFT] Successfully updated draft entity:', {
+        entityType,
+        entityId,
+        preservedFieldCount: Object.keys(updatedDraft.data).length
+      });
+      
+      return updatedDraft.data as T;
+      
+    } catch (error) {
+      console.error('[DUAL-PATH-UPDATE-DRAFT] Failed to update draft entity:', { entityType, entityId, error });
+      throw error;
+    }
+  };
+  
+  /**
+   * Delete entity with dual-path handling
    */
   const deleteEntity = async (entityId: string): Promise<void> => {
-    // TODO: Implement delete patterns for both auth states
-    throw new Error('deleteEntity not implemented yet - will be added in Stage 2');
+    console.log('[DUAL-PATH-DELETE] Starting delete operation:', {
+      entityType,
+      entityId,
+      isAuthenticated: !!token
+    });
+    
+    if (entityId.startsWith('temp_')) {
+      // Draft entity - remove from DraftManager
+      return deleteDraftEntity(entityId);
+    } else if (token) {
+      // Authenticated entity - use API delete
+      return deleteAuthenticatedEntity(entityId);
+    } else {
+      throw new Error('Cannot delete non-draft entity for unauthenticated user');
+    }
+  };
+  
+  /**
+   * Delete authenticated entity via API
+   */
+  const deleteAuthenticatedEntity = async (entityId: string): Promise<void> => {
+    try {
+      switch (entityType) {
+        case 'campaign':
+          const { deleteCampaign } = await import('../campaignService');
+          await deleteCampaign(entityId, token);
+          break;
+          
+        case 'account':
+        case 'persona':
+        case 'company':
+          // TODO: Implement delete for other entity types
+          throw new Error(`Delete not yet implemented for ${entityType}`);
+          
+        default:
+          throw new Error(`Unsupported entity type: ${entityType}`);
+      }
+      
+      // Remove from cache
+      const queryKey = getQueryKey(entityType, entityId);
+      queryClient.removeQueries({ queryKey });
+      
+      // Invalidate list queries
+      const listQueryKey = getListQueryKey(entityType);
+      queryClient.invalidateQueries({ queryKey: listQueryKey });
+      
+      console.log('[DUAL-PATH-DELETE-AUTH] Successfully deleted entity:', {
+        entityType,
+        entityId
+      });
+      
+    } catch (error) {
+      console.error('[DUAL-PATH-DELETE-AUTH] Failed to delete entity:', { entityType, entityId, error });
+      throw error;
+    }
+  };
+  
+  /**
+   * Delete draft entity from DraftManager
+   */
+  const deleteDraftEntity = async (entityId: string): Promise<void> => {
+    try {
+      DraftManager.removeDraft(entityType, entityId);
+      
+      console.log('[DUAL-PATH-DELETE-DRAFT] Successfully deleted draft entity:', {
+        entityType,
+        entityId
+      });
+      
+    } catch (error) {
+      console.error('[DUAL-PATH-DELETE-DRAFT] Failed to delete draft entity:', { entityType, entityId, error });
+      throw error;
+    }
   };
   
   return {

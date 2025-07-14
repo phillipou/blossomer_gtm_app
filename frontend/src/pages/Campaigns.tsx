@@ -11,16 +11,15 @@ import { useEntityCRUD } from "../lib/hooks/useEntityCRUD";
 import { useAuthState } from '../lib/auth';
 import { useAuthAwareNavigation } from "../lib/hooks/useAuthAwareNavigation";
 import { useCompanyContext } from "../lib/hooks/useCompanyContext";
-import { useGetPersonas } from "../lib/hooks/usePersonas";
 import { useGetCampaigns } from "../lib/hooks/useCampaigns";
 import { DraftManager } from "../lib/draftManager";
 import { getCampaignSubject, getCampaignBody } from "../lib/entityDisplayUtils";
-import NoCompanyFound from "../components/auth/NoCompanyFound";
+// import NoCompanyFound from "../components/auth/NoCompanyFound";
 
 export default function CampaignsPage() {
   // ALL HOOKS MUST BE CALLED FIRST (Rules of Hooks)
   const { token } = useAuthState();
-  const { navigateToNestedEntity, navigateToEntityList, isAuthenticated } = useAuthAwareNavigation();
+  const { navigateToNestedEntity, navigateToEntityList, navigateToEntity, isAuthenticated } = useAuthAwareNavigation();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardMode, setWizardMode] = useState<"create" | "edit">("create");
   const [editingComponent, setEditingComponent] = useState<{
@@ -37,16 +36,16 @@ export default function CampaignsPage() {
   
   // Universal context and CRUD hooks
   const { overview, companyId } = useCompanyContext();
-  const { create: createCampaignUniversal } = useEntityCRUD<EmailGenerationResponse>('campaign');
+  const { create: createCampaignUniversal, delete: deleteCampaignUniversal } = useEntityCRUD<EmailGenerationResponse>('campaign');
   
-  // Parent context detection (Campaigns need Persona context)
-  const { data: personas } = useGetPersonas(companyId || "", token);
-  const draftPersonas = !isAuthenticated ? DraftManager.getDrafts('persona').map(draft => ({
+  // Get personas from DraftManager (automatically synced from API by useGetAllPersonas hook)
+  const draftPersonas = DraftManager.getDrafts('persona').map(draft => ({
     ...draft.data,
     id: draft.tempId,
     isDraft: true,
-  })) : [];
-  const allPersonas = isAuthenticated ? (personas || []) : [...(personas || []), ...draftPersonas];
+  }));
+  
+  const allPersonas = draftPersonas;
   
   // Campaign data retrieval (following exact Accounts.tsx pattern)
   const { data: campaigns } = useGetCampaigns(token);
@@ -59,7 +58,13 @@ export default function CampaignsPage() {
   
   // THEN check for early returns (after ALL hooks)
   if (!companyId) {
-    return <NoCompanyFound />;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center text-gray-500">
+          <p>Company context not found.</p>
+        </div>
+      </div>
+    );
   }
   
   // Smart empty state (following Personas.tsx pattern)
@@ -141,8 +146,24 @@ export default function CampaignsPage() {
   };
 
   const handleSelectEmail = (email: any) => {
-    // Use auth-aware navigation
-    navigateToNestedEntity('persona', email.personaId || selectedPersonaId, 'campaign', email.id);
+    // Extract parent context from campaign data structure (following AccountDetail.tsx pattern)
+    const personaId = email.personaId || email.data?.personaId || selectedPersonaId;
+    const accountId = email.accountId || email.data?.accountId;
+    
+    console.log('[CAMPAIGNS-SELECT] Navigating to campaign:', {
+      campaignId: email.id,
+      personaId,
+      accountId,
+      isAuthenticated
+    });
+    
+    // Use proper nested navigation with full parent context
+    if (accountId && personaId) {
+      navigateToNestedEntity('account', accountId, 'persona', personaId, 'campaign', email.id);
+    } else {
+      // Fallback to direct navigation if parent context is missing
+      navigateToEntity('campaign', email.id);
+    }
   };
 
   const handleEditEmail = (email: any) => {
@@ -185,19 +206,23 @@ export default function CampaignsPage() {
     setEditingEmail(null);
   };
 
-  // Dual-Path Deletion Pattern (from Bug_tracking.md)
-  const handleDeleteCampaign = (email: any) => {
+  // Dual-Path Deletion Pattern using Universal System
+  const handleDeleteCampaign = async (email: any) => {
     if (confirm('Are you sure you want to delete this campaign?')) {
-      if (email.id.startsWith('temp_')) {
-        // Draft campaign - remove from DraftManager
-        console.log('[CAMPAIGNS-DELETE] Deleting draft campaign:', email.id);
-        DraftManager.removeDraft('campaign', email.id);
+      try {
+        console.log('[CAMPAIGNS-DELETE] Deleting campaign with universal patterns:', {
+          campaignId: email.id,
+          isAuthenticated,
+          isDraft: email.id.startsWith('temp_')
+        });
+        
+        // Use universal delete system for both draft and authenticated campaigns
+        await deleteCampaignUniversal(email.id);
         setForceUpdate(prev => prev + 1);
-      } else if (isAuthenticated) {
-        // Authenticated campaign - use universal delete (TODO: implement in Stage 3)
-        console.log('[CAMPAIGNS-DELETE] Deleting authenticated campaign:', email.id);
-        // deleteAuthenticatedCampaign(email.id); // Will implement in Stage 3
-        console.warn('Universal campaign deletion will be implemented in Stage 3');
+        
+        console.log('[CAMPAIGNS-DELETE] Campaign deleted successfully');
+      } catch (error) {
+        console.error('[CAMPAIGNS-DELETE] Failed to delete campaign:', error);
       }
     }
   };
