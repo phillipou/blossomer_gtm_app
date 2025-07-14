@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { useAuthState } from '../../lib/auth.js';
-import { DraftManager } from '../../lib/DraftManager.js';
+import { DraftManager } from '../../lib/draftManager';
 import { useUserScopedQuery } from '../../lib/query/UserScopedQueryClient.js';
 
 export function NewArchitectureTest() {

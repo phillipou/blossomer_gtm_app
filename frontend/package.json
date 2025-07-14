@@ -15,7 +15,9 @@
     "build-storybook": "storybook build",
     "generate-types": "openapi-typescript ../openapi.json -o src/types/generated-api.ts",
     "types:watch": "npm run generate-types && echo 'Types generated! Add to your pre-commit hook or CI pipeline.'",
-    "prebuild": "npm run generate-types"
+    "prebuild": "npm run generate-types",
+    "pre-deploy": "bash scripts/pre-deploy-check.sh",
+    "check": "npm run pre-deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
