@@ -14,6 +14,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select";
+import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading";
 
 interface EditDialogField {
   name: string;
@@ -86,6 +87,7 @@ export default function EditDialogModal({
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
       <EditDialogContent className="sm:max-w-[500px]">
+        <ModalLoadingOverlay isLoading={isLoading} message={ModalLoadingMessages.saving}>
         <EditDialogHeader>
           <EditDialogTitle>{title}</EditDialogTitle>
           {description && <EditDialogDescription>{description}</EditDialogDescription>}
@@ -144,9 +146,10 @@ export default function EditDialogModal({
             disabled={fields.some(f => f.required && !form[f.name]?.toString().trim()) || isLoading}
             className="bg-blue-500 hover:bg-blue-600"
           >
-            {isLoading ? "Saving..." : editing ? editLabel : saveLabel}
+            {editing ? editLabel : saveLabel}
           </Button>
         </EditDialogFooter>
+        </ModalLoadingOverlay>
       </EditDialogContent>
     </EditDialog>
   );

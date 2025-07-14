@@ -9,6 +9,7 @@ import ListInfoCard from './cards/ListInfoCard';
 import ListInfoCardEditModal from './cards/ListInfoCardEditModal';
 import InputModal from './modals/InputModal';
 import { isApiError } from '../lib/utils';
+import { LoadingStates } from './ui/page-loading';
 import type { 
   EntityPageConfig, 
   EntityCardConfig, 
@@ -75,14 +76,7 @@ export default function EntityPageLayout<T = any>({
 
   // Loading state
   if (isLoading) {
-    const currentStage = config.progressStages?.[progressStage];
-    return (
-      <DashboardLoading
-        loading={true}
-        progressPercent={currentStage?.percent || 100}
-        statusText={currentStage?.label}
-      />
-    );
+    return <LoadingStates.default />;
   }
 
   // Error state

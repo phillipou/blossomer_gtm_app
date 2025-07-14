@@ -1,113 +1,67 @@
-import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
-
-interface LoadingState {
-  message: string
-  duration?: number // Duration in milliseconds, undefined = indefinite
-}
-
 interface PageLoadingProps {
-  states?: LoadingState[]
-  className?: string
-  size?: 'sm' | 'md' | 'lg'
-  showBackground?: boolean
+  message?: string;
+  background?: 'white' | 'gray' | 'transparent';
 }
 
-const sizeClasses = {
-  sm: 'w-6 h-6',
-  md: 'w-8 h-8', 
-  lg: 'w-12 h-12'
-}
-
-export function PageLoading({ 
-  states = [{ message: 'Loading...' }],
-  className = '',
-  size = 'md',
-  showBackground = true
+export default function PageLoading({ 
+  message = 'Loading...', 
+  background = 'white' 
 }: PageLoadingProps) {
-  const [currentStateIndex, setCurrentStateIndex] = useState(0)
-  
-  useEffect(() => {
-    if (states.length <= 1) return
-    
-    const currentState = states[currentStateIndex]
-    if (!currentState.duration) return
-    
-    const timer = setTimeout(() => {
-      setCurrentStateIndex((prev) => {
-        const nextIndex = prev + 1
-        return nextIndex >= states.length ? prev : nextIndex
-      })
-    }, currentState.duration)
-    
-    return () => clearTimeout(timer)
-  }, [currentStateIndex, states])
-  
-  const currentMessage = states[currentStateIndex]?.message || 'Loading...'
-  
-  const containerClasses = showBackground 
-    ? 'min-h-screen bg-gray-50 flex items-center justify-center'
-    : 'flex items-center justify-center py-8'
-  
+  const backgroundClasses = {
+    white: 'bg-white',
+    gray: 'bg-gray-50',
+    transparent: 'bg-transparent'
+  };
+
   return (
-    <div className={`${containerClasses} ${className}`}>
-      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-500`} />
-      <span className="ml-4 text-gray-600">{currentMessage}</span>
+    <div className={`min-h-screen flex items-center justify-center ${backgroundClasses[background]}`}>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+// Predefined loading states for common scenarios
+export const LoadingStates = {
+  // Page loading states
+  accounts: () => <PageLoading message="Loading accounts..." />,
+  personas: () => <PageLoading message="Loading personas..." />,
+  campaigns: () => <PageLoading message="Loading campaigns..." />,
+  company: () => <PageLoading message="Loading company..." />,
+  
+  // Detail page loading states
+  accountDetail: () => <PageLoading message="Loading account..." />,
+  personaDetail: () => <PageLoading message="Loading persona..." />,
+  campaignDetail: () => <PageLoading message="Loading campaign..." />,
+  
+  // Authentication states
+  auth: () => <PageLoading message="Checking authentication..." />,
+  
+  // Generic states
+  default: () => <PageLoading />,
+  
+  // Custom message helper
+  custom: (message: string) => <PageLoading message={message} />,
+  
+  // Small inline loading (for modals/components)
+  inline: (message?: string) => (
+    <div className="flex items-center justify-center p-4">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+        <p className="text-gray-600 text-sm">{message || "Loading..."}</p>
+      </div>
+    </div>
+  ),
+  
+  // Large prominent loading
+  prominent: (message?: string) => (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+        <p className="text-gray-600 text-lg">{message || "Loading..."}</p>
+      </div>
     </div>
   )
-}
-
-// Predefined loading sequences for common use cases
-export const LoadingSequences = {
-  accounts: [
-    { message: 'Loading accounts...', duration: 2000 },
-    { message: 'Analyzing account data...', duration: 3000 },
-    { message: 'Finalizing...' }
-  ],
-  
-  personas: [
-    { message: 'Loading personas...', duration: 1500 },
-    { message: 'Processing persona data...' }
-  ],
-  
-  campaigns: [
-    { message: 'Loading campaigns...', duration: 2000 },
-    { message: 'Fetching campaign metrics...', duration: 2500 },
-    { message: 'Preparing dashboard...' }
-  ],
-  
-  dashboard: [
-    { message: 'Loading dashboard...', duration: 1000 },
-    { message: 'Fetching latest data...', duration: 2000 },
-    { message: 'Analyzing metrics...', duration: 2000 },
-    { message: 'Finalizing...' }
-  ],
-  
-  generation: [
-    { message: 'Preparing...', duration: 1000 },
-    { message: 'Generating content...', duration: 3000 },
-    { message: 'Finalizing content...', duration: 2000 },
-    { message: 'Almost done...' }
-  ]
-}
-
-// Convenience components for common patterns
-export function AccountsLoading() {
-  return <PageLoading states={LoadingSequences.accounts} />
-}
-
-export function PersonasLoading() {
-  return <PageLoading states={LoadingSequences.personas} />
-}
-
-export function CampaignsLoading() {
-  return <PageLoading states={LoadingSequences.campaigns} />
-}
-
-export function DashboardLoading() {
-  return <PageLoading states={LoadingSequences.dashboard} />
-}
-
-export function GenerationLoading() {
-  return <PageLoading states={LoadingSequences.generation} showBackground={false} />
-}
+};

@@ -4,6 +4,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Edit3, X, Plus, Trash2 } from "lucide-react";
+import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading";
 
 interface CriteriaValue {
   text: string;
@@ -162,6 +163,7 @@ export default function EditCriteriaModal({ isOpen, onClose, onSave, initialRows
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto px-0 py-0">
+        <ModalLoadingOverlay isLoading={isLoading} message={ModalLoadingMessages.saving}>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -294,9 +296,10 @@ export default function EditCriteriaModal({ isOpen, onClose, onSave, initialRows
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600" type="button">
-            {isLoading ? "Saving..." : "Save"}
+            Save
           </Button>
         </DialogFooter>
+        </ModalLoadingOverlay>
       </DialogContent>
     </Dialog>
   );

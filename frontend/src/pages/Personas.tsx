@@ -19,6 +19,7 @@ import { getPersonaName, getPersonaDescription } from "../lib/entityDisplayUtils
 import { useCompanyContext } from '../lib/hooks/useCompanyContext';
 import { useAuthAwareNavigation } from '../lib/hooks/useAuthAwareNavigation';
 import { useEntityCRUD } from '../lib/hooks/useEntityCRUD';
+import { LoadingStates } from '../components/ui/page-loading';
 
 export default function TargetPersonas() {
   const navigate = useNavigate();
@@ -167,7 +168,7 @@ export default function TargetPersonas() {
 
   // Loading states (moved to end like Accounts.tsx)
   if (isCompanyLoading || isAccountsLoading || isPersonasLoading || isSavingPersona) {
-    return <div>Loading...</div>;
+    return <LoadingStates.personas />;
   }
 
   if (saveError) {

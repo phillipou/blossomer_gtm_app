@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Wand2, RefreshCw } from "lucide-react";
+import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading";
 
 interface InputModalProps {
   isOpen: boolean;
@@ -141,6 +142,7 @@ export default function InputModal({
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
       <EditDialogContent className="sm:max-w-[500px]">
+        <ModalLoadingOverlay isLoading={isLoading} message={ModalLoadingMessages.generating}>
         <EditDialogHeader>
           <EditDialogTitle>{title}</EditDialogTitle>
           {subtitle && <EditDialogDescription>{subtitle}</EditDialogDescription>}
@@ -213,16 +215,10 @@ export default function InputModal({
             }
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isLoading ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              submitLabel
-            )}
+            {submitLabel}
           </Button>
         </EditDialogFooter>
+        </ModalLoadingOverlay>
       </EditDialogContent>
     </EditDialog>
   );

@@ -7,7 +7,13 @@ import { Label } from "../ui/label"
 import { Textarea } from "../ui/textarea"
 import { ChevronRight, ChevronLeft, Wand2, X, RefreshCw } from "lucide-react"
 import { EditDialog, EditDialogContent, EditDialogHeader, EditDialogTitle } from "../ui/dialog"
-import { getStoredTargetAccounts, getAllPersonas } from "../../lib/accountService"
+import { useGetAccounts } from "../../lib/hooks/useAccounts"
+import { useGetAllPersonas } from "../../lib/hooks/usePersonas"
+import { useCompanyContext } from "../../lib/hooks/useCompanyContext"
+import { useAuthState } from "../../lib/auth"
+import { DraftManager } from "../../lib/draftManager"
+import { getAccountName } from "../../lib/entityDisplayUtils"
+import { ModalLoadingOverlay, ModalLoadingMessages } from "../ui/modal-loading"
 
 interface EmailWizardModalProps {
   isOpen: boolean
@@ -62,6 +68,9 @@ export function EmailWizardModal({
   editingComponent,
   initialConfig,
 }: EmailWizardModalProps) {
+  const { token } = useAuthState()
+  const { companyId, isLoading: isCompanyLoading } = useCompanyContext()
+  
   const [currentStep, setCurrentStep] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [targetAccounts, setTargetAccounts] = useState<WizardAccount[]>([])
@@ -78,6 +87,21 @@ export function EmailWizardModal({
     ctaSetting: "",
     socialProof: "",
   })
+
+  // Fetch all accounts and personas upfront using existing hooks
+  const { data: apiAccounts, isLoading: isAccountsLoading } = useGetAccounts(companyId || "", token)
+  
+  // For authenticated users, use the hook that automatically syncs personas to DraftManager
+  // This ensures API personas are available even if user hasn't visited Personas page
+  const { data: apiPersonas, isLoading: isPersonasLoading } = useGetAllPersonas(companyId || "", token);
+  
+  // Get all personas from DraftManager (works for both auth states)
+  // - For authenticated users: API personas synced by useGetAllPersonas in Personas page + any drafts
+  // - For unauthenticated users: only draft personas created in playground mode
+  const allDraftPersonas = DraftManager.getDrafts('persona')
+  
+  // Get draft accounts for unauthenticated users
+  const draftAccounts = !token ? DraftManager.getDrafts('account') : []
 
   // Define steps based on mode
   const getSteps = () => {
@@ -140,62 +164,162 @@ export function EmailWizardModal({
   
   // Get use cases from selected persona
   const getUseCasesForSelectedPersona = (): WizardUseCase[] => {
-    if (!config.selectedPersona) return []
+    if (!config.selectedPersona) {
+      console.log('[USE-CASES] No persona selected');
+      return [];
+    }
     
     const selectedPersonaData = allPersonasData.find(
       ({ persona }) => persona.id === config.selectedPersona
-    )
+    );
     
-    if (!selectedPersonaData?.persona.useCases) return []
+    console.log('[USE-CASES] Looking for use cases in persona:', {
+      selectedPersonaId: config.selectedPersona,
+      foundPersonaData: !!selectedPersonaData,
+      personaKeys: selectedPersonaData ? Object.keys(selectedPersonaData.persona) : 'no persona',
+      hasUseCases: !!(selectedPersonaData?.persona.useCases),
+      useCasesLength: selectedPersonaData?.persona.useCases?.length || 0,
+      useCasesData: selectedPersonaData?.persona.useCases,
+      fullPersonaData: selectedPersonaData?.persona
+    });
     
-    return selectedPersonaData.persona.useCases.map((useCase: any, index: number) => ({
+    if (!selectedPersonaData?.persona.useCases) {
+      console.log('[USE-CASES] No use cases found in persona data');
+      return [];
+    }
+    
+    const useCases = selectedPersonaData.persona.useCases.map((useCase: any, index: number) => ({
       id: `${config.selectedPersona}_${index}`,
-      title: useCase.useCase,
-      description: `${useCase.painPoints} → ${useCase.desiredOutcome}`,
+      title: useCase.useCase || useCase.title || `Use Case ${index + 1}`,
+      description: useCase.painPoints && useCase.desiredOutcome 
+        ? `${useCase.painPoints} → ${useCase.desiredOutcome}`
+        : useCase.description || 'No description available',
       personaIds: [config.selectedPersona]
-    }))
+    }));
+    
+    console.log('[USE-CASES] Transformed use cases:', useCases);
+    return useCases;
   }
   
   const filteredUseCases = getUseCasesForSelectedPersona()
 
-  // Load real data from localStorage
+  // Combine all data sources when modal opens or data changes
   useEffect(() => {
-    const loadData = () => {
-      try {
-        setLoading(true)
-        
-        // Get stored accounts
-        const storedAccounts = getStoredTargetAccounts()
-        const transformedAccounts: WizardAccount[] = storedAccounts.map(account => ({
-          id: account.id,
-          name: account.targetAccountName
-        }))
-        
-        // Get all personas across accounts
-        const allPersonas = getAllPersonas()
-        const transformedPersonas: WizardPersona[] = allPersonas.map(({ persona, accountId }) => ({
-          id: persona.id,
-          name: persona.targetPersonaName,
-          accountId: accountId
-        }))
-        
-        setTargetAccounts(transformedAccounts)
-        setTargetPersonas(transformedPersonas)
-        setAllPersonasData(allPersonas) // Store full persona data for use cases
-      } catch (error) {
-        console.error('Error loading target accounts and personas:', error)
-        // Fallback to empty arrays
-        setTargetAccounts([])
-        setTargetPersonas([])
-      } finally {
-        setLoading(false)
+    if (!isOpen || isCompanyLoading || isAccountsLoading) return
+    
+    // For authenticated users, wait for persona loading to complete
+    if (token && isPersonasLoading) return
+    
+    try {
+      setLoading(true)
+      
+      console.log('[EMAIL-WIZARD] Starting data load:', {
+        isAuthenticated: !!token,
+        hasApiAccounts: !!(apiAccounts && apiAccounts.length > 0),
+        hasApiPersonas: !!(apiPersonas && apiPersonas.length > 0),
+        draftAccountsCount: draftAccounts.length,
+        draftPersonasCount: allDraftPersonas.length
+      });
+      
+      // Combine all accounts from both sources
+      let allAccounts: any[] = []
+      
+      // Add API accounts (for authenticated users)
+      if (token && apiAccounts) {
+        allAccounts = [...apiAccounts]
+        console.log('[EMAIL-WIZARD] Added API accounts:', apiAccounts.length);
       }
+      
+      // Add draft accounts (for unauthenticated users)
+      if (!token) {
+        const transformedDraftAccounts = draftAccounts.map(draft => ({
+          ...draft.data,
+          id: draft.tempId,
+          isDraft: true,
+        }))
+        allAccounts = [...allAccounts, ...transformedDraftAccounts]
+        console.log('[EMAIL-WIZARD] Added draft accounts for unauthenticated user:', transformedDraftAccounts.length);
+      }
+      
+      // Transform accounts for wizard use
+      const transformedAccounts: WizardAccount[] = allAccounts.map(account => ({
+        id: account.id,
+        name: getAccountName(account) || 'Untitled Account'
+      }))
+      
+      // Transform all personas for wizard use
+      const transformedPersonas: WizardPersona[] = []
+      const allPersonasData: Array<{ persona: any; accountId: string }> = []
+      
+      allDraftPersonas.forEach(draft => {
+        const persona = draft.data
+        const accountId = draft.parentId || persona.accountId
+        
+        // Only include personas that belong to available accounts
+        const accountExists = allAccounts.some(account => account.id === accountId)
+        if (accountExists) {
+          // Use the real persona ID if available, otherwise use the draft temp ID
+          const personaId = persona.id || draft.tempId;
+          const isApiPersona = !!(persona.id && !persona.id.startsWith('temp_'));
+          
+          const wizardPersona: WizardPersona = {
+            id: personaId,
+            name: persona.targetPersonaName || persona.name || 'Untitled Persona',
+            accountId: accountId
+          }
+          
+          transformedPersonas.push(wizardPersona)
+          // Use the real persona ID for data lookup consistency
+          allPersonasData.push({ persona: { ...persona, id: personaId }, accountId })
+          
+          console.log('[EMAIL-WIZARD] Added persona:', {
+            personaId,
+            name: wizardPersona.name,
+            accountId,
+            source: isApiPersona ? 'API' : 'DRAFT',
+            hasUseCases: !!(persona.useCases && persona.useCases.length > 0),
+            useCasesCount: persona.useCases?.length || 0
+          });
+        }
+      })
+      
+      console.log('[EMAIL-WIZARD] Loaded data:', {
+        accountsCount: transformedAccounts.length,
+        personasCount: transformedPersonas.length,
+        isAuthenticated: !!token,
+        companyId,
+        allAccountIds: allAccounts.map(a => a.id),
+        allPersonaAccountIds: transformedPersonas.map(p => p.accountId),
+        personaDataSample: allPersonasData.slice(0, 2).map(p => ({
+          personaId: p.persona.id,
+          name: p.persona.targetPersonaName || p.persona.name,
+          source: p.persona.id && !p.persona.id.startsWith('temp_') ? 'API' : 'DRAFT',
+          hasUseCases: !!(p.persona.useCases && p.persona.useCases.length > 0),
+          useCasesCount: p.persona.useCases?.length || 0,
+          useCasesPreview: p.persona.useCases?.slice(0, 2),
+          dataKeys: Object.keys(p.persona.data || {}),
+          topLevelKeys: Object.keys(p.persona).filter(k => k !== 'data')
+        })),
+        loadingStates: {
+          isCompanyLoading,
+          isAccountsLoading,
+          isPersonasLoading: token ? isPersonasLoading : 'N/A (unauthenticated)'
+        }
+      })
+      
+      setTargetAccounts(transformedAccounts)
+      setTargetPersonas(transformedPersonas)
+      setAllPersonasData(allPersonasData)
+      
+    } catch (error) {
+      console.error('Error loading target accounts and personas:', error)
+      setTargetAccounts([])
+      setTargetPersonas([])
+      setAllPersonasData([])
+    } finally {
+      setLoading(false)
     }
-
-    if (isOpen) {
-      loadData()
-    }
-  }, [isOpen])
+  }, [isOpen, token, companyId, isCompanyLoading, apiAccounts, isAccountsLoading, apiPersonas, isPersonasLoading, allDraftPersonas.length, draftAccounts.length])
 
   // Initialize config when modal opens
   useEffect(() => {
@@ -262,9 +386,6 @@ export function EmailWizardModal({
   }
 
   const getActionButtonText = () => {
-    if (isGenerating) {
-      return mode === "edit" ? "Updating..." : "Generating..."
-    }
     if (isLastStep) {
       return mode === "edit" ? "Update Email" : "Generate Email"
     }
@@ -281,6 +402,7 @@ export function EmailWizardModal({
   return (
     <EditDialog open={isOpen} onOpenChange={handleClose}>
       <EditDialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <ModalLoadingOverlay isLoading={isGenerating} message={ModalLoadingMessages.generatingEmail}>
         <div className="px-6 pb-6 pt-2">
           <EditDialogHeader className="flex flex-row items-center justify-between">
             <div>
@@ -714,12 +836,7 @@ export function EmailWizardModal({
             </Button>
 
             <Button onClick={handleNext} disabled={!canProceed || isGenerating} className="bg-blue-600 hover:bg-blue-700">
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  {getActionButtonText()}
-                </>
-              ) : isLastStep ? (
+              {isLastStep ? (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
                   {getActionButtonText()}
@@ -733,6 +850,7 @@ export function EmailWizardModal({
             </Button>
           </div>
         </div>
+        </ModalLoadingOverlay>
       </EditDialogContent>
     </EditDialog>
   )

@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
-import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Sparkles, Target, TrendingUp, Users, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
@@ -197,8 +197,17 @@ export default function LandingPage() {
                 className="w-full h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
               >
                 <div className="flex items-center space-x-2">
-                  <span>{isNavigating ? "Redirecting..." : "Generate GTM Strategy"}</span>
-                  <ArrowRight className="w-5 h-5" />
+                  {isNavigating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating Strategy...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Generate GTM Strategy</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
                 </div>
               </Button>
             </CardContent>

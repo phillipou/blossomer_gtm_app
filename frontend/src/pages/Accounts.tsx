@@ -19,6 +19,7 @@ import InputModal from '../components/modals/InputModal';
 import type { TargetAccountResponse } from '../types/api';
 import { DraftManager } from '../lib/draftManager';
 import { useAuthState } from '../lib/auth';
+import { LoadingStates } from '../components/ui/page-loading';
 
 interface TargetAccountCardProps {
   targetAccount: Account;
@@ -186,7 +187,7 @@ export default function TargetAccountsList() {
   }
 
   if (isCompanyLoading || isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingStates.accounts />;
   }
 
   return (

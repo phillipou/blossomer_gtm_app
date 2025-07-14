@@ -247,7 +247,10 @@ export function APIKeyModal({ isOpen, onClose, user }: APIKeyModalProps) {
             </CardHeader>
             <CardContent>
               {loading && apiKeys.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">Loading...</div>
+                <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-500">Loading...</p>
+          </div>
               ) : apiKeys.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">
                   No API keys created yet
