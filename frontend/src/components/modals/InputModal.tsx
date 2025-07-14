@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   EditDialog,
   EditDialogContent,
@@ -97,35 +97,34 @@ export default function InputModal({
     if (onAccountChange) onAccountChange(value);
   };
 
-  // Validation logic for name field
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!name && nameRequired) {
+  // Removed complex validation useEffect entirely - following Bug_tracking.md "Remove, Don't Fix" pattern
+  // Validation now happens only on submit for better typing performance
+
+  const handleSubmit = () => {
+    // Simple validation on submit only - no complex useEffect validation during typing
+    if (accounts.length > 0 && !accountId) return;
+    if (nameRequired && !name.trim()) {
       setNameError('This field is required');
       return;
     }
     if (nameType === 'url' && name) {
       try {
-        // Accepts with or without protocol
         new URL(name.startsWith('http') ? name : `https://${name}`);
-        setNameError(null);
       } catch {
         setNameError('Please enter a valid URL');
         return;
       }
     }
     if (customNameValidation) {
-      setNameError(customNameValidation(name));
-      return;
+      const error = customNameValidation(name);
+      if (error) {
+        setNameError(error);
+        return;
+      }
     }
-    setNameError(null);
-  }, [name, nameType, nameRequired, customNameValidation, isOpen]);
-
-  const handleSubmit = () => {
-    if (accounts.length > 0 && !accountId) return;
-    if (nameRequired && !name.trim()) return;
-    if (nameError) return;
     if (showDescription && descriptionRequired && !description.trim()) return;
+    
+    setNameError(null); // Clear any previous errors
     onSubmit({ name: name.trim(), description: description.trim(), accountId });
   };
 

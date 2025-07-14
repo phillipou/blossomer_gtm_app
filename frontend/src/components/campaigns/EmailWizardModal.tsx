@@ -250,21 +250,22 @@ export function EmailWizardModal({
           accountIdFromParent: draft.parentId,
           accountIdFromPersona: persona.accountId,
           finalAccountId: accountId,
-          availableAccountIds: allAccounts.map(acc => acc.id)
+          availableAccountIds: allAccounts.map(acc => acc.id),
+          availableAccountNames: allAccounts.map(acc => ({ id: acc.id, name: getAccountName(acc) }))
         });
         
         // Only include personas that belong to available accounts
-        let accountExists = accountId && allAccounts.some(account => account.id === accountId)
-        console.log('[EMAIL-WIZARD] Account exists check:', { accountId, accountExists });
-        
-        // For unauthenticated users, if no accountId or account doesn't exist, 
-        // try to assign to the first available account
-        if (!accountExists && allAccounts.length > 0) {
-          const fallbackAccountId = allAccounts[0].id;
-          console.log('[EMAIL-WIZARD] Using fallback account:', { fallbackAccountId });
-          accountId = fallbackAccountId;
-          accountExists = true;
-        }
+        const accountExists = accountId && allAccounts.some(account => account.id === accountId)
+        console.log('[EMAIL-WIZARD] Account exists check:', { 
+          accountId, 
+          accountExists,
+          reason: !accountId ? 'No accountId' : !accountExists ? 'Account ID not found in available accounts' : 'OK',
+          accountIdMatches: allAccounts.map(acc => ({
+            accountId: acc.id,
+            matches: acc.id === accountId,
+            similarity: accountId ? (acc.id.includes(accountId.split('_')[1]) ? 'partial' : 'none') : 'none'
+          }))
+        });
         
         if (accountExists) {
           const personaId = persona.id || draft.tempId;
@@ -279,13 +280,21 @@ export function EmailWizardModal({
           transformedPersonas.push(wizardPersona)
           allPersonasData.push({ persona: { ...persona, id: personaId }, accountId })
           
-          console.log('[EMAIL-WIZARD] Added persona:', {
+          console.log('[EMAIL-WIZARD] ✅ Added persona:', {
             personaId,
             name: wizardPersona.name,
             accountId,
             source: isApiPersona ? 'API' : 'DRAFT',
             hasUseCases: !!(persona.useCases && persona.useCases.length > 0),
             useCasesCount: persona.useCases?.length || 0
+          });
+        } else {
+          console.log('[EMAIL-WIZARD] ❌ SKIPPED persona due to account mismatch:', {
+            personaId: persona.id || draft.tempId,
+            personaName: persona.targetPersonaName || persona.name,
+            personaAccountId: accountId,
+            availableAccountIds: allAccounts.map(acc => acc.id),
+            skippedReason: !accountId ? 'No accountId found' : 'Account ID does not match any available account'
           });
         }
       })
