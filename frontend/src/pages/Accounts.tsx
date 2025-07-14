@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Plus, Edit3, Trash2, Wand2 } from "lucide-react";
-import { useGetAccounts, useDeleteAccount } from "../lib/hooks/useAccounts";
+import { useGetAccounts, useDeleteAccount, useGenerateAccount, useCreateAccount } from "../lib/hooks/useAccounts";
 import type { Account } from "../types/api";
 import SummaryCard from "../components/cards/SummaryCard";
 import PageHeader from "../components/navigation/PageHeader";
@@ -81,6 +81,10 @@ export default function TargetAccountsList() {
   // Step 2: Always call hooks first (Rules of Hooks)
   const { data: accounts, isLoading, error } = useGetAccounts(companyId || "", token);
   const { mutate: deleteAccount } = useDeleteAccount(companyId);
+  
+  // Generation and creation hooks for loading state tracking
+  const { mutate: generateAccount, isPending: isGenerating } = useGenerateAccount(companyId, token);
+  const { mutate: createAccount, isPending: isCreating } = useCreateAccount(companyId, token);
   
   // Get draft accounts ONLY for unauthenticated users
   const draftAccounts = !isAuthenticated ? DraftManager.getDrafts('account').map(draft => ({
@@ -275,7 +279,7 @@ export default function TargetAccountsList() {
         cancelLabel="Cancel"
         defaultName=""
         defaultDescription=""
-        isLoading={false}
+        isLoading={isGenerating || isCreating}
       />
     </div>
   );
