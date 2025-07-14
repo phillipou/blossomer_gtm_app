@@ -211,30 +211,89 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
     }
   }
 
-  // Replace parseBodyIntoSegmentsNearest with a simpler chunk-to-section mapping
-  function parseBodyIntoSegmentsSimple(
+  // Smart content mapping that preserves components and maps edited text back intelligently
+  function parseBodyIntoSegmentsSmart(
     newBody: string,
     currentSegments: Segment[],
     currentBreakdown: Breakdown
   ): { newSegments: Segment[]; newBreakdown: Breakdown } {
-    const chunks = newBody.split(/\n\n+/).map(chunk => chunk.trim());
-    // Map chunks to existing segments in order
-    const newSegments = currentSegments.map((segment, i) => ({
-      ...segment,
-      text: chunks[i] || ""
-    }));
-    // Handle extra chunks (append to last section)
-    if (chunks.length > currentSegments.length && newSegments.length > 0) {
-      const extraContent = chunks.slice(currentSegments.length).join('\n\n');
-      newSegments[newSegments.length - 1].text += (newSegments[newSegments.length - 1].text ? '\n\n' : '') + extraContent;
-    }
+    const chunks = newBody.split(/\n\n+/).map(chunk => chunk.trim()).filter(chunk => chunk);
+    
+    // Get only the body segments (preserve non-body segments like subject unchanged)
+    const bodySegments = currentSegments.filter(segment => isEmailBodySegment(segment.type));
+    const nonBodySegments = currentSegments.filter(segment => !isEmailBodySegment(segment.type));
+    
+    // Create a mapping of chunks to segments using content similarity
+    const updatedBodySegments = [...bodySegments];
+    const usedChunks = new Set<number>();
+    
+    // First pass: Match chunks to existing segments based on content similarity
+    bodySegments.forEach((segment, segmentIndex) => {
+      if (!segment.text.trim()) return; // Skip empty segments
+      
+      let bestMatch = -1;
+      let bestScore = 0;
+      
+      chunks.forEach((chunk, chunkIndex) => {
+        if (usedChunks.has(chunkIndex)) return;
+        
+        // Calculate similarity score (simple word overlap + length similarity)
+        const segmentWords = segment.text.toLowerCase().split(/\s+/);
+        const chunkWords = chunk.toLowerCase().split(/\s+/);
+        const commonWords = segmentWords.filter(word => chunkWords.includes(word));
+        
+        const wordOverlap = commonWords.length / Math.max(segmentWords.length, chunkWords.length);
+        const lengthSimilarity = 1 - Math.abs(segment.text.length - chunk.length) / Math.max(segment.text.length, chunk.length);
+        const score = (wordOverlap * 0.7) + (lengthSimilarity * 0.3);
+        
+        if (score > bestScore && score > 0.3) { // Minimum similarity threshold
+          bestScore = score;
+          bestMatch = chunkIndex;
+        }
+      });
+      
+      if (bestMatch >= 0) {
+        updatedBodySegments[segmentIndex] = { ...segment, text: chunks[bestMatch] };
+        usedChunks.add(bestMatch);
+      }
+    });
+    
+    // Second pass: Handle remaining chunks by positional mapping to empty segments
+    const unusedChunks = chunks.filter((_, index) => !usedChunks.has(index));
+    const emptySegments = updatedBodySegments
+      .map((segment, index) => ({ segment, index }))
+      .filter(({ segment }) => !segment.text.trim());
+    
+    unusedChunks.forEach((chunk, i) => {
+      if (i < emptySegments.length) {
+        const segmentIndex = emptySegments[i].index;
+        updatedBodySegments[segmentIndex] = { ...updatedBodySegments[segmentIndex], text: chunk };
+      } else if (updatedBodySegments.length > 0) {
+        // Append to last segment if no empty segments available
+        const lastIndex = updatedBodySegments.length - 1;
+        updatedBodySegments[lastIndex].text += '\n\n' + chunk;
+      }
+    });
+    
+    // Reconstruct all segments maintaining original order
+    const newSegments = currentSegments.map(segment => {
+      if (isEmailBodySegment(segment.type)) {
+        // Find the updated version of this body segment
+        const bodyIndex = bodySegments.findIndex(bs => bs.type === segment.type);
+        return bodyIndex >= 0 ? updatedBodySegments[bodyIndex] : segment;
+      } else {
+        // Keep non-body segments (like subject) unchanged
+        return segment;
+      }
+    });
+    
     return { newSegments, newBreakdown: { ...currentBreakdown } };
   }
 
   // When the body is edited, update the segments and breakdown
   const handleBodySave = () => {
-    // Use simple chunk-to-section mapping
-    const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
+    // Use smart content mapping to preserve components
+    const { newSegments, newBreakdown } = parseBodyIntoSegmentsSmart(
       bodyValue,
       segments,
       breakdown
@@ -367,8 +426,8 @@ export function EmailPreview({ email, onCreateVariant, onCopy, onSend, editingMo
       const estimatedHeight = Math.max(120, lineCount * 20 + 40);
       setBodyTextareaHeight(`${estimatedHeight}px`);
     } else {
-      // Switch to component mode: parse body, show breakdown
-      const { newSegments, newBreakdown } = parseBodyIntoSegmentsSimple(
+      // Switch to component mode: parse body changes back to segments intelligently
+      const { newSegments, newBreakdown } = parseBodyIntoSegmentsSmart(
         bodyValue,
         segments,
         breakdown
