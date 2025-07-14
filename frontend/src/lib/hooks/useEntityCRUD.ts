@@ -61,6 +61,15 @@ export function useEntityCRUD<T>(entityType: EntityType) {
         saveOptions.companyId = customCompanyId || companyId;
         break;
         
+      case 'campaign':
+        // Campaigns require persona context (parentId)
+        if (!parentId) {
+          throw new Error('Campaign creation requires persona context (parentId).');
+        }
+        saveOptions.parentId = parentId;
+        saveOptions.companyId = customCompanyId || companyId;
+        break;
+        
       case 'company':
         // Companies don't need additional context
         break;
@@ -154,6 +163,7 @@ export function useEntityCRUD<T>(entityType: EntityType) {
       switch (entityType) {
         case 'account':
         case 'persona':
+        case 'campaign':
           return hasValidContext; // Requires company context
         case 'company':
           return true; // No prerequisites
@@ -168,6 +178,8 @@ export function useEntityCRUD<T>(entityType: EntityType) {
             return 'Account creation requires a company. Please create a company first.';
           case 'persona':
             return 'Persona creation requires a company and account. Please create these first.';
+          case 'campaign':
+            return 'Campaign creation requires a company, account, and persona. Please create these first.';
           default:
             return `${entityType} creation requires additional context.`;
         }

@@ -7,15 +7,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createCompany, normalizeCompanyResponse } from '../companyService';
 import { createAccount, generateAccount, normalizeAccountResponse } from '../accountService';
 import { createPersona, generatePersona, normalizePersonaResponse } from '../personaService';
-// import { createCampaign, normalizeCampaignResponse } from '../campaignService';
+import { createCampaign, generateCampaign, normalizeCampaignResponse } from '../campaignService';
 
 import type { 
   CompanyOverviewResponse, 
   TargetAccountResponse, 
   TargetPersonaResponse,
-  // CampaignResponse,
+  EmailGenerationResponse,
   Account,
   Persona,
+  Campaign,
   CompanyResponse
 } from '../../types/api';
 
@@ -138,10 +139,49 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
           normalized = normalizePersonaResponse(savedEntity as Persona) as T;
           break;
           
-        // case 'campaign':
-        //   savedEntity = await createCampaign(aiResponse as any, token);
-        //   normalized = normalizeCampaignResponse(savedEntity) as T;
-        //   break;
+        case 'campaign':
+          if (!options?.parentId) {
+            throw new Error('Campaign creation requires parentId (personaId)');
+          }
+          
+          try {
+            // Step 1: Generate AI email data (subjects, email body, breakdown)
+            console.log('[DUAL-PATH-AUTH-CAMPAIGN] Starting Step 1: Generating AI email data:', aiResponse);
+            const generatedEmailData = await generateCampaign(aiResponse as any, token);
+            console.log('[DUAL-PATH-AUTH-CAMPAIGN] Step 1 SUCCESS: AI email generation complete:', generatedEmailData);
+            
+            // Step 2: Create campaign with generated email data
+            const campaignCreateData = {
+              name: generatedEmailData.subjects?.primary || (aiResponse as any).campaignName || 'Generated Campaign',
+              type: 'email',
+              data: generatedEmailData
+            };
+            console.log('[DUAL-PATH-AUTH-CAMPAIGN] Starting Step 2: Creating campaign with data:', {
+              personaId: options.parentId,
+              campaignCreateData,
+              hasToken: !!token,
+              endpoint: `/campaigns?persona_id=${options.parentId}`
+            });
+            savedEntity = await createCampaign(generatedEmailData, token);
+            console.log('[DUAL-PATH-AUTH-CAMPAIGN] Step 2 SUCCESS: Campaign creation complete:', {
+              savedEntityId: savedEntity.id,
+              savedEntityKeys: Object.keys(savedEntity),
+              savedEntity
+            });
+            
+          } catch (creationError) {
+            console.error('[DUAL-PATH-AUTH-CAMPAIGN] CREATION FAILED:', {
+              error: creationError,
+              errorMessage: creationError.message,
+              personaId: options.parentId,
+              token: !!token,
+              aiResponse
+            });
+            throw creationError;
+          }
+          
+          normalized = normalizeCampaignResponse(savedEntity as Campaign) as T;
+          break;
           
         default:
           throw new Error(`Unsupported entity type: ${entityType}`);
@@ -237,6 +277,29 @@ export function useDualPathDataFlow<T>(entityType: EntityType) {
             updated_at: new Date().toISOString()
           };
           normalized = normalizePersonaResponse(fakePersonaResponse) as T;
+          break;
+          
+        case 'campaign':
+          console.log('[DUAL-PATH-UNAUTH-CAMPAIGN] Generating AI email data for unauthenticated user:', aiResponse);
+          
+          // Step 1: Generate AI email data using demo endpoint  
+          const generatedEmailData = await generateCampaign(aiResponse as any, null); // null token for demo endpoint
+          
+          console.log('[DUAL-PATH-UNAUTH-CAMPAIGN] Generated email data:', generatedEmailData);
+          
+          // Step 2: Create database-identical Campaign structure
+          // Top-level fields: id, name, persona_id, type, created_at, updated_at  
+          // JSON data field: emailBody, subjects, breakdown (preserved complex email content)
+          const fakeCampaignResponse = {
+            id: `temp_${Date.now()}`,
+            name: generatedEmailData.subjects?.primary || (aiResponse as any).campaignName || 'Generated Campaign',
+            persona_id: options?.parentId || 'temp_persona',
+            type: 'email',
+            data: generatedEmailData, // Full AI-generated email data with segments, breakdown, metadata
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          normalized = normalizeCampaignResponse(fakeCampaignResponse) as T;
           break;
           
         default:
@@ -388,6 +451,25 @@ function validateEntityFieldStructure(entityType: EntityType, normalized: any): 
       }
       if (normalized.useCases && !Array.isArray(normalized.useCases)) {
         issues.push('UseCases must be array (for UseCasesCard rendering)');
+      }
+      break;
+      
+    case 'campaign':
+      // Campaign normalized format: id, name (from subject), + complex email content preserved
+      expectedFields = ['id', 'name', 'subjects', 'emailBody', 'breakdown', 'metadata'];
+      
+      if (!normalized.id) issues.push('Missing id (database: id)');
+      if (!normalized.name) issues.push('Missing name (database: name)');
+      
+      // CRITICAL: Complex email structures must be preserved for UI rendering
+      if (normalized.subjects && typeof normalized.subjects !== 'object') {
+        issues.push('Subjects must be object with primary/alternatives (for EmailPreview rendering)');
+      }
+      if (normalized.emailBody && !Array.isArray(normalized.emailBody)) {
+        issues.push('EmailBody must be array of segments (for EmailSegments rendering)');
+      }
+      if (normalized.breakdown && typeof normalized.breakdown !== 'object') {
+        issues.push('Breakdown must be object (for EmailBreakdown rendering)');
       }
       break;
       
